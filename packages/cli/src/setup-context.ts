@@ -99,6 +99,8 @@ export interface KtxSetupContextDeps {
   now?: () => Date;
   runContextBuild?: typeof runContextBuild;
   verifyContextReady?: (projectDir: string) => Promise<KtxSetupContextReadiness>;
+  sleep?: (ms: number) => Promise<void>;
+  watchIntervalMs?: number;
 }
 
 interface KtxSetupContextTargets {
@@ -109,6 +111,7 @@ interface KtxSetupContextTargets {
 const SETUP_CONTEXT_STATE_PATH = ['.ktx', 'setup', 'context-build.json'] as const;
 const LIVE_DATABASE_ADAPTER = 'live-database';
 const SCAN_REPORT_FILE = 'scan-report.json';
+const DEFAULT_WATCH_INTERVAL_MS = 2_000;
 
 function createPromptAdapter(): KtxSetupContextPromptAdapter {
   return {
@@ -698,6 +701,18 @@ function stateMatchesRunId(state: KtxSetupContextState, runId: string | undefine
   return !runId || state.runId === runId;
 }
 
+function isActiveStatus(status: KtxSetupContextBuildStatus): boolean {
+  return status === 'running' || status === 'detached';
+}
+
+function watchExitCode(status: KtxSetupContextBuildStatus): number {
+  return status === 'failed' || status === 'interrupted' || status === 'stale' ? 1 : 0;
+}
+
+function defaultSleep(ms: number): Promise<void> {
+  return new Promise((resolveSleep) => setTimeout(resolveSleep, ms));
+}
+
 function statusPayload(state: KtxSetupContextState): KtxSetupContextStatusSummary {
   return setupContextStatusFromState(state, { completedStep: state.status === 'completed' });
 }
@@ -711,6 +726,38 @@ function writeContextStatus(state: KtxSetupContextState, io: KtxCliIo): void {
   }
   if (state.failureReason) {
     io.stdout.write(`Detail: ${state.failureReason}\n`);
+  }
+}
+
+async function watchContextStatus(
+  args: Extract<KtxSetupContextCommandArgs, { command: 'watch' }>,
+  initialState: KtxSetupContextState,
+  io: KtxCliIo,
+  deps: KtxSetupContextDeps,
+): Promise<number> {
+  const sleep = deps.sleep ?? defaultSleep;
+  const intervalMs = deps.watchIntervalMs ?? DEFAULT_WATCH_INTERVAL_MS;
+  let state = initialState;
+  let lastRenderedStatus = '';
+
+  io.stdout.write('KTX context build\n');
+  while (true) {
+    const renderedStatus = `${state.status}:${state.updatedAt ?? ''}:${state.completedAt ?? ''}:${state.failureReason ?? ''}`;
+    if (renderedStatus !== lastRenderedStatus) {
+      writeContextStatus(state, io);
+      lastRenderedStatus = renderedStatus;
+    }
+
+    if (!isActiveStatus(state.status)) {
+      return watchExitCode(state.status);
+    }
+
+    await sleep(intervalMs);
+    state = await readKtxSetupContextState(args.projectDir);
+    if (!stateMatchesRunId(state, args.runId)) {
+      io.stderr.write(`KTX setup context run "${args.runId}" was not found.\n`);
+      return 1;
+    }
   }
 }
 
@@ -744,9 +791,7 @@ export async function runKtxSetupContextCommand(
   }
 
   if (args.command === 'watch') {
-    io.stdout.write('KTX context build\n');
-    writeContextStatus(state, io);
-    return 0;
+    return await watchContextStatus(args, state, io, deps);
   }
 
   const updatedAt = new Date().toISOString();
