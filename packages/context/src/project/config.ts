@@ -1,35 +1,35 @@
-import type { KloEmbeddingBackend, KloLlmBackend, KloModelRole, KloPromptCacheTtl } from '@klo/llm';
+import type { KtxEmbeddingBackend, KtxLlmBackend, KtxModelRole, KtxPromptCacheTtl } from '@ktx/llm';
 import YAML from 'yaml';
 
-export type KloStorageState = 'postgres' | 'sqlite';
-export type KloSearchBackend = 'postgres-hybrid' | 'sqlite-fts5';
-type KloLocalLlmBackend = KloLlmBackend | 'none';
-type KloLocalEmbeddingBackend = KloEmbeddingBackend | 'none';
-type KloScanEnrichmentMode = 'none' | 'deterministic' | 'llm';
+export type KtxStorageState = 'postgres' | 'sqlite';
+export type KtxSearchBackend = 'postgres-hybrid' | 'sqlite-fts5';
+type KtxLocalLlmBackend = KtxLlmBackend | 'none';
+type KtxLocalEmbeddingBackend = KtxEmbeddingBackend | 'none';
+type KtxScanEnrichmentMode = 'none' | 'deterministic' | 'llm';
 
-interface KloProjectPromptCachingConfig {
+interface KtxProjectPromptCachingConfig {
   enabled?: boolean;
-  systemTtl?: KloPromptCacheTtl;
-  toolsTtl?: KloPromptCacheTtl;
-  historyTtl?: KloPromptCacheTtl;
+  systemTtl?: KtxPromptCacheTtl;
+  toolsTtl?: KtxPromptCacheTtl;
+  historyTtl?: KtxPromptCacheTtl;
   vertexFallbackTo5m?: boolean;
 }
 
-export interface KloProjectLlmProviderConfig {
-  backend: KloLocalLlmBackend;
+export interface KtxProjectLlmProviderConfig {
+  backend: KtxLocalLlmBackend;
   vertex?: { project?: string; location: string };
   anthropic?: { api_key?: string; base_url?: string };
   gateway?: { api_key?: string; base_url?: string };
 }
 
-export interface KloProjectLlmConfig {
-  provider: KloProjectLlmProviderConfig;
-  models: Partial<Record<KloModelRole, string>> & { default?: string };
-  promptCaching?: KloProjectPromptCachingConfig;
+export interface KtxProjectLlmConfig {
+  provider: KtxProjectLlmProviderConfig;
+  models: Partial<Record<KtxModelRole, string>> & { default?: string };
+  promptCaching?: KtxProjectPromptCachingConfig;
 }
 
-export interface KloProjectEmbeddingConfig {
-  backend: KloLocalEmbeddingBackend;
+export interface KtxProjectEmbeddingConfig {
+  backend: KtxLocalEmbeddingBackend;
   model?: string;
   dimensions: number;
   openai?: { api_key?: string; base_url?: string };
@@ -37,18 +37,18 @@ export interface KloProjectEmbeddingConfig {
   batchSize?: number;
 }
 
-export interface KloScanEnrichmentConfig {
-  mode: KloScanEnrichmentMode;
-  embeddings?: KloProjectEmbeddingConfig;
+export interface KtxScanEnrichmentConfig {
+  mode: KtxScanEnrichmentMode;
+  embeddings?: KtxProjectEmbeddingConfig;
 }
 
-export interface KloIngestWorkUnitsConfig {
+export interface KtxIngestWorkUnitsConfig {
   stepBudget: number;
   maxConcurrency: number;
   failureMode: 'abort' | 'continue';
 }
 
-export interface KloScanRelationshipConfig {
+export interface KtxScanRelationshipConfig {
   enabled: boolean;
   llmProposals: boolean;
   validationRequiredForManifest: boolean;
@@ -61,40 +61,40 @@ export interface KloScanRelationshipConfig {
   validationBudget?: number | 'all';
 }
 
-export interface KloProjectScanConfig {
-  enrichment: KloScanEnrichmentConfig;
-  relationships: KloScanRelationshipConfig;
+export interface KtxProjectScanConfig {
+  enrichment: KtxScanEnrichmentConfig;
+  relationships: KtxScanRelationshipConfig;
 }
 
-export interface KloProjectConnectionConfig {
+export interface KtxProjectConnectionConfig {
   driver: string;
   url?: string;
   readonly?: boolean;
   [key: string]: unknown;
 }
 
-export interface KloProjectSetupConfig {
+export interface KtxProjectSetupConfig {
   database_connection_ids: string[];
   completed_steps: string[];
 }
 
-export interface KloProjectConfig {
+export interface KtxProjectConfig {
   project: string;
-  setup?: KloProjectSetupConfig;
-  connections: Record<string, KloProjectConnectionConfig>;
+  setup?: KtxProjectSetupConfig;
+  connections: Record<string, KtxProjectConnectionConfig>;
   storage: {
-    state: KloStorageState;
-    search: KloSearchBackend;
+    state: KtxStorageState;
+    search: KtxSearchBackend;
     git: {
       auto_commit: boolean;
       author: string;
     };
   };
-  llm: KloProjectLlmConfig;
+  llm: KtxProjectLlmConfig;
   ingest: {
     adapters: string[];
-    embeddings: KloProjectEmbeddingConfig;
-    workUnits: KloIngestWorkUnitsConfig;
+    embeddings: KtxProjectEmbeddingConfig;
+    workUnits: KtxIngestWorkUnitsConfig;
   };
   agent: {
     run_research: {
@@ -106,7 +106,7 @@ export interface KloProjectConfig {
   memory: {
     auto_commit: boolean;
   };
-  scan: KloProjectScanConfig;
+  scan: KtxProjectScanConfig;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -167,7 +167,7 @@ function ratioConfigValue(value: unknown, fallback: number): number {
   return value;
 }
 
-function localLlmBackend(value: unknown, fallback: KloLocalLlmBackend, section = 'llm.provider'): KloLocalLlmBackend {
+function localLlmBackend(value: unknown, fallback: KtxLocalLlmBackend, section = 'llm.provider'): KtxLocalLlmBackend {
   if (value == null) {
     return fallback;
   }
@@ -181,9 +181,9 @@ function localLlmBackend(value: unknown, fallback: KloLocalLlmBackend, section =
 
 function localEmbeddingBackend(
   value: unknown,
-  fallback: KloLocalEmbeddingBackend,
+  fallback: KtxLocalEmbeddingBackend,
   section = 'ingest.embeddings',
-): KloLocalEmbeddingBackend {
+): KtxLocalEmbeddingBackend {
   if (value == null) {
     return fallback;
   }
@@ -200,7 +200,7 @@ function localEmbeddingBackend(
   throw new Error(`Unsupported ${section}.backend: ${String(value)}`);
 }
 
-function scanEnrichmentMode(value: unknown, fallback: KloScanEnrichmentMode): KloScanEnrichmentMode {
+function scanEnrichmentMode(value: unknown, fallback: KtxScanEnrichmentMode): KtxScanEnrichmentMode {
   if (value == null) {
     return fallback;
   }
@@ -239,26 +239,26 @@ function optionalProviderConfig(value: unknown): { api_key?: string; base_url?: 
   };
 }
 
-function parseModels(value: unknown): KloProjectLlmConfig['models'] {
+function parseModels(value: unknown): KtxProjectLlmConfig['models'] {
   if (!isRecord(value)) {
     return {};
   }
 
-  const models: KloProjectLlmConfig['models'] = {};
+  const models: KtxProjectLlmConfig['models'] = {};
   for (const [role, model] of Object.entries(value)) {
     const modelName = optionalNonEmptyString(model);
     if (modelName) {
-      models[role as KloModelRole] = modelName;
+      models[role as KtxModelRole] = modelName;
     }
   }
   return models;
 }
 
-function promptCacheTtl(value: unknown): KloPromptCacheTtl | undefined {
+function promptCacheTtl(value: unknown): KtxPromptCacheTtl | undefined {
   return value === '5m' || value === '1h' ? value : undefined;
 }
 
-function parsePromptCaching(value: unknown): KloProjectPromptCachingConfig | undefined {
+function parsePromptCaching(value: unknown): KtxProjectPromptCachingConfig | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
@@ -274,9 +274,9 @@ function parsePromptCaching(value: unknown): KloProjectPromptCachingConfig | und
 
 function parseProjectLlmProviderConfig(
   raw: Record<string, unknown>,
-  defaults: KloProjectLlmProviderConfig,
+  defaults: KtxProjectLlmProviderConfig,
   section: string,
-): KloProjectLlmProviderConfig {
+): KtxProjectLlmProviderConfig {
   rejectLegacyProvider(section, raw.provider);
 
   const vertex = isRecord(raw.vertex)
@@ -296,7 +296,7 @@ function parseProjectLlmProviderConfig(
   };
 }
 
-function parseProjectLlmConfig(raw: Record<string, unknown>, defaults: KloProjectLlmConfig): KloProjectLlmConfig {
+function parseProjectLlmConfig(raw: Record<string, unknown>, defaults: KtxProjectLlmConfig): KtxProjectLlmConfig {
   const provider = isRecord(raw.provider) ? raw.provider : {};
   return {
     provider: parseProjectLlmProviderConfig(provider, defaults.provider, 'llm.provider'),
@@ -307,9 +307,9 @@ function parseProjectLlmConfig(raw: Record<string, unknown>, defaults: KloProjec
 
 function parseProjectEmbeddingConfig(
   raw: Record<string, unknown>,
-  defaults: KloProjectEmbeddingConfig,
+  defaults: KtxProjectEmbeddingConfig,
   section: string,
-): KloProjectEmbeddingConfig {
+): KtxProjectEmbeddingConfig {
   rejectLegacyProvider(section, raw.provider);
 
   const openai = optionalProviderConfig(raw.openai);
@@ -338,8 +338,8 @@ function parseProjectEmbeddingConfig(
 
 function parseScanRelationshipConfig(
   raw: Record<string, unknown>,
-  defaults: KloScanRelationshipConfig,
-): KloScanRelationshipConfig {
+  defaults: KtxScanRelationshipConfig,
+): KtxScanRelationshipConfig {
   const validationBudget = validationBudgetConfigValue(
     raw.validation_budget ?? raw.validationBudget,
     defaults.validationBudget,
@@ -380,8 +380,8 @@ function workUnitFailureMode(value: unknown, fallback: 'abort' | 'continue'): 'a
 
 function parseIngestWorkUnitsConfig(
   raw: Record<string, unknown>,
-  defaults: KloIngestWorkUnitsConfig,
-): KloIngestWorkUnitsConfig {
+  defaults: KtxIngestWorkUnitsConfig,
+): KtxIngestWorkUnitsConfig {
   return {
     stepBudget: positiveIntegerConfigValue(raw.stepBudget, defaults.stepBudget),
     maxConcurrency: positiveIntegerConfigValue(raw.maxConcurrency, defaults.maxConcurrency),
@@ -389,7 +389,7 @@ function parseIngestWorkUnitsConfig(
   };
 }
 
-export function buildDefaultKloProjectConfig(projectName = 'klo-project'): KloProjectConfig {
+export function buildDefaultKtxProjectConfig(projectName = 'ktx-project'): KtxProjectConfig {
   return {
     project: projectName,
     connections: {},
@@ -398,7 +398,7 @@ export function buildDefaultKloProjectConfig(projectName = 'klo-project'): KloPr
       search: 'sqlite-fts5',
       git: {
         auto_commit: true,
-        author: 'klo <klo@example.com>',
+        author: 'ktx <ktx@example.com>',
       },
     },
     llm: {
@@ -449,18 +449,18 @@ export function buildDefaultKloProjectConfig(projectName = 'klo-project'): KloPr
   };
 }
 
-export function parseKloProjectConfig(raw: string): KloProjectConfig {
+export function parseKtxProjectConfig(raw: string): KtxProjectConfig {
   const parsed = YAML.parse(raw) as unknown;
   if (!isRecord(parsed)) {
-    throw new Error('klo.yaml must contain a YAML object');
+    throw new Error('ktx.yaml must contain a YAML object');
   }
 
   const project = parsed.project;
   if (typeof project !== 'string' || project.trim().length === 0) {
-    throw new Error('klo.yaml field "project" is required');
+    throw new Error('ktx.yaml field "project" is required');
   }
 
-  const defaults = buildDefaultKloProjectConfig(project.trim());
+  const defaults = buildDefaultKtxProjectConfig(project.trim());
   const llm = isRecord(parsed.llm) ? parsed.llm : {};
   const storage = isRecord(parsed.storage) ? parsed.storage : {};
   const storageGit = isRecord(storage.git) ? storage.git : {};
@@ -496,7 +496,7 @@ export function parseKloProjectConfig(raw: string): KloProjectConfig {
     defaults.ingest.embeddings,
     'scan.enrichment.embeddings',
   );
-  const parsedScanEnrichment: KloScanEnrichmentConfig = {
+  const parsedScanEnrichment: KtxScanEnrichmentConfig = {
     mode: scanEnrichmentMode(scanEnrichment.mode, defaults.scan.enrichment.mode),
     ...(isRecord(scanEnrichment.embeddings) ? { embeddings: scanEmbeddings } : {}),
   };
@@ -513,7 +513,7 @@ export function parseKloProjectConfig(raw: string): KloProjectConfig {
         }
       : {}),
     connections: isRecord(parsed.connections)
-      ? (parsed.connections as Record<string, KloProjectConnectionConfig>)
+      ? (parsed.connections as Record<string, KtxProjectConnectionConfig>)
       : defaults.connections,
     storage: {
       state: storage.state === 'sqlite' ? 'sqlite' : defaults.storage.state,
@@ -546,6 +546,6 @@ export function parseKloProjectConfig(raw: string): KloProjectConfig {
   };
 }
 
-export function serializeKloProjectConfig(config: KloProjectConfig): string {
+export function serializeKtxProjectConfig(config: KtxProjectConfig): string {
   return `${YAML.stringify(config, { indent: 2, lineWidth: 0 }).trimEnd()}\n`;
 }

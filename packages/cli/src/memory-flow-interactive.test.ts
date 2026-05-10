@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events';
-import type { MemoryFlowReplayInput } from '@klo/context/ingest';
+import type { MemoryFlowReplayInput } from '@ktx/context/ingest';
 import { describe, expect, it, vi } from 'vitest';
 import { memoryFlowCommandForKey, renderMemoryFlowInteractively } from './memory-flow-interactive.js';
 

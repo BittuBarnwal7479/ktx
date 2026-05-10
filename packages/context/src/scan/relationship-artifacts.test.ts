@@ -2,12 +2,12 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { runLocalStageOnlyIngest, type SourceAdapter } from '../ingest/index.js';
-import { initKloProject, loadKloProject } from '../project/index.js';
+import { initKtxProject, loadKtxProject } from '../project/index.js';
 import { describe, expect, it } from 'vitest';
 import { readLocalScanRelationshipArtifacts } from './relationship-artifacts.js';
-import type { KloRelationshipArtifact, KloRelationshipDiagnosticsArtifact } from './relationship-diagnostics.js';
-import type { KloRelationshipProfileArtifact } from './relationship-profiling.js';
-import type { KloScanReport } from './types.js';
+import type { KtxRelationshipArtifact, KtxRelationshipDiagnosticsArtifact } from './relationship-diagnostics.js';
+import type { KtxRelationshipProfileArtifact } from './relationship-profiling.js';
+import type { KtxScanReport } from './types.js';
 
 async function writeProjectFile(projectDir: string, relativePath: string, content: string): Promise<void> {
   const absolutePath = join(projectDir, relativePath);
@@ -17,7 +17,7 @@ async function writeProjectFile(projectDir: string, relativePath: string, conten
 
 async function writeWarehouseConfig(projectDir: string): Promise<void> {
   await writeFile(
-    join(projectDir, 'klo.yaml'),
+    join(projectDir, 'ktx.yaml'),
     [
       'project: warehouse',
       'connections:',
@@ -68,9 +68,9 @@ function liveDatabaseAdapter(): SourceAdapter {
 }
 
 async function createLiveDatabaseRun(projectDir: string, runId: string) {
-  await initKloProject({ projectDir, projectName: 'warehouse' });
+  await initKtxProject({ projectDir, projectName: 'warehouse' });
   await writeWarehouseConfig(projectDir);
-  const project = await loadKloProject({ projectDir });
+  const project = await loadKtxProject({ projectDir });
   await runLocalStageOnlyIngest({
     project,
     adapters: [liveDatabaseAdapter()],
@@ -82,7 +82,7 @@ async function createLiveDatabaseRun(projectDir: string, runId: string) {
   return project;
 }
 
-function scanReport(enrichmentArtifacts: string[], syncId = '2026-05-07-100000-scan-run-review'): KloScanReport {
+function scanReport(enrichmentArtifacts: string[], syncId = '2026-05-07-100000-scan-run-review'): KtxScanReport {
   return {
     connectionId: 'warehouse',
     driver: 'sqlite',
@@ -136,7 +136,7 @@ function scanReport(enrichmentArtifacts: string[], syncId = '2026-05-07-100000-s
   };
 }
 
-const relationshipArtifact: KloRelationshipArtifact = {
+const relationshipArtifact: KtxRelationshipArtifact = {
   connectionId: 'warehouse',
   accepted: [],
   review: [
@@ -198,7 +198,7 @@ const relationshipArtifact: KloRelationshipArtifact = {
   skipped: [],
 };
 
-const diagnosticsArtifact: KloRelationshipDiagnosticsArtifact = {
+const diagnosticsArtifact: KtxRelationshipDiagnosticsArtifact = {
   connectionId: 'warehouse',
   generatedAt: '2026-05-07T10:00:00.000Z',
   summary: { accepted: 0, review: 1, rejected: 1, skipped: 0 },
@@ -213,22 +213,22 @@ const diagnosticsArtifact: KloRelationshipDiagnosticsArtifact = {
     validationConcurrency: 4,
   },
   warnings: [],
-  profileWarnings: ['KLO scan connector cannot run read-only SQL relationship validation'],
+  profileWarnings: ['KTX scan connector cannot run read-only SQL relationship validation'],
 };
 
-const profileArtifact: KloRelationshipProfileArtifact = {
+const profileArtifact: KtxRelationshipProfileArtifact = {
   connectionId: 'warehouse',
   driver: 'sqlite',
   sqlAvailable: false,
   tables: [],
   columns: {},
   queryCount: 0,
-  warnings: ['KLO scan connector cannot run read-only SQL relationship validation'],
+  warnings: ['KTX scan connector cannot run read-only SQL relationship validation'],
 };
 
 describe('local scan relationship artifact reader', () => {
   it('loads relationship, diagnostics, and profile artifacts for a scan run', async () => {
-    const projectDir = await mkdtemp(join(tmpdir(), 'klo-relationship-artifacts-'));
+    const projectDir = await mkdtemp(join(tmpdir(), 'ktx-relationship-artifacts-'));
     try {
       const project = await createLiveDatabaseRun(projectDir, 'scan-run-review');
       const syncId = '2026-05-07-100000-scan-run-review';
@@ -282,10 +282,10 @@ describe('local scan relationship artifact reader', () => {
   });
 
   it('returns null when the scan run has no report', async () => {
-    const projectDir = await mkdtemp(join(tmpdir(), 'klo-relationship-artifacts-missing-run-'));
+    const projectDir = await mkdtemp(join(tmpdir(), 'ktx-relationship-artifacts-missing-run-'));
     try {
-      await initKloProject({ projectDir, projectName: 'warehouse' });
-      const project = await loadKloProject({ projectDir });
+      await initKtxProject({ projectDir, projectName: 'warehouse' });
+      const project = await loadKtxProject({ projectDir });
 
       await expect(readLocalScanRelationshipArtifacts(project, 'missing-run')).resolves.toBeNull();
     } finally {
@@ -294,7 +294,7 @@ describe('local scan relationship artifact reader', () => {
   });
 
   it('throws a focused error when a scan report does not reference relationships.json', async () => {
-    const projectDir = await mkdtemp(join(tmpdir(), 'klo-relationship-artifacts-missing-artifact-'));
+    const projectDir = await mkdtemp(join(tmpdir(), 'ktx-relationship-artifacts-missing-artifact-'));
     try {
       const project = await createLiveDatabaseRun(projectDir, 'scan-run-review');
       const report = scanReport([]);

@@ -1,26 +1,26 @@
 import { createPostgresQueryExecutor } from './postgres-query-executor.js';
 import type {
-  KloSqlQueryExecutionInput,
-  KloSqlQueryExecutionResult,
-  KloSqlQueryExecutorPort,
+  KtxSqlQueryExecutionInput,
+  KtxSqlQueryExecutionResult,
+  KtxSqlQueryExecutorPort,
 } from './query-executor.js';
 import { createSqliteQueryExecutor } from './sqlite-query-executor.js';
 
 export interface DefaultLocalQueryExecutorOptions {
-  postgres?: KloSqlQueryExecutorPort;
-  sqlite?: KloSqlQueryExecutorPort;
+  postgres?: KtxSqlQueryExecutorPort;
+  sqlite?: KtxSqlQueryExecutorPort;
 }
 
-function driverFor(input: KloSqlQueryExecutionInput): string {
+function driverFor(input: KtxSqlQueryExecutionInput): string {
   return String(input.connection?.driver ?? '').toLowerCase();
 }
 
-export function createDefaultLocalQueryExecutor(options: DefaultLocalQueryExecutorOptions = {}): KloSqlQueryExecutorPort {
+export function createDefaultLocalQueryExecutor(options: DefaultLocalQueryExecutorOptions = {}): KtxSqlQueryExecutorPort {
   const postgres = options.postgres ?? createPostgresQueryExecutor();
   const sqlite = options.sqlite ?? createSqliteQueryExecutor();
 
   return {
-    async execute(input: KloSqlQueryExecutionInput): Promise<KloSqlQueryExecutionResult> {
+    async execute(input: KtxSqlQueryExecutionInput): Promise<KtxSqlQueryExecutionResult> {
       const driver = driverFor(input);
       if (driver === 'postgres' || driver === 'postgresql') {
         return postgres.execute(input);

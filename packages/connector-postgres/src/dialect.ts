@@ -1,11 +1,11 @@
-import type { KloSchemaDimensionType, KloTableRef } from '@klo/context/scan';
+import type { KtxSchemaDimensionType, KtxTableRef } from '@ktx/context/scan';
 
-type PostgresTableNameRef = Pick<KloTableRef, 'name'> & Partial<Pick<KloTableRef, 'catalog' | 'db'>>;
+type PostgresTableNameRef = Pick<KtxTableRef, 'name'> & Partial<Pick<KtxTableRef, 'catalog' | 'db'>>;
 
-export class KloPostgresDialect {
+export class KtxPostgresDialect {
   readonly type = 'postgresql';
 
-  private readonly typeMappings: Record<string, KloSchemaDimensionType> = {
+  private readonly typeMappings: Record<string, KtxSchemaDimensionType> = {
     timestamp: 'time',
     'timestamp without time zone': 'time',
     'timestamp with time zone': 'time',
@@ -54,7 +54,7 @@ export class KloPostgresDialect {
     return nativeType;
   }
 
-  mapToDimensionType(nativeType: string): KloSchemaDimensionType {
+  mapToDimensionType(nativeType: string): KtxSchemaDimensionType {
     if (!nativeType) {
       return 'string';
     }

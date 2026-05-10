@@ -36,7 +36,7 @@ describe('readIngestReportSnapshotFile', () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-report-file-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-report-file-'));
   });
 
   afterEach(async () => {

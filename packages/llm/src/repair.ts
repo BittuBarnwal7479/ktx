@@ -1,6 +1,6 @@
 import { NoSuchToolError, type LanguageModel, type ToolCallRepairFunction, type ToolSet, generateText } from 'ai';
 
-interface KloToolCallRepairHandlerInput {
+interface KtxToolCallRepairHandlerInput {
   source: string;
   getRepairModel: () => LanguageModel;
   generateText?: typeof generateText;
@@ -32,8 +32,8 @@ function extractJsonFromText(text: string): string | null {
   return null;
 }
 
-export function createKloToolCallRepairHandler(
-  input: KloToolCallRepairHandlerInput,
+export function createKtxToolCallRepairHandler(
+  input: KtxToolCallRepairHandlerInput,
 ): ToolCallRepairFunction<ToolSet> {
   const runGenerateText = input.generateText ?? generateText;
 

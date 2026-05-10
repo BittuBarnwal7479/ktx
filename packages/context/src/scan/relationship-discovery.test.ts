@@ -1,21 +1,21 @@
-import type { KloLlmProvider } from '@klo/llm';
+import type { KtxLlmProvider } from '@ktx/llm';
 import Database from 'better-sqlite3';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { buildDefaultKloProjectConfig } from '../project/config.js';
-import { snapshotToKloEnrichedSchema } from './local-enrichment.js';
+import { buildDefaultKtxProjectConfig } from '../project/config.js';
+import { snapshotToKtxEnrichedSchema } from './local-enrichment.js';
 import {
-  loadKloRelationshipBenchmarkFixture,
-  maskKloRelationshipBenchmarkSnapshot,
+  loadKtxRelationshipBenchmarkFixture,
+  maskKtxRelationshipBenchmarkSnapshot,
 } from './relationship-benchmarks.js';
-import { discoverKloRelationships } from './relationship-discovery.js';
-import { createKloConnectorCapabilities } from './types.js';
-import type { KloQueryResult, KloReadOnlyQueryInput, KloScanConnector, KloScanContext, KloSchemaSnapshot } from './types.js';
+import { discoverKtxRelationships } from './relationship-discovery.js';
+import { createKtxConnectorCapabilities } from './types.js';
+import type { KtxQueryResult, KtxReadOnlyQueryInput, KtxScanConnector, KtxScanContext, KtxSchemaSnapshot } from './types.js';
 
 class InMemorySqliteExecutor {
   readonly db = new Database(':memory:');
   queryCount = 0;
 
-  executeReadOnly(input: KloReadOnlyQueryInput, _ctx: KloScanContext): Promise<KloQueryResult> {
+  executeReadOnly(input: KtxReadOnlyQueryInput, _ctx: KtxScanContext): Promise<KtxQueryResult> {
     this.queryCount += 1;
     const rows = this.db.prepare(input.sql).all() as Record<string, unknown>[];
     const headers = Object.keys(rows[0] ?? {});
@@ -32,7 +32,7 @@ class InMemorySqliteExecutor {
   }
 }
 
-function snapshot(): KloSchemaSnapshot {
+function snapshot(): KtxSchemaSnapshot {
   return {
     connectionId: 'warehouse',
     driver: 'sqlite',
@@ -102,7 +102,7 @@ function snapshot(): KloSchemaSnapshot {
   };
 }
 
-function declaredForeignKeySnapshot(): KloSchemaSnapshot {
+function declaredForeignKeySnapshot(): KtxSchemaSnapshot {
   const source = snapshot();
   return {
     ...source,
@@ -131,7 +131,7 @@ function declaredForeignKeySnapshot(): KloSchemaSnapshot {
   };
 }
 
-function naturalKeySnapshot(): KloSchemaSnapshot {
+function naturalKeySnapshot(): KtxSchemaSnapshot {
   return {
     connectionId: 'warehouse',
     driver: 'sqlite',
@@ -201,11 +201,11 @@ function naturalKeySnapshot(): KloSchemaSnapshot {
   };
 }
 
-function connector(executor: InMemorySqliteExecutor | null): KloScanConnector {
+function connector(executor: InMemorySqliteExecutor | null): KtxScanConnector {
   return {
     id: 'sqlite:test',
     driver: 'sqlite',
-    capabilities: createKloConnectorCapabilities({
+    capabilities: createKtxConnectorCapabilities({
       readOnlySql: executor !== null,
       columnStats: executor !== null,
       tableSampling: false,
@@ -216,11 +216,11 @@ function connector(executor: InMemorySqliteExecutor | null): KloScanConnector {
   };
 }
 
-function llmProvider(): KloLlmProvider {
+function llmProvider(): KtxLlmProvider {
   const model = { modelId: 'claude-sonnet-4-6', provider: 'anthropic' };
   return {
-    getModel: vi.fn(() => model as ReturnType<KloLlmProvider['getModel']>),
-    getModelByName: vi.fn(() => model as ReturnType<KloLlmProvider['getModelByName']>),
+    getModel: vi.fn(() => model as ReturnType<KtxLlmProvider['getModel']>),
+    getModelByName: vi.fn(() => model as ReturnType<KtxLlmProvider['getModelByName']>),
     cacheMarker: vi.fn(),
     repairToolCallHandler: vi.fn(),
     thinkingProviderOptions: vi.fn(() => ({})),
@@ -236,17 +236,17 @@ function llmProvider(): KloLlmProvider {
           cacheTools: true,
           cacheHistory: true,
           vertexFallbackTo5m: false,
-        }) as ReturnType<KloLlmProvider['promptCachingConfig']>,
+        }) as ReturnType<KtxLlmProvider['promptCachingConfig']>,
     ),
-    activeBackend: vi.fn(() => 'anthropic' as ReturnType<KloLlmProvider['activeBackend']>),
+    activeBackend: vi.fn(() => 'anthropic' as ReturnType<KtxLlmProvider['activeBackend']>),
   };
 }
 
 function relationshipSettings() {
-  return buildDefaultKloProjectConfig('warehouse').scan.relationships;
+  return buildDefaultKtxProjectConfig('warehouse').scan.relationships;
 }
 
-function llmOnlyRelationshipSnapshot(): KloSchemaSnapshot {
+function llmOnlyRelationshipSnapshot(): KtxSchemaSnapshot {
   return {
     connectionId: 'warehouse',
     driver: 'sqlite',
@@ -324,11 +324,11 @@ describe('production relationship discovery', () => {
       INSERT INTO orders (id, account_id) VALUES (10, 1), (11, 1), (12, 2);
     `);
 
-    const result = await discoverKloRelationships({
+    const result = await discoverKtxRelationships({
       connectionId: 'warehouse',
       driver: 'sqlite',
       connector: connector(executor),
-      schema: snapshotToKloEnrichedSchema(snapshot()),
+      schema: snapshotToKtxEnrichedSchema(snapshot()),
       context: { runId: 'relationship-run-1' },
       settings: relationshipSettings(),
     });
@@ -363,14 +363,14 @@ describe('production relationship discovery', () => {
     `);
 
     const schema = naturalKeySnapshot();
-    const result = await discoverKloRelationships({
+    const result = await discoverKtxRelationships({
       connectionId: 'warehouse',
       driver: 'sqlite',
       connector: {
         ...connector(executor),
         introspect: async () => schema,
       },
-      schema: snapshotToKloEnrichedSchema(schema),
+      schema: snapshotToKtxEnrichedSchema(schema),
       context: { runId: 'natural-key-relationship-run' },
       settings: relationshipSettings(),
     });
@@ -403,7 +403,7 @@ describe('production relationship discovery', () => {
     `);
 
     const sourceSnapshot = llmOnlyRelationshipSnapshot();
-    const schema = snapshotToKloEnrichedSchema(
+    const schema = snapshotToKtxEnrichedSchema(
       sourceSnapshot,
       new Map([
         ['customers.id', [1, 0, 0]],
@@ -413,7 +413,7 @@ describe('production relationship discovery', () => {
       ]),
     );
 
-    const result = await discoverKloRelationships({
+    const result = await discoverKtxRelationships({
       connectionId: 'warehouse',
       driver: 'sqlite',
       connector: {
@@ -446,11 +446,11 @@ describe('production relationship discovery', () => {
   });
 
   it('keeps candidates review-only when read-only SQL is unavailable', async () => {
-    const result = await discoverKloRelationships({
+    const result = await discoverKtxRelationships({
       connectionId: 'warehouse',
       driver: 'sqlite',
       connector: connector(null),
-      schema: snapshotToKloEnrichedSchema(snapshot()),
+      schema: snapshotToKtxEnrichedSchema(snapshot()),
       context: { runId: 'relationship-run-no-sql' },
       settings: relationshipSettings(),
     });
@@ -464,7 +464,7 @@ describe('production relationship discovery', () => {
     });
     expect(result.warnings).toContainEqual({
       code: 'connector_capability_missing',
-      message: 'KLO scan connector cannot run read-only SQL relationship validation',
+      message: 'KTX scan connector cannot run read-only SQL relationship validation',
       recoverable: true,
       metadata: { capability: 'readOnlySql' },
     });
@@ -472,11 +472,11 @@ describe('production relationship discovery', () => {
 
   it('accepts formal metadata relationships when read-only SQL is unavailable', async () => {
     const sourceSnapshot = declaredForeignKeySnapshot();
-    const result = await discoverKloRelationships({
+    const result = await discoverKtxRelationships({
       connectionId: 'warehouse',
       driver: 'sqlite',
       connector: connector(null),
-      schema: snapshotToKloEnrichedSchema(sourceSnapshot),
+      schema: snapshotToKtxEnrichedSchema(sourceSnapshot),
       context: { runId: 'formal-metadata-no-sql' },
       settings: relationshipSettings(),
     });
@@ -521,11 +521,11 @@ describe('production relationship discovery', () => {
       },
     }));
 
-    const result = await discoverKloRelationships({
+    const result = await discoverKtxRelationships({
       connectionId: 'warehouse',
       driver: 'sqlite',
       connector: connector(executor),
-      schema: snapshotToKloEnrichedSchema(llmOnlyRelationshipSnapshot()),
+      schema: snapshotToKtxEnrichedSchema(llmOnlyRelationshipSnapshot()),
       context: { runId: 'llm-relationship-orchestrator' },
       settings: relationshipSettings(),
       llmProvider: llmProvider(),
@@ -557,16 +557,16 @@ describe('production relationship discovery', () => {
     `);
 
     const settings = {
-      ...buildDefaultKloProjectConfig('warehouse').scan.relationships,
+      ...buildDefaultKtxProjectConfig('warehouse').scan.relationships,
       acceptThreshold: 0.99,
       reviewThreshold: 0.55,
     };
 
-    const result = await discoverKloRelationships({
+    const result = await discoverKtxRelationships({
       connectionId: 'warehouse',
       driver: 'sqlite',
       connector: connector(executor),
-      schema: snapshotToKloEnrichedSchema(snapshot()),
+      schema: snapshotToKtxEnrichedSchema(snapshot()),
       context: { runId: 'configured-thresholds' },
       settings,
     });
@@ -623,17 +623,17 @@ describe('production relationship discovery', () => {
       ],
     });
 
-    const result = await discoverKloRelationships({
+    const result = await discoverKtxRelationships({
       connectionId: 'warehouse',
       driver: 'sqlite',
       connector: {
         ...connector(executor),
         introspect: async () => richSnapshot,
       },
-      schema: snapshotToKloEnrichedSchema(richSnapshot),
+      schema: snapshotToKtxEnrichedSchema(richSnapshot),
       context: { runId: 'candidate-cap' },
       settings: {
-        ...buildDefaultKloProjectConfig('warehouse').scan.relationships,
+        ...buildDefaultKtxProjectConfig('warehouse').scan.relationships,
         maxCandidatesPerColumn: 1,
       },
     });
@@ -652,13 +652,13 @@ describe('production relationship discovery', () => {
       '../../test/fixtures/relationship-benchmarks/composite_keys_no_declared_constraints',
       import.meta.url,
     );
-    const fixture = await loadKloRelationshipBenchmarkFixture(fixtureRoot.pathname);
-    const maskedSnapshot = maskKloRelationshipBenchmarkSnapshot(fixture.snapshot, 'declared_pks_and_declared_fks_removed');
+    const fixture = await loadKtxRelationshipBenchmarkFixture(fixtureRoot.pathname);
+    const maskedSnapshot = maskKtxRelationshipBenchmarkSnapshot(fixture.snapshot, 'declared_pks_and_declared_fks_removed');
     const database = new Database(fixture.dataPath ?? '', { readonly: true, fileMustExist: true });
-    const testConnector: KloScanConnector = {
+    const testConnector: KtxScanConnector = {
       id: 'sqlite:composite',
       driver: 'sqlite',
-      capabilities: createKloConnectorCapabilities({
+      capabilities: createKtxConnectorCapabilities({
         readOnlySql: true,
         columnStats: true,
         tableSampling: false,
@@ -677,11 +677,11 @@ describe('production relationship discovery', () => {
       },
     };
 
-    const result = await discoverKloRelationships({
+    const result = await discoverKtxRelationships({
       connectionId: maskedSnapshot.connectionId,
       driver: maskedSnapshot.driver,
       connector: testConnector,
-      schema: snapshotToKloEnrichedSchema(maskedSnapshot, new Map()),
+      schema: snapshotToKtxEnrichedSchema(maskedSnapshot, new Map()),
       context: { runId: 'test:production-composite' },
       settings: relationshipSettings(),
     });

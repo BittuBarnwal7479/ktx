@@ -1,5 +1,5 @@
 import YAML from 'yaml';
-import type { KloFileStorePort, KloLogger } from '../core/index.js';
+import type { KtxFileStorePort, KtxLogger } from '../core/index.js';
 import { noopLogger } from '../core/index.js';
 import type { SlConnectionCatalogPort, SlPythonPort } from './ports.js';
 import { isOverlaySource, sourceDefinitionSchema, sourceOverlaySchema } from './schemas.js';
@@ -36,10 +36,10 @@ function formatPortError(error: unknown, fallback: string): string {
 
 export class SemanticLayerService {
   constructor(
-    private readonly configService: KloFileStorePort,
+    private readonly configService: KtxFileStorePort,
     private readonly connections: SlConnectionCatalogPort,
     private readonly python: SlPythonPort,
-    private readonly logger: KloLogger = noopLogger,
+    private readonly logger: KtxLogger = noopLogger,
   ) {}
 
   /**
@@ -49,7 +49,7 @@ export class SemanticLayerService {
    */
   forWorktree(workdir: string): SemanticLayerService {
     return new SemanticLayerService(
-      this.configService.forWorktree(workdir) as KloFileStorePort,
+      this.configService.forWorktree(workdir) as KtxFileStorePort,
       this.connections,
       this.python,
       this.logger,

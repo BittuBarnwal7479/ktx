@@ -1,17 +1,17 @@
-import type { KloSchemaDimensionType } from './types.js';
+import type { KtxSchemaDimensionType } from './types.js';
 
-export interface KloColumnTypeMapping {
+export interface KtxColumnTypeMapping {
   normalizedType: string;
-  dimensionType: KloSchemaDimensionType;
+  dimensionType: KtxSchemaDimensionType;
 }
 
-export function normalizeKloNativeType(nativeType: string): string {
+export function normalizeKtxNativeType(nativeType: string): string {
   const normalized = nativeType.toLowerCase().replace(/\([^)]*\)/g, '').replace(/\s+/g, ' ').trim();
   return normalized.length > 0 ? normalized : 'unknown';
 }
 
-export function inferKloDimensionType(nativeType: string): KloSchemaDimensionType {
-  const normalized = normalizeKloNativeType(nativeType);
+export function inferKtxDimensionType(nativeType: string): KtxSchemaDimensionType {
+  const normalized = normalizeKtxNativeType(nativeType);
   if (/\b(bool|boolean)\b/.test(normalized)) {
     return 'boolean';
   }
@@ -24,9 +24,9 @@ export function inferKloDimensionType(nativeType: string): KloSchemaDimensionTyp
   return 'string';
 }
 
-export function kloColumnTypeMappingFromNative(nativeType: string): KloColumnTypeMapping {
+export function ktxColumnTypeMappingFromNative(nativeType: string): KtxColumnTypeMapping {
   return {
-    normalizedType: normalizeKloNativeType(nativeType),
-    dimensionType: inferKloDimensionType(nativeType),
+    normalizedType: normalizeKtxNativeType(nativeType),
+    dimensionType: inferKtxDimensionType(nativeType),
   };
 }

@@ -1,7 +1,7 @@
 export type {
-  KloSqlQueryExecutionInput,
-  KloSqlQueryExecutionResult,
-  KloSqlQueryExecutorPort,
+  KtxSqlQueryExecutionInput,
+  KtxSqlQueryExecutionResult,
+  KtxSqlQueryExecutorPort,
 } from './query-executor.js';
 export { createDefaultLocalQueryExecutor, type DefaultLocalQueryExecutorOptions } from './local-query-executor.js';
 export { normalizeQueryRows } from './query-executor.js';
@@ -17,11 +17,11 @@ export {
   type LocalWarehouseDescriptor,
 } from './local-warehouse-descriptor.js';
 export {
-  KLO_NOTION_ORG_KNOWLEDGE_WARNING,
+  KTX_NOTION_ORG_KNOWLEDGE_WARNING,
   notionConnectionToPullConfig,
   parseNotionConnectionConfig,
   redactNotionConnectionConfig,
   resolveNotionAuthToken,
-  type KloNotionConnectionConfig,
-  type RedactedKloNotionConnectionConfig,
+  type KtxNotionConnectionConfig,
+  type RedactedKtxNotionConnectionConfig,
 } from './notion-config.js';

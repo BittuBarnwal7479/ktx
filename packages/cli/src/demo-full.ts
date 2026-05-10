@@ -1,4 +1,4 @@
-import { resolveKloConfigReference } from '@klo/context/core';
+import { resolveKtxConfigReference } from '@ktx/context/core';
 import {
   createMemoryFlowLiveBuffer,
   ingestReportToMemoryFlowReplay,
@@ -7,12 +7,12 @@ import {
   type LocalIngestResult,
   type MemoryFlowReplayInput,
   type RunLocalIngestOptions,
-} from '@klo/context/ingest';
-import { loadKloProject, type KloLocalProject } from '@klo/context/project';
-import { runLocalScan, type LocalScanRunResult } from '@klo/context/scan';
+} from '@ktx/context/ingest';
+import { loadKtxProject, type KtxLocalProject } from '@ktx/context/project';
+import { runLocalScan, type LocalScanRunResult } from '@ktx/context/scan';
 import { DEMO_ADAPTER, DEMO_CONNECTION_ID, DEMO_FULL_JOB_ID, ensureDemoProject } from './demo-assets.js';
 import { runDemoScan } from './demo-scan.js';
-import { createKloCliLocalIngestAdapters } from './local-adapters.js';
+import { createKtxCliLocalIngestAdapters } from './local-adapters.js';
 import { formatNextStepLines } from './next-steps.js';
 
 interface DemoFullOptions {
@@ -24,7 +24,7 @@ interface DemoFullOptions {
 }
 
 export interface DemoFullResult {
-  project: KloLocalProject;
+  project: KtxLocalProject;
   scan: LocalScanRunResult;
   ingest: LocalIngestResult;
   report: IngestReportSnapshot;
@@ -54,7 +54,7 @@ function savedCounts(report: IngestReportSnapshot): { wikiCount: number; slCount
 }
 
 export function fullDemoCredentialStatus(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   env: NodeJS.ProcessEnv = process.env,
 ): FullDemoCredentialStatus {
   const llm = project.config.llm;
@@ -62,14 +62,14 @@ export function fullDemoCredentialStatus(
     return { status: 'unsupported-provider', provider: llm.provider.backend };
   }
 
-  if (llm.provider.backend === 'anthropic' && !resolveKloConfigReference(llm.provider.anthropic?.api_key, env)) {
+  if (llm.provider.backend === 'anthropic' && !resolveKtxConfigReference(llm.provider.anthropic?.api_key, env)) {
     return { status: 'missing-anthropic-key' };
   }
 
   return { status: 'ready' };
 }
 
-export function assertFullDemoCredentials(project: KloLocalProject, env: NodeJS.ProcessEnv = process.env): void {
+export function assertFullDemoCredentials(project: KtxLocalProject, env: NodeJS.ProcessEnv = process.env): void {
   const llm = project.config.llm;
   const status = fullDemoCredentialStatus(project, env);
   if (status.status === 'ready') {
@@ -78,13 +78,13 @@ export function assertFullDemoCredentials(project: KloLocalProject, env: NodeJS.
 
   if (status.status === 'unsupported-provider') {
     throw new Error(
-      'klo setup demo --mode full requires llm.provider.backend: anthropic, vertex, or gateway. Run `klo setup demo init --force --no-input` to recreate the demo config, or run `klo setup demo --mode seeded --no-input` without credentials.',
+      'ktx setup demo --mode full requires llm.provider.backend: anthropic, vertex, or gateway. Run `ktx setup demo init --force --no-input` to recreate the demo config, or run `ktx setup demo --mode seeded --no-input` without credentials.',
     );
   }
 
   if (llm.provider.backend === 'anthropic') {
     throw new Error(
-      'klo setup demo --mode full needs ANTHROPIC_API_KEY. Export ANTHROPIC_API_KEY and rerun `klo setup demo --mode full --no-input`, or run `klo setup demo --mode seeded --no-input` without credentials.',
+      'ktx setup demo --mode full needs ANTHROPIC_API_KEY. Export ANTHROPIC_API_KEY and rerun `ktx setup demo --mode full --no-input`, or run `ktx setup demo --mode seeded --no-input` without credentials.',
     );
   }
 }
@@ -110,7 +110,7 @@ function initialFullReplay(projectDir: string): MemoryFlowReplayInput {
 
 export async function runDemoFull(options: DemoFullOptions): Promise<DemoFullResult> {
   await ensureDemoProjectForReuse(options.projectDir);
-  const project = await loadKloProject({ projectDir: options.projectDir });
+  const project = await loadKtxProject({ projectDir: options.projectDir });
   assertFullDemoCredentials(project, options.env);
 
   const { result: scan } = await runDemoScan({
@@ -125,7 +125,7 @@ export async function runDemoFull(options: DemoFullOptions): Promise<DemoFullRes
   const executeLocalIngest = options.runLocalIngest ?? runLocalIngest;
   const ingest = await executeLocalIngest({
     project,
-    adapters: createKloCliLocalIngestAdapters(project),
+    adapters: createKtxCliLocalIngestAdapters(project),
     adapter: DEMO_ADAPTER,
     connectionId: DEMO_CONNECTION_ID,
     trigger: 'manual_resync',
@@ -152,9 +152,9 @@ export function formatFullDemoSummary(report: IngestReportSnapshot): string {
     `Sync: ${report.body.syncId}`,
     `Saved memory: ${counts.wikiCount} wiki, ${counts.slCount} semantic layer`,
     `Provenance rows: ${report.body.provenanceRows.length}`,
-    'Next: klo setup demo inspect',
-    '  Shows the files, semantic-layer sources, and memory KLO just produced.',
-    'Next: klo setup demo replay',
+    'Next: ktx setup demo inspect',
+    '  Shows the files, semantic-layer sources, and memory KTX just produced.',
+    'Next: ktx setup demo replay',
     '  Replays the same visual story without calling the LLM again.',
     '',
   ].join('\n');
@@ -176,7 +176,7 @@ export function formatCleanDemoSummary(report: IngestReportSnapshot, projectDir:
   const conflictCount = report.body.conflictsResolved.length;
   const areasAnalyzed = workUnits.filter((wu) => wu.actions.length > 0).length;
 
-  const lines: string[] = ['', '★ KLO finished ingesting your data', ''];
+  const lines: string[] = ['', '★ KTX finished ingesting your data', ''];
 
   if (areasAnalyzed > 0) {
     lines.push(`  ✓ Analyzed ${areasAnalyzed} business area${areasAnalyzed === 1 ? '' : 's'}`);
@@ -187,7 +187,7 @@ export function formatCleanDemoSummary(report: IngestReportSnapshot, projectDir:
   lines.push('');
 
   if (counts.slCount > 0 || counts.wikiCount > 0) {
-    lines.push('  KLO created:');
+    lines.push('  KTX created:');
     if (counts.slCount > 0) lines.push(`    📊 ${counts.slCount} query definition${counts.slCount === 1 ? '' : 's'} — so agents can write accurate SQL for your data`);
     if (counts.wikiCount > 0) lines.push(`    📝 ${counts.wikiCount} knowledge page${counts.wikiCount === 1 ? '' : 's'} — so agents understand your business context`);
     lines.push('');
@@ -206,7 +206,7 @@ export function formatCleanDemoSummary(report: IngestReportSnapshot, projectDir:
   lines.push('  What to do next:');
   lines.push(...formatNextStepLines());
   lines.push('');
-  lines.push(`  Your KLO project files are at: ${projectDir}`);
+  lines.push(`  Your KTX project files are at: ${projectDir}`);
   lines.push('');
 
   return lines.join('\n');

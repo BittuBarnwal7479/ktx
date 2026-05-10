@@ -10,7 +10,7 @@ import {
   type HistoricSqlMetadata,
   type HistoricSqlPullConfig,
   type HistoricSqlUsage,
-  type KloPostgresQueryClient,
+  type KtxPostgresQueryClient,
   type PostgresPgssAggregateRow,
   type PostgresPgssReader,
   type PostgresPgssRow,
@@ -43,7 +43,7 @@ export type PgssBaseline = z.infer<typeof pgssBaselineSchema>;
 export interface StagePgStatStatementsTemplatesInput {
   stagedDir: string;
   connectionId: string;
-  queryClient: KloPostgresQueryClient;
+  queryClient: KtxPostgresQueryClient;
   reader: PostgresPgssReader;
   sqlAnalysis: SqlAnalysisPort;
   pullConfig: HistoricSqlPullConfig;
@@ -95,7 +95,7 @@ function pgssTemplateId(row: Pick<PostgresPgssRow, 'dbid' | 'queryid'>): string 
 }
 
 export function pgssBaselinePath(rootDir: string | undefined, connectionId: string): string {
-  return join(rootDir ?? join(process.cwd(), '.klo/cache/historic-sql'), connectionId, 'pgss-baseline.json');
+  return join(rootDir ?? join(process.cwd(), '.ktx/cache/historic-sql'), connectionId, 'pgss-baseline.json');
 }
 
 export async function readPgssBaseline(path: string): Promise<PgssBaseline | null> {

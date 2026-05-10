@@ -1,33 +1,33 @@
 import type { LanguageModel, TelemetrySettings, ToolCallRepairFunction, ToolSet } from 'ai';
 
-export const KLO_MODEL_ROLES = ['default', 'triage', 'candidateExtraction', 'curator', 'reconcile', 'repair'] as const;
+export const KTX_MODEL_ROLES = ['default', 'triage', 'candidateExtraction', 'curator', 'reconcile', 'repair'] as const;
 
-export type KloModelRole = (typeof KLO_MODEL_ROLES)[number];
-export type KloLlmBackend = 'anthropic' | 'vertex' | 'gateway';
-export type KloPromptCacheTtl = '5m' | '1h';
+export type KtxModelRole = (typeof KTX_MODEL_ROLES)[number];
+export type KtxLlmBackend = 'anthropic' | 'vertex' | 'gateway';
+export type KtxPromptCacheTtl = '5m' | '1h';
 
-export type KloJsonValue =
+export type KtxJsonValue =
   | null
   | string
   | number
   | boolean
-  | KloJsonValue[]
-  | { [key: string]: KloJsonValue | undefined };
+  | KtxJsonValue[]
+  | { [key: string]: KtxJsonValue | undefined };
 
-export type KloProviderOptions = Record<string, { [key: string]: KloJsonValue | undefined }>;
+export type KtxProviderOptions = Record<string, { [key: string]: KtxJsonValue | undefined }>;
 
-export interface KloPromptCachingConfig {
+export interface KtxPromptCachingConfig {
   enabled: boolean;
-  systemTtl: KloPromptCacheTtl;
-  toolsTtl: KloPromptCacheTtl;
-  historyTtl: KloPromptCacheTtl;
+  systemTtl: KtxPromptCacheTtl;
+  toolsTtl: KtxPromptCacheTtl;
+  historyTtl: KtxPromptCacheTtl;
   cacheSystem: boolean;
   cacheTools: boolean;
   cacheHistory: boolean;
   vertexFallbackTo5m: boolean;
 }
 
-export interface KloTokenUsageEvent {
+export interface KtxTokenUsageEvent {
   source?: string;
   modelId?: string;
   inputTokens?: number;
@@ -35,60 +35,60 @@ export interface KloTokenUsageEvent {
   totalTokens?: number;
 }
 
-export interface KloLlmConfig {
-  backend: KloLlmBackend;
+export interface KtxLlmConfig {
+  backend: KtxLlmBackend;
   vertex?: { project?: string; location: string };
   anthropic?: { apiKey?: string; baseURL?: string };
   gateway?: { baseURL?: string; apiKey?: string };
-  modelSlots: { default: string } & Partial<Record<KloModelRole, string>>;
-  promptCaching?: Partial<KloPromptCachingConfig>;
+  modelSlots: { default: string } & Partial<Record<KtxModelRole, string>>;
+  promptCaching?: Partial<KtxPromptCachingConfig>;
   telemetry?: {
     experimentalTelemetry?: TelemetrySettings;
-    onTokenUsage?: (event: KloTokenUsageEvent) => void;
+    onTokenUsage?: (event: KtxTokenUsageEvent) => void;
   };
 }
 
-export interface KloLlmProvider {
-  getModel(role: KloModelRole): LanguageModel;
+export interface KtxLlmProvider {
+  getModel(role: KtxModelRole): LanguageModel;
   getModelByName(modelId: string): LanguageModel;
   cacheMarker(
-    ttl: KloPromptCacheTtl,
+    ttl: KtxPromptCacheTtl,
     model?: LanguageModel | string,
-  ): { anthropic: { cacheControl: { type: 'ephemeral'; ttl: KloPromptCacheTtl } } } | undefined;
+  ): { anthropic: { cacheControl: { type: 'ephemeral'; ttl: KtxPromptCacheTtl } } } | undefined;
   repairToolCallHandler(options?: { source?: string }): ToolCallRepairFunction<ToolSet>;
-  thinkingProviderOptions(role: KloModelRole, budgetTokens: number): KloProviderOptions;
+  thinkingProviderOptions(role: KtxModelRole, budgetTokens: number): KtxProviderOptions;
   telemetryConfig(): TelemetrySettings | undefined;
-  promptCachingConfig(): KloPromptCachingConfig;
-  activeBackend(): KloLlmBackend;
+  promptCachingConfig(): KtxPromptCachingConfig;
+  activeBackend(): KtxLlmBackend;
 }
 
-export type KloEmbeddingBackend = 'openai' | 'deterministic' | 'sentence-transformers';
+export type KtxEmbeddingBackend = 'openai' | 'deterministic' | 'sentence-transformers';
 
-export interface KloEmbeddingTokenUsageEvent {
-  backend: KloEmbeddingBackend;
+export interface KtxEmbeddingTokenUsageEvent {
+  backend: KtxEmbeddingBackend;
   model: string;
   inputCount: number;
   totalTokens?: number;
 }
 
-export interface KloEmbeddingConfig {
-  backend: KloEmbeddingBackend;
+export interface KtxEmbeddingConfig {
+  backend: KtxEmbeddingBackend;
   model: string;
   dimensions: number;
   openai?: { apiKey?: string; baseURL?: string };
   sentenceTransformers?: { baseURL: string; pathPrefix?: string };
   batchSize?: number;
-  telemetry?: { onTokenUsage?: (event: KloEmbeddingTokenUsageEvent) => void };
+  telemetry?: { onTokenUsage?: (event: KtxEmbeddingTokenUsageEvent) => void };
 }
 
-export interface KloEmbeddingProvider {
+export interface KtxEmbeddingProvider {
   readonly dimensions: number;
   readonly maxBatchSize: number;
   embed(text: string): Promise<number[]>;
   embedMany(texts: string[]): Promise<number[][]>;
 }
 
-export interface KloPromptParts {
+export interface KtxPromptParts {
   staticSystem: string;
   dynamicSystem?: string;
   leadingUserContext?: string;

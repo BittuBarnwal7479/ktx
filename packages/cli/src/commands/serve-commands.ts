@@ -1,6 +1,6 @@
 import { type Command, InvalidArgumentError } from '@commander-js/extra-typings';
-import { type KloCliCommandContext, resolveCommandProjectDir } from '../cli-program.js';
-import type { KloServeArgs } from '../serve.js';
+import { type KtxCliCommandContext, resolveCommandProjectDir } from '../cli-program.js';
+import type { KtxServeArgs } from '../serve.js';
 import { profileMark } from '../startup-profile.js';
 
 profileMark('module:commands/serve-commands');
@@ -12,10 +12,10 @@ function parseMcp(value: string): 'stdio' {
   throw new InvalidArgumentError('Only stdio is supported in this phase');
 }
 
-export function registerServeCommands(program: Command, context: KloCliCommandContext): void {
+export function registerServeCommands(program: Command, context: KtxCliCommandContext): void {
   program
     .command('serve')
-    .description('Run standalone KLO services such as MCP stdio')
+    .description('Run standalone KTX services such as MCP stdio')
     .requiredOption('--mcp <mode>', 'MCP transport mode', parseMcp)
     .option('--user-id <id>', 'Local user id', 'local')
     .option('--semantic-compute', 'Enable semantic-layer compute', false)
@@ -30,7 +30,7 @@ export function registerServeCommands(program: Command, context: KloCliCommandCo
       if (options.executeQueries === true && !semanticCompute) {
         throw new Error('--execute-queries requires --semantic-compute');
       }
-      const args: KloServeArgs = {
+      const args: KtxServeArgs = {
         mcp: options.mcp,
         projectDir: resolveCommandProjectDir(command),
         userId: options.userId,
@@ -41,7 +41,7 @@ export function registerServeCommands(program: Command, context: KloCliCommandCo
         memoryCapture: options.memoryCapture === true,
         memoryModel: options.memoryModel,
       };
-      const runner = context.deps.serveStdio ?? (await import('../serve.js')).runKloServeStdio;
+      const runner = context.deps.serveStdio ?? (await import('../serve.js')).runKtxServeStdio;
       context.setExitCode(await runner(args));
     });
 }

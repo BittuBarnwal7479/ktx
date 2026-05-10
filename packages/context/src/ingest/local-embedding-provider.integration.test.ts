@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { createLocalKloEmbeddingProviderFromConfig, KloIngestEmbeddingPortAdapter } from '../llm/index.js';
+import { createLocalKtxEmbeddingProviderFromConfig, KtxIngestEmbeddingPortAdapter } from '../llm/index.js';
 import { CandidateDedupService } from './context-candidates/candidate-dedup.service.js';
 import { ContextEvidenceIndexService } from './context-evidence/context-evidence-index.service.js';
 import { SqliteContextEvidenceStore } from './context-evidence/sqlite-context-evidence-store.js';
@@ -14,8 +14,8 @@ describe('local ingest embedding providers with SQLite ingest stores', () => {
   let stagedDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-local-ingest-embedding-'));
-    dbPath = join(tempDir, '.klo', 'db.sqlite');
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-local-ingest-embedding-'));
+    dbPath = join(tempDir, '.ktx', 'db.sqlite');
     stagedDir = join(tempDir, 'staged');
     await mkdir(join(stagedDir, 'pages', 'revenue'), { recursive: true });
     await writeFile(
@@ -44,7 +44,7 @@ describe('local ingest embedding providers with SQLite ingest stores', () => {
   });
 
   function embeddings() {
-    const provider = createLocalKloEmbeddingProviderFromConfig({
+    const provider = createLocalKtxEmbeddingProviderFromConfig({
       backend: 'deterministic',
       dimensions: 8,
       batchSize: 4,
@@ -52,7 +52,7 @@ describe('local ingest embedding providers with SQLite ingest stores', () => {
     if (!provider) {
       throw new Error('deterministic local embedding provider was not created');
     }
-    return new KloIngestEmbeddingPortAdapter(provider);
+    return new KtxIngestEmbeddingPortAdapter(provider);
   }
 
   it('indexes and searches context evidence using a package-owned local embedding provider', async () => {

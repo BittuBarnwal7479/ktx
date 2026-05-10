@@ -2,13 +2,13 @@ import { mkdtemp, readFile, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { initKloProject, loadKloProject } from './project.js';
+import { initKtxProject, loadKtxProject } from './project.js';
 
-describe('KLO local project runtime', () => {
+describe('KTX local project runtime', () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-project-runtime-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-project-runtime-'));
   });
 
   afterEach(async () => {
@@ -18,7 +18,7 @@ describe('KLO local project runtime', () => {
   it('initializes the standalone project layout and commits it', async () => {
     const projectDir = join(tempDir, 'warehouse');
 
-    const result = await initKloProject({
+    const result = await initKtxProject({
       projectDir,
       projectName: 'warehouse',
       authorName: 'Agent',
@@ -28,8 +28,8 @@ describe('KLO local project runtime', () => {
     expect(result.projectDir).toBe(projectDir);
     expect(result.config.project).toBe('warehouse');
     expect(result.commitHash).toMatch(/^[0-9a-f]{40}$/);
-    await expect(readFile(join(projectDir, 'klo.yaml'), 'utf-8')).resolves.toContain('project: warehouse');
-    const gitignore = await readFile(join(projectDir, '.klo/.gitignore'), 'utf-8');
+    await expect(readFile(join(projectDir, 'ktx.yaml'), 'utf-8')).resolves.toContain('project: warehouse');
+    const gitignore = await readFile(join(projectDir, '.ktx/.gitignore'), 'utf-8');
     expect(gitignore).toContain('cache/');
     expect(gitignore).toContain('db.sqlite');
     expect(gitignore).toContain('secrets/');
@@ -44,9 +44,9 @@ describe('KLO local project runtime', () => {
 
   it('loads an initialized project with a working file store', async () => {
     const projectDir = join(tempDir, 'warehouse');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
 
-    const loaded = await loadKloProject({ projectDir });
+    const loaded = await loadKtxProject({ projectDir });
     await loaded.fileStore.writeFile(
       'knowledge/global/revenue.md',
       '# Revenue\n',
@@ -63,13 +63,13 @@ describe('KLO local project runtime', () => {
 
   it('rejects reinitializing an existing project unless force is set', async () => {
     const projectDir = join(tempDir, 'warehouse');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
 
-    await expect(initKloProject({ projectDir, projectName: 'warehouse' })).rejects.toThrow(
-      'Project already contains klo.yaml',
+    await expect(initKtxProject({ projectDir, projectName: 'warehouse' })).rejects.toThrow(
+      'Project already contains ktx.yaml',
     );
 
-    await expect(initKloProject({ projectDir, projectName: 'warehouse-v2', force: true })).resolves.toMatchObject({
+    await expect(initKtxProject({ projectDir, projectName: 'warehouse-v2', force: true })).resolves.toMatchObject({
       config: {
         project: 'warehouse-v2',
       },

@@ -1,7 +1,7 @@
 {
-  "name": "@klo/connector-posthog",
+  "name": "@ktx/connector-posthog",
   "version": "0.0.0-private",
-  "description": "PostHog connector package for KLO scan interfaces",
+  "description": "PostHog connector package for KTX scan interfaces",
   "private": true,
   "type": "module",
   "engines": {
@@ -26,7 +26,7 @@
     "type-check": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@klo/context": "workspace:*"
+    "@ktx/context": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^24.3.0",

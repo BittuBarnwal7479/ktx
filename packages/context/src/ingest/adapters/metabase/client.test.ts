@@ -199,7 +199,7 @@ describe('MetabaseClient admin auth helpers', () => {
     );
 
     await expect(client.getPermissionGroups()).resolves.toEqual([{ id: 2, name: 'Administrators' }]);
-    await expect(client.createApiKey({ name: 'KLO CLI test', groupId: 2 })).resolves.toBe(mintedMetabaseCredential);
+    await expect(client.createApiKey({ name: 'KTX CLI test', groupId: 2 })).resolves.toBe(mintedMetabaseCredential);
 
     expect(fetchMock).toHaveBeenNthCalledWith(
       1,
@@ -214,7 +214,7 @@ describe('MetabaseClient admin auth helpers', () => {
       'https://metabase.example.test/api/api-key',
       expect.objectContaining({
         method: 'POST',
-        body: JSON.stringify({ name: 'KLO CLI test', group_id: 2 }),
+        body: JSON.stringify({ name: 'KTX CLI test', group_id: 2 }),
       }),
     );
   });
@@ -343,7 +343,7 @@ describe('MetabaseClient.getResolvedSql', () => {
     expect(result?.resolutionStatus).toBe('resolved');
     const sql = result?.resolvedSql ?? '';
     expect(sql.startsWith('--')).toBe(true);
-    expect(sql).toMatch(/KLO_PLACEHOLDER_WARNING/);
+    expect(sql).toMatch(/KTX_PLACEHOLDER_WARNING/);
     expect(sql).toMatch(/\bid\b/);
     expect(sql).toMatch(/\bn\b/);
   });

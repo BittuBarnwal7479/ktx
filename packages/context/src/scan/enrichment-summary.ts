@@ -1,6 +1,6 @@
-import type { KloScanEnrichmentSummary, KloScanMode } from './types.js';
+import type { KtxScanEnrichmentSummary, KtxScanMode } from './types.js';
 
-export const skippedKloScanEnrichmentSummary: KloScanEnrichmentSummary = {
+export const skippedKtxScanEnrichmentSummary: KtxScanEnrichmentSummary = {
   dataDictionary: 'skipped',
   tableDescriptions: 'skipped',
   columnDescriptions: 'skipped',
@@ -10,10 +10,10 @@ export const skippedKloScanEnrichmentSummary: KloScanEnrichmentSummary = {
   statisticalValidation: 'skipped',
 };
 
-export function failedKloScanEnrichmentSummary(
-  mode: KloScanMode,
+export function failedKtxScanEnrichmentSummary(
+  mode: KtxScanMode,
   detectRelationships = false,
-): KloScanEnrichmentSummary {
+): KtxScanEnrichmentSummary {
   if (mode === 'enriched') {
     return {
       dataDictionary: 'failed',
@@ -28,16 +28,16 @@ export function failedKloScanEnrichmentSummary(
 
   if (mode === 'relationships' || detectRelationships) {
     return {
-      ...skippedKloScanEnrichmentSummary,
+      ...skippedKtxScanEnrichmentSummary,
       deterministicRelationships: 'failed',
       statisticalValidation: 'failed',
     };
   }
 
-  return skippedKloScanEnrichmentSummary;
+  return skippedKtxScanEnrichmentSummary;
 }
 
-export function kloScanErrorMessage(error: unknown): string {
+export function ktxScanErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
   }

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { KloSchemaSnapshot } from '../../../scan/types.js';
-import { buildLiveDatabaseTableNaturalKey, kloSchemaSnapshotToExtractedSchema } from './extracted-schema.js';
+import type { KtxSchemaSnapshot } from '../../../scan/types.js';
+import { buildLiveDatabaseTableNaturalKey, ktxSchemaSnapshotToExtractedSchema } from './extracted-schema.js';
 
-function snapshot(): KloSchemaSnapshot {
+function snapshot(): KtxSchemaSnapshot {
   return {
     connectionId: 'conn-1',
     driver: 'postgres',
@@ -72,9 +72,9 @@ function snapshot(): KloSchemaSnapshot {
   };
 }
 
-describe('kloSchemaSnapshotToExtractedSchema', () => {
+describe('ktxSchemaSnapshotToExtractedSchema', () => {
   it('preserves structural table, column, comment, and key metadata', () => {
-    const extracted = kloSchemaSnapshotToExtractedSchema(snapshot());
+    const extracted = ktxSchemaSnapshotToExtractedSchema(snapshot());
 
     expect(extracted.tables).toEqual([
       {

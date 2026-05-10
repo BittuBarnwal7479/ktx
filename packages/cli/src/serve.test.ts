@@ -1,16 +1,16 @@
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import type { SourceAdapter } from '@klo/context/ingest';
-import { initKloProject } from '@klo/context/project';
+import type { SourceAdapter } from '@ktx/context/ingest';
+import { initKtxProject } from '@ktx/context/project';
 import { describe, expect, it, vi } from 'vitest';
-import { runKloServeStdio } from './serve.js';
+import { runKtxServeStdio } from './serve.js';
 
-describe('runKloServeStdio', () => {
+describe('runKtxServeStdio', () => {
   it('loads the project, creates local ports, and connects the server to stdio', async () => {
     const connect = vi.fn().mockResolvedValue(undefined);
     const project = {
-      projectDir: '/tmp/klo-project',
+      projectDir: '/tmp/ktx-project',
       config: {
         connections: {},
         llm: {
@@ -27,10 +27,10 @@ describe('runKloServeStdio', () => {
     let stderr = '';
 
     await expect(
-      runKloServeStdio(
+      runKtxServeStdio(
         {
           mcp: 'stdio',
-          projectDir: '/tmp/klo-project',
+          projectDir: '/tmp/ktx-project',
           userId: 'agent',
           semanticCompute: false,
           semanticComputeUrl: undefined,
@@ -49,7 +49,7 @@ describe('runKloServeStdio', () => {
       ),
     ).resolves.toBe(0);
 
-    expect(loadProject).toHaveBeenCalledWith({ projectDir: '/tmp/klo-project' });
+    expect(loadProject).toHaveBeenCalledWith({ projectDir: '/tmp/ktx-project' });
     expect(createContextTools).toHaveBeenCalledWith(
       project,
       expect.objectContaining({
@@ -62,26 +62,26 @@ describe('runKloServeStdio', () => {
       }),
     );
     expect(createServer).toHaveBeenCalledWith({
-      name: 'klo',
+      name: 'ktx',
       version: '0.0.0-private',
       userContext: { userId: 'agent' },
       contextTools,
       memoryCapture: undefined,
     });
     expect(connect).toHaveBeenCalledWith({ kind: 'stdio' });
-    expect(stderr).toContain('klo MCP server running on stdio for /tmp/klo-project');
+    expect(stderr).toContain('ktx MCP server running on stdio for /tmp/ktx-project');
   });
 
   it('enables local ingest ports by default when serving stdio', async () => {
-    const project = { projectDir: '/tmp/klo-project', config: { connections: {} } } as never;
+    const project = { projectDir: '/tmp/ktx-project', config: { connections: {} } } as never;
     const connect = vi.fn().mockResolvedValue(undefined);
     const createContextTools = vi.fn(() => ({ connections: { list: async () => [] } }));
 
     await expect(
-      runKloServeStdio(
+      runKtxServeStdio(
         {
           mcp: 'stdio',
-          projectDir: '/tmp/klo-project',
+          projectDir: '/tmp/ktx-project',
           userId: 'agent',
           semanticCompute: false,
           semanticComputeUrl: undefined,
@@ -114,17 +114,17 @@ describe('runKloServeStdio', () => {
   });
 
   it('passes daemon database introspection URL to MCP local ingest adapters', async () => {
-    const project = { projectDir: '/tmp/klo-project', config: { connections: {} } } as never;
+    const project = { projectDir: '/tmp/ktx-project', config: { connections: {} } } as never;
     const connect = vi.fn().mockResolvedValue(undefined);
     const createContextTools = vi.fn(() => ({ connections: { list: async () => [] } }));
     const createdAdapters: SourceAdapter[] = [];
     const createIngestAdapters = vi.fn(() => createdAdapters);
 
     await expect(
-      runKloServeStdio(
+      runKtxServeStdio(
         {
           mcp: 'stdio',
-          projectDir: '/tmp/klo-project',
+          projectDir: '/tmp/ktx-project',
           userId: 'agent',
           semanticCompute: false,
           semanticComputeUrl: undefined,
@@ -162,13 +162,13 @@ describe('runKloServeStdio', () => {
   });
 
   it('uses CLI-native local ingest adapters for standalone scan tools', async () => {
-    const project = { projectDir: '/tmp/klo-project', config: { connections: {} } } as never;
+    const project = { projectDir: '/tmp/ktx-project', config: { connections: {} } } as never;
     const createContextTools = vi.fn(() => ({}) as never);
 
-    await runKloServeStdio(
+    await runKtxServeStdio(
       {
         mcp: 'stdio',
-        projectDir: '/tmp/klo-project',
+        projectDir: '/tmp/ktx-project',
         userId: 'local',
         semanticCompute: false,
         executeQueries: false,
@@ -193,14 +193,14 @@ describe('runKloServeStdio', () => {
   });
 
   it('passes semantic compute to local project ports when enabled', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'klo-cli-serve-'));
+    const tempDir = await mkdtemp(join(tmpdir(), 'ktx-cli-serve-'));
     try {
-      const project = await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+      const project = await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
       const createContextTools = vi.fn(() => ({ connections: { list: async () => [] } }));
       const semanticLayerCompute = { query: vi.fn(), validateSources: vi.fn(), generateSources: vi.fn() };
 
       await expect(
-        runKloServeStdio(
+        runKtxServeStdio(
           {
             mcp: 'stdio',
             projectDir: project.projectDir,
@@ -242,16 +242,16 @@ describe('runKloServeStdio', () => {
   });
 
   it('uses the HTTP semantic compute port when a daemon URL is provided', async () => {
-    const project = { projectDir: '/tmp/klo-project', config: { connections: {} } } as never;
+    const project = { projectDir: '/tmp/ktx-project', config: { connections: {} } } as never;
     const semanticLayerCompute = { query: vi.fn(), validateSources: vi.fn(), generateSources: vi.fn() };
     const createHttpSemanticLayerCompute = vi.fn(() => semanticLayerCompute);
     const createContextTools = vi.fn(() => ({ connections: { list: async () => [] } }));
 
     await expect(
-      runKloServeStdio(
+      runKtxServeStdio(
         {
           mcp: 'stdio',
-          projectDir: '/tmp/klo-project',
+          projectDir: '/tmp/ktx-project',
           userId: 'agent',
           semanticCompute: true,
           semanticComputeUrl: 'http://127.0.0.1:8765',
@@ -281,17 +281,17 @@ describe('runKloServeStdio', () => {
   });
 
   it('passes a query executor to local project ports only when query execution is enabled', async () => {
-    const project = { projectDir: '/tmp/klo-project', config: { connections: {} } } as never;
+    const project = { projectDir: '/tmp/ktx-project', config: { connections: {} } } as never;
     const connect = vi.fn().mockResolvedValue(undefined);
     const createContextTools = vi.fn(() => ({ connections: { list: async () => [] } }));
     const semanticLayerCompute = { query: vi.fn(), validateSources: vi.fn(), generateSources: vi.fn() };
     const queryExecutor = { execute: vi.fn() };
 
     await expect(
-      runKloServeStdio(
+      runKtxServeStdio(
         {
           mcp: 'stdio',
-          projectDir: '/tmp/klo-project',
+          projectDir: '/tmp/ktx-project',
           userId: 'agent',
           semanticCompute: true,
           semanticComputeUrl: undefined,
@@ -331,7 +331,7 @@ describe('runKloServeStdio', () => {
 
   it('creates a local memory capture port when memory capture is enabled', async () => {
     const project = {
-      projectDir: '/tmp/klo-project',
+      projectDir: '/tmp/ktx-project',
       config: {
         connections: {},
         llm: {
@@ -348,10 +348,10 @@ describe('runKloServeStdio', () => {
     const createServer = vi.fn().mockReturnValue({ connect });
 
     await expect(
-      runKloServeStdio(
+      runKtxServeStdio(
         {
           mcp: 'stdio',
-          projectDir: '/tmp/klo-project',
+          projectDir: '/tmp/ktx-project',
           userId: 'agent',
           semanticCompute: false,
           semanticComputeUrl: undefined,
@@ -376,7 +376,7 @@ describe('runKloServeStdio', () => {
       semanticLayerCompute: undefined,
     });
     expect(createServer).toHaveBeenCalledWith({
-      name: 'klo',
+      name: 'ktx',
       version: '0.0.0-private',
       userContext: { userId: 'agent' },
       contextTools,
@@ -386,7 +386,7 @@ describe('runKloServeStdio', () => {
 
   it('reuses semantic compute for local memory capture when enabled', async () => {
     const project = {
-      projectDir: '/tmp/klo-project',
+      projectDir: '/tmp/ktx-project',
       config: {
         connections: {},
         llm: {
@@ -399,10 +399,10 @@ describe('runKloServeStdio', () => {
     const createMemoryCapture = vi.fn().mockReturnValue({ capture: vi.fn(), status: vi.fn() });
 
     await expect(
-      runKloServeStdio(
+      runKtxServeStdio(
         {
           mcp: 'stdio',
-          projectDir: '/tmp/klo-project',
+          projectDir: '/tmp/ktx-project',
           userId: 'agent',
           semanticCompute: true,
           semanticComputeUrl: undefined,

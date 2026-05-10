@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { type KloLogger, noopLogger } from '../../core/index.js';
+import { type KtxLogger, noopLogger } from '../../core/index.js';
 import type { JsonValue } from '../ports.js';
 import type { ContextCandidateStorePort } from './store.js';
 import type {
@@ -26,11 +26,11 @@ export interface ContextCandidateCarryforwardResult {
 export interface ContextCandidateCarryforwardServiceDeps {
   store: ContextCandidateStorePort;
   settings: ContextCandidateCarryforwardSettings;
-  logger?: KloLogger;
+  logger?: KtxLogger;
 }
 
 export class ContextCandidateCarryforwardService {
-  private readonly logger: KloLogger;
+  private readonly logger: KtxLogger;
 
   constructor(private readonly deps: ContextCandidateCarryforwardServiceDeps) {
     this.logger = deps.logger ?? noopLogger;

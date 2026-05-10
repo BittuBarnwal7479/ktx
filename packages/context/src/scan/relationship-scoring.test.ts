@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
   calibrateWeightsFromSyntheticFixtures,
-  defaultKloRelationshipScoreWeights,
-  normalizeKloRelationshipScoreWeights,
-  scoreKloRelationshipCandidate,
-  type KloRelationshipSignalVector,
+  defaultKtxRelationshipScoreWeights,
+  normalizeKtxRelationshipScoreWeights,
+  scoreKtxRelationshipCandidate,
+  type KtxRelationshipSignalVector,
 } from './relationship-scoring.js';
 
-function signals(overrides: Partial<KloRelationshipSignalVector> = {}): KloRelationshipSignalVector {
+function signals(overrides: Partial<KtxRelationshipSignalVector> = {}): KtxRelationshipSignalVector {
   return {
     nameSimilarity: 0.5,
     typeCompatibility: 1,
@@ -22,7 +22,7 @@ function signals(overrides: Partial<KloRelationshipSignalVector> = {}): KloRelat
 
 describe('relationship scoring', () => {
   it('scores stronger evidence higher without hard-gating on names', () => {
-    const weakNameStrongProfile = scoreKloRelationshipCandidate(
+    const weakNameStrongProfile = scoreKtxRelationshipCandidate(
       signals({
         nameSimilarity: 0.05,
         typeCompatibility: 1,
@@ -32,7 +32,7 @@ describe('relationship scoring', () => {
         structuralPrior: 0.7,
       }),
     );
-    const strongNameWeakProfile = scoreKloRelationshipCandidate(
+    const strongNameWeakProfile = scoreKtxRelationshipCandidate(
       signals({
         nameSimilarity: 0.95,
         typeCompatibility: 1,
@@ -49,7 +49,7 @@ describe('relationship scoring', () => {
   });
 
   it('normalizes partial and invalid weights into a usable vector', () => {
-    const weights = normalizeKloRelationshipScoreWeights({
+    const weights = normalizeKtxRelationshipScoreWeights({
       nameSimilarity: 3,
       typeCompatibility: -1,
       valueOverlap: Number.POSITIVE_INFINITY,
@@ -64,8 +64,8 @@ describe('relationship scoring', () => {
   });
 
   it('returns deterministic defaults as a defensive copy', () => {
-    const first = defaultKloRelationshipScoreWeights();
-    const second = defaultKloRelationshipScoreWeights();
+    const first = defaultKtxRelationshipScoreWeights();
+    const second = defaultKtxRelationshipScoreWeights();
 
     expect(first).toEqual(second);
     expect(first).not.toBe(second);

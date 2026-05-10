@@ -1,14 +1,14 @@
 import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { initKloProject, parseKloProjectConfig } from '@klo/context/project';
+import { initKtxProject, parseKtxProjectConfig } from '@ktx/context/project';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  type KloSetupDatabaseDriver,
-  type KloSetupDatabasesPromptAdapter,
-  runKloSetupDatabasesStep,
+  type KtxSetupDatabaseDriver,
+  type KtxSetupDatabasesPromptAdapter,
+  runKtxSetupDatabasesStep,
 } from './setup-databases.js';
-import type { KloCliIo } from './cli-runtime.js';
+import type { KtxCliIo } from './cli-runtime.js';
 
 function makeIo() {
   let stdout = '';
@@ -37,7 +37,7 @@ function makePromptAdapter(options: {
   selectValues?: string[];
   textValues?: (string | undefined)[];
   passwordValues?: (string | undefined)[];
-}): KloSetupDatabasesPromptAdapter {
+}): KtxSetupDatabasesPromptAdapter {
   const multiselectValues = [...(options.multiselectValues ?? [])];
   const selectValues = [...(options.selectValues ?? [])];
   const textValues = [...(options.textValues ?? [])];
@@ -52,7 +52,7 @@ function makePromptAdapter(options: {
 }
 
 function connectionNamePrompt(label: string): string {
-  return `Name this ${label} connection\nKLO will use this short name in commands and config. You can rename it now.`;
+  return `Name this ${label} connection\nKTX will use this short name in commands and config. You can rename it now.`;
 }
 
 function textInputPrompt(message: string): string {
@@ -68,8 +68,8 @@ describe('setup databases step', () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-setup-databases-'));
-    await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-setup-databases-'));
+    await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
   });
 
   afterEach(async () => {
@@ -79,7 +79,7 @@ describe('setup databases step', () => {
   it('shows every supported primary source in the interactive checklist', async () => {
     const prompts = makePromptAdapter({ multiselectValues: [['back']] });
 
-    const result = await runKloSetupDatabasesStep(
+    const result = await runKtxSetupDatabasesStep(
       { projectDir: tempDir, inputMode: 'auto', skipDatabases: false, databaseSchemas: [] },
       makeIo().io,
       { prompts },
@@ -88,7 +88,7 @@ describe('setup databases step', () => {
     expect(result.status).toBe('back');
     expect(prompts.multiselect).toHaveBeenCalledWith({
       message:
-        'Which primary sources should KLO connect to?\n' +
+        'Which primary sources should KTX connect to?\n' +
         'Use Up/Down to move, Space to select or unselect, Enter to confirm, Escape to go back, or Ctrl+C to exit.',
       options: [
         { value: 'sqlite', label: 'SQLite' },
@@ -110,7 +110,7 @@ describe('setup databases step', () => {
       selectValues: ['choose'],
     });
 
-    const result = await runKloSetupDatabasesStep(
+    const result = await runKtxSetupDatabasesStep(
       { projectDir: tempDir, inputMode: 'auto', skipDatabases: false, databaseSchemas: [] },
       io.io,
       { prompts },
@@ -119,7 +119,7 @@ describe('setup databases step', () => {
     expect(result.status).toBe('back');
     expect(prompts.select).not.toHaveBeenCalled();
     expect(io.stdout()).toContain(
-      'KLO cannot work without at least one primary source. Select a source or press Escape to go back.',
+      'KTX cannot work without at least one primary source. Select a source or press Escape to go back.',
     );
     expect(prompts.multiselect).toHaveBeenCalledTimes(2);
   });
@@ -130,7 +130,7 @@ describe('setup databases step', () => {
       selectValues: ['back'],
     });
 
-    const result = await runKloSetupDatabasesStep(
+    const result = await runKtxSetupDatabasesStep(
       { projectDir: tempDir, inputMode: 'auto', skipDatabases: false, databaseSchemas: [] },
       makeIo().io,
       { prompts },
@@ -147,7 +147,7 @@ describe('setup databases step', () => {
     });
     expect(prompts.multiselect).toHaveBeenCalledTimes(2);
     expect(vi.mocked(prompts.multiselect).mock.calls[1]?.[0].message).toBe(
-      'Which primary sources should KLO connect to?\n' +
+      'Which primary sources should KTX connect to?\n' +
         'Use Up/Down to move, Space to select or unselect, Enter to confirm, Escape to go back, or Ctrl+C to exit.',
     );
   });
@@ -155,7 +155,7 @@ describe('setup databases step', () => {
   it('lets Back leave database setup when the driver came from flags', async () => {
     const prompts = makePromptAdapter({ selectValues: ['back'] });
 
-    const result = await runKloSetupDatabasesStep(
+    const result = await runKtxSetupDatabasesStep(
       {
         projectDir: tempDir,
         inputMode: 'auto',
@@ -174,7 +174,7 @@ describe('setup databases step', () => {
 
   it('labels existing database connections with the database type', async () => {
     await writeFile(
-      join(tempDir, 'klo.yaml'),
+      join(tempDir, 'ktx.yaml'),
       [
         'project: warehouse',
         'connections:',
@@ -188,7 +188,7 @@ describe('setup databases step', () => {
     );
     const prompts = makePromptAdapter({ selectValues: ['back'] });
 
-    const result = await runKloSetupDatabasesStep(
+    const result = await runKtxSetupDatabasesStep(
       {
         projectDir: tempDir,
         inputMode: 'auto',
@@ -220,7 +220,7 @@ describe('setup databases step', () => {
     const testConnection = vi.fn(async () => 0);
     const scanConnection = vi.fn(async () => 0);
 
-    const result = await runKloSetupDatabasesStep(
+    const result = await runKtxSetupDatabasesStep(
       {
         projectDir: tempDir,
         inputMode: 'auto',
@@ -240,7 +240,7 @@ describe('setup databases step', () => {
     });
     expect(testConnection).toHaveBeenCalledWith(tempDir, 'postgres-warehouse', expect.anything());
     expect(scanConnection).toHaveBeenCalledWith(tempDir, 'postgres-warehouse', expect.anything());
-    const config = parseKloProjectConfig(await readFile(join(tempDir, 'klo.yaml'), 'utf-8'));
+    const config = parseKtxProjectConfig(await readFile(join(tempDir, 'ktx.yaml'), 'utf-8'));
     expect(config.connections['postgres-warehouse']).toEqual({
       driver: 'postgres',
       url: 'env:DATABASE_URL',
@@ -254,7 +254,7 @@ describe('setup databases step', () => {
       textValues: ['', 'env:DATABASE_URL'],
     });
 
-    const result = await runKloSetupDatabasesStep(
+    const result = await runKtxSetupDatabasesStep(
       {
         projectDir: tempDir,
         inputMode: 'auto',
@@ -283,7 +283,7 @@ describe('setup databases step', () => {
 
   it('uses clear setup prompts for every new database connection type', async () => {
     const cases: Array<{
-      driver: KloSetupDatabaseDriver;
+      driver: KtxSetupDatabaseDriver;
       selectValues?: string[];
       textValues: string[];
       passwordValues?: string[];
@@ -433,7 +433,7 @@ describe('setup databases step', () => {
         textValues: testCase.textValues,
         passwordValues: testCase.passwordValues,
       });
-      const result = await runKloSetupDatabasesStep(
+      const result = await runKtxSetupDatabasesStep(
         {
           projectDir: tempDir,
           inputMode: 'auto',
@@ -476,7 +476,7 @@ describe('setup databases step', () => {
     const testConnection = vi.fn(async () => 0);
     const scanConnection = vi.fn(async () => 0);
 
-    const result = await runKloSetupDatabasesStep(
+    const result = await runKtxSetupDatabasesStep(
       { projectDir: tempDir, inputMode: 'auto', skipDatabases: false, databaseSchemas: [] },
       makeIo().io,
       { prompts, testConnection, scanConnection },
@@ -498,7 +498,7 @@ describe('setup databases step', () => {
 
   it('shows a configured primary source menu instead of the type checklist when a primary source exists', async () => {
     await writeFile(
-      join(tempDir, 'klo.yaml'),
+      join(tempDir, 'ktx.yaml'),
       [
         'project: warehouse',
         'connections:',
@@ -519,7 +519,7 @@ describe('setup databases step', () => {
     const testConnection = vi.fn(async () => 0);
     const scanConnection = vi.fn(async () => 0);
 
-    const result = await runKloSetupDatabasesStep(
+    const result = await runKtxSetupDatabasesStep(
       { projectDir: tempDir, inputMode: 'auto', skipDatabases: false, databaseSchemas: [] },
       makeIo().io,
       { prompts, testConnection, scanConnection },
@@ -541,7 +541,7 @@ describe('setup databases step', () => {
 
   it('preserves existing primary source ids when adding another source from the configured menu', async () => {
     await writeFile(
-      join(tempDir, 'klo.yaml'),
+      join(tempDir, 'ktx.yaml'),
       [
         'project: warehouse',
         'connections:',
@@ -566,7 +566,7 @@ describe('setup databases step', () => {
     const testConnection = vi.fn(async () => 0);
     const scanConnection = vi.fn(async () => 0);
 
-    const result = await runKloSetupDatabasesStep(
+    const result = await runKtxSetupDatabasesStep(
       { projectDir: tempDir, inputMode: 'auto', skipDatabases: false, databaseSchemas: [] },
       makeIo().io,
       { prompts, testConnection, scanConnection },
@@ -588,7 +588,7 @@ describe('setup databases step', () => {
     });
     expect(testConnection).toHaveBeenCalledTimes(1);
     expect(testConnection).toHaveBeenCalledWith(tempDir, 'mysql-warehouse', expect.anything());
-    const config = parseKloProjectConfig(await readFile(join(tempDir, 'klo.yaml'), 'utf-8'));
+    const config = parseKtxProjectConfig(await readFile(join(tempDir, 'ktx.yaml'), 'utf-8'));
     expect(config.setup?.database_connection_ids).toEqual(['warehouse', 'mysql-warehouse']);
   });
 
@@ -601,7 +601,7 @@ describe('setup databases step', () => {
     const testConnection = vi.fn(async () => 0);
     const scanConnection = vi.fn(async () => 0);
 
-    const result = await runKloSetupDatabasesStep(
+    const result = await runKtxSetupDatabasesStep(
       { projectDir: tempDir, inputMode: 'auto', skipDatabases: false, databaseSchemas: [] },
       makeIo().io,
       { prompts, testConnection, scanConnection },
@@ -621,7 +621,7 @@ describe('setup databases step', () => {
         { value: 'back', label: 'Back' },
       ],
     });
-    const config = parseKloProjectConfig(await readFile(join(tempDir, 'klo.yaml'), 'utf-8'));
+    const config = parseKtxProjectConfig(await readFile(join(tempDir, 'ktx.yaml'), 'utf-8'));
     expect(config.setup?.database_connection_ids).toEqual(['postgres-warehouse', 'mysql-warehouse']);
   });
 
@@ -635,7 +635,7 @@ describe('setup databases step', () => {
     const testConnection = vi.fn(async () => 0);
     const scanConnection = vi.fn(async () => 0);
 
-    const result = await runKloSetupDatabasesStep(
+    const result = await runKtxSetupDatabasesStep(
       { projectDir: tempDir, inputMode: 'auto', skipDatabases: false, databaseSchemas: [] },
       io.io,
       { prompts, testConnection, scanConnection },
@@ -647,7 +647,7 @@ describe('setup databases step', () => {
       connectionIds: ['postgres-warehouse'],
     });
     expect(prompts.multiselect).toHaveBeenCalledTimes(2);
-    expect(io.stdout()).not.toContain('KLO cannot work without at least one primary source');
+    expect(io.stdout()).not.toContain('KTX cannot work without at least one primary source');
     expect(prompts.select).toHaveBeenNthCalledWith(2, {
       message: 'Primary sources already configured: postgres-warehouse\nWhat would you like to do?',
       options: [
@@ -660,7 +660,7 @@ describe('setup databases step', () => {
 
   it('returns to configured primary menu when submitting empty driver selection with pre-existing source', async () => {
     await writeFile(
-      join(tempDir, 'klo.yaml'),
+      join(tempDir, 'ktx.yaml'),
       [
         'project: warehouse',
         'connections:',
@@ -683,14 +683,14 @@ describe('setup databases step', () => {
       selectValues: ['add', 'continue'],
     });
 
-    const result = await runKloSetupDatabasesStep(
+    const result = await runKtxSetupDatabasesStep(
       { projectDir: tempDir, inputMode: 'auto', skipDatabases: false, databaseSchemas: [] },
       io.io,
       { prompts },
     );
 
     expect(result).toEqual({ status: 'ready', projectDir: tempDir, connectionIds: ['warehouse'] });
-    expect(io.stdout()).not.toContain('KLO cannot work without at least one primary source');
+    expect(io.stdout()).not.toContain('KTX cannot work without at least one primary source');
     expect(prompts.select).toHaveBeenNthCalledWith(2, {
       message: 'Primary sources already configured: warehouse\nWhat would you like to do?',
       options: [
@@ -709,7 +709,7 @@ describe('setup databases step', () => {
     const testConnection = vi.fn(async () => 0);
     const scanConnection = vi.fn(async () => 0);
 
-    const result = await runKloSetupDatabasesStep(
+    const result = await runKtxSetupDatabasesStep(
       {
         projectDir: tempDir,
         inputMode: 'auto',
@@ -735,7 +735,7 @@ describe('setup databases step', () => {
       textValues: ['', 'db.example.com', '5432', ''],
     });
 
-    const result = await runKloSetupDatabasesStep(
+    const result = await runKtxSetupDatabasesStep(
       { projectDir: tempDir, inputMode: 'auto', skipDatabases: false, databaseSchemas: [] },
       makeIo().io,
       {
@@ -765,7 +765,7 @@ describe('setup databases step', () => {
     const testConnection = vi.fn(async () => 0);
     const scanConnection = vi.fn(async () => 0);
 
-    const result = await runKloSetupDatabasesStep(
+    const result = await runKtxSetupDatabasesStep(
       {
         projectDir: tempDir,
         inputMode: 'auto',
@@ -783,7 +783,7 @@ describe('setup databases step', () => {
     expect(scanConnection).not.toHaveBeenCalled();
   });
 
-  it('builds a Postgres connection from individual fields and stores password in .klo/secrets', async () => {
+  it('builds a Postgres connection from individual fields and stores password in .ktx/secrets', async () => {
     const io = makeIo();
     const prompts = makePromptAdapter({
       selectValues: ['fields'],
@@ -793,7 +793,7 @@ describe('setup databases step', () => {
     const testConnection = vi.fn(async () => 0);
     const scanConnection = vi.fn(async () => 0);
 
-    const result = await runKloSetupDatabasesStep(
+    const result = await runKtxSetupDatabasesStep(
       {
         projectDir: tempDir,
         inputMode: 'auto',
@@ -806,7 +806,7 @@ describe('setup databases step', () => {
     );
 
     expect(result.status).toBe('ready');
-    const config = parseKloProjectConfig(await readFile(join(tempDir, 'klo.yaml'), 'utf-8'));
+    const config = parseKtxProjectConfig(await readFile(join(tempDir, 'ktx.yaml'), 'utf-8'));
     const connection = config.connections['postgres-warehouse'];
     expect(connection).toMatchObject({
       driver: 'postgres',
@@ -817,14 +817,14 @@ describe('setup databases step', () => {
       readonly: true,
     });
     expect(connection.password).toMatch(/^file:/);
-    const secretPath = join(tempDir, '.klo/secrets/postgres-warehouse-password');
+    const secretPath = join(tempDir, '.ktx/secrets/postgres-warehouse-password');
     await expect(readFile(secretPath, 'utf-8')).resolves.toBe('s3cret\n');
     if (process.platform !== 'win32') {
       expect((await stat(secretPath)).mode & 0o777).toBe(0o600);
     }
   });
 
-  it('stores credential-bearing pasted URLs in .klo/secrets automatically', async () => {
+  it('stores credential-bearing pasted URLs in .ktx/secrets automatically', async () => {
     const io = makeIo();
     const prompts = makePromptAdapter({
       selectValues: ['url'],
@@ -833,7 +833,7 @@ describe('setup databases step', () => {
     const testConnection = vi.fn(async () => 0);
     const scanConnection = vi.fn(async () => 0);
 
-    const result = await runKloSetupDatabasesStep(
+    const result = await runKtxSetupDatabasesStep(
       {
         projectDir: tempDir,
         inputMode: 'auto',
@@ -846,11 +846,11 @@ describe('setup databases step', () => {
     );
 
     expect(result.status).toBe('ready');
-    const config = parseKloProjectConfig(await readFile(join(tempDir, 'klo.yaml'), 'utf-8'));
+    const config = parseKtxProjectConfig(await readFile(join(tempDir, 'ktx.yaml'), 'utf-8'));
     const connection = config.connections['postgres-warehouse'];
-    expect(connection.url).toBe(`file:${resolve(tempDir, '.klo/secrets/postgres-warehouse-url')}`);
+    expect(connection.url).toBe(`file:${resolve(tempDir, '.ktx/secrets/postgres-warehouse-url')}`);
     expect(connection.driver).toBe('postgres');
-    const secretContent = await readFile(join(tempDir, '.klo/secrets/postgres-warehouse-url'), 'utf-8');
+    const secretContent = await readFile(join(tempDir, '.ktx/secrets/postgres-warehouse-url'), 'utf-8');
     expect(secretContent).toBe('postgresql://myuser:s3cret@db.example.com:5432/analytics\n'); // pragma: allowlist secret
   });
 
@@ -860,20 +860,20 @@ describe('setup databases step', () => {
       selectValues: ['url'],
       textValues: ['', 'env:DATABASE_URL'],
     });
-    const testConnection = vi.fn(async (_projectDir: string, _connectionId: string, commandIo: KloCliIo) => {
+    const testConnection = vi.fn(async (_projectDir: string, _connectionId: string, commandIo: KtxCliIo) => {
       commandIo.stdout.write('Connection test passed: postgres-warehouse\n');
       commandIo.stdout.write('Driver: postgres\n');
       commandIo.stdout.write('Tables: 2\n');
       return 0;
     });
-    const scanConnection = vi.fn(async (_projectDir: string, _connectionId: string, commandIo: KloCliIo) => {
+    const scanConnection = vi.fn(async (_projectDir: string, _connectionId: string, commandIo: KtxCliIo) => {
       commandIo.stdout.write('Scanning postgres-warehouse for context. Large primary sources can take a while.\n');
       commandIo.stdout.write('[5%] Preparing scan\n');
       commandIo.stdout.write('[15%] Inspecting database schema\n');
       commandIo.stdout.write('[55%] Semantic layer comparison found 2 changes across 2 tables\n');
       commandIo.stdout.write('[70%] Writing schema artifacts\n');
       commandIo.stdout.write('[100%] Scan completed\n');
-      commandIo.stdout.write('✓ KLO scan completed\n');
+      commandIo.stdout.write('✓ KTX scan completed\n');
       commandIo.stdout.write('Status: done\n');
       commandIo.stdout.write('Run: local-moywh3ky\n');
       commandIo.stdout.write('Connection: postgres-warehouse\n');
@@ -895,11 +895,11 @@ describe('setup databases step', () => {
       commandIo.stdout.write('  Raw sources: raw-sources/postgres-warehouse/live-database/2026-05-09-221301-local-moywh3ky\n');
       commandIo.stdout.write('  Schema shards: 1\n\n');
       commandIo.stdout.write('Next:\n');
-      commandIo.stdout.write(`  klo dev scan status --project-dir ${tempDir} local-moywh3ky\n`);
+      commandIo.stdout.write(`  ktx dev scan status --project-dir ${tempDir} local-moywh3ky\n`);
       return 0;
     });
 
-    const result = await runKloSetupDatabasesStep(
+    const result = await runKtxSetupDatabasesStep(
       {
         projectDir: tempDir,
         inputMode: 'auto',
@@ -941,7 +941,7 @@ describe('setup databases step', () => {
     const testConnection = vi.fn(async () => 0);
     const scanConnection = vi.fn(async () => 0);
 
-    const result = await runKloSetupDatabasesStep(
+    const result = await runKtxSetupDatabasesStep(
       {
         projectDir: tempDir,
         inputMode: 'auto',
@@ -954,7 +954,7 @@ describe('setup databases step', () => {
     );
 
     expect(result.status).toBe('ready');
-    const config = parseKloProjectConfig(await readFile(join(tempDir, 'klo.yaml'), 'utf-8'));
+    const config = parseKtxProjectConfig(await readFile(join(tempDir, 'ktx.yaml'), 'utf-8'));
     expect(config.connections['postgres-warehouse']).toMatchObject({
       driver: 'postgres',
       url: 'env:DATABASE_URL',
@@ -967,7 +967,7 @@ describe('setup databases step', () => {
     const testConnection = vi.fn(async () => 0);
     const scanConnection = vi.fn(async () => 0);
 
-    const result = await runKloSetupDatabasesStep(
+    const result = await runKtxSetupDatabasesStep(
       {
         projectDir: tempDir,
         inputMode: 'auto',
@@ -984,7 +984,7 @@ describe('setup databases step', () => {
     expect(result.status).toBe('ready');
     expect(testConnection).toHaveBeenCalledWith(tempDir, 'warehouse', expect.anything());
     expect(scanConnection).toHaveBeenCalledWith(tempDir, 'warehouse', expect.anything());
-    const config = parseKloProjectConfig(await readFile(join(tempDir, 'klo.yaml'), 'utf-8'));
+    const config = parseKtxProjectConfig(await readFile(join(tempDir, 'ktx.yaml'), 'utf-8'));
     expect(config.connections.warehouse).toEqual({
       driver: 'postgres',
       url: 'env:DATABASE_URL',
@@ -1005,7 +1005,7 @@ describe('setup databases step', () => {
     const testConnection = vi.fn(async () => 0);
     const scanConnection = vi.fn(async () => 0);
 
-    const result = await runKloSetupDatabasesStep(
+    const result = await runKtxSetupDatabasesStep(
       {
         projectDir: tempDir,
         inputMode: 'disabled',
@@ -1023,7 +1023,7 @@ describe('setup databases step', () => {
     expect(prompts.text).not.toHaveBeenCalled();
     expect(testConnection).toHaveBeenCalledWith(tempDir, 'warehouse', expect.anything());
     expect(scanConnection).toHaveBeenCalledWith(tempDir, 'warehouse', expect.anything());
-    const config = parseKloProjectConfig(await readFile(join(tempDir, 'klo.yaml'), 'utf-8'));
+    const config = parseKtxProjectConfig(await readFile(join(tempDir, 'ktx.yaml'), 'utf-8'));
     expect(config.connections.warehouse).toEqual({
       driver: 'sqlite',
       path: './warehouse.sqlite',
@@ -1037,7 +1037,7 @@ describe('setup databases step', () => {
 
   it('selects multiple existing connections and validates each before recording setup ids', async () => {
     await writeFile(
-      join(tempDir, 'klo.yaml'),
+      join(tempDir, 'ktx.yaml'),
       [
         'project: warehouse',
         'connections:',
@@ -1063,7 +1063,7 @@ describe('setup databases step', () => {
     const testConnection = vi.fn(async () => 0);
     const scanConnection = vi.fn(async () => 0);
 
-    const result = await runKloSetupDatabasesStep(
+    const result = await runKtxSetupDatabasesStep(
       {
         projectDir: tempDir,
         inputMode: 'disabled',
@@ -1078,14 +1078,14 @@ describe('setup databases step', () => {
     expect(result.status).toBe('ready');
     expect(testConnection).toHaveBeenCalledTimes(2);
     expect(scanConnection).toHaveBeenCalledTimes(2);
-    const config = parseKloProjectConfig(await readFile(join(tempDir, 'klo.yaml'), 'utf-8'));
+    const config = parseKtxProjectConfig(await readFile(join(tempDir, 'ktx.yaml'), 'utf-8'));
     expect(config.setup?.database_connection_ids).toEqual(['warehouse', 'analytics']);
     expect(config.setup?.completed_steps).toContain('databases');
   });
 
   it('keeps the connection config but does not mark databases complete when scanning fails', async () => {
     const io = makeIo();
-    const result = await runKloSetupDatabasesStep(
+    const result = await runKtxSetupDatabasesStep(
       {
         projectDir: tempDir,
         inputMode: 'disabled',
@@ -1103,7 +1103,7 @@ describe('setup databases step', () => {
     );
 
     expect(result.status).toBe('failed');
-    const config = parseKloProjectConfig(await readFile(join(tempDir, 'klo.yaml'), 'utf-8'));
+    const config = parseKtxProjectConfig(await readFile(join(tempDir, 'ktx.yaml'), 'utf-8'));
     expect(config.connections.warehouse).toMatchObject({ driver: 'postgres', url: 'env:DATABASE_URL' });
     expect(config.setup?.completed_steps ?? []).not.toContain('databases');
     expect(io.stderr()).toContain('Structural scan failed for warehouse.');
@@ -1111,7 +1111,7 @@ describe('setup databases step', () => {
 
   it('writes Historic SQL config for supported Snowflake databases after validation succeeds', async () => {
     const io = makeIo();
-    const result = await runKloSetupDatabasesStep(
+    const result = await runKtxSetupDatabasesStep(
       {
         projectDir: tempDir,
         inputMode: 'disabled',
@@ -1136,7 +1136,7 @@ describe('setup databases step', () => {
     );
 
     expect(result.status).toBe('ready');
-    const config = parseKloProjectConfig(await readFile(join(tempDir, 'klo.yaml'), 'utf-8'));
+    const config = parseKtxProjectConfig(await readFile(join(tempDir, 'ktx.yaml'), 'utf-8'));
     expect(config.connections.snowflake).toMatchObject({
       driver: 'snowflake',
       authMethod: 'password',
@@ -1153,7 +1153,7 @@ describe('setup databases step', () => {
 
   it('writes Postgres Historic SQL config with minCalls and ignores window/redaction output', async () => {
     const io = makeIo();
-    const result = await runKloSetupDatabasesStep(
+    const result = await runKtxSetupDatabasesStep(
       {
         projectDir: tempDir,
         inputMode: 'disabled',
@@ -1177,7 +1177,7 @@ describe('setup databases step', () => {
     );
 
     expect(result.status).toBe('ready');
-    const config = parseKloProjectConfig(await readFile(join(tempDir, 'klo.yaml'), 'utf-8'));
+    const config = parseKtxProjectConfig(await readFile(join(tempDir, 'ktx.yaml'), 'utf-8'));
     expect(config.connections.warehouse).toMatchObject({
       driver: 'postgres',
       url: 'env:DATABASE_URL',
@@ -1199,7 +1199,7 @@ describe('setup databases step', () => {
 
   it('writes Historic SQL config for supported existing database connections', async () => {
     await writeFile(
-      join(tempDir, 'klo.yaml'),
+      join(tempDir, 'ktx.yaml'),
       [
         'project: warehouse',
         'connections:',
@@ -1214,7 +1214,7 @@ describe('setup databases step', () => {
     );
     const io = makeIo();
 
-    const result = await runKloSetupDatabasesStep(
+    const result = await runKtxSetupDatabasesStep(
       {
         projectDir: tempDir,
         inputMode: 'disabled',
@@ -1232,7 +1232,7 @@ describe('setup databases step', () => {
     );
 
     expect(result.status).toBe('ready');
-    const config = parseKloProjectConfig(await readFile(join(tempDir, 'klo.yaml'), 'utf-8'));
+    const config = parseKtxProjectConfig(await readFile(join(tempDir, 'ktx.yaml'), 'utf-8'));
     expect(config.connections.analytics).toMatchObject({
       historicSql: {
         enabled: true,
@@ -1247,7 +1247,7 @@ describe('setup databases step', () => {
 
   it('enables Historic SQL on an existing Postgres connection', async () => {
     await writeFile(
-      join(tempDir, 'klo.yaml'),
+      join(tempDir, 'ktx.yaml'),
       [
         'project: warehouse',
         'connections:',
@@ -1261,7 +1261,7 @@ describe('setup databases step', () => {
     );
     const io = makeIo();
 
-    const result = await runKloSetupDatabasesStep(
+    const result = await runKtxSetupDatabasesStep(
       {
         projectDir: tempDir,
         inputMode: 'disabled',
@@ -1280,7 +1280,7 @@ describe('setup databases step', () => {
     );
 
     expect(result.status).toBe('ready');
-    const config = parseKloProjectConfig(await readFile(join(tempDir, 'klo.yaml'), 'utf-8'));
+    const config = parseKtxProjectConfig(await readFile(join(tempDir, 'ktx.yaml'), 'utf-8'));
     expect(config.connections.warehouse).toMatchObject({
       historicSql: {
         enabled: true,
@@ -1303,7 +1303,7 @@ describe('setup databases step', () => {
       ],
     }));
 
-    const result = await runKloSetupDatabasesStep(
+    const result = await runKtxSetupDatabasesStep(
       {
         projectDir: tempDir,
         inputMode: 'disabled',
@@ -1339,7 +1339,7 @@ describe('setup databases step', () => {
     const io = makeIo();
     const historicSqlProbe = vi.fn(async () => ({ ok: true, lines: [] }));
 
-    const result = await runKloSetupDatabasesStep(
+    const result = await runKtxSetupDatabasesStep(
       {
         projectDir: tempDir,
         inputMode: 'disabled',
@@ -1365,7 +1365,7 @@ describe('setup databases step', () => {
   it('returns missing input when non-interactive database flags are incomplete', async () => {
     const io = makeIo();
 
-    const result = await runKloSetupDatabasesStep(
+    const result = await runKtxSetupDatabasesStep(
       {
         projectDir: tempDir,
         inputMode: 'disabled',
@@ -1383,14 +1383,14 @@ describe('setup databases step', () => {
   it('leaves setup incomplete when primary sources are skipped', async () => {
     const io = makeIo();
 
-    const result = await runKloSetupDatabasesStep(
+    const result = await runKtxSetupDatabasesStep(
       { projectDir: tempDir, inputMode: 'disabled', databaseSchemas: [], skipDatabases: true },
       io.io,
     );
 
     expect(result.status).toBe('skipped');
-    expect(io.stdout()).toContain('KLO cannot work until you add a primary source.');
-    const config = parseKloProjectConfig(await readFile(join(tempDir, 'klo.yaml'), 'utf-8'));
+    expect(io.stdout()).toContain('KTX cannot work until you add a primary source.');
+    const config = parseKtxProjectConfig(await readFile(join(tempDir, 'ktx.yaml'), 'utf-8'));
     expect(config.setup?.completed_steps ?? []).not.toContain('databases');
   });
 });

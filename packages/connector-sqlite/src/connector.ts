@@ -3,28 +3,28 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { isAbsolute, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { assertReadOnlySql, limitSqlForExecution, normalizeQueryRows } from '@klo/context/connections';
+import { assertReadOnlySql, limitSqlForExecution, normalizeQueryRows } from '@ktx/context/connections';
 import {
-  createKloConnectorCapabilities,
-  type KloColumnSampleInput,
-  type KloColumnSampleResult,
-  type KloColumnStatsInput,
-  type KloColumnStatsResult,
-  type KloQueryResult,
-  type KloReadOnlyQueryInput,
-  type KloScanConnector,
-  type KloScanContext,
-  type KloScanInput,
-  type KloSchemaForeignKey,
-  type KloSchemaSnapshot,
-  type KloSchemaTable,
-  type KloTableRef,
-  type KloTableSampleInput,
-  type KloTableSampleResult,
-} from '@klo/context/scan';
-import { KloSqliteDialect } from './dialect.js';
+  createKtxConnectorCapabilities,
+  type KtxColumnSampleInput,
+  type KtxColumnSampleResult,
+  type KtxColumnStatsInput,
+  type KtxColumnStatsResult,
+  type KtxQueryResult,
+  type KtxReadOnlyQueryInput,
+  type KtxScanConnector,
+  type KtxScanContext,
+  type KtxScanInput,
+  type KtxSchemaForeignKey,
+  type KtxSchemaSnapshot,
+  type KtxSchemaTable,
+  type KtxTableRef,
+  type KtxTableSampleInput,
+  type KtxTableSampleResult,
+} from '@ktx/context/scan';
+import { KtxSqliteDialect } from './dialect.js';
 
-export interface KloSqliteConnectionConfig {
+export interface KtxSqliteConnectionConfig {
   driver?: string;
   path?: string;
   url?: string;
@@ -36,24 +36,24 @@ export interface KloSqliteConnectionConfig {
 export interface SqliteDatabasePathInput {
   connectionId: string;
   projectDir?: string;
-  connection: KloSqliteConnectionConfig | undefined;
+  connection: KtxSqliteConnectionConfig | undefined;
 }
 
-export interface KloSqliteScanConnectorOptions extends SqliteDatabasePathInput {
+export interface KtxSqliteScanConnectorOptions extends SqliteDatabasePathInput {
   now?: () => Date;
 }
 
-export interface KloSqliteReadOnlyQueryInput extends KloReadOnlyQueryInput {
+export interface KtxSqliteReadOnlyQueryInput extends KtxReadOnlyQueryInput {
   params?: Record<string, unknown> | unknown[];
 }
 
-export interface KloSqliteColumnDistinctValuesOptions {
+export interface KtxSqliteColumnDistinctValuesOptions {
   maxCardinality: number;
   limit: number;
   sampleSize?: number;
 }
 
-export interface KloSqliteColumnDistinctValuesResult {
+export interface KtxSqliteColumnDistinctValuesResult {
   values: string[] | null;
   cardinality: number;
 }
@@ -81,14 +81,14 @@ interface SqliteForeignKeyRow {
 }
 
 function stringConfigValue(
-  connection: KloSqliteConnectionConfig | undefined,
-  key: keyof KloSqliteConnectionConfig,
+  connection: KtxSqliteConnectionConfig | undefined,
+  key: keyof KtxSqliteConnectionConfig,
 ): string | undefined {
   const value = connection?.[key];
   return typeof value === 'string' && value.trim().length > 0 ? resolveStringReference(key, value.trim()) : undefined;
 }
 
-function resolveStringReference(key: keyof KloSqliteConnectionConfig, value: string): string {
+function resolveStringReference(key: keyof KtxSqliteConnectionConfig, value: string): string {
   if (value.startsWith('env:')) {
     return process.env[value.slice('env:'.length)] ?? '';
   }
@@ -135,13 +135,13 @@ function stripLeadingSqlComments(sql: string): string {
   return sql.slice(index);
 }
 
-export function isKloSqliteConnectionConfig(connection: KloSqliteConnectionConfig | undefined): boolean {
+export function isKtxSqliteConnectionConfig(connection: KtxSqliteConnectionConfig | undefined): boolean {
   const driver = String(connection?.driver ?? '').toLowerCase();
   return driver === 'sqlite' || driver === 'sqlite3';
 }
 
 export function sqliteDatabasePathFromConfig(input: SqliteDatabasePathInput): string {
-  if (!isKloSqliteConnectionConfig(input.connection)) {
+  if (!isKtxSqliteConnectionConfig(input.connection)) {
     throw new Error(`Native SQLite connector cannot run driver "${input.connection?.driver ?? 'unknown'}"`);
   }
   if (input.connection?.readonly !== true) {
@@ -157,10 +157,10 @@ export function sqliteDatabasePathFromConfig(input: SqliteDatabasePathInput): st
   return isAbsolute(configuredPath) ? configuredPath : resolve(input.projectDir ?? process.cwd(), configuredPath);
 }
 
-export class KloSqliteScanConnector implements KloScanConnector {
+export class KtxSqliteScanConnector implements KtxScanConnector {
   readonly id: string;
   readonly driver = 'sqlite' as const;
-  readonly capabilities = createKloConnectorCapabilities({
+  readonly capabilities = createKtxConnectorCapabilities({
     tableSampling: true,
     columnSampling: true,
     columnStats: false,
@@ -173,10 +173,10 @@ export class KloSqliteScanConnector implements KloScanConnector {
   private readonly connectionId: string;
   private readonly dbPath: string;
   private readonly now: () => Date;
-  private readonly dialect = new KloSqliteDialect();
+  private readonly dialect = new KtxSqliteDialect();
   private db: Database.Database | null = null;
 
-  constructor(options: KloSqliteScanConnectorOptions) {
+  constructor(options: KtxSqliteScanConnectorOptions) {
     this.connectionId = options.connectionId;
     this.dbPath = sqliteDatabasePathFromConfig(options);
     this.now = options.now ?? (() => new Date());
@@ -195,7 +195,7 @@ export class KloSqliteScanConnector implements KloScanConnector {
     }
   }
 
-  async introspect(input: KloScanInput, _ctx: KloScanContext): Promise<KloSchemaSnapshot> {
+  async introspect(input: KtxScanInput, _ctx: KtxScanContext): Promise<KtxSchemaSnapshot> {
     this.assertConnection(input.connectionId);
     const database = this.database();
     const rawTables = database
@@ -220,13 +220,13 @@ export class KloSqliteScanConnector implements KloScanConnector {
     };
   }
 
-  async sampleTable(input: KloTableSampleInput, _ctx: KloScanContext): Promise<KloTableSampleResult> {
+  async sampleTable(input: KtxTableSampleInput, _ctx: KtxScanContext): Promise<KtxTableSampleResult> {
     this.assertConnection(input.connectionId);
     const result = this.query(this.dialect.generateSampleQuery(this.qTableName(input.table), input.limit, input.columns));
     return { headers: result.headers, rows: result.rows, totalRows: result.totalRows };
   }
 
-  async sampleColumn(input: KloColumnSampleInput, _ctx: KloScanContext): Promise<KloColumnSampleResult> {
+  async sampleColumn(input: KtxColumnSampleInput, _ctx: KtxScanContext): Promise<KtxColumnSampleResult> {
     this.assertConnection(input.connectionId);
     const result = this.query(
       this.dialect.generateColumnSampleQuery(this.qTableName(input.table), input.column, input.limit),
@@ -235,21 +235,21 @@ export class KloSqliteScanConnector implements KloScanConnector {
     return { values, nullCount: null, distinctCount: null };
   }
 
-  async columnStats(_input: KloColumnStatsInput, _ctx: KloScanContext): Promise<KloColumnStatsResult | null> {
+  async columnStats(_input: KtxColumnStatsInput, _ctx: KtxScanContext): Promise<KtxColumnStatsResult | null> {
     return null;
   }
 
-  async executeReadOnly(input: KloSqliteReadOnlyQueryInput, _ctx: KloScanContext): Promise<KloQueryResult> {
+  async executeReadOnly(input: KtxSqliteReadOnlyQueryInput, _ctx: KtxScanContext): Promise<KtxQueryResult> {
     this.assertConnection(input.connectionId);
     const result = this.query(limitSqlForExecution(stripLeadingSqlComments(input.sql), input.maxRows), input.params);
     return { ...result, rowCount: result.rows.length };
   }
 
   async getColumnDistinctValues(
-    table: KloTableRef,
+    table: KtxTableRef,
     columnName: string,
-    options: KloSqliteColumnDistinctValuesOptions,
-  ): Promise<KloSqliteColumnDistinctValuesResult | null> {
+    options: KtxSqliteColumnDistinctValuesOptions,
+  ): Promise<KtxSqliteColumnDistinctValuesResult | null> {
     const sampleSize = options.sampleSize ?? 10000;
     const tableName = this.qTableName(table);
     const quotedColumn = this.dialect.quoteIdentifier(columnName);
@@ -281,7 +281,7 @@ export class KloSqliteScanConnector implements KloScanConnector {
     return Number(result.rows[0]?.[0] ?? 0);
   }
 
-  qTableName(table: Pick<KloTableRef, 'name'>): string {
+  qTableName(table: Pick<KtxTableRef, 'name'>): string {
     return this.dialect.formatTableName(table);
   }
 
@@ -303,7 +303,7 @@ export class KloSqliteScanConnector implements KloScanConnector {
     return this.db;
   }
 
-  private query(sql: string, params?: Record<string, unknown> | unknown[]): Omit<KloQueryResult, 'rowCount'> {
+  private query(sql: string, params?: Record<string, unknown> | unknown[]): Omit<KtxQueryResult, 'rowCount'> {
     const statement = this.database().prepare(assertReadOnlySql(sql));
     const rows = (params ? statement.all(params) : statement.all()) as unknown[];
     return {
@@ -313,7 +313,7 @@ export class KloSqliteScanConnector implements KloScanConnector {
     };
   }
 
-  private readTable(database: Database.Database, table: SqliteMasterRow): KloSchemaTable {
+  private readTable(database: Database.Database, table: SqliteMasterRow): KtxSchemaTable {
     const columns = database
       .prepare(`PRAGMA table_info(${this.dialect.quoteIdentifier(table.name)})`)
       .all() as SqliteTableInfoRow[];
@@ -350,7 +350,7 @@ export class KloSqliteScanConnector implements KloScanConnector {
     };
   }
 
-  private mapForeignKeys(rows: SqliteForeignKeyRow[]): KloSchemaForeignKey[] {
+  private mapForeignKeys(rows: SqliteForeignKeyRow[]): KtxSchemaForeignKey[] {
     return rows
       .sort((a, b) => a.id - b.id || a.seq - b.seq)
       .map((row) => ({
@@ -365,7 +365,7 @@ export class KloSqliteScanConnector implements KloScanConnector {
 
   private assertConnection(connectionId: string): void {
     if (connectionId !== this.connectionId) {
-      throw new Error(`KLO SQLite connector ${this.id} cannot serve connection ${connectionId}`);
+      throw new Error(`KTX SQLite connector ${this.id} cannot serve connection ${connectionId}`);
     }
   }
 }

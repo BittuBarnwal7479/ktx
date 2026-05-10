@@ -1,4 +1,4 @@
-export type KloConnectionDriver =
+export type KtxConnectionDriver =
   | 'sqlite'
   | 'postgres'
   | 'postgresql'
@@ -9,11 +9,11 @@ export type KloConnectionDriver =
   | 'mysql'
   | 'clickhouse';
 
-export type KloScanMode = 'structural' | 'relationships' | 'enriched';
+export type KtxScanMode = 'structural' | 'relationships' | 'enriched';
 
-export type KloScanTrigger = 'cli' | 'mcp' | 'schema_scan' | 'scheduled' | 'manual';
+export type KtxScanTrigger = 'cli' | 'mcp' | 'schema_scan' | 'scheduled' | 'manual';
 
-export interface KloConnectorCapabilities {
+export interface KtxConnectorCapabilities {
   structuralIntrospection: true;
   tableSampling: boolean;
   columnSampling: boolean;
@@ -25,11 +25,11 @@ export interface KloConnectorCapabilities {
   estimatedRowCounts: boolean;
 }
 
-export type KloOptionalConnectorCapabilities = Partial<Omit<KloConnectorCapabilities, 'structuralIntrospection'>>;
+export type KtxOptionalConnectorCapabilities = Partial<Omit<KtxConnectorCapabilities, 'structuralIntrospection'>>;
 
-export function createKloConnectorCapabilities(
-  capabilities: KloOptionalConnectorCapabilities = {},
-): KloConnectorCapabilities {
+export function createKtxConnectorCapabilities(
+  capabilities: KtxOptionalConnectorCapabilities = {},
+): KtxConnectorCapabilities {
   return {
     structuralIntrospection: true,
     tableSampling: capabilities.tableSampling ?? false,
@@ -43,27 +43,27 @@ export function createKloConnectorCapabilities(
   };
 }
 
-export interface KloSchemaScope {
+export interface KtxSchemaScope {
   catalogs?: string[];
   schemas?: string[];
   datasets?: string[];
 }
 
-export type KloSchemaTableKind = 'table' | 'view' | 'external' | 'event_stream';
+export type KtxSchemaTableKind = 'table' | 'view' | 'external' | 'event_stream';
 
-export type KloSchemaDimensionType = 'time' | 'string' | 'number' | 'boolean';
+export type KtxSchemaDimensionType = 'time' | 'string' | 'number' | 'boolean';
 
-export interface KloSchemaColumn {
+export interface KtxSchemaColumn {
   name: string;
   nativeType: string;
   normalizedType: string;
-  dimensionType: KloSchemaDimensionType;
+  dimensionType: KtxSchemaDimensionType;
   nullable: boolean;
   primaryKey: boolean;
   comment: string | null;
 }
 
-export interface KloSchemaForeignKey {
+export interface KtxSchemaForeignKey {
   fromColumn: string;
   toCatalog: string | null;
   toDb: string | null;
@@ -72,139 +72,139 @@ export interface KloSchemaForeignKey {
   constraintName: string | null;
 }
 
-export interface KloSchemaTable {
+export interface KtxSchemaTable {
   catalog: string | null;
   db: string | null;
   name: string;
-  kind: KloSchemaTableKind;
+  kind: KtxSchemaTableKind;
   comment: string | null;
   estimatedRows: number | null;
-  columns: KloSchemaColumn[];
-  foreignKeys: KloSchemaForeignKey[];
+  columns: KtxSchemaColumn[];
+  foreignKeys: KtxSchemaForeignKey[];
 }
 
-export interface KloSchemaSnapshot {
+export interface KtxSchemaSnapshot {
   connectionId: string;
-  driver: KloConnectionDriver;
+  driver: KtxConnectionDriver;
   extractedAt: string;
-  scope: KloSchemaScope;
-  tables: KloSchemaTable[];
+  scope: KtxSchemaScope;
+  tables: KtxSchemaTable[];
   metadata: Record<string, unknown>;
 }
 
-export interface KloCredentialEnvReference {
+export interface KtxCredentialEnvReference {
   kind: 'env';
   name: string;
 }
 
-export interface KloCredentialFileReference {
+export interface KtxCredentialFileReference {
   kind: 'file';
   path: string;
 }
 
-export interface KloResolvedCredentialEnvelope {
+export interface KtxResolvedCredentialEnvelope {
   kind: 'resolved';
   source: 'standalone' | 'host';
   values: Record<string, unknown>;
   redacted?: boolean;
 }
 
-export type KloCredentialEnvelope =
-  | KloCredentialEnvReference
-  | KloCredentialFileReference
-  | KloResolvedCredentialEnvelope;
+export type KtxCredentialEnvelope =
+  | KtxCredentialEnvReference
+  | KtxCredentialFileReference
+  | KtxResolvedCredentialEnvelope;
 
-export interface KloNetworkEndpoint {
+export interface KtxNetworkEndpoint {
   host: string;
   port: number;
   close?: () => Promise<void>;
 }
 
-export interface KloNetworkTunnelRequest<TConnection = Record<string, unknown>> {
+export interface KtxNetworkTunnelRequest<TConnection = Record<string, unknown>> {
   connectionId: string;
-  driver: KloConnectionDriver;
+  driver: KtxConnectionDriver;
   host: string;
   port: number;
   connection: TConnection;
 }
 
-export interface KloNetworkTunnelPort<TConnection = Record<string, unknown>> {
-  resolveEndpoint(input: KloNetworkTunnelRequest<TConnection>): Promise<KloNetworkEndpoint | null>;
+export interface KtxNetworkTunnelPort<TConnection = Record<string, unknown>> {
+  resolveEndpoint(input: KtxNetworkTunnelRequest<TConnection>): Promise<KtxNetworkEndpoint | null>;
 }
 
-export interface KloScanInput {
+export interface KtxScanInput {
   connectionId: string;
-  driver: KloConnectionDriver;
-  scope?: KloSchemaScope;
-  mode?: KloScanMode;
+  driver: KtxConnectionDriver;
+  scope?: KtxSchemaScope;
+  mode?: KtxScanMode;
   dryRun?: boolean;
   detectRelationships?: boolean;
-  credentials?: KloCredentialEnvelope;
+  credentials?: KtxCredentialEnvelope;
   metadata?: Record<string, unknown>;
 }
 
-export interface KloProgressUpdateOptions {
+export interface KtxProgressUpdateOptions {
   transient?: boolean;
 }
 
-export interface KloProgressPort {
-  update(progress: number, message?: string, options?: KloProgressUpdateOptions): Promise<void>;
-  startPhase(weight: number): KloProgressPort;
+export interface KtxProgressPort {
+  update(progress: number, message?: string, options?: KtxProgressUpdateOptions): Promise<void>;
+  startPhase(weight: number): KtxProgressPort;
 }
 
-export interface KloScanLoggerPort {
+export interface KtxScanLoggerPort {
   debug(message: string, metadata?: Record<string, unknown>): void;
   info(message: string, metadata?: Record<string, unknown>): void;
   warn(message: string, metadata?: Record<string, unknown>): void;
   error(message: string, metadata?: Record<string, unknown>): void;
 }
 
-export interface KloScanContext {
+export interface KtxScanContext {
   runId: string;
   signal?: AbortSignal;
-  progress?: KloProgressPort;
-  logger?: KloScanLoggerPort;
+  progress?: KtxProgressPort;
+  logger?: KtxScanLoggerPort;
 }
 
-export interface KloTableRef {
+export interface KtxTableRef {
   catalog: string | null;
   db: string | null;
   name: string;
 }
 
-export interface KloTableSampleInput {
+export interface KtxTableSampleInput {
   connectionId: string;
-  table: KloTableRef;
+  table: KtxTableRef;
   columns?: string[];
   limit: number;
 }
 
-export interface KloTableSampleResult {
+export interface KtxTableSampleResult {
   headers: string[];
   rows: unknown[][];
   totalRows: number;
 }
 
-export interface KloColumnSampleInput {
+export interface KtxColumnSampleInput {
   connectionId: string;
-  table: KloTableRef;
+  table: KtxTableRef;
   column: string;
   limit: number;
 }
 
-export interface KloColumnSampleResult {
+export interface KtxColumnSampleResult {
   values: unknown[];
   nullCount: number | null;
   distinctCount: number | null;
 }
 
-export interface KloColumnStatsInput {
+export interface KtxColumnStatsInput {
   connectionId: string;
-  table: KloTableRef;
+  table: KtxTableRef;
   column: string;
 }
 
-export interface KloColumnStatsResult {
+export interface KtxColumnStatsResult {
   min: unknown;
   max: unknown;
   average: number | null;
@@ -212,37 +212,37 @@ export interface KloColumnStatsResult {
   distinctCount: number | null;
 }
 
-export interface KloEventTypeDiscoveryInput {
+export interface KtxEventTypeDiscoveryInput {
   connectionId: string;
-  table: KloTableRef;
+  table: KtxTableRef;
   eventColumn: string;
   limit: number;
   minCount?: number;
   lookbackDays?: number;
 }
 
-export interface KloEventTypeDiscovery {
+export interface KtxEventTypeDiscovery {
   value: string;
   count: number;
 }
 
-export interface KloEventPropertyDiscoveryInput {
+export interface KtxEventPropertyDiscoveryInput {
   connectionId: string;
-  table: KloTableRef;
+  table: KtxTableRef;
   jsonColumn: string;
   sampleSize: number;
   limit: number;
   lookbackDays?: number;
 }
 
-export interface KloEventPropertyDiscovery {
+export interface KtxEventPropertyDiscovery {
   key: string;
   count: number;
 }
 
-export interface KloEventPropertyValuesInput {
+export interface KtxEventPropertyValuesInput {
   connectionId: string;
-  table: KloTableRef;
+  table: KtxTableRef;
   jsonColumn: string;
   propertyKey: string;
   limit: number;
@@ -250,27 +250,27 @@ export interface KloEventPropertyValuesInput {
   lookbackDays?: number;
 }
 
-export interface KloEventPropertyValuesResult {
+export interface KtxEventPropertyValuesResult {
   values: string[];
   cardinality: number;
 }
 
-export interface KloEventStreamDiscoveryPort {
-  listEventTypes(input: KloEventTypeDiscoveryInput, ctx: KloScanContext): Promise<KloEventTypeDiscovery[]>;
-  listPropertyKeys(input: KloEventPropertyDiscoveryInput, ctx: KloScanContext): Promise<KloEventPropertyDiscovery[]>;
+export interface KtxEventStreamDiscoveryPort {
+  listEventTypes(input: KtxEventTypeDiscoveryInput, ctx: KtxScanContext): Promise<KtxEventTypeDiscovery[]>;
+  listPropertyKeys(input: KtxEventPropertyDiscoveryInput, ctx: KtxScanContext): Promise<KtxEventPropertyDiscovery[]>;
   listPropertyValues(
-    input: KloEventPropertyValuesInput,
-    ctx: KloScanContext,
-  ): Promise<KloEventPropertyValuesResult | null>;
+    input: KtxEventPropertyValuesInput,
+    ctx: KtxScanContext,
+  ): Promise<KtxEventPropertyValuesResult | null>;
 }
 
-export interface KloReadOnlyQueryInput {
+export interface KtxReadOnlyQueryInput {
   connectionId: string;
   sql: string;
   maxRows?: number;
 }
 
-export interface KloQueryResult {
+export interface KtxQueryResult {
   headers: string[];
   headerTypes?: string[];
   rows: unknown[][];
@@ -278,26 +278,26 @@ export interface KloQueryResult {
   rowCount: number | null;
 }
 
-export interface KloScanConnector {
+export interface KtxScanConnector {
   id: string;
-  driver: KloConnectionDriver;
-  capabilities: KloConnectorCapabilities;
-  eventStreamDiscovery?: KloEventStreamDiscoveryPort;
-  introspect(input: KloScanInput, ctx: KloScanContext): Promise<KloSchemaSnapshot>;
-  sampleColumn?(input: KloColumnSampleInput, ctx: KloScanContext): Promise<KloColumnSampleResult>;
-  sampleTable?(input: KloTableSampleInput, ctx: KloScanContext): Promise<KloTableSampleResult>;
-  columnStats?(input: KloColumnStatsInput, ctx: KloScanContext): Promise<KloColumnStatsResult | null>;
-  executeReadOnly?(input: KloReadOnlyQueryInput, ctx: KloScanContext): Promise<KloQueryResult>;
+  driver: KtxConnectionDriver;
+  capabilities: KtxConnectorCapabilities;
+  eventStreamDiscovery?: KtxEventStreamDiscoveryPort;
+  introspect(input: KtxScanInput, ctx: KtxScanContext): Promise<KtxSchemaSnapshot>;
+  sampleColumn?(input: KtxColumnSampleInput, ctx: KtxScanContext): Promise<KtxColumnSampleResult>;
+  sampleTable?(input: KtxTableSampleInput, ctx: KtxScanContext): Promise<KtxTableSampleResult>;
+  columnStats?(input: KtxColumnStatsInput, ctx: KtxScanContext): Promise<KtxColumnStatsResult | null>;
+  executeReadOnly?(input: KtxReadOnlyQueryInput, ctx: KtxScanContext): Promise<KtxQueryResult>;
   cleanup?(): Promise<void>;
 }
 
-export interface KloEmbeddingPort {
+export interface KtxEmbeddingPort {
   dimensions: number;
   maxBatchSize: number;
   embedBatch(texts: string[]): Promise<number[][]>;
 }
 
-export interface KloStructuralSyncStats {
+export interface KtxStructuralSyncStats {
   tablesCreated: number;
   tablesUpdated: number;
   tablesDeleted: number;
@@ -306,7 +306,7 @@ export interface KloStructuralSyncStats {
   columnsDeleted: number;
 }
 
-export interface KloScanDiffSummary {
+export interface KtxScanDiffSummary {
   tablesAdded: number;
   tablesModified: number;
   tablesDeleted: number;
@@ -316,14 +316,14 @@ export interface KloScanDiffSummary {
   columnsDeleted: number;
 }
 
-export interface KloScanArtifactPaths {
+export interface KtxScanArtifactPaths {
   rawSourcesDir: string | null;
   reportPath: string | null;
   manifestShards: string[];
   enrichmentArtifacts: string[];
 }
 
-export type KloScanWarningCode =
+export type KtxScanWarningCode =
   | 'connector_capability_missing'
   | 'sampling_failed'
   | 'statistics_failed'
@@ -336,8 +336,8 @@ export type KloScanWarningCode =
   | 'credential_redacted'
   | 'enrichment_failed';
 
-export interface KloScanWarning {
-  code: KloScanWarningCode;
+export interface KtxScanWarning {
+  code: KtxScanWarningCode;
   message: string;
   table?: string;
   column?: string;
@@ -345,7 +345,7 @@ export interface KloScanWarning {
   metadata?: Record<string, unknown>;
 }
 
-export interface KloScanEnrichmentSummary {
+export interface KtxScanEnrichmentSummary {
   dataDictionary: 'skipped' | 'completed' | 'failed';
   tableDescriptions: 'skipped' | 'completed' | 'failed';
   columnDescriptions: 'skipped' | 'completed' | 'failed';
@@ -355,37 +355,37 @@ export interface KloScanEnrichmentSummary {
   statisticalValidation: 'skipped' | 'completed' | 'failed';
 }
 
-export interface KloScanRelationshipSummary {
+export interface KtxScanRelationshipSummary {
   accepted: number;
   review: number;
   rejected: number;
   skipped: number;
 }
 
-export type KloScanEnrichmentStage = 'descriptions' | 'embeddings' | 'relationships';
+export type KtxScanEnrichmentStage = 'descriptions' | 'embeddings' | 'relationships';
 
-export interface KloScanEnrichmentStateSummary {
-  resumedStages: KloScanEnrichmentStage[];
-  completedStages: KloScanEnrichmentStage[];
-  failedStages: KloScanEnrichmentStage[];
+export interface KtxScanEnrichmentStateSummary {
+  resumedStages: KtxScanEnrichmentStage[];
+  completedStages: KtxScanEnrichmentStage[];
+  failedStages: KtxScanEnrichmentStage[];
 }
 
-export interface KloScanReport {
+export interface KtxScanReport {
   connectionId: string;
-  driver: KloConnectionDriver;
+  driver: KtxConnectionDriver;
   syncId: string;
   runId: string;
-  trigger: KloScanTrigger;
-  mode: KloScanMode;
+  trigger: KtxScanTrigger;
+  mode: KtxScanMode;
   dryRun: boolean;
-  artifactPaths: KloScanArtifactPaths;
-  diffSummary: KloScanDiffSummary;
+  artifactPaths: KtxScanArtifactPaths;
+  diffSummary: KtxScanDiffSummary;
   manifestShardsWritten: number;
-  structuralSyncStats: KloStructuralSyncStats;
-  enrichment: KloScanEnrichmentSummary;
-  capabilityGaps: Array<keyof Omit<KloConnectorCapabilities, 'structuralIntrospection'>>;
-  warnings: KloScanWarning[];
-  relationships: KloScanRelationshipSummary;
-  enrichmentState: KloScanEnrichmentStateSummary;
+  structuralSyncStats: KtxStructuralSyncStats;
+  enrichment: KtxScanEnrichmentSummary;
+  capabilityGaps: Array<keyof Omit<KtxConnectorCapabilities, 'structuralIntrospection'>>;
+  warnings: KtxScanWarning[];
+  relationships: KtxScanRelationshipSummary;
+  enrichmentState: KtxScanEnrichmentStateSummary;
   createdAt: string;
 }

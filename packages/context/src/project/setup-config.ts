@@ -1,12 +1,12 @@
-import type { KloProjectConfig } from './config.js';
+import type { KtxProjectConfig } from './config.js';
 
-export const KLO_SETUP_STEPS = ['project', 'llm', 'embeddings', 'databases', 'sources', 'context', 'agents'] as const;
+export const KTX_SETUP_STEPS = ['project', 'llm', 'embeddings', 'databases', 'sources', 'context', 'agents'] as const;
 
-export type KloSetupStep = (typeof KLO_SETUP_STEPS)[number];
+export type KtxSetupStep = (typeof KTX_SETUP_STEPS)[number];
 
 const SETUP_GITIGNORE_ENTRIES = ['secrets/', 'setup/', 'agents/'] as const;
 
-export function markKloSetupStepComplete(config: KloProjectConfig, step: KloSetupStep): KloProjectConfig {
+export function markKtxSetupStepComplete(config: KtxProjectConfig, step: KtxSetupStep): KtxProjectConfig {
   const databaseConnectionIds = config.setup?.database_connection_ids ?? [];
   const completedSteps = config.setup?.completed_steps ?? [];
   return {
@@ -18,11 +18,11 @@ export function markKloSetupStepComplete(config: KloProjectConfig, step: KloSetu
   };
 }
 
-export function setKloSetupDatabaseConnectionIds(
-  config: KloProjectConfig,
+export function setKtxSetupDatabaseConnectionIds(
+  config: KtxProjectConfig,
   connectionIds: string[],
   options: { complete?: boolean } = {},
-): KloProjectConfig {
+): KtxProjectConfig {
   const uniqueConnectionIds = [...new Set(connectionIds.filter((connectionId) => connectionId.trim().length > 0))];
   const completedSteps = config.setup?.completed_steps ?? [];
   const nextCompletedSteps =
@@ -39,7 +39,7 @@ export function setKloSetupDatabaseConnectionIds(
   };
 }
 
-export function mergeKloSetupGitignoreEntries(content: string): string {
+export function mergeKtxSetupGitignoreEntries(content: string): string {
   const lines = content
     .split(/\r?\n/)
     .map((line) => line.trimEnd())

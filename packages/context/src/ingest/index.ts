@@ -2,9 +2,9 @@ export { DbtSourceAdapter } from './adapters/dbt/dbt.adapter.js';
 export { FakeSourceAdapter } from './adapters/fake/fake.adapter.js';
 export type {
   DaemonLiveDatabaseIntrospectionOptions,
-  KloDaemonDatabaseHttpJsonRunner,
-  KloDaemonDatabaseIntrospectionCommand,
-  KloDaemonDatabaseJsonRunner,
+  KtxDaemonDatabaseHttpJsonRunner,
+  KtxDaemonDatabaseIntrospectionCommand,
+  KtxDaemonDatabaseJsonRunner,
 } from './adapters/live-database/daemon-introspection.js';
 export { createDaemonLiveDatabaseIntrospection } from './adapters/live-database/daemon-introspection.js';
 export type {
@@ -15,7 +15,7 @@ export type {
 } from './adapters/live-database/extracted-schema.js';
 export {
   buildLiveDatabaseTableNaturalKey,
-  kloSchemaSnapshotToExtractedSchema,
+  ktxSchemaSnapshotToExtractedSchema,
 } from './adapters/live-database/extracted-schema.js';
 export { LiveDatabaseSourceAdapter } from './adapters/live-database/live-database.adapter.js';
 export type {
@@ -68,7 +68,7 @@ export {
 export {
   createDaemonLookerTableIdentifierParser,
   type DaemonLookerTableIdentifierParserOptions,
-  type KloDaemonTableIdentifierHttpJsonRunner,
+  type KtxDaemonTableIdentifierHttpJsonRunner,
 } from './adapters/looker/daemon-table-identifier-parser.js';
 export type {
   LookerConnectionClientFactory,
@@ -102,12 +102,12 @@ export {
   projectParsedIdentifier,
   refreshLookerMappingPlaceholders,
   sqlglotDialectForConnectionType,
-  suggestKloConnectionForLookerConnection,
+  suggestKtxConnectionForLookerConnection,
   validateLookerMappings,
   validateLookerWarehouseTarget,
 } from './adapters/looker/mapping.js';
 export type {
-  LookerConnectionMapping as KloLookerConnectionMapping,
+  LookerConnectionMapping as KtxLookerConnectionMapping,
   LookerMappingCandidateConnection,
   LookerMappingClient,
   LookerMappingDrift,
@@ -220,7 +220,7 @@ export type {
   AutoMatchCandidate,
   AutoMatchResult as MetabaseAutoMatchResult,
   DiscoveredMetabaseDatabase,
-  KloConnectionPhysicalInfo,
+  KtxConnectionPhysicalInfo,
   MappingPhysicalInfo,
   MappingRefreshReport,
   MetabaseMappedConnectionType,
@@ -347,7 +347,7 @@ export type {
   HistoricSqlSourceAdapterDeps,
   HistoricSqlTimeWindow,
   HistoricSqlUsage,
-  KloPostgresQueryClient,
+  KtxPostgresQueryClient,
   PostgresPgssAggregateRow,
   PostgresPgssProbeResult,
   PostgresPgssReader,
@@ -424,7 +424,7 @@ export type {
   RunLocalMetabaseIngestOptions,
 } from './local-ingest.js';
 export { getLatestLocalIngestStatus, getLocalIngestStatus, runLocalIngest, runLocalMetabaseIngest } from './local-ingest.js';
-export { seedLocalMappingStateFromKloYaml } from './local-mapping-reconcile.js';
+export { seedLocalMappingStateFromKtxYaml } from './local-mapping-reconcile.js';
 export type {
   CreateLocalBundleIngestRuntimeOptions,
   LocalBundleIngestRuntime,
@@ -475,7 +475,7 @@ export type {
   DbtSchemaFile,
   DbtSchemaParseResult,
 } from './adapters/dbt-descriptions/parse-schema.js';
-export { findMatchingKloTable, matchDbtTables } from './adapters/dbt-descriptions/match-tables.js';
+export { findMatchingKtxTable, matchDbtTables } from './adapters/dbt-descriptions/match-tables.js';
 export type { DbtHostTableLite, DbtTableMatch } from './adapters/dbt-descriptions/match-tables.js';
 export { toDescriptionUpdates } from './adapters/dbt-descriptions/to-description-updates.js';
 export type { DbtDescriptionUpdates } from './adapters/dbt-descriptions/to-description-updates.js';
@@ -483,7 +483,7 @@ export { toRelationshipUpdates } from './adapters/dbt-descriptions/to-relationsh
 export type { DbtRelationshipUpdates } from './adapters/dbt-descriptions/to-relationship-updates.js';
 export { toMetadataUpdates } from './adapters/dbt-descriptions/to-metadata-updates.js';
 export { mergeSemanticModelTables } from './adapters/dbt-descriptions/merge-semantic-model-tables.js';
-export type { KloJoinUpdate, KloMetadataUpdate } from '../scan/enrichment-types.js';
+export type { KtxJoinUpdate, KtxMetadataUpdate } from '../scan/enrichment-types.js';
 export {
   createInitialMemoryFlowInteractionState,
   findMemoryFlowSearchMatches,

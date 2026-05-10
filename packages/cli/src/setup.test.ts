@@ -3,8 +3,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { contextBuildCommands, writeKloSetupContextState } from './setup-context.js';
-import { readKloSetupStatus, runKloSetup } from './setup.js';
+import { contextBuildCommands, writeKtxSetupContextState } from './setup-context.js';
+import { readKtxSetupStatus, runKtxSetup } from './setup.js';
 
 function makeIo() {
   let stdout = '';
@@ -31,7 +31,7 @@ describe('setup status', () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-setup-status-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-setup-status-'));
   });
 
   afterEach(async () => {
@@ -39,7 +39,7 @@ describe('setup status', () => {
   });
 
   it('reports a missing project without creating files', async () => {
-    const status = await readKloSetupStatus(tempDir);
+    const status = await readKtxSetupStatus(tempDir);
 
     expect(status).toMatchObject({
       project: { path: tempDir, ready: false },
@@ -55,7 +55,7 @@ describe('setup status', () => {
   it('reports deterministic default embeddings as not setup-ready', async () => {
     await mkdir(tempDir, { recursive: true });
     await writeFile(
-      join(tempDir, 'klo.yaml'),
+      join(tempDir, 'ktx.yaml'),
       [
         'project: revenue',
         'llm:',
@@ -75,7 +75,7 @@ describe('setup status', () => {
       'utf-8',
     );
 
-    await expect(readKloSetupStatus(tempDir)).resolves.toMatchObject({
+    await expect(readKtxSetupStatus(tempDir)).resolves.toMatchObject({
       project: { path: tempDir, ready: true },
       llm: { backend: 'anthropic', ready: true, model: 'claude-sonnet-4-6' },
       embeddings: { backend: 'deterministic', ready: false, model: 'deterministic', dimensions: 8 },
@@ -84,7 +84,7 @@ describe('setup status', () => {
 
   it('uses setup database connection ids when present', async () => {
     await writeFile(
-      join(tempDir, 'klo.yaml'),
+      join(tempDir, 'ktx.yaml'),
       [
         'project: revenue',
         'setup:',
@@ -109,7 +109,7 @@ describe('setup status', () => {
       'utf-8',
     );
 
-    await expect(readKloSetupStatus(tempDir)).resolves.toMatchObject({
+    await expect(readKtxSetupStatus(tempDir)).resolves.toMatchObject({
       databases: [
         { connectionId: 'warehouse', ready: true },
         { connectionId: 'analytics', ready: false },
@@ -119,7 +119,7 @@ describe('setup status', () => {
 
   it('reports selected databases as ready only after the database setup step is complete', async () => {
     await writeFile(
-      join(tempDir, 'klo.yaml'),
+      join(tempDir, 'ktx.yaml'),
       [
         'project: revenue',
         'setup:',
@@ -137,12 +137,12 @@ describe('setup status', () => {
       'utf-8',
     );
 
-    await expect(readKloSetupStatus(tempDir)).resolves.toMatchObject({
+    await expect(readKtxSetupStatus(tempDir)).resolves.toMatchObject({
       databases: [{ connectionId: 'warehouse', ready: false }],
     });
 
     await writeFile(
-      join(tempDir, 'klo.yaml'),
+      join(tempDir, 'ktx.yaml'),
       [
         'project: revenue',
         'setup:',
@@ -161,14 +161,14 @@ describe('setup status', () => {
       'utf-8',
     );
 
-    await expect(readKloSetupStatus(tempDir)).resolves.toMatchObject({
+    await expect(readKtxSetupStatus(tempDir)).resolves.toMatchObject({
       databases: [{ connectionId: 'warehouse', ready: true }],
     });
   });
 
   it('reports source status from configured source connections', async () => {
     await writeFile(
-      join(tempDir, 'klo.yaml'),
+      join(tempDir, 'ktx.yaml'),
       [
         'project: revenue',
         'setup:',
@@ -189,16 +189,16 @@ describe('setup status', () => {
       'utf-8',
     );
 
-    await expect(readKloSetupStatus(tempDir)).resolves.toMatchObject({
+    await expect(readKtxSetupStatus(tempDir)).resolves.toMatchObject({
       sources: [{ connectionId: 'docs', type: 'notion', ready: true }],
     });
   });
 
   it('reports agent status from the install manifest', async () => {
-    await mkdir(join(tempDir, '.klo', 'agents'), { recursive: true });
-    await writeFile(join(tempDir, 'klo.yaml'), 'project: revenue\nconnections: {}\n', 'utf-8');
+    await mkdir(join(tempDir, '.ktx', 'agents'), { recursive: true });
+    await writeFile(join(tempDir, 'ktx.yaml'), 'project: revenue\nconnections: {}\n', 'utf-8');
     await writeFile(
-      join(tempDir, '.klo/agents/install-manifest.json'),
+      join(tempDir, '.ktx/agents/install-manifest.json'),
       JSON.stringify(
         {
           version: 1,
@@ -213,14 +213,14 @@ describe('setup status', () => {
       'utf-8',
     );
 
-    await expect(readKloSetupStatus(tempDir)).resolves.toMatchObject({
+    await expect(readKtxSetupStatus(tempDir)).resolves.toMatchObject({
       agents: [{ target: 'codex', scope: 'project', ready: true }],
     });
   });
 
   it('reports setup-managed context build status and commands', async () => {
     await writeFile(
-      join(tempDir, 'klo.yaml'),
+      join(tempDir, 'ktx.yaml'),
       [
         'project: revenue',
         'setup:',
@@ -250,7 +250,7 @@ describe('setup status', () => {
       ].join('\n'),
       'utf-8',
     );
-    await writeKloSetupContextState(tempDir, {
+    await writeKtxSetupContextState(tempDir, {
       runId: 'setup-context-local-abc123',
       status: 'running',
       startedAt: '2026-05-09T10:00:00.000Z',
@@ -263,13 +263,13 @@ describe('setup status', () => {
       commands: contextBuildCommands(tempDir, 'setup-context-local-abc123'),
     });
 
-    await expect(readKloSetupStatus(tempDir)).resolves.toMatchObject({
+    await expect(readKtxSetupStatus(tempDir)).resolves.toMatchObject({
       context: {
         ready: false,
         status: 'running',
         runId: 'setup-context-local-abc123',
-        watchCommand: `klo setup context watch setup-context-local-abc123 --project-dir ${tempDir}`,
-        statusCommand: `klo setup context status setup-context-local-abc123 --project-dir ${tempDir}`,
+        watchCommand: `ktx setup context watch setup-context-local-abc123 --project-dir ${tempDir}`,
+        statusCommand: `ktx setup context status setup-context-local-abc123 --project-dir ${tempDir}`,
       },
     });
   });
@@ -278,13 +278,13 @@ describe('setup status', () => {
     const plainIo = makeIo();
     const jsonIo = makeIo();
 
-    await expect(runKloSetup({ command: 'status', projectDir: tempDir, json: false }, plainIo.io)).resolves.toBe(0);
-    await expect(runKloSetup({ command: 'status', projectDir: tempDir, json: true }, jsonIo.io)).resolves.toBe(0);
+    await expect(runKtxSetup({ command: 'status', projectDir: tempDir, json: false }, plainIo.io)).resolves.toBe(0);
+    await expect(runKtxSetup({ command: 'status', projectDir: tempDir, json: true }, jsonIo.io)).resolves.toBe(0);
 
-    expect(plainIo.stdout()).toContain(`No KLO project found at ${tempDir}.`);
-    expect(plainIo.stdout()).toContain('Check another project: klo --project-dir <folder> setup status');
-    expect(plainIo.stdout()).toContain('Or from that folder: klo setup status');
-    expect(plainIo.stdout()).toContain('Create a new KLO project here: klo setup');
+    expect(plainIo.stdout()).toContain(`No KTX project found at ${tempDir}.`);
+    expect(plainIo.stdout()).toContain('Check another project: ktx --project-dir <folder> setup status');
+    expect(plainIo.stdout()).toContain('Or from that folder: ktx setup status');
+    expect(plainIo.stdout()).toContain('Create a new KTX project here: ktx setup');
     expect(plainIo.stdout()).not.toContain('Project ready: no');
     expect(JSON.parse(jsonIo.stdout())).toMatchObject({ project: { path: tempDir, ready: false } });
     expect(plainIo.stderr()).toBe('');
@@ -293,15 +293,15 @@ describe('setup status', () => {
 
   it('prints the readiness checklist for an existing project', async () => {
     const testIo = makeIo();
-    await writeFile(join(tempDir, 'klo.yaml'), 'project: revenue\nconnections: {}\n', 'utf-8');
+    await writeFile(join(tempDir, 'ktx.yaml'), 'project: revenue\nconnections: {}\n', 'utf-8');
 
-    await expect(runKloSetup({ command: 'status', projectDir: tempDir, json: false }, testIo.io)).resolves.toBe(0);
+    await expect(runKtxSetup({ command: 'status', projectDir: tempDir, json: false }, testIo.io)).resolves.toBe(0);
 
-    expect(testIo.stdout()).toContain(`KLO project: ${tempDir}`);
+    expect(testIo.stdout()).toContain(`KTX project: ${tempDir}`);
     expect(testIo.stdout()).toContain('Project ready: yes');
     expect(testIo.stdout()).toContain('LLM ready: no');
-    expect(testIo.stdout()).toContain('KLO context built: no');
-    expect(testIo.stdout()).not.toContain('No KLO project found.');
+    expect(testIo.stdout()).toContain('KTX context built: no');
+    expect(testIo.stdout()).not.toContain('No KTX project found.');
     expect(testIo.stderr()).toBe('');
   });
 
@@ -309,7 +309,7 @@ describe('setup status', () => {
     const testIo = makeIo();
 
     await expect(
-      runKloSetup(
+      runKtxSetup(
         {
           command: 'run',
           projectDir: tempDir,
@@ -328,13 +328,13 @@ describe('setup status', () => {
       ),
     ).resolves.toBe(0);
 
-    expect(testIo.stdout()).toContain('KLO setup');
+    expect(testIo.stdout()).toContain('KTX setup');
     expect(testIo.stdout()).toContain(`Project: ${tempDir}`);
     expect(testIo.stdout()).toContain('Project ready: yes');
     expect(testIo.stdout()).toContain('What you can do next:');
     expect(testIo.stdout()).toContain('Connect data, then build context.');
-    expect(testIo.stdout()).toContain('klo setup');
-    expect(testIo.stdout()).not.toContain('klo agent context --json');
+    expect(testIo.stdout()).toContain('ktx setup');
+    expect(testIo.stdout()).not.toContain('ktx agent context --json');
     expect(testIo.stdout()).not.toContain('Optional MCP:');
     expect(testIo.stderr()).toBe('');
   });
@@ -344,18 +344,18 @@ describe('setup status', () => {
     const select = vi.fn(async (options: { options: Array<{ value: string; label: string }> }) => {
       const labels = options.options.map((option) => option.label);
       expect(labels).toEqual([
-        'Set up KLO for my data',
+        'Set up KTX for my data',
         'Check setup status',
-        'Try KLO with packaged demo data',
+        'Try KTX with packaged demo data',
         'Exit',
       ]);
-      expect(labels.indexOf('Try KLO with packaged demo data')).toBe(labels.length - 2);
+      expect(labels.indexOf('Try KTX with packaged demo data')).toBe(labels.length - 2);
       return 'exit';
     });
     const cancel = vi.fn();
 
     await expect(
-      runKloSetup(
+      runKtxSetup(
         {
           command: 'run',
           projectDir: tempDir,
@@ -384,24 +384,24 @@ describe('setup status', () => {
     const missingIo = makeIo();
     const existingIo = makeIo();
     const missingSelect = vi.fn(async (options: { options: Array<{ value: string; label: string }> }) => {
-      expect(options.options.map((option) => option.label)).not.toContain('Connect a coding agent to KLO');
+      expect(options.options.map((option) => option.label)).not.toContain('Connect a coding agent to KTX');
       return 'exit';
     });
     const existingSelect = vi.fn(async (options: { options: Array<{ value: string; label: string }> }) => {
       const labels = options.options.map((option) => option.label);
       expect(labels).toEqual([
         'Resume or change an existing setup',
-        'Create a new KLO project',
-        'Connect a coding agent to KLO',
+        'Create a new KTX project',
+        'Connect a coding agent to KTX',
         'Check setup status',
-        'Try KLO with packaged demo data',
+        'Try KTX with packaged demo data',
         'Exit',
       ]);
       return 'exit';
     });
 
     await expect(
-      runKloSetup(
+      runKtxSetup(
         {
           command: 'run',
           projectDir: tempDir,
@@ -422,10 +422,10 @@ describe('setup status', () => {
       ),
     ).resolves.toBe(0);
 
-    await writeFile(join(tempDir, 'klo.yaml'), 'project: revenue\nconnections: {}\n', 'utf-8');
+    await writeFile(join(tempDir, 'ktx.yaml'), 'project: revenue\nconnections: {}\n', 'utf-8');
 
     await expect(
-      runKloSetup(
+      runKtxSetup(
         {
           command: 'run',
           projectDir: tempDir,
@@ -463,7 +463,7 @@ describe('setup status', () => {
     };
 
     await expect(
-      runKloSetup(
+      runKtxSetup(
         {
           command: 'run',
           projectDir: tempDir,
@@ -489,25 +489,25 @@ describe('setup status', () => {
 
     expect(projectPrompts.select).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: 'Which KLO project should setup use?',
+        message: 'Which KTX project should setup use?',
         options: expect.arrayContaining([expect.objectContaining({ value: 'back', label: 'Back' })]),
       }),
     );
     expect(projectPrompts.select).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: 'Which KLO project should setup use?',
+        message: 'Which KTX project should setup use?',
         options: expect.not.arrayContaining([expect.objectContaining({ value: 'exit', label: 'Exit' })]),
       }),
     );
     expect(entryPrompts.select).toHaveBeenCalledTimes(2);
     expect(entryPrompts.cancel).toHaveBeenCalledWith('Setup cancelled.');
     expect(projectPrompts.cancel).not.toHaveBeenCalled();
-    await expect(stat(join(tempDir, 'klo.yaml'))).rejects.toThrow();
+    await expect(stat(join(tempDir, 'ktx.yaml'))).rejects.toThrow();
   });
 
   it('lets Back from new project creation return to the first setup intent menu', async () => {
     const existingConfig = 'project: revenue\nconnections: {}\n';
-    await writeFile(join(tempDir, 'klo.yaml'), existingConfig, 'utf-8');
+    await writeFile(join(tempDir, 'ktx.yaml'), existingConfig, 'utf-8');
 
     const entryChoices = ['new-project', 'exit'];
     const entryPrompts = {
@@ -521,7 +521,7 @@ describe('setup status', () => {
     };
 
     await expect(
-      runKloSetup(
+      runKtxSetup(
         {
           command: 'run',
           projectDir: tempDir,
@@ -547,14 +547,14 @@ describe('setup status', () => {
 
     expect(projectPrompts.select).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: 'Where should KLO create the project?',
+        message: 'Where should KTX create the project?',
         options: expect.arrayContaining([expect.objectContaining({ value: 'back', label: 'Back' })]),
       }),
     );
     expect(entryPrompts.select).toHaveBeenCalledTimes(2);
     expect(entryPrompts.cancel).toHaveBeenCalledWith('Setup cancelled.');
     expect(projectPrompts.cancel).not.toHaveBeenCalled();
-    await expect(readFile(join(tempDir, 'klo.yaml'), 'utf-8')).resolves.toBe(existingConfig);
+    await expect(readFile(join(tempDir, 'ktx.yaml'), 'utf-8')).resolves.toBe(existingConfig);
   });
 
   it('creates a separate project when the existing setup menu chooses new project', async () => {
@@ -562,7 +562,7 @@ describe('setup status', () => {
     const newProjectDir = join(tempDir, 'fresh');
     await mkdir(existingProjectDir, { recursive: true });
     const existingConfig = 'project: revenue\nconnections: {}\n';
-    await writeFile(join(existingProjectDir, 'klo.yaml'), existingConfig, 'utf-8');
+    await writeFile(join(existingProjectDir, 'ktx.yaml'), existingConfig, 'utf-8');
 
     const projectChoices = ['custom', 'create'];
     const projectPrompts = {
@@ -588,7 +588,7 @@ describe('setup status', () => {
     }));
 
     await expect(
-      runKloSetup(
+      runKtxSetup(
         {
           command: 'run',
           projectDir: existingProjectDir,
@@ -619,14 +619,14 @@ describe('setup status', () => {
     expect(projectPrompts.text).toHaveBeenCalledWith(
       expect.objectContaining({
         message: 'Project folder path\nPress Escape to go back.\n',
-        placeholder: './analytics-klo, ~/analytics-klo, or /Users/you/projects/analytics-klo',
+        placeholder: './analytics-ktx, ~/analytics-ktx, or /Users/you/projects/analytics-ktx',
       }),
     );
     expect(projectPrompts.select).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'Where should KLO create the project?' }),
+      expect.objectContaining({ message: 'Where should KTX create the project?' }),
     );
-    await expect(stat(join(newProjectDir, 'klo.yaml'))).resolves.toBeDefined();
-    await expect(readFile(join(existingProjectDir, 'klo.yaml'), 'utf-8')).resolves.toBe(existingConfig);
+    await expect(stat(join(newProjectDir, 'ktx.yaml'))).resolves.toBeDefined();
+    await expect(readFile(join(existingProjectDir, 'ktx.yaml'), 'utf-8')).resolves.toBe(existingConfig);
     expect(model).toHaveBeenCalledWith(expect.objectContaining({ projectDir: newProjectDir }), expect.anything());
     expect(embeddings).toHaveBeenCalledWith(expect.objectContaining({ projectDir: newProjectDir }), expect.anything());
     expect(databases).toHaveBeenCalledWith(expect.objectContaining({ projectDir: newProjectDir }), expect.anything());
@@ -637,7 +637,7 @@ describe('setup status', () => {
     const existingProjectDir = join(tempDir, 'existing');
     const newProjectDir = join(tempDir, 'fresh');
     await mkdir(existingProjectDir, { recursive: true });
-    await writeFile(join(existingProjectDir, 'klo.yaml'), 'project: revenue\nconnections: {}\n', 'utf-8');
+    await writeFile(join(existingProjectDir, 'ktx.yaml'), 'project: revenue\nconnections: {}\n', 'utf-8');
 
     const projectChoices = ['custom', 'create'];
     const projectPrompts = {
@@ -652,7 +652,7 @@ describe('setup status', () => {
     const testIo = makeIo();
 
     await expect(
-      runKloSetup(
+      runKtxSetup(
         {
           command: 'run',
           projectDir: existingProjectDir,
@@ -688,7 +688,7 @@ describe('setup status', () => {
     const demo = vi.fn(async (_args: { projectDir: string }, _io: unknown) => 0);
 
     await expect(
-      runKloSetup(
+      runKtxSetup(
         {
           command: 'run',
           projectDir: tempDir,
@@ -717,14 +717,14 @@ describe('setup status', () => {
       }),
       testIo.io,
     );
-    expect(demo.mock.calls[0]?.[0].projectDir).toMatch(/klo-demo-/);
+    expect(demo.mock.calls[0]?.[0].projectDir).toMatch(/ktx-demo-/);
   });
 
   it('creates a project through run mode when --new is selected', async () => {
     const testIo = makeIo();
 
     await expect(
-      runKloSetup(
+      runKtxSetup(
         {
           command: 'run',
           projectDir: tempDir,
@@ -743,9 +743,9 @@ describe('setup status', () => {
       ),
     ).resolves.toBe(0);
 
-    await expect(stat(join(tempDir, 'klo.yaml'))).resolves.toBeDefined();
-    expect(await readFile(join(tempDir, 'klo.yaml'), 'utf-8')).toContain('completed_steps:');
-    expect(testIo.stdout()).toContain('KLO setup');
+    await expect(stat(join(tempDir, 'ktx.yaml'))).resolves.toBeDefined();
+    expect(await readFile(join(tempDir, 'ktx.yaml'), 'utf-8')).toContain('completed_steps:');
+    expect(testIo.stdout()).toContain('KTX setup');
     expect(testIo.stdout()).toContain(`Project: ${tempDir}`);
     expect(testIo.stdout()).toContain('Project ready: yes');
     expect(testIo.stderr()).toBe('');
@@ -755,7 +755,7 @@ describe('setup status', () => {
     const testIo = makeIo();
 
     await expect(
-      runKloSetup(
+      runKtxSetup(
         {
           command: 'run',
           projectDir: tempDir,
@@ -775,14 +775,14 @@ describe('setup status', () => {
     ).resolves.toBe(1);
 
     expect(testIo.stderr()).toContain('Missing setup choice');
-    await expect(stat(join(tempDir, 'klo.yaml'))).rejects.toThrow();
+    await expect(stat(join(tempDir, 'ktx.yaml'))).rejects.toThrow();
   });
 
   it('returns nonzero when project selection is missing in non-interactive setup', async () => {
     const testIo = makeIo();
 
     await expect(
-      runKloSetup(
+      runKtxSetup(
         {
           command: 'run',
           projectDir: tempDir,
@@ -802,7 +802,7 @@ describe('setup status', () => {
     ).resolves.toBe(1);
 
     expect(testIo.stderr()).toContain('Missing setup choice');
-    await expect(stat(join(tempDir, 'klo.yaml'))).rejects.toThrow();
+    await expect(stat(join(tempDir, 'ktx.yaml'))).rejects.toThrow();
   });
 
   it('runs the Anthropic model step after project selection succeeds', async () => {
@@ -810,7 +810,7 @@ describe('setup status', () => {
     const model = vi.fn(async () => ({ status: 'ready' as const, projectDir: tempDir }));
 
     await expect(
-      runKloSetup(
+      runKtxSetup(
         {
           command: 'run',
           projectDir: tempDir,
@@ -850,7 +850,7 @@ describe('setup status', () => {
     const embeddings = vi.fn(async () => ({ status: 'ready' as const, projectDir: tempDir }));
 
     await expect(
-      runKloSetup(
+      runKtxSetup(
         {
           command: 'run',
           projectDir: tempDir,
@@ -896,7 +896,7 @@ describe('setup status', () => {
     const embeddings = vi.fn(async () => ({ status: 'back' as const, projectDir: tempDir }));
 
     await expect(
-      runKloSetup(
+      runKtxSetup(
         {
           command: 'run',
           projectDir: tempDir,
@@ -943,7 +943,7 @@ describe('setup status', () => {
     };
 
     await expect(
-      runKloSetup(
+      runKtxSetup(
         {
           command: 'run',
           projectDir: tempDir,
@@ -969,7 +969,7 @@ describe('setup status', () => {
 
     expect(databasePrompts.select).not.toHaveBeenCalled();
     expect(testIo.stdout()).toContain(
-      'KLO cannot work without at least one primary source. Select a source or press Escape to go back.',
+      'KTX cannot work without at least one primary source. Select a source or press Escape to go back.',
     );
     expect(embeddings).toHaveBeenCalledTimes(2);
     expect(embeddings).toHaveBeenNthCalledWith(2, expect.objectContaining({ forcePrompt: true }), testIo.io);
@@ -977,7 +977,7 @@ describe('setup status', () => {
   });
 
   it('lets Back from the first setup step return to the entry menu instead of exiting', async () => {
-    await writeFile(join(tempDir, 'klo.yaml'), 'project: test\nconnections: {}\n', 'utf-8');
+    await writeFile(join(tempDir, 'ktx.yaml'), 'project: test\nconnections: {}\n', 'utf-8');
     const testIo = makeIo();
 
     const entryChoices = ['setup', 'exit'];
@@ -988,7 +988,7 @@ describe('setup status', () => {
     const model = vi.fn(async () => ({ status: 'back' as const, projectDir: tempDir }));
 
     await expect(
-      runKloSetup(
+      runKtxSetup(
         {
           command: 'run',
           projectDir: tempDir,
@@ -1028,7 +1028,7 @@ describe('setup status', () => {
     }));
 
     await expect(
-      runKloSetup(
+      runKtxSetup(
         {
           command: 'run',
           projectDir: tempDir,
@@ -1072,10 +1072,10 @@ describe('setup status', () => {
   it('runs sources after database setup', async () => {
     const calls: string[] = [];
     const io = makeIo();
-    await writeFile(join(tempDir, 'klo.yaml'), ['project: revenue', 'connections: {}', ''].join('\n'), 'utf-8');
+    await writeFile(join(tempDir, 'ktx.yaml'), ['project: revenue', 'connections: {}', ''].join('\n'), 'utf-8');
 
     await expect(
-      runKloSetup(
+      runKtxSetup(
         {
           command: 'run',
           projectDir: tempDir,
@@ -1119,10 +1119,10 @@ describe('setup status', () => {
   it('runs context after sources and before agents in full setup', async () => {
     const calls: string[] = [];
     const io = makeIo();
-    await writeFile(join(tempDir, 'klo.yaml'), ['project: revenue', 'connections: {}', ''].join('\n'), 'utf-8');
+    await writeFile(join(tempDir, 'ktx.yaml'), ['project: revenue', 'connections: {}', ''].join('\n'), 'utf-8');
 
     await expect(
-      runKloSetup(
+      runKtxSetup(
         {
           command: 'run',
           projectDir: tempDir,
@@ -1177,10 +1177,10 @@ describe('setup status', () => {
   it('runs agent setup after context succeeds in --agents mode', async () => {
     const calls: string[] = [];
     const io = makeIo();
-    await writeFile(join(tempDir, 'klo.yaml'), ['project: revenue', 'connections: {}', ''].join('\n'), 'utf-8');
+    await writeFile(join(tempDir, 'ktx.yaml'), ['project: revenue', 'connections: {}', ''].join('\n'), 'utf-8');
 
     await expect(
-      runKloSetup(
+      runKtxSetup(
         {
           command: 'run',
           projectDir: tempDir,
@@ -1230,10 +1230,10 @@ describe('setup status', () => {
       projectDir: tempDir,
       installs: [{ target: 'codex' as const, scope: 'project' as const, mode: 'cli' as const }],
     }));
-    await writeFile(join(tempDir, 'klo.yaml'), ['project: revenue', 'connections: {}', ''].join('\n'), 'utf-8');
+    await writeFile(join(tempDir, 'ktx.yaml'), ['project: revenue', 'connections: {}', ''].join('\n'), 'utf-8');
 
     await expect(
-      runKloSetup(
+      runKtxSetup(
         {
           command: 'run',
           projectDir: tempDir,
@@ -1260,16 +1260,16 @@ describe('setup status', () => {
     ).resolves.toBe(1);
 
     expect(agents).not.toHaveBeenCalled();
-    expect(io.stderr()).toContain('KLO context is not ready for agents.');
+    expect(io.stderr()).toContain('KTX context is not ready for agents.');
   });
 
   it('does not install agents when full setup context build is detached', async () => {
     const calls: string[] = [];
     const io = makeIo();
-    await writeFile(join(tempDir, 'klo.yaml'), ['project: revenue', 'connections: {}', ''].join('\n'), 'utf-8');
+    await writeFile(join(tempDir, 'ktx.yaml'), ['project: revenue', 'connections: {}', ''].join('\n'), 'utf-8');
 
     await expect(
-      runKloSetup(
+      runKtxSetup(
         {
           command: 'run',
           projectDir: tempDir,
@@ -1308,9 +1308,9 @@ describe('setup status', () => {
   it('routes a ready project menu selection to agent setup', async () => {
     const calls: string[] = [];
     const io = makeIo();
-    await mkdir(join(tempDir, '.klo', 'agents'), { recursive: true });
+    await mkdir(join(tempDir, '.ktx', 'agents'), { recursive: true });
     await writeFile(
-      join(tempDir, 'klo.yaml'),
+      join(tempDir, 'ktx.yaml'),
       [
         'project: revenue',
         'setup:',
@@ -1338,7 +1338,7 @@ describe('setup status', () => {
       'utf-8',
     );
     await writeFile(
-      join(tempDir, '.klo/agents/install-manifest.json'),
+      join(tempDir, '.ktx/agents/install-manifest.json'),
       JSON.stringify(
         {
           version: 1,
@@ -1352,7 +1352,7 @@ describe('setup status', () => {
       ),
       'utf-8',
     );
-    await writeKloSetupContextState(tempDir, {
+    await writeKtxSetupContextState(tempDir, {
       runId: 'setup-context-local-ready',
       status: 'completed',
       startedAt: '2026-05-09T10:00:00.000Z',
@@ -1367,7 +1367,7 @@ describe('setup status', () => {
     });
 
     await expect(
-      runKloSetup(
+      runKtxSetup(
         {
           command: 'run',
           projectDir: tempDir,
@@ -1426,7 +1426,7 @@ describe('setup status', () => {
     }));
 
     await expect(
-      runKloSetup(
+      runKtxSetup(
         {
           command: 'run',
           projectDir: tempDir,
@@ -1463,7 +1463,7 @@ describe('setup status', () => {
     const io = makeIo();
     const removeAgents = vi.fn(async () => 0);
 
-    await expect(runKloSetup({ command: 'remove-agents', projectDir: tempDir }, io.io, { removeAgents })).resolves.toBe(
+    await expect(runKtxSetup({ command: 'remove-agents', projectDir: tempDir }, io.io, { removeAgents })).resolves.toBe(
       0,
     );
 
@@ -1476,7 +1476,7 @@ describe('setup status', () => {
     const embeddings = vi.fn(async () => ({ status: 'ready' as const, projectDir: tempDir }));
 
     await expect(
-      runKloSetup(
+      runKtxSetup(
         {
           command: 'run',
           projectDir: tempDir,

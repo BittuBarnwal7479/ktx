@@ -1,16 +1,16 @@
-import type { KloSchemaDimensionType, KloTableRef } from '@klo/context/scan';
+import type { KtxSchemaDimensionType, KtxTableRef } from '@ktx/context/scan';
 
-type PostHogTableNameRef = Pick<KloTableRef, 'name'> & Partial<Pick<KloTableRef, 'catalog' | 'db'>>;
+type PostHogTableNameRef = Pick<KtxTableRef, 'name'> & Partial<Pick<KtxTableRef, 'catalog' | 'db'>>;
 
-export interface KloPostHogSampleColumnInfo {
+export interface KtxPostHogSampleColumnInfo {
   name: string;
   parentColumnId: string | null;
 }
 
-export class KloPostHogDialect {
+export class KtxPostHogDialect {
   readonly type = 'posthog';
 
-  private readonly typeMappings: Record<string, KloSchemaDimensionType> = {
+  private readonly typeMappings: Record<string, KtxSchemaDimensionType> = {
     datetime64: 'time',
     datetime: 'time',
     date: 'time',
@@ -67,7 +67,7 @@ export class KloPostHogDialect {
     return typeMapping[cleanType] ?? cleanType;
   }
 
-  mapToDimensionType(nativeType: string): KloSchemaDimensionType {
+  mapToDimensionType(nativeType: string): KtxSchemaDimensionType {
     if (!nativeType) {
       return 'string';
     }
@@ -93,7 +93,7 @@ export class KloPostHogDialect {
     return `SELECT ${columnList} FROM ${tableName} ORDER BY rand() LIMIT ${limit}`;
   }
 
-  generateSampleQueryWithMetadata(tableName: string, limit: number, columnMetadata?: KloPostHogSampleColumnInfo[]): string {
+  generateSampleQueryWithMetadata(tableName: string, limit: number, columnMetadata?: KtxPostHogSampleColumnInfo[]): string {
     if (!columnMetadata || columnMetadata.length === 0) {
       return this.generateSampleQuery(tableName, limit);
     }

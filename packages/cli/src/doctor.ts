@@ -4,15 +4,15 @@ import { access } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
-import type { KloLocalProject, KloProjectEmbeddingConfig } from '@klo/context/project';
-import type { KloEmbeddingConfig, KloEmbeddingHealthCheckOptions, KloEmbeddingHealthCheckResult } from '@klo/llm';
+import type { KtxLocalProject, KtxProjectEmbeddingConfig } from '@ktx/context/project';
+import type { KtxEmbeddingConfig, KtxEmbeddingHealthCheckOptions, KtxEmbeddingHealthCheckResult } from '@ktx/llm';
 import type { HistoricSqlDoctorDeps } from './historic-sql-doctor.js';
 
 const execFileAsync = promisify(execFile);
 
 type DoctorStatus = 'pass' | 'warn' | 'fail';
-type KloDoctorOutputMode = 'plain' | 'json';
-type KloDoctorInputMode = 'auto' | 'disabled';
+type KtxDoctorOutputMode = 'plain' | 'json';
+type KtxDoctorInputMode = 'auto' | 'disabled';
 
 export interface DoctorCheck {
   id: string;
@@ -27,12 +27,12 @@ interface DoctorReport {
   checks: DoctorCheck[];
 }
 
-export type KloDoctorArgs =
-  | { command: 'setup'; outputMode: KloDoctorOutputMode; inputMode?: KloDoctorInputMode }
-  | { command: 'project'; projectDir: string; outputMode: KloDoctorOutputMode; inputMode?: KloDoctorInputMode }
-  | { command: 'demo'; projectDir: string; outputMode: KloDoctorOutputMode; inputMode?: KloDoctorInputMode };
+export type KtxDoctorArgs =
+  | { command: 'setup'; outputMode: KtxDoctorOutputMode; inputMode?: KtxDoctorInputMode }
+  | { command: 'project'; projectDir: string; outputMode: KtxDoctorOutputMode; inputMode?: KtxDoctorInputMode }
+  | { command: 'demo'; projectDir: string; outputMode: KtxDoctorOutputMode; inputMode?: KtxDoctorInputMode };
 
-interface KloDoctorIo {
+interface KtxDoctorIo {
   stdout: { write(chunk: string): void };
   stderr: { write(chunk: string): void };
 }
@@ -46,9 +46,9 @@ interface SetupDoctorDeps {
 }
 
 type EmbeddingHealthCheck = (
-  config: KloEmbeddingConfig,
-  options?: KloEmbeddingHealthCheckOptions,
-) => Promise<KloEmbeddingHealthCheckResult>;
+  config: KtxEmbeddingConfig,
+  options?: KtxEmbeddingHealthCheckOptions,
+) => Promise<KtxEmbeddingHealthCheckResult>;
 
 interface SemanticSearchDoctorDeps {
   env?: NodeJS.ProcessEnv;
@@ -56,9 +56,9 @@ interface SemanticSearchDoctorDeps {
   embeddingProbeTimeoutMs?: number;
 }
 
-interface KloDoctorDeps extends SemanticSearchDoctorDeps, HistoricSqlDoctorDeps {
+interface KtxDoctorDeps extends SemanticSearchDoctorDeps, HistoricSqlDoctorDeps {
   runSetupChecks?: () => Promise<DoctorCheck[]>;
-  runHistoricSqlDoctorChecks?: (project: KloLocalProject, deps: HistoricSqlDoctorDeps) => Promise<DoctorCheck[]>;
+  runHistoricSqlDoctorChecks?: (project: KtxLocalProject, deps: HistoricSqlDoctorDeps) => Promise<DoctorCheck[]>;
 }
 
 function workspaceRootDir(): string {
@@ -119,18 +119,18 @@ function check(status: DoctorStatus, id: string, label: string, detail: string, 
   return fix ? { id, label, status, detail, fix } : { id, label, status, detail };
 }
 
-const SEMANTIC_SEARCH_HEALTH_TEXT = 'KLO semantic search doctor probe';
+const SEMANTIC_SEARCH_HEALTH_TEXT = 'KTX semantic search doctor probe';
 const SEMANTIC_SEARCH_HEALTH_TIMEOUT_MS = 5_000;
 const SEMANTIC_SEARCH_LOCAL_HEALTH_TIMEOUT_MS = 120_000;
 
-function semanticEmbeddingSetupFix(projectDir: string, backend: KloProjectEmbeddingConfig['backend']): string {
+function semanticEmbeddingSetupFix(projectDir: string, backend: KtxProjectEmbeddingConfig['backend']): string {
   if (backend === 'openai') {
-    return `Set OPENAI_API_KEY or rerun: klo setup --project-dir ${projectDir} --embedding-backend openai --no-input`;
+    return `Set OPENAI_API_KEY or rerun: ktx setup --project-dir ${projectDir} --embedding-backend openai --no-input`;
   }
-  return `Run: klo setup --project-dir ${projectDir} --no-input`;
+  return `Run: ktx setup --project-dir ${projectDir} --no-input`;
 }
 
-function embeddingConfigLabel(config: KloProjectEmbeddingConfig | KloEmbeddingConfig): string {
+function embeddingConfigLabel(config: KtxProjectEmbeddingConfig | KtxEmbeddingConfig): string {
   const model = config.model?.trim() || 'model not configured';
   return `${config.backend}/${model} (${config.dimensions}d)`;
 }
@@ -140,15 +140,15 @@ function semanticLaneFallbackDetail(reason: string): string {
 }
 
 async function defaultEmbeddingHealthCheck(
-  config: KloEmbeddingConfig,
-  options?: KloEmbeddingHealthCheckOptions,
-): Promise<KloEmbeddingHealthCheckResult> {
-  const { runKloEmbeddingHealthCheck } = await import('@klo/llm');
-  return runKloEmbeddingHealthCheck(config, options);
+  config: KtxEmbeddingConfig,
+  options?: KtxEmbeddingHealthCheckOptions,
+): Promise<KtxEmbeddingHealthCheckResult> {
+  const { runKtxEmbeddingHealthCheck } = await import('@ktx/llm');
+  return runKtxEmbeddingHealthCheck(config, options);
 }
 
 async function runSemanticSearchEmbeddingCheck(
-  config: KloProjectEmbeddingConfig,
+  config: KtxProjectEmbeddingConfig,
   projectDir: string,
   deps: SemanticSearchDoctorDeps = {},
 ): Promise<DoctorCheck> {
@@ -163,8 +163,8 @@ async function runSemanticSearchEmbeddingCheck(
   }
 
   try {
-    const { resolveLocalKloEmbeddingConfig } = await import('@klo/context');
-    const resolved = resolveLocalKloEmbeddingConfig(config, deps.env ?? process.env);
+    const { resolveLocalKtxEmbeddingConfig } = await import('@ktx/context');
+    const resolved = resolveLocalKtxEmbeddingConfig(config, deps.env ?? process.env);
     if (!resolved) {
       return check(
         'warn',
@@ -300,7 +300,7 @@ export async function runSetupDoctorChecks(deps: SetupDoctorDeps = {}): Promise<
         'workspace-cli',
         'Workspace-local CLI',
         failureMessage(error),
-        'Run: pnpm run build && pnpm run klo -- --version',
+        'Run: pnpm run build && pnpm run ktx -- --version',
       ),
     );
   }
@@ -308,11 +308,11 @@ export async function runSetupDoctorChecks(deps: SetupDoctorDeps = {}): Promise<
   return checks;
 }
 
-async function runProjectChecks(projectDir: string, deps: KloDoctorDeps = {}): Promise<DoctorCheck[]> {
-  const { loadKloProject } = await import('@klo/context/project');
+async function runProjectChecks(projectDir: string, deps: KtxDoctorDeps = {}): Promise<DoctorCheck[]> {
+  const { loadKtxProject } = await import('@ktx/context/project');
   const checks: DoctorCheck[] = [];
   try {
-    const project = await loadKloProject({ projectDir });
+    const project = await loadKtxProject({ projectDir });
     checks.push(check('pass', 'project-config', 'Project config', project.config.project));
     const connectionCount = Object.keys(project.config.connections).length;
     checks.push(
@@ -323,7 +323,7 @@ async function runProjectChecks(projectDir: string, deps: KloDoctorDeps = {}): P
             'connections',
             'Connections',
             '0 configured',
-            'Add a connection to klo.yaml or run `klo setup demo init`',
+            'Add a connection to ktx.yaml or run `ktx setup demo init`',
           ),
     );
     checks.push(check('pass', 'storage', 'Storage', `${project.config.storage.state}/${project.config.storage.search}`));
@@ -339,20 +339,20 @@ async function runProjectChecks(projectDir: string, deps: KloDoctorDeps = {}): P
         'project-config',
         'Project config',
         failureMessage(error),
-        `Run: klo init ${projectDir} --name <project-name>`,
+        `Run: ktx init ${projectDir} --name <project-name>`,
       ),
     );
   }
   return checks;
 }
 
-async function runDemoProjectChecks(projectDir: string, deps: KloDoctorDeps = {}): Promise<DoctorCheck[]> {
+async function runDemoProjectChecks(projectDir: string, deps: KtxDoctorDeps = {}): Promise<DoctorCheck[]> {
   const env = deps.env ?? process.env;
   const { DEMO_CONNECTION_ID, DEMO_REPLAY_FILE } = await import('./demo-assets.js');
-  const { loadKloProject } = await import('@klo/context/project');
+  const { loadKtxProject } = await import('@ktx/context/project');
   const checks: DoctorCheck[] = [];
   const requiredPaths = [
-    ['demo-config', 'Demo config', 'klo.yaml'],
+    ['demo-config', 'Demo config', 'ktx.yaml'],
     ['demo-database', 'Demo dataset', 'demo.db'],
     ['demo-state', 'Demo state database', 'state.sqlite'],
     ['demo-replay', 'Demo replay', join('replays', DEMO_REPLAY_FILE)],
@@ -371,13 +371,13 @@ async function runDemoProjectChecks(projectDir: string, deps: KloDoctorDeps = {}
             id,
             label,
             `Missing ${relativePath}`,
-            `Run: klo setup demo init --project-dir ${projectDir} --force --no-input`,
+            `Run: ktx setup demo init --project-dir ${projectDir} --force --no-input`,
           ),
     );
   }
 
   try {
-    const project = await loadKloProject({ projectDir });
+    const project = await loadKtxProject({ projectDir });
     const connection = project.config.connections[DEMO_CONNECTION_ID];
     checks.push(
       connection?.driver === 'sqlite'
@@ -387,7 +387,7 @@ async function runDemoProjectChecks(projectDir: string, deps: KloDoctorDeps = {}
             'demo-connection',
             'Demo connection',
             `${DEMO_CONNECTION_ID} is missing or is not sqlite`,
-            `Run: klo setup demo init --project-dir ${projectDir} --force --no-input`,
+            `Run: ktx setup demo init --project-dir ${projectDir} --force --no-input`,
           ),
     );
     const provider = project.config.llm.provider.backend;
@@ -399,7 +399,7 @@ async function runDemoProjectChecks(projectDir: string, deps: KloDoctorDeps = {}
             'demo-llm-provider',
             'Demo LLM provider',
             provider,
-            `Run: klo setup demo init --project-dir ${projectDir} --force --no-input`,
+            `Run: ktx setup demo init --project-dir ${projectDir} --force --no-input`,
           ),
     );
     if (provider === 'anthropic' && !env.ANTHROPIC_API_KEY) {
@@ -409,7 +409,7 @@ async function runDemoProjectChecks(projectDir: string, deps: KloDoctorDeps = {}
           'anthropic-credentials',
           'Anthropic credentials',
           'ANTHROPIC_API_KEY is not set',
-          'Export ANTHROPIC_API_KEY to run `klo setup demo --mode full --no-input`',
+          'Export ANTHROPIC_API_KEY to run `ktx setup demo --mode full --no-input`',
         ),
       );
     } else {
@@ -426,7 +426,7 @@ async function runDemoProjectChecks(projectDir: string, deps: KloDoctorDeps = {}
         'demo-config-parse',
         'Demo config parse',
         failureMessage(error),
-        `Run: klo setup demo init --project-dir ${projectDir} --force --no-input`,
+        `Run: ktx setup demo init --project-dir ${projectDir} --force --no-input`,
       ),
     );
   }
@@ -450,7 +450,7 @@ function hasFailures(report: DoctorReport): boolean {
   return report.checks.some((item) => item.status === 'fail');
 }
 
-function writeReport(report: DoctorReport, outputMode: KloDoctorOutputMode, io: KloDoctorIo): void {
+function writeReport(report: DoctorReport, outputMode: KtxDoctorOutputMode, io: KtxDoctorIo): void {
   if (outputMode === 'json') {
     io.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
     return;
@@ -458,24 +458,24 @@ function writeReport(report: DoctorReport, outputMode: KloDoctorOutputMode, io: 
   io.stdout.write(formatDoctorReport(report));
 }
 
-export async function runKloDoctor(
-  args: KloDoctorArgs,
-  io: KloDoctorIo = process,
-  deps: KloDoctorDeps = {},
+export async function runKtxDoctor(
+  args: KtxDoctorArgs,
+  io: KtxDoctorIo = process,
+  deps: KtxDoctorDeps = {},
 ): Promise<number> {
   try {
     const runSetupChecks = deps.runSetupChecks ?? (() => runSetupDoctorChecks());
     const setupChecks = await runSetupChecks();
     const report: DoctorReport =
       args.command === 'setup'
-        ? { title: 'KLO setup doctor', checks: setupChecks }
+        ? { title: 'KTX setup doctor', checks: setupChecks }
         : args.command === 'demo'
           ? {
-              title: 'KLO demo doctor',
+              title: 'KTX demo doctor',
               checks: [...setupChecks, ...(await runDemoProjectChecks(args.projectDir, deps))],
             }
           : {
-              title: 'KLO project doctor',
+              title: 'KTX project doctor',
               checks: [...setupChecks, ...(await runProjectChecks(args.projectDir, deps))],
             };
 

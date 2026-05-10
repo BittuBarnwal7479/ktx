@@ -1,5 +1,5 @@
-import type { KloMetadataUpdate } from '../../../scan/enrichment-types.js';
-import { findMatchingKloTable, type DbtHostTableLite } from './match-tables.js';
+import type { KtxMetadataUpdate } from '../../../scan/enrichment-types.js';
+import { findMatchingKtxTable, type DbtHostTableLite } from './match-tables.js';
 import type { DbtSchemaParseResult } from './parse-schema.js';
 
 export function toMetadataUpdates(input: {
@@ -7,11 +7,11 @@ export function toMetadataUpdates(input: {
   parseResult: DbtSchemaParseResult;
   hostTables: DbtHostTableLite[];
   targetSchema: string | null;
-}): KloMetadataUpdate[] {
-  const updates: KloMetadataUpdate[] = [];
+}): KtxMetadataUpdate[] {
+  const updates: KtxMetadataUpdate[] = [];
 
   for (const dbtTable of input.parseResult.tables) {
-    const hostTable = findMatchingKloTable(dbtTable, input.hostTables, input.targetSchema);
+    const hostTable = findMatchingKtxTable(dbtTable, input.hostTables, input.targetSchema);
     if (!hostTable) {
       continue;
     }

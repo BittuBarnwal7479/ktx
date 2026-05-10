@@ -4,7 +4,7 @@ import { dirname, join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { SqlAnalysisPort } from '../../../sql-analysis/index.js';
 import { stagePgStatStatementsTemplates, writePgssBaselineAtomic, type PgssBaseline } from './stage-pgss.js';
-import type { HistoricSqlPullConfig, KloPostgresQueryClient, PostgresPgssReader, PostgresPgssRow } from './types.js';
+import type { HistoricSqlPullConfig, KtxPostgresQueryClient, PostgresPgssReader, PostgresPgssRow } from './types.js';
 
 const FIXTURE_ROOT = join(__dirname, '__fixtures__/postgres');
 
@@ -45,7 +45,7 @@ async function tempDir(prefix: string): Promise<string> {
   return mkdtemp(join(tmpdir(), prefix));
 }
 
-function fakePgClient(): KloPostgresQueryClient {
+function fakePgClient(): KtxPostgresQueryClient {
   return {
     async executeQuery() {
       return { headers: [], rows: [] };

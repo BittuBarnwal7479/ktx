@@ -3,20 +3,20 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type {
-  KloRelationshipBenchmarkExpectedLinks,
-  KloRelationshipBenchmarkFixture,
+  KtxRelationshipBenchmarkExpectedLinks,
+  KtxRelationshipBenchmarkFixture,
 } from './relationship-benchmarks.js';
 import {
-  currentKloRelationshipBenchmarkDetector,
-  loadKloRelationshipBenchmarkFixture,
-  loadKloRelationshipBenchmarkFixtures,
-  maskKloRelationshipBenchmarkSnapshot,
-  runKloRelationshipBenchmarkCase,
-  runKloRelationshipBenchmarkSuite,
+  currentKtxRelationshipBenchmarkDetector,
+  loadKtxRelationshipBenchmarkFixture,
+  loadKtxRelationshipBenchmarkFixtures,
+  maskKtxRelationshipBenchmarkSnapshot,
+  runKtxRelationshipBenchmarkCase,
+  runKtxRelationshipBenchmarkSuite,
 } from './relationship-benchmarks.js';
-import type { KloSchemaSnapshot } from './types.js';
+import type { KtxSchemaSnapshot } from './types.js';
 
-const EXPECTED_LINKS: KloRelationshipBenchmarkExpectedLinks = {
+const EXPECTED_LINKS: KtxRelationshipBenchmarkExpectedLinks = {
   expectedPks: [
     { table: 'accounts', columns: ['id'] },
     { table: 'users', columns: ['id'] },
@@ -53,7 +53,7 @@ const CHECKED_IN_FIXTURE_ORIGINS = {
   semantic_embedding_aliases_no_declared_constraints: 'synthetic',
 } as const;
 
-function snapshot(): KloSchemaSnapshot {
+function snapshot(): KtxSchemaSnapshot {
   return {
     connectionId: 'warehouse',
     driver: 'sqlite',
@@ -136,16 +136,16 @@ describe('relationship benchmarks', () => {
   it('keeps the current benchmark detector on the relationship-discovery path only', async () => {
     const source = await readFile(new URL('relationship-benchmarks.ts', import.meta.url), 'utf-8');
 
-    expect(source).not.toMatch(/KloRelationshipDetector/);
+    expect(source).not.toMatch(/KtxRelationshipDetector/);
     expect(source).not.toMatch(/relationship-detection\.js/);
     expect(source).not.toMatch(/\bacceptedLinks\b/);
-    expect(source).toMatch(/generateKloRelationshipDiscoveryCandidates/);
-    expect(source).toMatch(/validateKloRelationshipDiscoveryCandidates/);
-    expect(source).toMatch(/resolveKloRelationshipGraph/);
+    expect(source).toMatch(/generateKtxRelationshipDiscoveryCandidates/);
+    expect(source).toMatch(/validateKtxRelationshipDiscoveryCandidates/);
+    expect(source).toMatch(/resolveKtxRelationshipGraph/);
   });
 
   it('scores the current detector with declared metadata present', async () => {
-    const result = await runKloRelationshipBenchmarkCase({
+    const result = await runKtxRelationshipBenchmarkCase({
       fixture: {
         id: 'mini_declared',
         name: 'Mini declared fixture',
@@ -158,7 +158,7 @@ describe('relationship benchmarks', () => {
         columnEmbeddings: {},
       },
       mode: 'metadata_present',
-      detector: currentKloRelationshipBenchmarkDetector(),
+      detector: currentKtxRelationshipBenchmarkDetector(),
     });
 
     expect(result.metrics.pkRecall).toBe(1);
@@ -170,7 +170,7 @@ describe('relationship benchmarks', () => {
   });
 
   it('keeps no-declared-constraint misses in benchmark metrics', async () => {
-    const result = await runKloRelationshipBenchmarkCase({
+    const result = await runKtxRelationshipBenchmarkCase({
       fixture: {
         id: 'mini_no_declared',
         name: 'Mini no declared fixture',
@@ -183,7 +183,7 @@ describe('relationship benchmarks', () => {
         columnEmbeddings: {},
       },
       mode: 'declared_pks_and_declared_fks_removed',
-      detector: currentKloRelationshipBenchmarkDetector(),
+      detector: currentKtxRelationshipBenchmarkDetector(),
     });
 
     expect(result.metrics.pkRecall).toBe(0.5);
@@ -197,7 +197,7 @@ describe('relationship benchmarks', () => {
   });
 
   it('keeps composite ground truth in recall denominators and skipped-composite buckets', async () => {
-    const compositeExpected: KloRelationshipBenchmarkExpectedLinks = {
+    const compositeExpected: KtxRelationshipBenchmarkExpectedLinks = {
       expectedPks: [{ table: 'order_lines', columns: ['order_id', 'line_number'] }],
       expectedLinks: [
         {
@@ -222,7 +222,7 @@ describe('relationship benchmarks', () => {
       },
     };
 
-    const result = await runKloRelationshipBenchmarkCase({
+    const result = await runKtxRelationshipBenchmarkCase({
       fixture: {
         id: 'composite_no_declared',
         name: 'Composite relationship fixture without declared constraints',
@@ -256,7 +256,7 @@ describe('relationship benchmarks', () => {
 
   it('loads the composite-key fixture and accepts composite ground truth as headline evidence', async () => {
     const fixtureRoot = new URL('../../test/fixtures/relationship-benchmarks/', import.meta.url);
-    const fixture = await loadKloRelationshipBenchmarkFixture(
+    const fixture = await loadKtxRelationshipBenchmarkFixture(
       join(fixtureRoot.pathname, 'composite_keys_no_declared_constraints'),
     );
 
@@ -270,9 +270,9 @@ describe('relationship benchmarks', () => {
     ]);
     expect(fixture.dataPath).toMatch(/composite_keys_no_declared_constraints\/data\.sqlite$/);
 
-    const suite = await runKloRelationshipBenchmarkSuite({
+    const suite = await runKtxRelationshipBenchmarkSuite({
       fixtures: [fixture],
-      detector: currentKloRelationshipBenchmarkDetector(),
+      detector: currentKtxRelationshipBenchmarkDetector(),
     });
     const headline = suite.cases.find(
       (item) =>
@@ -319,7 +319,7 @@ describe('relationship benchmarks', () => {
 
   it('counts formal metadata links in metadata-present mode without SQL validation', async () => {
     const source = snapshot();
-    const fixture: KloRelationshipBenchmarkFixture = {
+    const fixture: KtxRelationshipBenchmarkFixture = {
       id: 'declared_without_sql',
       name: 'Declared relationships without SQL validation',
       tier: 'unit',
@@ -357,7 +357,7 @@ describe('relationship benchmarks', () => {
       columnEmbeddings: {},
     };
 
-    const result = await runKloRelationshipBenchmarkCase({
+    const result = await runKtxRelationshipBenchmarkCase({
       fixture,
       mode: 'metadata_present',
     });
@@ -369,8 +369,8 @@ describe('relationship benchmarks', () => {
   });
 
   it('masks primary keys and foreign keys independently', () => {
-    const pksRemoved = maskKloRelationshipBenchmarkSnapshot(snapshot(), 'declared_pks_removed');
-    const fksRemoved = maskKloRelationshipBenchmarkSnapshot(snapshot(), 'declared_fks_removed');
+    const pksRemoved = maskKtxRelationshipBenchmarkSnapshot(snapshot(), 'declared_pks_removed');
+    const fksRemoved = maskKtxRelationshipBenchmarkSnapshot(snapshot(), 'declared_fks_removed');
 
     expect(pksRemoved.tables.flatMap((table) => table.columns.filter((column) => column.primaryKey))).toEqual([]);
     expect(pksRemoved.tables.find((table) => table.name === 'users')?.foreignKeys).toHaveLength(1);
@@ -379,7 +379,7 @@ describe('relationship benchmarks', () => {
   });
 
   it('loads fixture.yaml, snapshot.json, and expected-links.yaml from a fixture directory', async () => {
-    const fixtureDir = await mkdtemp(join(tmpdir(), 'klo-relationship-fixture-'));
+    const fixtureDir = await mkdtemp(join(tmpdir(), 'ktx-relationship-fixture-'));
     try {
       await writeFile(
         join(fixtureDir, 'fixture.yaml'),
@@ -425,7 +425,7 @@ describe('relationship benchmarks', () => {
         ].join('\n'),
       );
 
-      await expect(loadKloRelationshipBenchmarkFixture(fixtureDir)).resolves.toMatchObject({
+      await expect(loadKtxRelationshipBenchmarkFixture(fixtureDir)).resolves.toMatchObject({
         id: 'mini_loaded',
         origin: 'synthetic',
         validationBudget: 3,
@@ -470,7 +470,7 @@ describe('relationship benchmarks', () => {
       },
     };
 
-    await runKloRelationshipBenchmarkSuite({
+    await runKtxRelationshipBenchmarkSuite({
       fixtures: [
         {
           id: 'budgeted_fixture',
@@ -503,7 +503,7 @@ describe('relationship benchmarks', () => {
   });
 
   it('requires relationship benchmark fixture origin provenance', async () => {
-    const fixtureDir = await mkdtemp(join(tmpdir(), 'klo-relationship-missing-origin-'));
+    const fixtureDir = await mkdtemp(join(tmpdir(), 'ktx-relationship-missing-origin-'));
     try {
       await writeFile(
         join(fixtureDir, 'fixture.yaml'),
@@ -522,14 +522,14 @@ describe('relationship benchmarks', () => {
         ['expectedPks:', '  - table: accounts', '    columns: [id]', 'expectedLinks: []', ''].join('\n'),
       );
 
-      await expect(loadKloRelationshipBenchmarkFixture(fixtureDir)).rejects.toThrow(/origin/);
+      await expect(loadKtxRelationshipBenchmarkFixture(fixtureDir)).rejects.toThrow(/origin/);
     } finally {
       await rm(fixtureDir, { recursive: true, force: true });
     }
   });
 
   it('loads all benchmark fixture directories in stable order', async () => {
-    const fixtureRoot = await mkdtemp(join(tmpdir(), 'klo-relationship-fixture-root-'));
+    const fixtureRoot = await mkdtemp(join(tmpdir(), 'ktx-relationship-fixture-root-'));
 
     async function writeFixtureDir(dirName: string, fixtureId: string): Promise<void> {
       const fixtureDir = join(fixtureRoot, dirName);
@@ -570,7 +570,7 @@ describe('relationship benchmarks', () => {
       await writeFixtureDir('z_fixture', 'z_fixture');
       await writeFixtureDir('a_fixture', 'a_fixture');
 
-      await expect(loadKloRelationshipBenchmarkFixtures(fixtureRoot)).resolves.toMatchObject([
+      await expect(loadKtxRelationshipBenchmarkFixtures(fixtureRoot)).resolves.toMatchObject([
         { id: 'a_fixture', origin: 'synthetic' },
         { id: 'z_fixture', origin: 'synthetic' },
       ]);
@@ -588,7 +588,7 @@ describe('relationship benchmarks', () => {
 
     expect(fixtureDirs).toEqual(Object.keys(CHECKED_IN_FIXTURE_ORIGINS).sort());
 
-    const fixtures = await loadKloRelationshipBenchmarkFixtures(fixtureRoot.pathname);
+    const fixtures = await loadKtxRelationshipBenchmarkFixtures(fixtureRoot.pathname);
     expect(Object.fromEntries(fixtures.map((fixture) => [fixture.id, fixture.origin]))).toEqual(
       CHECKED_IN_FIXTURE_ORIGINS,
     );
@@ -596,7 +596,7 @@ describe('relationship benchmarks', () => {
 
   it('loads May 8 evidence-fusion adversarial fixtures as reported synthetic evidence', async () => {
     const fixtureRoot = new URL('../../test/fixtures/relationship-benchmarks/', import.meta.url);
-    const fixtures = await loadKloRelationshipBenchmarkFixtures(fixtureRoot.pathname);
+    const fixtures = await loadKtxRelationshipBenchmarkFixtures(fixtureRoot.pathname);
     const byId = new Map(fixtures.map((fixture) => [fixture.id, fixture]));
     const adversarialIds = [
       'non_english_naming_no_declared_constraints',
@@ -629,7 +629,7 @@ describe('relationship benchmarks', () => {
 
   it('loads the May 8 scale stress fixture with bounded benchmark validation', async () => {
     const fixtureRoot = new URL('../../test/fixtures/relationship-benchmarks/', import.meta.url);
-    const fixture = await loadKloRelationshipBenchmarkFixture(
+    const fixture = await loadKtxRelationshipBenchmarkFixture(
       join(fixtureRoot.pathname, 'scale_stress_no_declared_constraints'),
     );
 
@@ -646,14 +646,14 @@ describe('relationship benchmarks', () => {
 
   it('runs the scale stress fixture inside the benchmark validation budget', async () => {
     const fixtureRoot = new URL('../../test/fixtures/relationship-benchmarks/', import.meta.url);
-    const fixture = await loadKloRelationshipBenchmarkFixture(
+    const fixture = await loadKtxRelationshipBenchmarkFixture(
       join(fixtureRoot.pathname, 'scale_stress_no_declared_constraints'),
     );
 
-    const result = await runKloRelationshipBenchmarkCase({
+    const result = await runKtxRelationshipBenchmarkCase({
       fixture,
       mode: 'declared_pks_and_declared_fks_removed',
-      detector: currentKloRelationshipBenchmarkDetector(),
+      detector: currentKtxRelationshipBenchmarkDetector(),
     });
 
     expect(result.metrics.runtimeSeconds).toBeLessThan(60);
@@ -662,7 +662,7 @@ describe('relationship benchmarks', () => {
   }, 60_000);
 
   it('aggregates suite metrics without hiding validation-blocked cases', async () => {
-    const suite = await runKloRelationshipBenchmarkSuite({
+    const suite = await runKtxRelationshipBenchmarkSuite({
       fixtures: [
         {
           id: 'mini_declared',
@@ -687,7 +687,7 @@ describe('relationship benchmarks', () => {
           columnEmbeddings: {},
         },
       ],
-      detector: currentKloRelationshipBenchmarkDetector(),
+      detector: currentKtxRelationshipBenchmarkDetector(),
     });
 
     expect(suite.cases.map((item) => `${item.fixtureId}:${item.mode}`)).toEqual([
@@ -730,7 +730,7 @@ describe('relationship benchmarks', () => {
       },
     };
 
-    const suite = await runKloRelationshipBenchmarkSuite({
+    const suite = await runKtxRelationshipBenchmarkSuite({
       fixtures: [
         {
           id: 'smoke_no_declared',
@@ -792,7 +792,7 @@ describe('relationship benchmarks', () => {
       },
     };
 
-    const suite = await runKloRelationshipBenchmarkSuite({
+    const suite = await runKtxRelationshipBenchmarkSuite({
       fixtures: [
         {
           id: 'product_not_curated',
@@ -841,10 +841,10 @@ describe('relationship benchmarks', () => {
 
   it('loads the packaged B2B demo fixtures and records the current relationship-discovery baseline', async () => {
     const fixtureRoot = new URL('../../test/fixtures/relationship-benchmarks/', import.meta.url);
-    const declared = await loadKloRelationshipBenchmarkFixture(
+    const declared = await loadKtxRelationshipBenchmarkFixture(
       join(fixtureRoot.pathname, 'demo_b2b_declared_metadata'),
     );
-    const noDeclared = await loadKloRelationshipBenchmarkFixture(
+    const noDeclared = await loadKtxRelationshipBenchmarkFixture(
       join(fixtureRoot.pathname, 'demo_b2b_no_declared_constraints'),
     );
 
@@ -868,9 +868,9 @@ describe('relationship benchmarks', () => {
       'embeddings_disabled',
     ]);
 
-    const suite = await runKloRelationshipBenchmarkSuite({
+    const suite = await runKtxRelationshipBenchmarkSuite({
       fixtures: [declared, noDeclared],
-      detector: currentKloRelationshipBenchmarkDetector(),
+      detector: currentKtxRelationshipBenchmarkDetector(),
     });
 
     const declaredCase = suite.cases.find(
@@ -922,7 +922,7 @@ describe('relationship benchmarks', () => {
 
   it('loads the public Chinook benchmark fixture with declared metadata', async () => {
     const fixtureRoot = new URL('../../test/fixtures/relationship-benchmarks/', import.meta.url);
-    const fixture = await loadKloRelationshipBenchmarkFixture(
+    const fixture = await loadKtxRelationshipBenchmarkFixture(
       join(fixtureRoot.pathname, 'chinook_with_declared_metadata'),
     );
     expect(fixture.tier).toBe('row_bearing');
@@ -940,7 +940,7 @@ describe('relationship benchmarks', () => {
 
   it('loads the public Northwind benchmark fixture with declared metadata', async () => {
     const fixtureRoot = new URL('../../test/fixtures/relationship-benchmarks/', import.meta.url);
-    const fixture = await loadKloRelationshipBenchmarkFixture(
+    const fixture = await loadKtxRelationshipBenchmarkFixture(
       join(fixtureRoot.pathname, 'northwind_with_declared_metadata'),
     );
     expect(fixture.tier).toBe('row_bearing');
@@ -956,7 +956,7 @@ describe('relationship benchmarks', () => {
 
   it('loads the public Sakila benchmark fixture with declared metadata', async () => {
     const fixtureRoot = new URL('../../test/fixtures/relationship-benchmarks/', import.meta.url);
-    const fixture = await loadKloRelationshipBenchmarkFixture(
+    const fixture = await loadKtxRelationshipBenchmarkFixture(
       join(fixtureRoot.pathname, 'sakila_with_declared_metadata'),
     );
     expect(fixture.tier).toBe('row_bearing');
@@ -972,7 +972,7 @@ describe('relationship benchmarks', () => {
 
   it('loads the public AdventureWorksLT benchmark fixture with declared metadata', async () => {
     const fixtureRoot = new URL('../../test/fixtures/relationship-benchmarks/', import.meta.url);
-    const fixture = await loadKloRelationshipBenchmarkFixture(
+    const fixture = await loadKtxRelationshipBenchmarkFixture(
       join(fixtureRoot.pathname, 'adventureworkslt_with_declared_metadata'),
     );
 
@@ -1032,7 +1032,7 @@ describe('relationship benchmarks', () => {
 
   it('loads the full AdventureWorks OLTP benchmark fixture with declared metadata', async () => {
     const fixtureRoot = new URL('../../test/fixtures/relationship-benchmarks/', import.meta.url);
-    const fixture = await loadKloRelationshipBenchmarkFixture(
+    const fixture = await loadKtxRelationshipBenchmarkFixture(
       join(fixtureRoot.pathname, 'adventureworks_oltp_with_declared_metadata'),
     );
 
@@ -1092,7 +1092,7 @@ describe('relationship benchmarks', () => {
 
   it('loads the row-bearing natural-key fixture and counts it as headline evidence', async () => {
     const fixtureRoot = new URL('../../test/fixtures/relationship-benchmarks/', import.meta.url);
-    const naturalKeys = await loadKloRelationshipBenchmarkFixture(
+    const naturalKeys = await loadKtxRelationshipBenchmarkFixture(
       join(fixtureRoot.pathname, 'natural_keys_no_declared_constraints'),
     );
 
@@ -1105,9 +1105,9 @@ describe('relationship benchmarks', () => {
       'embeddings_disabled',
     ]);
 
-    const suite = await runKloRelationshipBenchmarkSuite({
+    const suite = await runKtxRelationshipBenchmarkSuite({
       fixtures: [naturalKeys],
-      detector: currentKloRelationshipBenchmarkDetector(),
+      detector: currentKtxRelationshipBenchmarkDetector(),
     });
     const headline = suite.cases.find(
       (item) =>
@@ -1126,7 +1126,7 @@ describe('relationship benchmarks', () => {
 
   it('accepts plan-code suffix relationships only when validation is available', async () => {
     const fixtureRoot = new URL('../../test/fixtures/relationship-benchmarks/', import.meta.url);
-    const fixture = await loadKloRelationshipBenchmarkFixture(
+    const fixture = await loadKtxRelationshipBenchmarkFixture(
       join(fixtureRoot.pathname, 'plan_code_no_declared_constraints'),
     );
 
@@ -1139,9 +1139,9 @@ describe('relationship benchmarks', () => {
       'embeddings_disabled',
     ]);
 
-    const suite = await runKloRelationshipBenchmarkSuite({
+    const suite = await runKtxRelationshipBenchmarkSuite({
       fixtures: [fixture],
-      detector: currentKloRelationshipBenchmarkDetector(),
+      detector: currentKtxRelationshipBenchmarkDetector(),
     });
     const expectedAccepted = [
       'mart_account_segments.(current_plan_code)->stg_plans.(plan_code)',
@@ -1187,7 +1187,7 @@ describe('relationship benchmarks', () => {
 
   it('uses embedding fixtures for semantic alias relationship benchmark cases', async () => {
     const fixtureRoot = new URL('../../test/fixtures/relationship-benchmarks/', import.meta.url);
-    const fixture = await loadKloRelationshipBenchmarkFixture(
+    const fixture = await loadKtxRelationshipBenchmarkFixture(
       join(fixtureRoot.pathname, 'semantic_embedding_aliases_no_declared_constraints'),
     );
 
@@ -1196,15 +1196,15 @@ describe('relationship benchmarks', () => {
       'orders.buyer_ref': [0.995, 0.005, 0],
     });
 
-    const withEmbeddings = await runKloRelationshipBenchmarkCase({
+    const withEmbeddings = await runKtxRelationshipBenchmarkCase({
       fixture,
       mode: 'declared_pks_and_declared_fks_removed',
-      detector: currentKloRelationshipBenchmarkDetector(),
+      detector: currentKtxRelationshipBenchmarkDetector(),
     });
-    const withoutEmbeddings = await runKloRelationshipBenchmarkCase({
+    const withoutEmbeddings = await runKtxRelationshipBenchmarkCase({
       fixture,
       mode: 'embeddings_disabled',
-      detector: currentKloRelationshipBenchmarkDetector(),
+      detector: currentKtxRelationshipBenchmarkDetector(),
     });
 
     expect(withEmbeddings.predicted.acceptedFk).toEqual(['orders.(buyer_ref)->customers.(id)']);
@@ -1218,7 +1218,7 @@ describe('relationship benchmarks', () => {
 
   it('loads the Orbit-style product fixture as curated relationship-discovery benchmark evidence', async () => {
     const fixtureRoot = new URL('../../test/fixtures/relationship-benchmarks/', import.meta.url);
-    const fixture = await loadKloRelationshipBenchmarkFixture(
+    const fixture = await loadKtxRelationshipBenchmarkFixture(
       join(fixtureRoot.pathname, 'orbit_style_product_no_declared_constraints'),
     );
 
@@ -1232,9 +1232,9 @@ describe('relationship benchmarks', () => {
       'embeddings_disabled',
     ]);
 
-    const suite = await runKloRelationshipBenchmarkSuite({
+    const suite = await runKtxRelationshipBenchmarkSuite({
       fixtures: [fixture],
-      detector: currentKloRelationshipBenchmarkDetector(),
+      detector: currentKtxRelationshipBenchmarkDetector(),
     });
     const headline = suite.cases.find(
       (item) =>

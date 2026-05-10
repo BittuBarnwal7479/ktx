@@ -2,9 +2,9 @@ CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
 
 CREATE ROLE app_user LOGIN PASSWORD 'app_pass';
 CREATE ROLE etl_user LOGIN PASSWORD 'etl_pass';
-CREATE ROLE klo_reader LOGIN PASSWORD 'klo_reader';
+CREATE ROLE ktx_reader LOGIN PASSWORD 'ktx_reader';
 
-GRANT pg_read_all_stats TO klo_reader;
+GRANT pg_read_all_stats TO ktx_reader;
 
 CREATE TABLE customers (
   id integer PRIMARY KEY,
@@ -47,5 +47,5 @@ INSERT INTO events (id, customer_id, event_name, occurred_at) VALUES
   (4, 3, 'sync_completed', now() - interval '6 hours'),
   (5, 4, 'dashboard_viewed', now() - interval '5 hours');
 
-GRANT USAGE ON SCHEMA public TO app_user, etl_user, klo_reader;
-GRANT SELECT ON ALL TABLES IN SCHEMA public TO app_user, etl_user, klo_reader;
+GRANT USAGE ON SCHEMA public TO app_user, etl_user, ktx_reader;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO app_user, etl_user, ktx_reader;

@@ -1,19 +1,19 @@
-export { KloPostHogDialect, type KloPostHogSampleColumnInfo } from './dialect.js';
+export { KtxPostHogDialect, type KtxPostHogSampleColumnInfo } from './dialect.js';
 export {
-  getKloPostHogColumnDescription,
-  getKloPostHogPropertyDescription,
-  getKloPostHogTableDescription,
+  getKtxPostHogColumnDescription,
+  getKtxPostHogPropertyDescription,
+  getKtxPostHogTableDescription,
 } from './schema-descriptions.js';
 export {
-  isKloPostHogConnectionConfig,
-  KloPostHogScanConnector,
+  isKtxPostHogConnectionConfig,
+  KtxPostHogScanConnector,
   postHogConnectionConfigFromConfig,
-  type KloPostHogColumnDistinctValuesOptions,
-  type KloPostHogColumnDistinctValuesResult,
-  type KloPostHogConnectionConfig,
-  type KloPostHogFetch,
-  type KloPostHogReadOnlyQueryInput,
-  type KloPostHogResolvedConnectionConfig,
-  type KloPostHogScanConnectorOptions,
+  type KtxPostHogColumnDistinctValuesOptions,
+  type KtxPostHogColumnDistinctValuesResult,
+  type KtxPostHogConnectionConfig,
+  type KtxPostHogFetch,
+  type KtxPostHogReadOnlyQueryInput,
+  type KtxPostHogResolvedConnectionConfig,
+  type KtxPostHogScanConnectorOptions,
 } from './connector.js';
 export { createPostHogLiveDatabaseIntrospection } from './live-database-introspection.js';

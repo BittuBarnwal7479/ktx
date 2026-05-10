@@ -1,19 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { buildDefaultKloProjectConfig } from './config.js';
+import { buildDefaultKtxProjectConfig } from './config.js';
 import {
-  markKloSetupStepComplete,
-  mergeKloSetupGitignoreEntries,
-  setKloSetupDatabaseConnectionIds,
+  markKtxSetupStepComplete,
+  mergeKtxSetupGitignoreEntries,
+  setKtxSetupDatabaseConnectionIds,
 } from './setup-config.js';
 
-describe('KLO setup config helpers', () => {
+describe('KTX setup config helpers', () => {
   it('marks setup steps complete without duplicating existing state', () => {
-    const config = buildDefaultKloProjectConfig('warehouse');
+    const config = buildDefaultKtxProjectConfig('warehouse');
 
-    const withProject = markKloSetupStepComplete(config, 'project');
-    const withProjectAgain = markKloSetupStepComplete(withProject, 'project');
-    const withLlm = markKloSetupStepComplete(withProjectAgain, 'llm');
-    const withContext = markKloSetupStepComplete(withLlm, 'context');
+    const withProject = markKtxSetupStepComplete(config, 'project');
+    const withProjectAgain = markKtxSetupStepComplete(withProject, 'project');
+    const withLlm = markKtxSetupStepComplete(withProjectAgain, 'llm');
+    const withContext = markKtxSetupStepComplete(withLlm, 'context');
 
     expect(withProject.setup).toEqual({
       database_connection_ids: [],
@@ -27,23 +27,23 @@ describe('KLO setup config helpers', () => {
 
   it('preserves database connection ids while marking a step complete', () => {
     const config = {
-      ...buildDefaultKloProjectConfig('warehouse'),
+      ...buildDefaultKtxProjectConfig('warehouse'),
       setup: {
         database_connection_ids: ['warehouse'],
         completed_steps: ['databases'],
       },
     };
 
-    expect(markKloSetupStepComplete(config, 'project').setup).toEqual({
+    expect(markKtxSetupStepComplete(config, 'project').setup).toEqual({
       database_connection_ids: ['warehouse'],
       completed_steps: ['databases', 'project'],
     });
   });
 
   it('sets setup database connection ids without duplicates', () => {
-    const config = buildDefaultKloProjectConfig('warehouse');
+    const config = buildDefaultKtxProjectConfig('warehouse');
 
-    const withDatabases = setKloSetupDatabaseConnectionIds(config, ['warehouse', 'analytics', 'warehouse']);
+    const withDatabases = setKtxSetupDatabaseConnectionIds(config, ['warehouse', 'analytics', 'warehouse']);
 
     expect(withDatabases.setup).toEqual({
       database_connection_ids: ['warehouse', 'analytics'],
@@ -53,10 +53,10 @@ describe('KLO setup config helpers', () => {
   });
 
   it('marks databases complete only when requested', () => {
-    const config = markKloSetupStepComplete(buildDefaultKloProjectConfig('warehouse'), 'project');
+    const config = markKtxSetupStepComplete(buildDefaultKtxProjectConfig('warehouse'), 'project');
 
-    const withDatabases = setKloSetupDatabaseConnectionIds(config, ['warehouse'], { complete: true });
-    const withDatabasesAgain = setKloSetupDatabaseConnectionIds(withDatabases, ['warehouse'], { complete: true });
+    const withDatabases = setKtxSetupDatabaseConnectionIds(config, ['warehouse'], { complete: true });
+    const withDatabasesAgain = setKtxSetupDatabaseConnectionIds(withDatabases, ['warehouse'], { complete: true });
 
     expect(withDatabases.setup).toEqual({
       database_connection_ids: ['warehouse'],
@@ -66,10 +66,10 @@ describe('KLO setup config helpers', () => {
   });
 
   it('merges setup-local gitignore entries without removing existing lines', () => {
-    expect(mergeKloSetupGitignoreEntries('cache/\ndb.sqlite\n')).toBe(
+    expect(mergeKtxSetupGitignoreEntries('cache/\ndb.sqlite\n')).toBe(
       ['cache/', 'db.sqlite', 'secrets/', 'setup/', 'agents/', ''].join('\n'),
     );
-    expect(mergeKloSetupGitignoreEntries('cache/\nsecrets/\n')).toBe(
+    expect(mergeKtxSetupGitignoreEntries('cache/\nsecrets/\n')).toBe(
       ['cache/', 'secrets/', 'setup/', 'agents/', ''].join('\n'),
     );
   });

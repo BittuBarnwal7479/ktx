@@ -2,7 +2,7 @@ import { mkdtemp, realpath, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import type { KloCoreConfig } from './config.js';
+import type { KtxCoreConfig } from './config.js';
 import { GitService } from './git.service.js';
 
 // These tests drive a real git repo inside a temp directory — simple-git shells out to the
@@ -15,7 +15,7 @@ describe('GitService', () => {
   beforeEach(async () => {
     tempDir = await mkdtemp(join(tmpdir(), 'git-service-spec-'));
 
-    const coreConfig: KloCoreConfig = {
+    const coreConfig: KtxCoreConfig = {
       storage: { configDir: tempDir, homeDir: tempDir },
       git: {
         userName: 'Test User',

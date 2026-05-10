@@ -13,7 +13,7 @@ export const PGLITE_OWNER_PROCESS_BACKEND_CAPABILITIES = {
   arraySearch: false,
 } satisfies SearchBackendCapabilities;
 
-export interface KloPGliteOwnerProcessOptions {
+export interface KtxPGliteOwnerProcessOptions {
   dataDir: string;
   host: string;
   port: number;
@@ -21,7 +21,7 @@ export interface KloPGliteOwnerProcessOptions {
   maxConnections?: number;
 }
 
-export class KloPGliteOwnerProcess {
+export class KtxPGliteOwnerProcess {
   readonly dataDir: string;
   readonly host: string;
   readonly port: number;
@@ -30,7 +30,7 @@ export class KloPGliteOwnerProcess {
   #server: PGLiteSocketServer;
   #stopped = false;
 
-  private constructor(options: KloPGliteOwnerProcessOptions, db: PGliteInterface, server: PGLiteSocketServer) {
+  private constructor(options: KtxPGliteOwnerProcessOptions, db: PGliteInterface, server: PGLiteSocketServer) {
     this.dataDir = options.dataDir;
     this.host = options.host;
     this.port = options.port;
@@ -38,7 +38,7 @@ export class KloPGliteOwnerProcess {
     this.#server = server;
   }
 
-  static async start(options: KloPGliteOwnerProcessOptions): Promise<KloPGliteOwnerProcess> {
+  static async start(options: KtxPGliteOwnerProcessOptions): Promise<KtxPGliteOwnerProcess> {
     const db = await PGlite.create({
       dataDir: options.dataDir,
       extensions: {
@@ -65,7 +65,7 @@ export class KloPGliteOwnerProcess {
 
       await server.start();
 
-      return new KloPGliteOwnerProcess(options, db, server);
+      return new KtxPGliteOwnerProcess(options, db, server);
     } catch (error) {
       await server?.stop().catch(() => undefined);
       await db.close().catch(() => undefined);
@@ -79,7 +79,7 @@ export class KloPGliteOwnerProcess {
       port: this.port,
       user: 'postgres',
       database: 'postgres',
-      application_name: 'klo-pglite-owner-prototype',
+      application_name: 'ktx-pglite-owner-prototype',
       connectionTimeoutMillis: 5_000,
     };
   }

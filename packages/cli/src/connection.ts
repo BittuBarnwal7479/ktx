@@ -1,14 +1,14 @@
 import { cancel, confirm, isCancel } from '@clack/prompts';
-import { type KloLocalProject, loadKloProject, serializeKloProjectConfig } from '@klo/context/project';
-import type { KloScanConnector } from '@klo/context/scan';
-import type { KloConnectionMappingArgs } from './commands/connection-mapping.js';
-import type { KloCliIo } from './index.js';
-import { createKloCliScanConnector } from './local-scan-connectors.js';
+import { type KtxLocalProject, loadKtxProject, serializeKtxProjectConfig } from '@ktx/context/project';
+import type { KtxScanConnector } from '@ktx/context/scan';
+import type { KtxConnectionMappingArgs } from './commands/connection-mapping.js';
+import type { KtxCliIo } from './index.js';
+import { createKtxCliScanConnector } from './local-scan-connectors.js';
 import { profileMark } from './startup-profile.js';
 
 profileMark('module:connection');
 
-interface KloNotionConnectionCliConfig {
+interface KtxNotionConnectionCliConfig {
   authTokenRef: string;
   crawlMode: 'all_accessible' | 'selected_roots';
   rootPageIds: string[];
@@ -19,9 +19,9 @@ interface KloNotionConnectionCliConfig {
   maxKnowledgeUpdatesPerRun?: number;
 }
 
-type KloConnectionInputMode = 'disabled';
+type KtxConnectionInputMode = 'disabled';
 
-export type KloConnectionArgs =
+export type KtxConnectionArgs =
   | { command: 'list'; projectDir: string }
   | {
       command: 'add';
@@ -33,7 +33,7 @@ export type KloConnectionArgs =
       readonly: boolean;
       force: boolean;
       allowLiteralCredentials: boolean;
-      notion?: KloNotionConnectionCliConfig;
+      notion?: KtxNotionConnectionCliConfig;
     }
   | { command: 'test'; projectDir: string; connectionId: string }
   | {
@@ -41,7 +41,7 @@ export type KloConnectionArgs =
       projectDir: string;
       connectionId: string;
       force: boolean;
-      inputMode?: KloConnectionInputMode;
+      inputMode?: KtxConnectionInputMode;
     }
   | {
       command: 'map';
@@ -50,19 +50,19 @@ export type KloConnectionArgs =
       json: boolean;
     };
 
-interface KloConnectionPromptAdapter {
+interface KtxConnectionPromptAdapter {
   confirm(options: { message: string; initialValue?: boolean }): Promise<boolean>;
   cancel(message: string): void;
 }
 
-interface KloConnectionIo extends KloCliIo {
+interface KtxConnectionIo extends KtxCliIo {
   stdin?: { isTTY?: boolean };
 }
 
-interface KloConnectionDeps {
-  createScanConnector?: typeof createKloCliScanConnector;
-  runMapping?: (argv: string[], io: KloCliIo) => Promise<number>;
-  prompts?: KloConnectionPromptAdapter;
+interface KtxConnectionDeps {
+  createScanConnector?: typeof createKtxCliScanConnector;
+  runMapping?: (argv: string[], io: KtxCliIo) => Promise<number>;
+  prompts?: KtxConnectionPromptAdapter;
 }
 
 function assertSafeConnectionId(connectionId: string): void {
@@ -76,10 +76,10 @@ function isCredentialReference(value: string): boolean {
 }
 
 function literalCredentialWarning(connectionId: string): string {
-  return `Warning: writing a literal credential URL to klo.yaml for connection "${connectionId}". Prefer env:NAME or file:/path references.`;
+  return `Warning: writing a literal credential URL to ktx.yaml for connection "${connectionId}". Prefer env:NAME or file:/path references.`;
 }
 
-function createClackConnectionPromptAdapter(): KloConnectionPromptAdapter {
+function createClackConnectionPromptAdapter(): KtxConnectionPromptAdapter {
   return {
     async confirm(options: { message: string; initialValue?: boolean }): Promise<boolean> {
       const value = await confirm(options);
@@ -92,24 +92,24 @@ function createClackConnectionPromptAdapter(): KloConnectionPromptAdapter {
 }
 
 function isInteractiveConnectionIo(
-  args: Extract<KloConnectionArgs, { command: 'remove' }>,
-  io: KloConnectionIo,
+  args: Extract<KtxConnectionArgs, { command: 'remove' }>,
+  io: KtxConnectionIo,
 ): boolean {
   return args.inputMode !== 'disabled' && io.stdin?.isTTY === true && io.stdout.isTTY === true;
 }
 
-async function cleanupConnector(connector: KloScanConnector | null): Promise<void> {
+async function cleanupConnector(connector: KtxScanConnector | null): Promise<void> {
   if (connector?.cleanup) {
     await connector.cleanup();
   }
 }
 
 async function testNativeConnection(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   connectionId: string,
-  createScanConnector: typeof createKloCliScanConnector,
+  createScanConnector: typeof createKtxCliScanConnector,
 ): Promise<{ driver: string; tableCount: number }> {
-  let connector: KloScanConnector | null = null;
+  let connector: KtxScanConnector | null = null;
   try {
     connector = await createScanConnector(project, connectionId);
     const snapshot = await connector.introspect(
@@ -131,7 +131,7 @@ async function testNativeConnection(
   }
 }
 
-interface BufferedIo extends KloCliIo {
+interface BufferedIo extends KtxCliIo {
   stdoutText(): string;
   stderrText(): string;
 }
@@ -167,17 +167,17 @@ function splitOutputLines(output: string): string[] {
 }
 
 async function runLowLevelMapping(
-  args: KloConnectionMappingArgs,
+  args: KtxConnectionMappingArgs,
   argv: string[],
-  io: KloCliIo,
-  deps: KloConnectionDeps,
+  io: KtxCliIo,
+  deps: KtxConnectionDeps,
 ): Promise<number> {
   if (deps.runMapping) {
     return await deps.runMapping(argv, io);
   }
 
-  const { runKloConnectionMapping } = await import('./commands/connection-mapping.js');
-  return await runKloConnectionMapping(args, io);
+  const { runKtxConnectionMapping } = await import('./commands/connection-mapping.js');
+  return await runKtxConnectionMapping(args, io);
 }
 
 function parseMappingListJson(output: string): unknown[] {
@@ -190,12 +190,12 @@ function parseMappingListJson(output: string): unknown[] {
 }
 
 async function runPublicConnectionMap(
-  args: Extract<KloConnectionArgs, { command: 'map' }>,
-  io: KloCliIo,
-  deps: KloConnectionDeps,
+  args: Extract<KtxConnectionArgs, { command: 'map' }>,
+  io: KtxCliIo,
+  deps: KtxConnectionDeps,
 ): Promise<number> {
   const refreshIo = createBufferedIo();
-  const refreshArgs: KloConnectionMappingArgs = {
+  const refreshArgs: KtxConnectionMappingArgs = {
     command: 'refresh',
     projectDir: args.projectDir,
     connectionId: args.sourceConnectionId,
@@ -217,7 +217,7 @@ async function runPublicConnectionMap(
   }
 
   const validationIo = createBufferedIo();
-  const validationArgs: KloConnectionMappingArgs = {
+  const validationArgs: KtxConnectionMappingArgs = {
     command: 'validate',
     projectDir: args.projectDir,
     connectionId: args.sourceConnectionId,
@@ -237,7 +237,7 @@ async function runPublicConnectionMap(
 
   const listIo = createBufferedIo();
   const listArgv = ['list', args.sourceConnectionId, '--project-dir', args.projectDir];
-  const listArgs: KloConnectionMappingArgs = {
+  const listArgs: KtxConnectionMappingArgs = {
     command: 'list',
     projectDir: args.projectDir,
     connectionId: args.sourceConnectionId,
@@ -271,26 +271,26 @@ async function runPublicConnectionMap(
   io.stdout.write('\nMappings:\n');
   io.stdout.write(listIo.stdoutText().trim() ? listIo.stdoutText() : 'No mappings found.\n');
   io.stdout.write('\nNext:\n');
-  io.stdout.write(`  klo ingest ${args.sourceConnectionId}\n`);
-  io.stdout.write(`  klo dev mapping list ${args.sourceConnectionId}\n`);
+  io.stdout.write(`  ktx ingest ${args.sourceConnectionId}\n`);
+  io.stdout.write(`  ktx dev mapping list ${args.sourceConnectionId}\n`);
   return 0;
 }
 
-export async function runKloConnection(
-  args: KloConnectionArgs,
-  io: KloConnectionIo = process,
-  deps: KloConnectionDeps = {},
+export async function runKtxConnection(
+  args: KtxConnectionArgs,
+  io: KtxConnectionIo = process,
+  deps: KtxConnectionDeps = {},
 ): Promise<number> {
   try {
     if (args.command === 'map') {
       return await runPublicConnectionMap(args, io, deps);
     }
 
-    const project = await loadKloProject({ projectDir: args.projectDir });
+    const project = await loadKtxProject({ projectDir: args.projectDir });
     if (args.command === 'list') {
       const entries = Object.entries(project.config.connections).sort(([a], [b]) => a.localeCompare(b));
       if (entries.length === 0) {
-        io.stdout.write('No connections configured. Run `klo connection add <id> --driver <driver>` to add one.\n');
+        io.stdout.write('No connections configured. Run `ktx connection add <id> --driver <driver>` to add one.\n');
         return 0;
       }
       const idWidth = Math.max('ID'.length, ...entries.map(([id]) => id.length));
@@ -348,11 +348,11 @@ export async function runKloConnection(
         },
       };
       await project.fileStore.writeFile(
-        'klo.yaml',
-        serializeKloProjectConfig(nextConfig),
-        'klo',
-        'klo@example.com',
-        `Update KLO connection: ${args.connectionId}`,
+        'ktx.yaml',
+        serializeKtxProjectConfig(nextConfig),
+        'ktx',
+        'ktx@example.com',
+        `Update KTX connection: ${args.connectionId}`,
       );
       io.stdout.write(`Connection: ${args.connectionId}\n`);
       io.stdout.write(`Driver: ${args.driver}\n`);
@@ -361,7 +361,7 @@ export async function runKloConnection(
 
     if (args.command === 'remove') {
       if (!project.config.connections[args.connectionId]) {
-        throw new Error(`Connection "${args.connectionId}" is not configured in klo.yaml`);
+        throw new Error(`Connection "${args.connectionId}" is not configured in ktx.yaml`);
       }
 
       if (!args.force) {
@@ -373,7 +373,7 @@ export async function runKloConnection(
 
         const prompts = deps.prompts ?? createClackConnectionPromptAdapter();
         const confirmed = await prompts.confirm({
-          message: `Remove connection "${args.connectionId}" from klo.yaml? Ingested artifacts will remain in .klo/.`,
+          message: `Remove connection "${args.connectionId}" from ktx.yaml? Ingested artifacts will remain in .ktx/.`,
           initialValue: false,
         });
         if (!confirmed) {
@@ -388,21 +388,21 @@ export async function runKloConnection(
         connections,
       };
       await project.fileStore.writeFile(
-        'klo.yaml',
-        serializeKloProjectConfig(nextConfig),
-        'klo',
-        'klo@example.com',
-        `Remove KLO connection: ${args.connectionId}`,
+        'ktx.yaml',
+        serializeKtxProjectConfig(nextConfig),
+        'ktx',
+        'ktx@example.com',
+        `Remove KTX connection: ${args.connectionId}`,
       );
-      io.stdout.write('Connection removed from klo.yaml.\n');
-      io.stdout.write('Ingested artifacts from this connection remain in .klo/. Run klo dev artifacts to inspect.\n');
+      io.stdout.write('Connection removed from ktx.yaml.\n');
+      io.stdout.write('Ingested artifacts from this connection remain in .ktx/. Run ktx dev artifacts to inspect.\n');
       return 0;
     }
 
     const result = await testNativeConnection(
       project,
       args.connectionId,
-      deps.createScanConnector ?? createKloCliScanConnector,
+      deps.createScanConnector ?? createKtxCliScanConnector,
     );
     io.stdout.write(`Connection test passed: ${args.connectionId}\n`);
     io.stdout.write(`Driver: ${result.driver}\n`);

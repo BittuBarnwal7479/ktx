@@ -2,25 +2,25 @@ import { spawn } from 'node:child_process';
 import { request as httpRequest } from 'node:http';
 import { request as httpsRequest } from 'node:https';
 import { URL } from 'node:url';
-import type { KloProjectConnectionConfig } from '../../../project/config.js';
-import type { KloSchemaColumn, KloSchemaForeignKey, KloSchemaSnapshot, KloSchemaTable } from '../../../scan/types.js';
-import { inferKloDimensionType, normalizeKloNativeType } from '../../../scan/type-normalization.js';
+import type { KtxProjectConnectionConfig } from '../../../project/config.js';
+import type { KtxSchemaColumn, KtxSchemaForeignKey, KtxSchemaSnapshot, KtxSchemaTable } from '../../../scan/types.js';
+import { inferKtxDimensionType, normalizeKtxNativeType } from '../../../scan/type-normalization.js';
 import type { LiveDatabaseIntrospectionPort } from './types.js';
 
-export type KloDaemonDatabaseIntrospectionCommand = 'database-introspect';
+export type KtxDaemonDatabaseIntrospectionCommand = 'database-introspect';
 
-export type KloDaemonDatabaseJsonRunner = (
-  subcommand: KloDaemonDatabaseIntrospectionCommand,
+export type KtxDaemonDatabaseJsonRunner = (
+  subcommand: KtxDaemonDatabaseIntrospectionCommand,
   payload: Record<string, unknown>,
 ) => Promise<Record<string, unknown>>;
 
-export type KloDaemonDatabaseHttpJsonRunner = (
+export type KtxDaemonDatabaseHttpJsonRunner = (
   path: string,
   payload: Record<string, unknown>,
 ) => Promise<Record<string, unknown>>;
 
 export interface DaemonLiveDatabaseIntrospectionOptions {
-  connections: Record<string, KloProjectConnectionConfig>;
+  connections: Record<string, KtxProjectConnectionConfig>;
   schemas?: string[];
   statementTimeoutMs?: number;
   connectionTimeoutSeconds?: number;
@@ -29,8 +29,8 @@ export interface DaemonLiveDatabaseIntrospectionOptions {
   cwd?: string;
   env?: NodeJS.ProcessEnv;
   baseUrl?: string;
-  runJson?: KloDaemonDatabaseJsonRunner;
-  requestJson?: KloDaemonDatabaseHttpJsonRunner;
+  runJson?: KtxDaemonDatabaseJsonRunner;
+  requestJson?: KtxDaemonDatabaseHttpJsonRunner;
   now?: () => Date;
 }
 
@@ -39,7 +39,7 @@ const DEFAULT_SCHEMAS = ['public'];
 function parseJsonObject(raw: string, subcommand: string): Record<string, unknown> {
   const parsed = JSON.parse(raw) as unknown;
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    throw new Error(`klo-daemon ${subcommand} returned non-object JSON`);
+    throw new Error(`ktx-daemon ${subcommand} returned non-object JSON`);
   }
   return parsed as Record<string, unknown>;
 }
@@ -47,7 +47,7 @@ function parseJsonObject(raw: string, subcommand: string): Record<string, unknow
 function runProcessJson(
   options: Required<Pick<DaemonLiveDatabaseIntrospectionOptions, 'command' | 'args'>> &
     Pick<DaemonLiveDatabaseIntrospectionOptions, 'cwd' | 'env'>,
-): KloDaemonDatabaseJsonRunner {
+): KtxDaemonDatabaseJsonRunner {
   return async (subcommand, payload) =>
     new Promise((resolve, reject) => {
       const child = spawn(options.command, [...options.args, subcommand], {
@@ -65,7 +65,7 @@ function runProcessJson(
         const stdoutText = Buffer.concat(stdout).toString('utf8').trim();
         const stderrText = Buffer.concat(stderr).toString('utf8').trim();
         if (code !== 0) {
-          reject(new Error(`klo-daemon ${subcommand} failed: ${stderrText || `exit code ${code}`}`));
+          reject(new Error(`ktx-daemon ${subcommand} failed: ${stderrText || `exit code ${code}`}`));
           return;
         }
         try {
@@ -82,7 +82,7 @@ function normalizedBaseUrl(baseUrl: string): string {
   return baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
 }
 
-function postJson(baseUrl: string): KloDaemonDatabaseHttpJsonRunner {
+function postJson(baseUrl: string): KtxDaemonDatabaseHttpJsonRunner {
   return async (path, payload) =>
     new Promise((resolve, reject) => {
       const target = new URL(path.replace(/^\//, ''), normalizedBaseUrl(baseUrl));
@@ -105,7 +105,7 @@ function postJson(baseUrl: string): KloDaemonDatabaseHttpJsonRunner {
             const text = Buffer.concat(chunks).toString('utf8');
             const statusCode = response.statusCode ?? 0;
             if (statusCode < 200 || statusCode >= 300) {
-              reject(new Error(`klo-daemon HTTP ${path} failed with ${statusCode}: ${text}`));
+              reject(new Error(`ktx-daemon HTTP ${path} failed with ${statusCode}: ${text}`));
               return;
             }
             try {
@@ -135,7 +135,7 @@ function recordArray(value: unknown): Array<Record<string, unknown>> {
 
 function requiredString(value: unknown, field: string): string {
   if (typeof value !== 'string' || value.length === 0) {
-    throw new Error(`klo-daemon database introspection response is missing string field ${field}`);
+    throw new Error(`ktx-daemon database introspection response is missing string field ${field}`);
   }
   return value;
 }
@@ -154,9 +154,9 @@ function normalizeDriver(driver: unknown): string {
 }
 
 function requirePostgresConnection(
-  connections: Record<string, KloProjectConnectionConfig>,
+  connections: Record<string, KtxProjectConnectionConfig>,
   connectionId: string,
-): KloProjectConnectionConfig & { url: string } {
+): KtxProjectConnectionConfig & { url: string } {
   const connection = connections[connectionId];
   const driver = normalizeDriver(connection?.driver);
   if (driver !== 'postgres') {
@@ -168,23 +168,23 @@ function requirePostgresConnection(
   if (typeof connection.url !== 'string' || connection.url.trim().length === 0) {
     throw new Error(`Local live-database ingest requires connections.${connectionId}.url.`);
   }
-  return connection as KloProjectConnectionConfig & { url: string };
+  return connection as KtxProjectConnectionConfig & { url: string };
 }
 
-function mapColumn(raw: Record<string, unknown>): KloSchemaColumn {
+function mapColumn(raw: Record<string, unknown>): KtxSchemaColumn {
   const nativeType = requiredString(raw.type, 'tables[].columns[].type');
   return {
     name: requiredString(raw.name, 'tables[].columns[].name'),
     nativeType,
-    normalizedType: normalizeKloNativeType(nativeType),
-    dimensionType: inferKloDimensionType(nativeType),
+    normalizedType: normalizeKtxNativeType(nativeType),
+    dimensionType: inferKtxDimensionType(nativeType),
     nullable: raw.nullable !== false ? true : false,
     primaryKey: raw.primary_key === true,
     comment: nullableString(raw.comment),
   };
 }
 
-function mapForeignKey(raw: Record<string, unknown>): KloSchemaForeignKey {
+function mapForeignKey(raw: Record<string, unknown>): KtxSchemaForeignKey {
   return {
     fromColumn: requiredString(raw.from_column, 'tables[].foreign_keys[].from_column'),
     toCatalog: null,
@@ -195,7 +195,7 @@ function mapForeignKey(raw: Record<string, unknown>): KloSchemaForeignKey {
   };
 }
 
-function mapTable(raw: Record<string, unknown>): KloSchemaTable {
+function mapTable(raw: Record<string, unknown>): KtxSchemaTable {
   return {
     catalog: nullableString(raw.catalog),
     db: nullableString(raw.db),
@@ -211,7 +211,7 @@ function mapTable(raw: Record<string, unknown>): KloSchemaTable {
 function mapDaemonSnapshot(
   raw: Record<string, unknown>,
   input: { connectionId: string; extractedAt: string; schemas: string[] },
-): KloSchemaSnapshot {
+): KtxSchemaSnapshot {
   return {
     connectionId: requiredString(raw.connection_id, 'connection_id') || input.connectionId,
     driver: 'postgres',
@@ -227,13 +227,13 @@ export function createDaemonLiveDatabaseIntrospection(
 ): LiveDatabaseIntrospectionPort {
   const schemas = options.schemas ?? DEFAULT_SCHEMAS;
   const command = options.command ?? 'python';
-  const args = options.args ?? ['-m', 'klo_daemon'];
+  const args = options.args ?? ['-m', 'ktx_daemon'];
   const runJson = options.runJson ?? runProcessJson({ command, args, cwd: options.cwd, env: options.env });
   const requestJson = options.requestJson ?? (options.baseUrl ? postJson(options.baseUrl) : undefined);
   const now = options.now ?? (() => new Date());
 
   return {
-    async extractSchema(connectionId: string): Promise<KloSchemaSnapshot> {
+    async extractSchema(connectionId: string): Promise<KtxSchemaSnapshot> {
       const connection = requirePostgresConnection(options.connections, connectionId);
       const payload = {
         connection_id: connectionId,

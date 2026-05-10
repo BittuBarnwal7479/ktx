@@ -1,15 +1,15 @@
-# klo examples
+# ktx examples
 
 ## local-warehouse
 
-`local-warehouse/` is a runnable standalone KLO project for local CLI and MCP
+`local-warehouse/` is a runnable standalone KTX project for local CLI and MCP
 smoke testing. It uses the fake ingest adapter and does not require a database
 or external app server.
 
 Copy it before running commands:
 
 ```bash
-pnpm --filter @klo/cli run build
+pnpm --filter @ktx/cli run build
 EXAMPLE_DIR="$(mktemp -d)/local-warehouse"
 cp -R examples/local-warehouse "$EXAMPLE_DIR"
 node packages/cli/dist/bin.js knowledge list --project-dir "$EXAMPLE_DIR"
@@ -21,7 +21,7 @@ The copied project initializes its own Git repository on first use.
 
 ## orbit-relationship-verification
 
-`orbit-relationship-verification/` is a checked-in KLO project used by
+`orbit-relationship-verification/` is a checked-in KTX project used by
 `pnpm run relationships:verify-orbit`. It points the `orbit` SQLite connection
 at the Orbit-style no-declared-constraint relationship fixture and verifies that
 relationship enrichment writes nine accepted joins without requiring a local

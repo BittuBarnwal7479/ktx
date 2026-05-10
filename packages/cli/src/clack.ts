@@ -1,11 +1,11 @@
 import { spinner } from '@clack/prompts';
 
-export interface KloCliSpinner {
+export interface KtxCliSpinner {
   start(message: string): void;
   stop(message: string): void;
   error(message: string): void;
 }
 
-export function createClackSpinner(): KloCliSpinner {
+export function createClackSpinner(): KtxCliSpinner {
   return spinner();
 }

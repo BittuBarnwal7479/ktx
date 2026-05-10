@@ -1,8 +1,8 @@
 import type { ToolSet } from 'ai';
-import type { KloModelRole } from '@klo/llm';
+import type { KtxModelRole } from '@ktx/llm';
 import type { AgentRunnerService } from '../agent/index.js';
-import type { KloEmbeddingPort } from '../core/embedding.js';
-import type { GitService, KloFileStorePort, KloLogger, SessionOutcome } from '../core/index.js';
+import type { KtxEmbeddingPort } from '../core/embedding.js';
+import type { GitService, KtxFileStorePort, KtxLogger, SessionOutcome } from '../core/index.js';
 import type { CaptureSession, MemoryAction, MemoryKnowledgeSlRefsPort } from '../memory/index.js';
 import type { PromptService } from '../prompts/index.js';
 import type { SkillsRegistryService } from '../skills/index.js';
@@ -120,7 +120,7 @@ export interface IngestLockPort {
   withLock<T>(key: string, fn: () => Promise<T>): Promise<T>;
 }
 
-export interface IngestFileStorePort extends KloFileStorePort<IngestFileStorePort> {}
+export interface IngestFileStorePort extends KtxFileStorePort<IngestFileStorePort> {}
 
 export interface IngestSessionWorktree {
   chatId: string;
@@ -308,7 +308,7 @@ export interface CuratorPaginationPort {
     evictionUnit: EvictionUnit | undefined;
     representatives: ContextCandidateForDedup[];
     initialBudget: { creates: number; updates: number };
-    modelRole: KloModelRole;
+    modelRole: KtxModelRole;
     buildSystemPrompt: () => string;
     buildUserPrompt: (input: {
       summary: ReconcileCandidateSummary;
@@ -367,7 +367,7 @@ export interface IngestBundleRunnerDeps {
   slValidator: SlValidatorPort<SlValidationDeps>;
   toolsetFactory: IngestToolsetFactoryPort;
   commitMessages: IngestCommitMessagePort;
-  embedding: KloEmbeddingPort;
+  embedding: KtxEmbeddingPort;
   contextEvidenceIndex?: ContextEvidenceIndexPort;
   pageTriage?: PageTriagePort;
   contextEvidenceCandidates?: ContextEvidenceCandidatesPort;
@@ -375,7 +375,7 @@ export interface IngestBundleRunnerDeps {
   contextCandidateCarryforward?: ContextCandidateCarryforwardPort;
   curatorPagination?: CuratorPaginationPort;
   postProcessors?: Record<string, IngestBundlePostProcessorPort>;
-  logger?: KloLogger;
+  logger?: KtxLogger;
 }
 
 export interface IngestCaptureState {

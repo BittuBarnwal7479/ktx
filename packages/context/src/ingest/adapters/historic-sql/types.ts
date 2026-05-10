@@ -45,7 +45,7 @@ export interface HistoricSqlQueryHistoryReader {
   ): AsyncIterable<HistoricSqlRawQueryRow>;
 }
 
-export interface KloPostgresQueryClient {
+export interface KtxPostgresQueryClient {
   executeQuery(sql: string, params?: unknown[]): Promise<{ headers: string[]; rows: unknown[][]; totalRows?: number }>;
 }
 
@@ -61,9 +61,9 @@ export interface PostgresPgssSnapshot {
 }
 
 export interface PostgresPgssReader {
-  probe(client: KloPostgresQueryClient): Promise<PostgresPgssProbeResult>;
+  probe(client: KtxPostgresQueryClient): Promise<PostgresPgssProbeResult>;
   readSnapshot(
-    client: KloPostgresQueryClient,
+    client: KtxPostgresQueryClient,
     options: { minCalls: number; maxTemplates: number },
   ): Promise<PostgresPgssSnapshot>;
 }
@@ -101,7 +101,7 @@ export interface HistoricSqlSourceAdapterDeps {
   reader: HistoricSqlQueryHistoryReader;
   queryClient: unknown;
   postgresReader?: PostgresPgssReader;
-  postgresQueryClient?: KloPostgresQueryClient;
+  postgresQueryClient?: KtxPostgresQueryClient;
   postgresBaselineRootDir?: string;
   now?: () => Date;
   onPullSucceeded?: (ctx: {

@@ -94,19 +94,19 @@ function assertMissingProjectReadiness(result, emptyProjectDir) {
     ok: false,
     error: {
       code: 'agent_sl_search_missing_project',
-      message: `Semantic-layer search needs an initialized KLO project at ${emptyProjectDir}.`,
+      message: `Semantic-layer search needs an initialized KTX project at ${emptyProjectDir}.`,
       nextSteps: [
-        'klo demo',
-        `klo setup --project-dir ${emptyProjectDir}`,
-        'klo ingest <connection>',
-        `klo agent sl list --json --query "revenue" --project-dir ${emptyProjectDir}`,
+        'ktx demo',
+        `ktx setup --project-dir ${emptyProjectDir}`,
+        'ktx ingest <connection>',
+        `ktx agent sl list --json --query "revenue" --project-dir ${emptyProjectDir}`,
       ],
     },
   });
 }
 
 export async function runPublishedPackageSmoke(config) {
-  const root = await mkdtemp(join(tmpdir(), 'klo-published-package-smoke-'));
+  const root = await mkdtemp(join(tmpdir(), 'ktx-published-package-smoke-'));
   try {
     const projectDir = join(root, 'demo-project');
     const emptyProjectDir = join(root, 'empty-project');
@@ -147,7 +147,7 @@ async function main() {
     if (config.requireConfig) {
       throw new Error(config.reason);
     }
-    process.stdout.write(`Published KLO package smoke skipped: ${config.reason}\n`);
+    process.stdout.write(`Published KTX package smoke skipped: ${config.reason}\n`);
     return;
   }
 

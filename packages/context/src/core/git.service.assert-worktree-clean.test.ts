@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { SimpleGit } from 'simple-git';
-import type { KloCoreConfig } from './config.js';
+import type { KtxCoreConfig } from './config.js';
 import { createSimpleGit } from './git-env.js';
 import { GitService } from './git.service.js';
 
@@ -21,7 +21,7 @@ describe('GitService.assertWorktreeClean', () => {
     await writeFile(join(workdir, 'init'), 'init');
     await git.add('.');
     await git.commit('init');
-    const coreConfig: KloCoreConfig = {
+    const coreConfig: KtxCoreConfig = {
       storage: { configDir: workdir, homeDir: workdir },
       git: { userName: 'Test', userEmail: 't@test' },
     };

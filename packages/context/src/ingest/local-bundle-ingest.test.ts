@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { AgentRunnerService } from '../agent/index.js';
-import { initKloProject, type KloLocalProject, loadKloProject } from '../project/index.js';
+import { initKtxProject, type KtxLocalProject, loadKtxProject } from '../project/index.js';
 import { makeLocalGitRepo } from '../test/make-local-git-repo.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FakeSourceAdapter } from './adapters/fake/fake.adapter.js';
@@ -149,14 +149,14 @@ function makeLookerParser() {
 
 describe('canonical local ingest', () => {
   let tempDir: string;
-  let project: KloLocalProject;
+  let project: KtxLocalProject;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-local-full-ingest-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-local-full-ingest-'));
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeFile(
-      join(projectDir, 'klo.yaml'),
+      join(projectDir, 'ktx.yaml'),
       [
         'project: warehouse',
         'connections:',
@@ -171,7 +171,7 @@ describe('canonical local ingest', () => {
       ].join('\n'),
       'utf-8',
     );
-    project = await loadKloProject({ projectDir });
+    project = await loadKtxProject({ projectDir });
   });
 
   afterEach(async () => {
@@ -254,9 +254,9 @@ describe('canonical local ingest', () => {
 
   it('rejects direct Metabase scheduled pulls before requiring a local ingest LLM provider', async () => {
     const projectDir = join(tempDir, 'metabase-project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeFile(
-      join(projectDir, 'klo.yaml'),
+      join(projectDir, 'ktx.yaml'),
       [
         'project: warehouse',
         'connections:',
@@ -271,7 +271,7 @@ describe('canonical local ingest', () => {
       ].join('\n'),
       'utf-8',
     );
-    const metabaseProject = await loadKloProject({ projectDir });
+    const metabaseProject = await loadKtxProject({ projectDir });
 
     await expect(
       runLocalIngest({
@@ -286,7 +286,7 @@ describe('canonical local ingest', () => {
 
   it('runs full MetricFlow local ingest from a dbt repo fixture through the canonical runner', async () => {
     const projectDir = join(tempDir, 'metricflow-run-project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
 
     const fixtureDir = join(tempDir, 'metricflow-fixture');
     await mkdir(join(fixtureDir, 'models'), { recursive: true });
@@ -332,7 +332,7 @@ describe('canonical local ingest', () => {
     const repo = await makeLocalGitRepo(fixtureDir, join(tempDir, 'metricflow-origin'));
 
     await writeFile(
-      join(projectDir, 'klo.yaml'),
+      join(projectDir, 'ktx.yaml'),
       [
         'project: warehouse',
         'connections:',
@@ -351,13 +351,13 @@ describe('canonical local ingest', () => {
         '  search: sqlite-fts5',
         '  git:',
         '    auto_commit: false',
-        '    author: KLO Test <system@klo.local>',
+        '    author: KTX Test <system@ktx.local>',
         '',
       ].join('\n'),
       'utf-8',
     );
 
-    const metricflowProject = await loadKloProject({ projectDir });
+    const metricflowProject = await loadKtxProject({ projectDir });
     const agentRunner = new TestAgentRunner();
     const result = await runLocalIngest({
       project: metricflowProject,
@@ -403,7 +403,7 @@ describe('canonical local ingest', () => {
   });
 
   it('local metricflow ingest can fetch from connection metricflow config without sourceDir', async () => {
-    const projectDir = await mkdtemp(join(tmpdir(), 'klo-local-mf-fetch-'));
+    const projectDir = await mkdtemp(join(tmpdir(), 'ktx-local-mf-fetch-'));
     const fixtureDir = join(projectDir, 'fixture-src');
     await mkdir(join(fixtureDir, 'models'), { recursive: true });
     await writeFile(join(fixtureDir, 'dbt_project.yml'), 'name: analytics\n', 'utf-8');
@@ -414,7 +414,7 @@ describe('canonical local ingest', () => {
     );
     const repo = await makeLocalGitRepo(fixtureDir, join(projectDir, 'origin'));
     await writeFile(
-      join(projectDir, 'klo.yaml'),
+      join(projectDir, 'ktx.yaml'),
       [
         'project: local-mf',
         'connections:',
@@ -428,13 +428,13 @@ describe('canonical local ingest', () => {
         '  search: sqlite-fts5',
         '  git:',
         '    auto_commit: false',
-        '    author: KLO Test <system@klo.local>',
+        '    author: KTX Test <system@ktx.local>',
         '',
       ].join('\n'),
       'utf-8',
     );
 
-    const metricflowProject = await loadKloProject({ projectDir });
+    const metricflowProject = await loadKtxProject({ projectDir });
     const adapters = createDefaultLocalIngestAdapters(metricflowProject);
     const metricflow = adapters.find((adapter) => adapter.source === 'metricflow');
 
@@ -450,9 +450,9 @@ describe('canonical local ingest', () => {
 
   it('runs scheduled Looker ingest through the canonical local runner and records SL target evidence', async () => {
     const projectDir = join(tempDir, 'looker-project');
-    await initKloProject({ projectDir, projectName: 'looker-runtime' });
+    await initKtxProject({ projectDir, projectName: 'looker-runtime' });
     await writeFile(
-      join(projectDir, 'klo.yaml'),
+      join(projectDir, 'ktx.yaml'),
       [
         'project: looker-runtime',
         'connections:',
@@ -473,14 +473,14 @@ describe('canonical local ingest', () => {
         '  search: sqlite-fts5',
         '  git:',
         '    auto_commit: false',
-        '    author: KLO Test <system@klo.local>',
+        '    author: KTX Test <system@ktx.local>',
         '',
       ].join('\n'),
       'utf-8',
     );
 
-    const lookerProject = await loadKloProject({ projectDir });
-    const localStore = new LocalLookerRuntimeStore({ dbPath: join(lookerProject.projectDir, '.klo', 'db.sqlite') });
+    const lookerProject = await loadKtxProject({ projectDir });
+    const localStore = new LocalLookerRuntimeStore({ dbPath: join(lookerProject.projectDir, '.ktx', 'db.sqlite') });
     await localStore.setCursors('prod-looker', {
       dashboardsLastSyncedAt: null,
       looksLastSyncedAt: null,
@@ -488,7 +488,7 @@ describe('canonical local ingest', () => {
     await localStore.upsertConnectionMapping({
       lookerConnectionId: 'prod-looker',
       lookerConnectionName: 'analytics',
-      kloConnectionId: 'prod-warehouse',
+      ktxConnectionId: 'prod-warehouse',
       source: 'cli',
     });
 

@@ -1,9 +1,9 @@
-import { getLocalIngestStatus, type IngestReportSnapshot, type MemoryFlowReplayInput } from '@klo/context/ingest';
-import { loadKloProject, type KloLocalProject } from '@klo/context/project';
-import { runLocalScan, type KloScanReport, type LocalScanRunResult } from '@klo/context/scan';
+import { getLocalIngestStatus, type IngestReportSnapshot, type MemoryFlowReplayInput } from '@ktx/context/ingest';
+import { loadKtxProject, type KtxLocalProject } from '@ktx/context/project';
+import { runLocalScan, type KtxScanReport, type LocalScanRunResult } from '@ktx/context/scan';
 import { DEMO_ADAPTER, DEMO_CONNECTION_ID, DEMO_FULL_JOB_ID, ensureDemoProject } from './demo-assets.js';
 import { loadLatestDemoReplay } from './demo-replay-store.js';
-import { createKloCliLocalIngestAdapters } from './local-adapters.js';
+import { createKtxCliLocalIngestAdapters } from './local-adapters.js';
 
 interface DemoScanOptions {
   projectDir: string;
@@ -13,13 +13,13 @@ interface DemoScanOptions {
 }
 
 interface DemoScanResult {
-  project: KloLocalProject;
+  project: KtxLocalProject;
   result: LocalScanRunResult;
 }
 
 interface DemoInspectSummary {
   projectDir: string;
-  scanReport: KloScanReport | null;
+  scanReport: KtxScanReport | null;
   fullReport: IngestReportSnapshot | null;
   semanticLayerFileCount: number;
   knowledgeFileCount: number;
@@ -28,7 +28,7 @@ interface DemoInspectSummary {
 }
 
 interface DemoInspectDeps {
-  findFullReport?: (project: KloLocalProject) => Promise<IngestReportSnapshot | null>;
+  findFullReport?: (project: KtxLocalProject) => Promise<IngestReportSnapshot | null>;
 }
 
 async function ensureDemoProjectForReuse(projectDir: string): Promise<void> {
@@ -40,36 +40,36 @@ async function ensureDemoProjectForReuse(projectDir: string): Promise<void> {
   });
 }
 
-async function loadReadyDemoProject(projectDir: string): Promise<KloLocalProject> {
+async function loadReadyDemoProject(projectDir: string): Promise<KtxLocalProject> {
   try {
-    return await loadKloProject({ projectDir });
+    return await loadKtxProject({ projectDir });
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
     throw new Error(
-      `Demo project is not ready at ${projectDir}: ${reason}. Run klo setup demo init --project-dir ${projectDir} --force --no-input to recreate it.`,
+      `Demo project is not ready at ${projectDir}: ${reason}. Run ktx setup demo init --project-dir ${projectDir} --force --no-input to recreate it.`,
     );
   }
 }
 
-function reportDiff(report: KloScanReport): string {
+function reportDiff(report: KtxScanReport): string {
   return `+${report.diffSummary.tablesAdded}/~${report.diffSummary.tablesModified}/-${report.diffSummary.tablesDeleted}/=${report.diffSummary.tablesUnchanged}`;
 }
 
-function jsonReport(raw: string, path: string): KloScanReport {
+function jsonReport(raw: string, path: string): KtxScanReport {
   try {
-    return JSON.parse(raw) as KloScanReport;
+    return JSON.parse(raw) as KtxScanReport;
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
     throw new Error(`Invalid demo scan report at ${path}: ${reason}`);
   }
 }
 
-async function countFiles(project: KloLocalProject, root: string, predicate: (path: string) => boolean): Promise<number> {
+async function countFiles(project: KtxLocalProject, root: string, predicate: (path: string) => boolean): Promise<number> {
   const { files } = await project.fileStore.listFiles(root, true);
   return files.filter(predicate).length;
 }
 
-async function findFullDemoReport(project: KloLocalProject): Promise<IngestReportSnapshot | null> {
+async function findFullDemoReport(project: KtxLocalProject): Promise<IngestReportSnapshot | null> {
   return getLocalIngestStatus(project, DEMO_FULL_JOB_ID);
 }
 
@@ -92,13 +92,13 @@ export async function runDemoScan(options: DemoScanOptions): Promise<DemoScanRes
     trigger: 'cli',
     jobId: options.jobId ?? 'demo-scan',
     now: options.now,
-    adapters: createKloCliLocalIngestAdapters(project),
+    adapters: createKtxCliLocalIngestAdapters(project),
   });
 
   return { project, result };
 }
 
-export async function findLatestDemoScanReport(projectDir: string): Promise<KloScanReport | null> {
+export async function findLatestDemoScanReport(projectDir: string): Promise<KtxScanReport | null> {
   const project = await loadReadyDemoProject(projectDir);
   const root = `raw-sources/${DEMO_CONNECTION_ID}/${DEMO_ADAPTER}`;
   const { files } = await project.fileStore.listFiles(root, true);
@@ -117,7 +117,7 @@ export async function findLatestDemoScanReport(projectDir: string): Promise<KloS
 
 export async function inspectDemoProject(
   projectDir: string,
-  projectOverride?: KloLocalProject,
+  projectOverride?: KtxLocalProject,
   deps: DemoInspectDeps = {},
 ): Promise<DemoInspectSummary> {
   const project = projectOverride ?? (await loadReadyDemoProject(projectDir));
@@ -143,7 +143,7 @@ export async function inspectDemoProject(
   };
 }
 
-export function formatDemoScanSummary(report: KloScanReport): string {
+export function formatDemoScanSummary(report: KtxScanReport): string {
   return [
     'Demo scan: done',
     `Connection: ${report.connectionId}`,
@@ -152,7 +152,7 @@ export function formatDemoScanSummary(report: KloScanReport): string {
     `Tables: ${reportDiff(report)}`,
     `Semantic-layer artifacts: ${report.artifactPaths.manifestShards.length}`,
     `Report: ${report.artifactPaths.reportPath ?? 'none'}`,
-    'Next: klo setup demo inspect',
+    'Next: ktx setup demo inspect',
     '  Shows the files and semantic-layer draft created from the database scan.',
     '',
   ].join('\n');
@@ -190,22 +190,22 @@ export function formatDemoInspect(summary: DemoInspectSummary): string {
     : [report ? 'Memory synthesis: full mode not run' : 'Memory synthesis: not run'];
   const next = fullReport
     ? [
-        `Next: klo ingest watch ${fullReport.runId} --project-dir ${summary.projectDir}`,
+        `Next: ktx ingest watch ${fullReport.runId} --project-dir ${summary.projectDir}`,
         '  Opens the captured run timeline and lets you inspect what happened.',
-        'Next: klo setup demo replay',
+        'Next: ktx setup demo replay',
         '  Replays the same visual story without calling the LLM again.',
       ]
     : report
       ? [
-          'Next: klo setup demo --mode full',
+          'Next: ktx setup demo --mode full',
           '  Runs the full AI-backed pass with your LLM provider.',
-          'Next: klo setup demo replay',
+          'Next: ktx setup demo replay',
           '  Replays the packaged visual story without calling the LLM.',
         ]
       : [
-          'Next: klo setup demo --no-input',
+          'Next: ktx setup demo --no-input',
           '  Runs the pre-seeded demo without calling the LLM.',
-          'Next: klo setup demo --mode full',
+          'Next: ktx setup demo --mode full',
           '  Runs the full AI-backed pass with your LLM provider.',
         ];
 

@@ -1,7 +1,7 @@
 {
-  "name": "@klo/llm",
+  "name": "@ktx/llm",
   "version": "0.0.0-private",
-  "description": "Canonical KLO LLM and embedding provider package",
+  "description": "Canonical KTX LLM and embedding provider package",
   "private": true,
   "type": "module",
   "engines": {

@@ -1,96 +1,96 @@
 import { describe, expect, it } from 'vitest';
 import {
-  KLO_CONTEXT_BUILD_COMMANDS,
-  KLO_NEXT_STEP_COMMANDS,
+  KTX_CONTEXT_BUILD_COMMANDS,
+  KTX_NEXT_STEP_COMMANDS,
   formatNextStepLines,
   formatSetupNextStepLines,
 } from './next-steps.js';
 
 const command = (...parts: string[]) => parts.join(' ');
 
-describe('KLO demo next steps', () => {
+describe('KTX demo next steps', () => {
   it('uses supported context-build commands before agent usage', () => {
-    expect(KLO_CONTEXT_BUILD_COMMANDS).toEqual([
+    expect(KTX_CONTEXT_BUILD_COMMANDS).toEqual([
       {
-        command: 'klo setup context build',
+        command: 'ktx setup context build',
         description: 'Build agent-ready context from configured primary and context sources',
       },
       {
-        command: 'klo status',
+        command: 'ktx status',
         description: 'Check setup and context readiness',
       },
       {
-        command: 'klo setup context status',
+        command: 'ktx setup context status',
         description: 'Check the setup-managed context build state',
       },
     ]);
   });
 
   it('uses supported final public commands', () => {
-    expect(KLO_NEXT_STEP_COMMANDS).toEqual([
+    expect(KTX_NEXT_STEP_COMMANDS).toEqual([
       {
-        command: 'klo agent context --json',
+        command: 'ktx agent context --json',
         description: 'Verify the project context your agent can read',
       },
       {
-        command: 'klo agent tools --json',
+        command: 'ktx agent tools --json',
         description: 'List direct CLI tools available to agents',
       },
       {
-        command: 'klo sl list',
+        command: 'ktx sl list',
         description: 'Inspect generated semantic-layer sources',
       },
       {
-        command: 'klo wiki list',
+        command: 'ktx wiki list',
         description: 'Inspect generated wiki pages',
       },
       {
-        command: 'klo serve --mcp stdio --user-id local',
+        command: 'ktx serve --mcp stdio --user-id local',
         description: 'Optional MCP server route for clients that require MCP',
       },
     ]);
   });
 
   it('prefers the direct CLI route before MCP serving', () => {
-    const commands = KLO_NEXT_STEP_COMMANDS.map((step) => step.command);
+    const commands = KTX_NEXT_STEP_COMMANDS.map((step) => step.command);
 
-    expect(commands.indexOf('klo agent context --json')).toBeLessThan(
-      commands.indexOf('klo serve --mcp stdio --user-id local'),
+    expect(commands.indexOf('ktx agent context --json')).toBeLessThan(
+      commands.indexOf('ktx serve --mcp stdio --user-id local'),
     );
-    expect(commands.indexOf('klo agent tools --json')).toBeLessThan(
-      commands.indexOf('klo serve --mcp stdio --user-id local'),
+    expect(commands.indexOf('ktx agent tools --json')).toBeLessThan(
+      commands.indexOf('ktx serve --mcp stdio --user-id local'),
     );
   });
 
   it('explains what the next-step commands are for', () => {
     const rendered = formatNextStepLines().join('\n');
 
-    expect(rendered).toContain('KLO context is ready for agents.');
+    expect(rendered).toContain('KTX context is ready for agents.');
     expect(rendered).toContain('Preferred route: CLI + Skills');
     expect(rendered).toContain('no MCP server is required');
     expect(rendered).toContain('Direct CLI checks:');
     expect(rendered).toContain('Optional MCP:');
-    expect(rendered).not.toContain('Ask your agent to use KLO');
+    expect(rendered).not.toContain('Ask your agent to use KTX');
   });
 
   it('does not advertise removed Commander migration commands', () => {
     const rendered = formatNextStepLines().join('\n');
 
-    expect(rendered).toContain('klo agent tools --json');
-    expect(rendered).toContain('klo agent context --json');
-    expect(rendered).toContain('klo sl list');
-    expect(rendered).toContain('klo wiki list');
-    expect(rendered).toContain('klo serve --mcp stdio --user-id local');
+    expect(rendered).toContain('ktx agent tools --json');
+    expect(rendered).toContain('ktx agent context --json');
+    expect(rendered).toContain('ktx sl list');
+    expect(rendered).toContain('ktx wiki list');
+    expect(rendered).toContain('ktx serve --mcp stdio --user-id local');
 
     for (const removed of [
-      command('klo', 'ask'),
-      command('klo', 'mcp'),
-      command('klo', 'connect'),
-      command('klo', 'knowledge'),
+      command('ktx', 'ask'),
+      command('ktx', 'mcp'),
+      command('ktx', 'connect'),
+      command('ktx', 'knowledge'),
       command('dev', 'model'),
       command('dev', 'knowledge'),
-      command('klo', 'ingest', 'run'),
-      command('klo', 'ingest', 'replay'),
+      command('ktx', 'ingest', 'run'),
+      command('ktx', 'ingest', 'replay'),
     ]) {
       expect(rendered).not.toContain(removed);
     }
@@ -104,13 +104,13 @@ describe('KLO demo next steps', () => {
       agentIntegrationReady: true,
     }).join('\n');
 
-    expect(rendered).toContain('Build KLO context next.');
+    expect(rendered).toContain('Build KTX context next.');
     expect(rendered).toContain('primary-source scans and context-source ingests');
-    expect(rendered).toContain('klo setup context build');
-    expect(rendered).toContain('klo status');
-    expect(rendered).toContain('klo setup context status');
-    expect(rendered).not.toContain('klo agent context --json');
-    expect(rendered).not.toContain('klo serve --mcp');
+    expect(rendered).toContain('ktx setup context build');
+    expect(rendered).toContain('ktx status');
+    expect(rendered).toContain('ktx setup context status');
+    expect(rendered).not.toContain('ktx agent context --json');
+    expect(rendered).not.toContain('ktx serve --mcp');
   });
 
   it('shows agent commands only after setup and context build are ready', () => {
@@ -121,9 +121,9 @@ describe('KLO demo next steps', () => {
       agentIntegrationReady: true,
     }).join('\n');
 
-    expect(rendered).toContain('KLO context is ready for agents.');
-    expect(rendered).toContain('klo agent context --json');
-    expect(rendered).toContain('klo serve --mcp stdio --user-id local');
-    expect(rendered).not.toContain('Build KLO context next.');
+    expect(rendered).toContain('KTX context is ready for agents.');
+    expect(rendered).toContain('ktx agent context --json');
+    expect(rendered).toContain('ktx serve --mcp stdio --user-id local');
+    expect(rendered).not.toContain('Build KTX context next.');
   });
 });

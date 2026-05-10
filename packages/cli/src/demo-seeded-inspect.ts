@@ -1,10 +1,10 @@
 import { constants as fsConstants } from 'node:fs';
 import { access, readFile, readdir } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
-import type { MemoryFlowReplayInput } from '@klo/context/ingest/memory-flow';
+import type { MemoryFlowReplayInput } from '@ktx/context/ingest/memory-flow';
 import { loadPackagedDemoReplay } from './demo-assets.js';
 import { DEMO_LATEST_REPLAY_FILE, loadLatestDemoReplay } from './demo-replay-store.js';
-import { KLO_NEXT_STEP_COMMANDS, KLO_NEXT_STEP_COMMAND_WIDTH } from './next-steps.js';
+import { KTX_NEXT_STEP_COMMANDS, KTX_NEXT_STEP_COMMAND_WIDTH } from './next-steps.js';
 
 type SeededInspectReadiness = 'missing' | 'ready' | 'corrupt';
 
@@ -66,7 +66,7 @@ export interface SeededInspectSummary {
 }
 
 const REQUIRED_SEEDED_PROJECT_PATHS = [
-  'klo.yaml',
+  'ktx.yaml',
   'demo.db',
   'state.sqlite',
   'manifest.json',
@@ -181,7 +181,7 @@ function sourceBundleFromManifest(manifest: DemoSeededManifest): SeededInspectSu
 }
 
 function nextCommands(): SeededInspectSummary['nextCommands'] {
-  return [...KLO_NEXT_STEP_COMMANDS];
+  return [...KTX_NEXT_STEP_COMMANDS];
 }
 
 function modeMetadataFromReplay(replay: MemoryFlowReplayInput | null): SeededInspectSummary['modeMetadata'] {
@@ -291,9 +291,9 @@ export function formatSeededInspect(summary: SeededInspectSummary): string {
   );
 
   for (const command of summary.nextCommands) {
-    lines.push(`  $ ${command.command.padEnd(KLO_NEXT_STEP_COMMAND_WIDTH)}  ${command.description}`);
+    lines.push(`  $ ${command.command.padEnd(KTX_NEXT_STEP_COMMAND_WIDTH)}  ${command.description}`);
   }
 
-  lines.push('', `Your KLO project files are at: ${summary.projectDir}`, '');
+  lines.push('', `Your KTX project files are at: ${summary.projectDir}`, '');
   return lines.join('\n');
 }

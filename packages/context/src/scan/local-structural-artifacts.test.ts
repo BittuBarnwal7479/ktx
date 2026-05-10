@@ -2,16 +2,16 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { initKloProject, type KloLocalProject } from '../project/index.js';
+import { initKtxProject, type KtxLocalProject } from '../project/index.js';
 import { readLocalScanStructuralSnapshot } from './local-structural-artifacts.js';
 
 describe('readLocalScanStructuralSnapshot', () => {
   let tempDir: string;
-  let project: KloLocalProject;
+  let project: KtxLocalProject;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-local-structural-artifacts-'));
-    project = await initKloProject({
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-local-structural-artifacts-'));
+    project = await initKtxProject({
       projectDir: join(tempDir, 'project'),
       projectName: 'warehouse',
     });
@@ -35,8 +35,8 @@ describe('readLocalScanStructuralSnapshot', () => {
         null,
         2,
       )}\n`,
-      'klo',
-      'klo@example.com',
+      'ktx',
+      'ktx@example.com',
       'Seed connection artifact',
     );
     await project.fileStore.writeFile(
@@ -65,8 +65,8 @@ describe('readLocalScanStructuralSnapshot', () => {
         null,
         2,
       )}\n`,
-      'klo',
-      'klo@example.com',
+      'ktx',
+      'ktx@example.com',
       'Seed customers artifact',
     );
     await project.fileStore.writeFile(
@@ -113,8 +113,8 @@ describe('readLocalScanStructuralSnapshot', () => {
         null,
         2,
       )}\n`,
-      'klo',
-      'klo@example.com',
+      'ktx',
+      'ktx@example.com',
       'Seed orders artifact',
     );
 
@@ -171,15 +171,15 @@ describe('readLocalScanStructuralSnapshot', () => {
     await project.fileStore.writeFile(
       `${rawRoot}/connection.json`,
       '{"connectionId":"warehouse","metadata":{}}\n',
-      'klo',
-      'klo@example.com',
+      'ktx',
+      'ktx@example.com',
       'Seed connection artifact without extractedAt',
     );
     await project.fileStore.writeFile(
       `${rawRoot}/tables/orders.json`,
       '{"name":"orders","catalog":null,"db":null,"kind":"table","comment":null,"estimatedRows":null,"columns":[{"name":"id","nativeType":"integer","normalizedType":"integer","dimensionType":"number","nullable":false,"primaryKey":true,"comment":null}],"foreignKeys":[]}\n',
-      'klo',
-      'klo@example.com',
+      'ktx',
+      'ktx@example.com',
       'Seed orders artifact',
     );
 

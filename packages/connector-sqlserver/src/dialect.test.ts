@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { KloSqlServerDialect } from './dialect.js';
+import { KtxSqlServerDialect } from './dialect.js';
 
-describe('KloSqlServerDialect', () => {
-  const dialect = new KloSqlServerDialect();
+describe('KtxSqlServerDialect', () => {
+  const dialect = new KtxSqlServerDialect();
 
   it('quotes identifiers and formats schema-qualified table names', () => {
     expect(dialect.quoteIdentifier('events')).toBe('[events]');
@@ -11,7 +11,7 @@ describe('KloSqlServerDialect', () => {
     expect(dialect.formatTableName({ catalog: null, db: null, name: 'events' })).toBe('[events]');
   });
 
-  it('maps SQL Server types to KLO dimension types', () => {
+  it('maps SQL Server types to KTX dimension types', () => {
     expect(dialect.mapToDimensionType('datetime2')).toBe('time');
     expect(dialect.mapToDimensionType('decimal(18, 2)')).toBe('number');
     expect(dialect.mapToDimensionType('bigint')).toBe('number');

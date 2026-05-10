@@ -1,9 +1,9 @@
 import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { KloEmbeddingPort } from '../core/index.js';
-import type { KloLocalProject } from '../project/index.js';
+import type { KtxEmbeddingPort } from '../core/index.js';
+import type { KtxLocalProject } from '../project/index.js';
 import { HybridSearchCore, type SearchCandidateGenerator } from '../search/index.js';
-import { KloPGliteOwnerProcess } from '../search/pglite-owner-process.js';
+import { KtxPGliteOwnerProcess } from '../search/pglite-owner-process.js';
 import {
   listLocalSlSources,
   loadLocalSlSourceRecords,
@@ -23,7 +23,7 @@ export interface PgliteSlSearchPrototypeOwnerOptions {
 export interface PgliteSlSearchPrototypeInput {
   connectionId?: string;
   query: string;
-  embeddingService?: KloEmbeddingPort | null;
+  embeddingService?: KtxEmbeddingPort | null;
   limit?: number;
   pglite: PgliteSlSearchPrototypeOwnerOptions;
 }
@@ -50,11 +50,11 @@ function candidateKey(summary: LocalSlSourceSummary): string {
   return `${summary.connectionId}/${summary.name}`;
 }
 
-function pgliteDataDir(project: KloLocalProject, input: PgliteSlSearchPrototypeOwnerOptions): string {
-  return input.dataDir ?? join(project.projectDir, '.klo', 'pglite-search-prototype');
+function pgliteDataDir(project: KtxLocalProject, input: PgliteSlSearchPrototypeOwnerOptions): string {
+  return input.dataDir ?? join(project.projectDir, '.ktx', 'pglite-search-prototype');
 }
 
-function vectorDimensions(project: KloLocalProject): number {
+function vectorDimensions(project: KtxLocalProject): number {
   const dimensions = project.config.ingest.embeddings.dimensions;
   if (!Number.isInteger(dimensions) || dimensions <= 0) {
     throw new Error(`PGlite SL search prototype needs a positive embedding dimension, got ${String(dimensions)}.`);
@@ -67,7 +67,7 @@ function connectionIdsForSearch(input: { connectionId?: string }): string[] | nu
 }
 
 async function loadCandidates(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   input: { connectionId?: string } = {},
 ): Promise<LocalSlSearchCandidate[]> {
   if (input.connectionId) {
@@ -139,7 +139,7 @@ function postgresqlOrTsQuery(query: string): string {
   return [...new Set(terms)].join(' | ');
 }
 
-async function resetPrototypeSchema(owner: KloPGliteOwnerProcess, dimensions: number): Promise<void> {
+async function resetPrototypeSchema(owner: KtxPGliteOwnerProcess, dimensions: number): Promise<void> {
   await owner.query(`
     DROP TABLE IF EXISTS prototype_sl_dictionary_values;
     DROP TABLE IF EXISTS prototype_sl_sources;
@@ -184,7 +184,7 @@ async function resetPrototypeSchema(owner: KloPGliteOwnerProcess, dimensions: nu
 
 async function sourceEmbeddings(input: {
   candidates: LocalSlSearchCandidate[];
-  embeddingService?: KloEmbeddingPort | null;
+  embeddingService?: KtxEmbeddingPort | null;
   dimensions: number;
 }): Promise<Map<string, number[]> | null> {
   if (!input.embeddingService) {
@@ -209,7 +209,7 @@ async function sourceEmbeddings(input: {
 }
 
 async function insertSourceRows(input: {
-  owner: KloPGliteOwnerProcess;
+  owner: KtxPGliteOwnerProcess;
   candidates: LocalSlSearchCandidate[];
   embeddings: Map<string, number[]> | null;
 }): Promise<void> {
@@ -246,7 +246,7 @@ async function insertSourceRows(input: {
   }
 }
 
-async function insertDictionaryRows(owner: KloPGliteOwnerProcess, entries: SlDictionaryEntry[]): Promise<void> {
+async function insertDictionaryRows(owner: KtxPGliteOwnerProcess, entries: SlDictionaryEntry[]): Promise<void> {
   for (const entry of entries) {
     await owner.query(
       `
@@ -305,7 +305,7 @@ function groupDictionaryRows(rows: PgliteDictionaryRow[], limit: number) {
 }
 
 async function queryLexicalCandidates(input: {
-  owner: KloPGliteOwnerProcess;
+  owner: KtxPGliteOwnerProcess;
   queryText: string;
   connectionIds: string[] | null;
   limit: number;
@@ -341,10 +341,10 @@ async function queryLexicalCandidates(input: {
 }
 
 async function querySemanticCandidates(input: {
-  owner: KloPGliteOwnerProcess;
+  owner: KtxPGliteOwnerProcess;
   queryText: string;
   connectionIds: string[] | null;
-  embeddingService?: KloEmbeddingPort | null;
+  embeddingService?: KtxEmbeddingPort | null;
   dimensions: number;
   limit: number;
 }) {
@@ -397,7 +397,7 @@ async function querySemanticCandidates(input: {
 }
 
 async function queryDictionaryCandidates(input: {
-  owner: KloPGliteOwnerProcess;
+  owner: KtxPGliteOwnerProcess;
   queryText: string;
   connectionIds: string[] | null;
   limit: number;
@@ -437,7 +437,7 @@ async function queryDictionaryCandidates(input: {
 }
 
 export async function searchLocalSlSourcesWithPglitePrototype(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   input: PgliteSlSearchPrototypeInput,
 ): Promise<LocalSlSourceSearchResult[]> {
   const query = input.query.trim();
@@ -453,7 +453,7 @@ export async function searchLocalSlSourcesWithPglitePrototype(
   const dataDir = pgliteDataDir(project, input.pglite);
   await mkdir(dataDir, { recursive: true });
 
-  const owner = await KloPGliteOwnerProcess.start({
+  const owner = await KtxPGliteOwnerProcess.start({
     dataDir,
     host: input.pglite.host,
     port: input.pglite.port,

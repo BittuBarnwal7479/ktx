@@ -1,24 +1,24 @@
 import { createHash } from 'node:crypto';
-import type { KloScanEnrichmentStage, KloScanEnrichmentStateSummary, KloScanMode, KloSchemaSnapshot } from './types.js';
+import type { KtxScanEnrichmentStage, KtxScanEnrichmentStateSummary, KtxScanMode, KtxSchemaSnapshot } from './types.js';
 
-export const KLO_SCAN_ENRICHMENT_STAGES: readonly KloScanEnrichmentStage[] = [
+export const KTX_SCAN_ENRICHMENT_STAGES: readonly KtxScanEnrichmentStage[] = [
   'descriptions',
   'embeddings',
   'relationships',
 ] as const;
 
-export interface KloScanEnrichmentStageLookup {
+export interface KtxScanEnrichmentStageLookup {
   runId: string;
-  stage: KloScanEnrichmentStage;
+  stage: KtxScanEnrichmentStage;
   inputHash: string;
 }
 
-export interface KloScanEnrichmentCompletedStage<TOutput = unknown> {
+export interface KtxScanEnrichmentCompletedStage<TOutput = unknown> {
   runId: string;
   connectionId: string;
   syncId: string;
-  mode: KloScanMode;
-  stage: KloScanEnrichmentStage;
+  mode: KtxScanMode;
+  stage: KtxScanEnrichmentStage;
   inputHash: string;
   status: 'completed';
   output: TOutput;
@@ -26,12 +26,12 @@ export interface KloScanEnrichmentCompletedStage<TOutput = unknown> {
   updatedAt: string;
 }
 
-export interface KloScanEnrichmentFailedStage {
+export interface KtxScanEnrichmentFailedStage {
   runId: string;
   connectionId: string;
   syncId: string;
-  mode: KloScanMode;
-  stage: KloScanEnrichmentStage;
+  mode: KtxScanMode;
+  stage: KtxScanEnrichmentStage;
   inputHash: string;
   status: 'failed';
   output: null;
@@ -39,24 +39,24 @@ export interface KloScanEnrichmentFailedStage {
   updatedAt: string;
 }
 
-export type KloScanEnrichmentStageRecord<TOutput = unknown> =
-  | KloScanEnrichmentCompletedStage<TOutput>
-  | KloScanEnrichmentFailedStage;
+export type KtxScanEnrichmentStageRecord<TOutput = unknown> =
+  | KtxScanEnrichmentCompletedStage<TOutput>
+  | KtxScanEnrichmentFailedStage;
 
-export interface KloScanEnrichmentStateStore {
+export interface KtxScanEnrichmentStateStore {
   findCompletedStage<TOutput = unknown>(
-    input: KloScanEnrichmentStageLookup,
-  ): Promise<KloScanEnrichmentCompletedStage<TOutput> | null>;
+    input: KtxScanEnrichmentStageLookup,
+  ): Promise<KtxScanEnrichmentCompletedStage<TOutput> | null>;
   saveCompletedStage<TOutput = unknown>(
-    input: Omit<KloScanEnrichmentCompletedStage<TOutput>, 'status' | 'errorMessage'>,
+    input: Omit<KtxScanEnrichmentCompletedStage<TOutput>, 'status' | 'errorMessage'>,
   ): Promise<void>;
-  saveFailedStage(input: Omit<KloScanEnrichmentFailedStage, 'status' | 'output'>): Promise<void>;
-  listRunStages(runId: string): Promise<KloScanEnrichmentStageRecord[]>;
+  saveFailedStage(input: Omit<KtxScanEnrichmentFailedStage, 'status' | 'output'>): Promise<void>;
+  listRunStages(runId: string): Promise<KtxScanEnrichmentStageRecord[]>;
 }
 
-export interface ComputeKloScanEnrichmentInputHashInput {
-  snapshot: KloSchemaSnapshot;
-  mode: KloScanMode;
+export interface ComputeKtxScanEnrichmentInputHashInput {
+  snapshot: KtxSchemaSnapshot;
+  mode: KtxScanMode;
   detectRelationships: boolean;
   providerIdentity: Record<string, unknown>;
   relationshipSettings?: unknown;
@@ -75,14 +75,14 @@ function stableJson(value: unknown): string {
   return JSON.stringify(value);
 }
 
-export function computeKloScanEnrichmentInputHash(input: ComputeKloScanEnrichmentInputHashInput): string {
+export function computeKtxScanEnrichmentInputHash(input: ComputeKtxScanEnrichmentInputHashInput): string {
   return createHash('sha256').update(stableJson(input)).digest('hex');
 }
 
-function uniqueStages(stages: KloScanEnrichmentStage[]): KloScanEnrichmentStage[] {
-  const seen = new Set<KloScanEnrichmentStage>();
-  const ordered: KloScanEnrichmentStage[] = [];
-  for (const stage of KLO_SCAN_ENRICHMENT_STAGES) {
+function uniqueStages(stages: KtxScanEnrichmentStage[]): KtxScanEnrichmentStage[] {
+  const seen = new Set<KtxScanEnrichmentStage>();
+  const ordered: KtxScanEnrichmentStage[] = [];
+  for (const stage of KTX_SCAN_ENRICHMENT_STAGES) {
     if (stages.includes(stage) && !seen.has(stage)) {
       seen.add(stage);
       ordered.push(stage);
@@ -91,7 +91,7 @@ function uniqueStages(stages: KloScanEnrichmentStage[]): KloScanEnrichmentStage[
   return ordered;
 }
 
-export function completedKloScanEnrichmentStateSummary(): KloScanEnrichmentStateSummary {
+export function completedKtxScanEnrichmentStateSummary(): KtxScanEnrichmentStateSummary {
   return {
     resumedStages: [],
     completedStages: [],
@@ -99,7 +99,7 @@ export function completedKloScanEnrichmentStateSummary(): KloScanEnrichmentState
   };
 }
 
-export function summarizeKloScanEnrichmentState(input: KloScanEnrichmentStateSummary): KloScanEnrichmentStateSummary {
+export function summarizeKtxScanEnrichmentState(input: KtxScanEnrichmentStateSummary): KtxScanEnrichmentStateSummary {
   return {
     resumedStages: uniqueStages(input.resumedStages),
     completedStages: uniqueStages(input.completedStages),

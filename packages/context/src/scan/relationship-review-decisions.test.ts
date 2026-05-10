@@ -2,12 +2,12 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { runLocalStageOnlyIngest, type SourceAdapter } from '../ingest/index.js';
-import { initKloProject, loadKloProject } from '../project/index.js';
+import { initKtxProject, loadKtxProject } from '../project/index.js';
 import { describe, expect, it } from 'vitest';
 import { writeLocalScanRelationshipReviewDecision } from './relationship-review-decisions.js';
-import type { KloRelationshipArtifact, KloRelationshipDiagnosticsArtifact } from './relationship-diagnostics.js';
-import type { KloRelationshipProfileArtifact } from './relationship-profiling.js';
-import type { KloScanReport } from './types.js';
+import type { KtxRelationshipArtifact, KtxRelationshipDiagnosticsArtifact } from './relationship-diagnostics.js';
+import type { KtxRelationshipProfileArtifact } from './relationship-profiling.js';
+import type { KtxScanReport } from './types.js';
 
 const RUN_ID = 'scan-run-review';
 const SYNC_ID = '2026-05-07-100000-scan-run-review';
@@ -19,9 +19,9 @@ async function writeProjectFile(projectDir: string, relativePath: string, conten
 }
 
 async function createProject(projectDir: string): Promise<void> {
-  await initKloProject({ projectDir, projectName: 'warehouse' });
+  await initKtxProject({ projectDir, projectName: 'warehouse' });
   await writeFile(
-    join(projectDir, 'klo.yaml'),
+    join(projectDir, 'ktx.yaml'),
     [
       'project: warehouse',
       'connections:',
@@ -73,7 +73,7 @@ function liveDatabaseAdapter(): SourceAdapter {
 
 async function createLiveDatabaseRun(projectDir: string): Promise<void> {
   await createProject(projectDir);
-  const project = await loadKloProject({ projectDir });
+  const project = await loadKtxProject({ projectDir });
   await runLocalStageOnlyIngest({
     project,
     adapters: [liveDatabaseAdapter()],
@@ -84,7 +84,7 @@ async function createLiveDatabaseRun(projectDir: string): Promise<void> {
   });
 }
 
-function reviewRelationships(): KloRelationshipArtifact {
+function reviewRelationships(): KtxRelationshipArtifact {
   return {
     connectionId: 'warehouse',
     accepted: [],
@@ -121,7 +121,7 @@ function reviewRelationships(): KloRelationshipArtifact {
   };
 }
 
-function diagnostics(): KloRelationshipDiagnosticsArtifact {
+function diagnostics(): KtxRelationshipDiagnosticsArtifact {
   return {
     connectionId: 'warehouse',
     generatedAt: '2026-05-07T10:00:00.000Z',
@@ -141,7 +141,7 @@ function diagnostics(): KloRelationshipDiagnosticsArtifact {
   };
 }
 
-function profile(): KloRelationshipProfileArtifact {
+function profile(): KtxRelationshipProfileArtifact {
   return {
     connectionId: 'warehouse',
     driver: 'sqlite',
@@ -153,7 +153,7 @@ function profile(): KloRelationshipProfileArtifact {
   };
 }
 
-function report(): KloScanReport {
+function report(): KtxScanReport {
   return {
     connectionId: 'warehouse',
     driver: 'sqlite',
@@ -236,11 +236,11 @@ async function writeScanArtifacts(projectDir: string): Promise<void> {
 
 describe('relationship review decisions', () => {
   it('writes an accepted decision beside the scan relationship artifacts', async () => {
-    const projectDir = await mkdtemp(join(tmpdir(), 'klo-relationship-review-decisions-'));
+    const projectDir = await mkdtemp(join(tmpdir(), 'ktx-relationship-review-decisions-'));
     try {
       await createLiveDatabaseRun(projectDir);
       await writeScanArtifacts(projectDir);
-      const project = await loadKloProject({ projectDir });
+      const project = await loadKtxProject({ projectDir });
 
       const result = await writeLocalScanRelationshipReviewDecision(project, {
         runId: 'scan-run-review',
@@ -280,11 +280,11 @@ describe('relationship review decisions', () => {
   });
 
   it('replaces the existing decision for the same candidate id', async () => {
-    const projectDir = await mkdtemp(join(tmpdir(), 'klo-relationship-review-replace-'));
+    const projectDir = await mkdtemp(join(tmpdir(), 'ktx-relationship-review-replace-'));
     try {
       await createLiveDatabaseRun(projectDir);
       await writeScanArtifacts(projectDir);
-      const project = await loadKloProject({ projectDir });
+      const project = await loadKtxProject({ projectDir });
 
       await writeLocalScanRelationshipReviewDecision(project, {
         runId: 'scan-run-review',
@@ -319,10 +319,10 @@ describe('relationship review decisions', () => {
   });
 
   it('returns null when the scan run does not exist', async () => {
-    const projectDir = await mkdtemp(join(tmpdir(), 'klo-relationship-review-missing-run-'));
+    const projectDir = await mkdtemp(join(tmpdir(), 'ktx-relationship-review-missing-run-'));
     try {
       await createProject(projectDir);
-      const project = await loadKloProject({ projectDir });
+      const project = await loadKtxProject({ projectDir });
 
       await expect(
         writeLocalScanRelationshipReviewDecision(project, {
@@ -340,11 +340,11 @@ describe('relationship review decisions', () => {
   });
 
   it('rejects unknown candidate ids for an existing scan run', async () => {
-    const projectDir = await mkdtemp(join(tmpdir(), 'klo-relationship-review-missing-candidate-'));
+    const projectDir = await mkdtemp(join(tmpdir(), 'ktx-relationship-review-missing-candidate-'));
     try {
       await createLiveDatabaseRun(projectDir);
       await writeScanArtifacts(projectDir);
-      const project = await loadKloProject({ projectDir });
+      const project = await loadKtxProject({ projectDir });
 
       await expect(
         writeLocalScanRelationshipReviewDecision(project, {

@@ -1,14 +1,14 @@
-import type { KloLlmProvider } from '@klo/llm';
+import type { KtxLlmProvider } from '@ktx/llm';
 import { describe, expect, it, vi } from 'vitest';
-import type { KloEnrichedColumn, KloEnrichedSchema, KloEnrichedTable } from './enrichment-types.js';
-import type { KloRelationshipProfileArtifact } from './relationship-profiling.js';
-import { proposeKloRelationshipCandidatesWithLlm } from './relationship-llm-proposal.js';
+import type { KtxEnrichedColumn, KtxEnrichedSchema, KtxEnrichedTable } from './enrichment-types.js';
+import type { KtxRelationshipProfileArtifact } from './relationship-profiling.js';
+import { proposeKtxRelationshipCandidatesWithLlm } from './relationship-llm-proposal.js';
 
-function llmProvider(provider = 'anthropic'): KloLlmProvider {
+function llmProvider(provider = 'anthropic'): KtxLlmProvider {
   const model = { modelId: 'claude-sonnet-4-6', provider };
   return {
-    getModel: vi.fn(() => model as ReturnType<KloLlmProvider['getModel']>),
-    getModelByName: vi.fn(() => model as ReturnType<KloLlmProvider['getModelByName']>),
+    getModel: vi.fn(() => model as ReturnType<KtxLlmProvider['getModel']>),
+    getModelByName: vi.fn(() => model as ReturnType<KtxLlmProvider['getModelByName']>),
     cacheMarker: vi.fn(),
     repairToolCallHandler: vi.fn(),
     thinkingProviderOptions: vi.fn(() => ({})),
@@ -24,13 +24,13 @@ function llmProvider(provider = 'anthropic'): KloLlmProvider {
           cacheTools: true,
           cacheHistory: true,
           vertexFallbackTo5m: false,
-        }) as ReturnType<KloLlmProvider['promptCachingConfig']>,
+        }) as ReturnType<KtxLlmProvider['promptCachingConfig']>,
     ),
-    activeBackend: vi.fn(() => provider as ReturnType<KloLlmProvider['activeBackend']>),
+    activeBackend: vi.fn(() => provider as ReturnType<KtxLlmProvider['activeBackend']>),
   };
 }
 
-function column(tableId: string, name: string, overrides: Partial<KloEnrichedColumn> = {}): KloEnrichedColumn {
+function column(tableId: string, name: string, overrides: Partial<KtxEnrichedColumn> = {}): KtxEnrichedColumn {
   const tableRef = overrides.tableRef ?? { catalog: null, db: null, name: tableId };
   return {
     id: `${tableId}.${name}`,
@@ -51,7 +51,7 @@ function column(tableId: string, name: string, overrides: Partial<KloEnrichedCol
   };
 }
 
-function table(name: string, columns: KloEnrichedColumn[]): KloEnrichedTable {
+function table(name: string, columns: KtxEnrichedColumn[]): KtxEnrichedTable {
   const ref = { catalog: null, db: null, name };
   return {
     id: name,
@@ -62,7 +62,7 @@ function table(name: string, columns: KloEnrichedColumn[]): KloEnrichedTable {
   };
 }
 
-function schema(): KloEnrichedSchema {
+function schema(): KtxEnrichedSchema {
   return {
     connectionId: 'warehouse',
     relationships: [],
@@ -79,7 +79,7 @@ function schema(): KloEnrichedSchema {
   };
 }
 
-function profile(): KloRelationshipProfileArtifact {
+function profile(): KtxRelationshipProfileArtifact {
   return {
     connectionId: 'warehouse',
     driver: 'sqlite',
@@ -141,7 +141,7 @@ describe('relationship LLM proposals', () => {
       },
     }));
 
-    const result = await proposeKloRelationshipCandidatesWithLlm({
+    const result = await proposeKtxRelationshipCandidatesWithLlm({
       connectionId: 'warehouse',
       schema: schema(),
       profile: profile(),
@@ -179,7 +179,7 @@ describe('relationship LLM proposals', () => {
   it('skips deterministic providers without calling generateText', async () => {
     const generateText = vi.fn();
 
-    const result = await proposeKloRelationshipCandidatesWithLlm({
+    const result = await proposeKtxRelationshipCandidatesWithLlm({
       connectionId: 'warehouse',
       schema: schema(),
       profile: profile(),
@@ -193,7 +193,7 @@ describe('relationship LLM proposals', () => {
   });
 
   it('returns recoverable warnings for invalid references and generation failures', async () => {
-    const invalidReference = await proposeKloRelationshipCandidatesWithLlm({
+    const invalidReference = await proposeKtxRelationshipCandidatesWithLlm({
       connectionId: 'warehouse',
       schema: schema(),
       profile: profile(),
@@ -221,7 +221,7 @@ describe('relationship LLM proposals', () => {
       recoverable: true,
     });
 
-    const failed = await proposeKloRelationshipCandidatesWithLlm({
+    const failed = await proposeKtxRelationshipCandidatesWithLlm({
       connectionId: 'warehouse',
       schema: schema(),
       profile: profile(),
@@ -233,7 +233,7 @@ describe('relationship LLM proposals', () => {
     expect(failed).toMatchObject({ candidates: [], llmCalls: 1, summary: 'failed' });
     expect(failed.warnings[0]).toMatchObject({
       code: 'relationship_llm_proposal_failed',
-      message: 'KLO relationship LLM proposal failed: model unavailable',
+      message: 'KTX relationship LLM proposal failed: model unavailable',
       recoverable: true,
     });
   });

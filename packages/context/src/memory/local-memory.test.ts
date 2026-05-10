@@ -2,7 +2,7 @@ import { access, mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { initKloProject } from '../project/index.js';
+import { initKtxProject } from '../project/index.js';
 import { createLocalProjectMemoryCapture } from './local-memory.js';
 import { LocalMemoryRunStore } from './local-memory-runs.js';
 
@@ -20,7 +20,7 @@ describe('LocalMemoryRunStore', () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-local-memory-runs-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-local-memory-runs-'));
   });
 
   afterEach(async () => {
@@ -44,8 +44,8 @@ describe('LocalMemoryRunStore', () => {
       commitHash: 'abc123',
     });
 
-    await expect(access(join(tempDir, '.klo/db.sqlite'))).resolves.toBeUndefined();
-    await expectPathMissing(join(tempDir, '.klo/memory-runs/memory-run-1.json'));
+    await expect(access(join(tempDir, '.ktx/db.sqlite'))).resolves.toBeUndefined();
+    await expectPathMissing(join(tempDir, '.ktx/memory-runs/memory-run-1.json'));
 
     await expect(store.findById('memory-run-1')).resolves.toMatchObject({
       id: 'memory-run-1',
@@ -81,7 +81,7 @@ describe('createLocalProjectMemoryCapture', () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-local-memory-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-local-memory-'));
   });
 
   afterEach(async () => {
@@ -89,7 +89,7 @@ describe('createLocalProjectMemoryCapture', () => {
   });
 
   it('captures a wiki page through the local memory agent and persists pollable status', async () => {
-    const project = await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+    const project = await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
     const agentRunner = {
       runLoop: async ({
         toolSet,
@@ -126,8 +126,8 @@ describe('createLocalProjectMemoryCapture', () => {
     ).resolves.toEqual({ runId: 'memory-run-1' });
     await capture.waitForRun('memory-run-1');
 
-    await expect(access(join(project.projectDir, '.klo/db.sqlite'))).resolves.toBeUndefined();
-    await expectPathMissing(join(project.projectDir, '.klo/memory-runs/memory-run-1.json'));
+    await expect(access(join(project.projectDir, '.ktx/db.sqlite'))).resolves.toBeUndefined();
+    await expectPathMissing(join(project.projectDir, '.ktx/memory-runs/memory-run-1.json'));
 
     await expect(capture.status('memory-run-1')).resolves.toMatchObject({
       runId: 'memory-run-1',
@@ -144,7 +144,7 @@ describe('createLocalProjectMemoryCapture', () => {
   });
 
   it('captures a semantic-layer source for a named local connection id', async () => {
-    const project = await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+    const project = await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
     project.config.connections.warehouse = { driver: 'postgres', readonly: true };
     const agentRunner = {
       runLoop: async ({
@@ -187,8 +187,8 @@ describe('createLocalProjectMemoryCapture', () => {
     });
     await capture.waitForRun('memory-run-2');
 
-    await expect(access(join(project.projectDir, '.klo/db.sqlite'))).resolves.toBeUndefined();
-    await expectPathMissing(join(project.projectDir, '.klo/memory-runs/memory-run-2.json'));
+    await expect(access(join(project.projectDir, '.ktx/db.sqlite'))).resolves.toBeUndefined();
+    await expectPathMissing(join(project.projectDir, '.ktx/memory-runs/memory-run-2.json'));
 
     await expect(capture.status('memory-run-2')).resolves.toMatchObject({
       runId: 'memory-run-2',

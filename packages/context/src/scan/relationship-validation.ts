@@ -1,17 +1,17 @@
-import type { KloRelationshipEndpoint } from './enrichment-types.js';
-import { applyKloRelationshipValidationBudget, type KloRelationshipValidationBudget } from './relationship-budget.js';
-import type { KloRelationshipDiscoveryCandidate } from './relationship-candidates.js';
+import type { KtxRelationshipEndpoint } from './enrichment-types.js';
+import { applyKtxRelationshipValidationBudget, type KtxRelationshipValidationBudget } from './relationship-budget.js';
+import type { KtxRelationshipDiscoveryCandidate } from './relationship-candidates.js';
 import {
-  formatKloRelationshipTableRef,
-  type KloRelationshipProfileArtifact,
-  type KloRelationshipReadOnlyExecutor,
-  quoteKloRelationshipIdentifier,
+  formatKtxRelationshipTableRef,
+  type KtxRelationshipProfileArtifact,
+  type KtxRelationshipReadOnlyExecutor,
+  quoteKtxRelationshipIdentifier,
 } from './relationship-profiling.js';
-import type { KloConnectionDriver, KloQueryResult, KloScanContext } from './types.js';
+import type { KtxConnectionDriver, KtxQueryResult, KtxScanContext } from './types.js';
 
-export type KloValidatedRelationshipStatus = 'accepted' | 'review' | 'rejected';
+export type KtxValidatedRelationshipStatus = 'accepted' | 'review' | 'rejected';
 
-export interface KloRelationshipValidationSettings {
+export interface KtxRelationshipValidationSettings {
   acceptThreshold: number;
   reviewThreshold: number;
   minTargetUniqueness: number;
@@ -19,10 +19,10 @@ export interface KloRelationshipValidationSettings {
   maxViolationRatio: number;
   maxDistinctSourceValues: number;
   concurrency: number;
-  validationBudget?: KloRelationshipValidationBudget;
+  validationBudget?: KtxRelationshipValidationBudget;
 }
 
-export interface KloRelationshipValidationEvidence {
+export interface KtxRelationshipValidationEvidence {
   targetUniqueness: number;
   sourceCoverage: number;
   violationCount: number;
@@ -36,25 +36,25 @@ export interface KloRelationshipValidationEvidence {
   reasons: string[];
 }
 
-export interface KloValidatedRelationshipDiscoveryCandidate
-  extends Omit<KloRelationshipDiscoveryCandidate, 'status'> {
-  status: KloValidatedRelationshipStatus;
+export interface KtxValidatedRelationshipDiscoveryCandidate
+  extends Omit<KtxRelationshipDiscoveryCandidate, 'status'> {
+  status: KtxValidatedRelationshipStatus;
   score: number;
-  validation: KloRelationshipValidationEvidence;
+  validation: KtxRelationshipValidationEvidence;
 }
 
-export interface ValidateKloRelationshipDiscoveryCandidatesInput {
+export interface ValidateKtxRelationshipDiscoveryCandidatesInput {
   connectionId: string;
-  driver: KloConnectionDriver;
-  candidates: readonly KloRelationshipDiscoveryCandidate[];
-  profiles: KloRelationshipProfileArtifact;
-  executor: KloRelationshipReadOnlyExecutor | null;
-  ctx: KloScanContext;
+  driver: KtxConnectionDriver;
+  candidates: readonly KtxRelationshipDiscoveryCandidate[];
+  profiles: KtxRelationshipProfileArtifact;
+  executor: KtxRelationshipReadOnlyExecutor | null;
+  ctx: KtxScanContext;
   tableCount?: number;
-  settings?: Partial<KloRelationshipValidationSettings>;
+  settings?: Partial<KtxRelationshipValidationSettings>;
 }
 
-const DEFAULT_SETTINGS: KloRelationshipValidationSettings = {
+const DEFAULT_SETTINGS: KtxRelationshipValidationSettings = {
   acceptThreshold: 0.85,
   reviewThreshold: 0.55,
   minTargetUniqueness: 0.9,
@@ -65,8 +65,8 @@ const DEFAULT_SETTINGS: KloRelationshipValidationSettings = {
 };
 
 function mergeSettings(
-  settings: Partial<KloRelationshipValidationSettings> | undefined,
-): KloRelationshipValidationSettings {
+  settings: Partial<KtxRelationshipValidationSettings> | undefined,
+): KtxRelationshipValidationSettings {
   return { ...DEFAULT_SETTINGS, ...settings };
 }
 
@@ -74,7 +74,7 @@ function profileKey(table: string, column: string): string {
   return `${table}.${column}`;
 }
 
-function singleRelationshipColumn(endpointValue: KloRelationshipEndpoint): string {
+function singleRelationshipColumn(endpointValue: KtxRelationshipEndpoint): string {
   const column = endpointValue.columns[0];
   if (!column) {
     throw new Error(`Expected relationship endpoint ${endpointValue.table.name} to contain one column`);
@@ -82,15 +82,15 @@ function singleRelationshipColumn(endpointValue: KloRelationshipEndpoint): strin
   return column;
 }
 
-function headerIndex(result: KloQueryResult, header: string): number {
+function headerIndex(result: KtxQueryResult, header: string): number {
   return result.headers.findIndex((candidate) => candidate.toLowerCase() === header.toLowerCase());
 }
 
-function firstRow(result: KloQueryResult): unknown[] {
+function firstRow(result: KtxQueryResult): unknown[] {
   return result.rows[0] ?? [];
 }
 
-function numberAt(result: KloQueryResult, header: string): number {
+function numberAt(result: KtxQueryResult, header: string): number {
   const value = firstRow(result)[headerIndex(result, header)];
   if (typeof value === 'number') {
     return value;
@@ -104,14 +104,14 @@ function numberAt(result: KloQueryResult, header: string): number {
   return 0;
 }
 
-function limitSql(driver: KloConnectionDriver, limit: number): string {
+function limitSql(driver: KtxConnectionDriver, limit: number): string {
   if (driver === 'sqlserver') {
     return '';
   }
   return ` LIMIT ${Math.max(1, Math.floor(limit))}`;
 }
 
-function topSql(driver: KloConnectionDriver, limit: number): string {
+function topSql(driver: KtxConnectionDriver, limit: number): string {
   if (driver === 'sqlserver') {
     return ` TOP (${Math.max(1, Math.floor(limit))})`;
   }
@@ -119,17 +119,17 @@ function topSql(driver: KloConnectionDriver, limit: number): string {
 }
 
 function buildCoverageSql(input: {
-  driver: KloConnectionDriver;
+  driver: KtxConnectionDriver;
   childTable: string;
   childColumn: string;
   parentTable: string;
   parentColumn: string;
   maxDistinctSourceValues: number;
 }): string {
-  const childTable = formatKloRelationshipTableRef(input.driver, { catalog: null, db: null, name: input.childTable });
-  const parentTable = formatKloRelationshipTableRef(input.driver, { catalog: null, db: null, name: input.parentTable });
-  const childColumn = quoteKloRelationshipIdentifier(input.driver, input.childColumn);
-  const parentColumn = quoteKloRelationshipIdentifier(input.driver, input.parentColumn);
+  const childTable = formatKtxRelationshipTableRef(input.driver, { catalog: null, db: null, name: input.childTable });
+  const parentTable = formatKtxRelationshipTableRef(input.driver, { catalog: null, db: null, name: input.parentTable });
+  const childColumn = quoteKtxRelationshipIdentifier(input.driver, input.childColumn);
+  const parentColumn = quoteKtxRelationshipIdentifier(input.driver, input.parentColumn);
   const limit = limitSql(input.driver, input.maxDistinctSourceValues);
   const top = topSql(input.driver, input.maxDistinctSourceValues);
 
@@ -170,8 +170,8 @@ function score(input: {
 function statusFor(input: {
   score: number;
   reasons: readonly string[];
-  settings: KloRelationshipValidationSettings;
-}): KloValidatedRelationshipStatus {
+  settings: KtxRelationshipValidationSettings;
+}): KtxValidatedRelationshipStatus {
   if (
     input.reasons.includes('low_target_uniqueness') ||
     input.reasons.includes('low_source_coverage') ||
@@ -215,10 +215,10 @@ async function mapWithConcurrency<TInput, TOutput>(
 }
 
 function reviewWithoutValidation(
-  candidate: KloRelationshipDiscoveryCandidate,
-  profiles: KloRelationshipProfileArtifact,
+  candidate: KtxRelationshipDiscoveryCandidate,
+  profiles: KtxRelationshipProfileArtifact,
   reason: 'validation_unavailable' | 'profile_unavailable' | 'validation_unattempted',
-): KloValidatedRelationshipDiscoveryCandidate {
+): KtxValidatedRelationshipDiscoveryCandidate {
   const sourceColumn = singleRelationshipColumn(candidate.from);
   const targetColumn = singleRelationshipColumn(candidate.to);
   const sourceProfile = profiles.columns[profileKey(candidate.from.table.name, sourceColumn)];
@@ -244,9 +244,9 @@ function reviewWithoutValidation(
   };
 }
 
-export async function validateKloRelationshipDiscoveryCandidates(
-  input: ValidateKloRelationshipDiscoveryCandidatesInput,
-): Promise<KloValidatedRelationshipDiscoveryCandidate[]> {
+export async function validateKtxRelationshipDiscoveryCandidates(
+  input: ValidateKtxRelationshipDiscoveryCandidatesInput,
+): Promise<KtxValidatedRelationshipDiscoveryCandidate[]> {
   const settings = mergeSettings(input.settings);
   if (!input.executor || !input.profiles.sqlAvailable) {
     return input.candidates.map((candidate) =>
@@ -257,8 +257,8 @@ export async function validateKloRelationshipDiscoveryCandidates(
   const executor = input.executor;
 
   async function validateCandidate(
-    candidate: KloRelationshipDiscoveryCandidate,
-  ): Promise<KloValidatedRelationshipDiscoveryCandidate> {
+    candidate: KtxRelationshipDiscoveryCandidate,
+  ): Promise<KtxValidatedRelationshipDiscoveryCandidate> {
     const sourceColumn = singleRelationshipColumn(candidate.from);
     const targetColumn = singleRelationshipColumn(candidate.to);
     const sourceProfile = input.profiles.columns[profileKey(candidate.from.table.name, sourceColumn)];
@@ -334,7 +334,7 @@ export async function validateKloRelationshipDiscoveryCandidates(
     };
   }
 
-  const budgeted = applyKloRelationshipValidationBudget({
+  const budgeted = applyKtxRelationshipValidationBudget({
     candidates: input.candidates,
     tableCount: input.tableCount ?? 0,
     budget: settings.validationBudget ?? (input.tableCount === undefined ? 'all' : undefined),
@@ -345,7 +345,7 @@ export async function validateKloRelationshipDiscoveryCandidates(
     settings.concurrency,
     validateCandidate,
   );
-  const byOriginalIndex = new Map<number, KloValidatedRelationshipDiscoveryCandidate>();
+  const byOriginalIndex = new Map<number, KtxValidatedRelationshipDiscoveryCandidate>();
   for (let index = 0; index < budgeted.toValidate.length; index += 1) {
     const originalIndex = budgeted.toValidate[index]?.originalIndex;
     const candidate = validated[index];

@@ -3,7 +3,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { KloEmbeddingPort } from '../core/index.js';
+import type { KtxEmbeddingPort } from '../core/index.js';
 import { SqliteContextEvidenceStore } from '../ingest/context-evidence/sqlite-context-evidence-store.js';
 import { ContextCandidateMarkTool } from './context-candidate-mark.tool.js';
 import { ContextCandidateWriteTool } from './context-candidate-write.tool.js';
@@ -39,11 +39,11 @@ const ingestContext = (): ToolContext => ({
   } as unknown as ToolSession,
 });
 
-const makeEmbeddingService = (overrides: Partial<KloEmbeddingPort> = {}) =>
+const makeEmbeddingService = (overrides: Partial<KtxEmbeddingPort> = {}) =>
   ({
     computeEmbedding: vi.fn().mockResolvedValue([0.25, 0.5, 0.75]),
     ...overrides,
-  }) as Partial<KloEmbeddingPort> as KloEmbeddingPort;
+  }) as Partial<KtxEmbeddingPort> as KtxEmbeddingPort;
 
 describe('context evidence tools', () => {
   it('searches context evidence with ingest defaults', async () => {
@@ -86,7 +86,7 @@ describe('context evidence tools', () => {
     } as Partial<ContextEvidenceToolStorePort> as ContextEvidenceToolStorePort;
     const embeddings = {
       computeEmbedding: vi.fn().mockResolvedValue([0.1, ...Array.from({ length: 383 }, () => 0)]),
-    } as Partial<KloEmbeddingPort> as KloEmbeddingPort;
+    } as Partial<KtxEmbeddingPort> as KtxEmbeddingPort;
 
     const tool = new ContextEvidenceSearchTool(repository, embeddings);
     const result = await tool.call({ query: 'revenue refunds', limit: 5, includeDeleted: false }, ingestContext());
@@ -116,7 +116,7 @@ describe('context evidence tools', () => {
   it('returns a structured ingest metadata error outside ingest sessions', async () => {
     const tool = new ContextEvidenceSearchTool(
       { searchRRF: vi.fn() } as Partial<ContextEvidenceToolStorePort> as ContextEvidenceToolStorePort,
-      { computeEmbedding: vi.fn() } as Partial<KloEmbeddingPort> as KloEmbeddingPort,
+      { computeEmbedding: vi.fn() } as Partial<KtxEmbeddingPort> as KtxEmbeddingPort,
     );
 
     const result = await tool.call(
@@ -446,8 +446,8 @@ describe('context evidence tools against real SqliteContextEvidenceStore', () =>
   let dbPath: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-context-tools-sqlite-'));
-    dbPath = join(tempDir, '.klo', 'db.sqlite');
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-context-tools-sqlite-'));
+    dbPath = join(tempDir, '.ktx', 'db.sqlite');
   });
 
   afterEach(async () => {
@@ -530,7 +530,7 @@ describe('context evidence tools against real SqliteContextEvidenceStore', () =>
 
     const tool = new ContextCandidateWriteTool(store, {
       computeEmbedding: vi.fn().mockResolvedValue([0.1, 0.2, 0.3]),
-    } as Partial<KloEmbeddingPort> as KloEmbeddingPort);
+    } as Partial<KtxEmbeddingPort> as KtxEmbeddingPort);
 
     const parsed = tool.parseInput({
       candidateKey: 'revenue-definition',
@@ -558,7 +558,7 @@ describe('context evidence tools against real SqliteContextEvidenceStore', () =>
   it('candidate write schema rejects a bare UUID without the ctxchunk- prefix', () => {
     const tool = new ContextCandidateWriteTool(
       {} as ContextEvidenceToolStorePort,
-      { computeEmbedding: vi.fn() } as Partial<KloEmbeddingPort> as KloEmbeddingPort,
+      { computeEmbedding: vi.fn() } as Partial<KtxEmbeddingPort> as KtxEmbeddingPort,
     );
 
     expect(() =>

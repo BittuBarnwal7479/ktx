@@ -1,21 +1,21 @@
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { initKloProject } from '@klo/context/project';
+import { initKtxProject } from '@ktx/context/project';
 import type {
   ApplyLocalScanRelationshipReviewDecisionsResult,
   ExportLocalRelationshipFeedbackLabelsResult,
-  KloRelationshipFeedbackCalibrationReport,
-  KloRelationshipThresholdAdviceReport,
-  KloScanReport,
+  KtxRelationshipFeedbackCalibrationReport,
+  KtxRelationshipThresholdAdviceReport,
+  KtxScanReport,
   LocalScanRunResult,
   LocalScanStatusResponse,
   ReadLocalScanRelationshipArtifactsResult,
   RunLocalScanOptions,
   WriteLocalScanRelationshipReviewDecisionResult,
-} from '@klo/context/scan';
+} from '@ktx/context/scan';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createCliScanProgress, runKloScan } from './scan.js';
+import { createCliScanProgress, runKtxScan } from './scan.js';
 
 const sqlServerExtractSchema = vi.hoisted(() =>
   vi.fn(async (connectionId: string) => ({
@@ -36,10 +36,10 @@ const sqlServerExtractSchema = vi.hoisted(() =>
 const createSqlServerLiveDatabaseIntrospection = vi.hoisted(() =>
   vi.fn(() => ({ extractSchema: sqlServerExtractSchema })),
 );
-const isKloSqlServerConnectionConfig = vi.hoisted(() =>
+const isKtxSqlServerConnectionConfig = vi.hoisted(() =>
   vi.fn((connection: { driver?: string } | undefined) => connection?.driver === 'sqlserver'),
 );
-const KloSqlServerScanConnector = vi.hoisted(
+const KtxSqlServerScanConnector = vi.hoisted(
   () =>
     class {
       readonly id: string;
@@ -69,10 +69,10 @@ const bigQueryExtractSchema = vi.hoisted(() =>
 const createBigQueryLiveDatabaseIntrospection = vi.hoisted(() =>
   vi.fn(() => ({ extractSchema: bigQueryExtractSchema })),
 );
-const isKloBigQueryConnectionConfig = vi.hoisted(() =>
+const isKtxBigQueryConnectionConfig = vi.hoisted(() =>
   vi.fn((connection: { driver?: string } | undefined) => connection?.driver === 'bigquery'),
 );
-const KloBigQueryScanConnector = vi.hoisted(
+const KtxBigQueryScanConnector = vi.hoisted(
   () =>
     class {
       readonly id: string;
@@ -102,10 +102,10 @@ const snowflakeExtractSchema = vi.hoisted(() =>
 const createSnowflakeLiveDatabaseIntrospection = vi.hoisted(() =>
   vi.fn(() => ({ extractSchema: snowflakeExtractSchema })),
 );
-const isKloSnowflakeConnectionConfig = vi.hoisted(() =>
+const isKtxSnowflakeConnectionConfig = vi.hoisted(() =>
   vi.fn((connection: { driver?: string } | undefined) => connection?.driver === 'snowflake'),
 );
-const KloSnowflakeScanConnector = vi.hoisted(
+const KtxSnowflakeScanConnector = vi.hoisted(
   () =>
     class {
       readonly id: string;
@@ -127,12 +127,12 @@ const postgresExtractSchema = vi.hoisted(() =>
 const createPostgresLiveDatabaseIntrospection = vi.hoisted(() =>
   vi.fn(() => ({ extractSchema: postgresExtractSchema })),
 );
-const isKloPostgresConnectionConfig = vi.hoisted(() =>
+const isKtxPostgresConnectionConfig = vi.hoisted(() =>
   vi.fn((connection: { driver?: string } | undefined) =>
     ['postgres', 'postgresql'].includes(String(connection?.driver ?? '').toLowerCase()),
   ),
 );
-const KloPostgresScanConnector = vi.hoisted(
+const KtxPostgresScanConnector = vi.hoisted(
   () =>
     class {
       readonly id: string;
@@ -144,28 +144,28 @@ const KloPostgresScanConnector = vi.hoisted(
     },
 );
 
-vi.mock('@klo/connector-sqlserver', () => ({
+vi.mock('@ktx/connector-sqlserver', () => ({
   createSqlServerLiveDatabaseIntrospection,
-  isKloSqlServerConnectionConfig,
-  KloSqlServerScanConnector,
+  isKtxSqlServerConnectionConfig,
+  KtxSqlServerScanConnector,
 }));
 
-vi.mock('@klo/connector-bigquery', () => ({
+vi.mock('@ktx/connector-bigquery', () => ({
   createBigQueryLiveDatabaseIntrospection,
-  isKloBigQueryConnectionConfig,
-  KloBigQueryScanConnector,
+  isKtxBigQueryConnectionConfig,
+  KtxBigQueryScanConnector,
 }));
 
-vi.mock('@klo/connector-snowflake', () => ({
+vi.mock('@ktx/connector-snowflake', () => ({
   createSnowflakeLiveDatabaseIntrospection,
-  isKloSnowflakeConnectionConfig,
-  KloSnowflakeScanConnector,
+  isKtxSnowflakeConnectionConfig,
+  KtxSnowflakeScanConnector,
 }));
 
-vi.mock('@klo/connector-postgres', () => ({
+vi.mock('@ktx/connector-postgres', () => ({
   createPostgresLiveDatabaseIntrospection,
-  isKloPostgresConnectionConfig,
-  KloPostgresScanConnector,
+  isKtxPostgresConnectionConfig,
+  KtxPostgresScanConnector,
 }));
 
 function makeIo(options: { isTTY?: boolean } = {}) {
@@ -190,7 +190,7 @@ function makeIo(options: { isTTY?: boolean } = {}) {
   };
 }
 
-const report: KloScanReport = {
+const report: KtxScanReport = {
   connectionId: 'warehouse',
   driver: 'postgres',
   syncId: 'sync-1',
@@ -242,7 +242,7 @@ const report: KloScanReport = {
   createdAt: '2026-04-29T09:00:00.000Z',
 };
 
-const reportWithAttention: KloScanReport = {
+const reportWithAttention: KtxScanReport = {
   ...report,
   mode: 'relationships',
   diffSummary: {
@@ -258,7 +258,7 @@ const reportWithAttention: KloScanReport = {
   warnings: [
     {
       code: 'connector_capability_missing',
-      message: 'KLO scan connector is missing optional capability: columnStats',
+      message: 'KTX scan connector is missing optional capability: columnStats',
       recoverable: true,
       metadata: { capability: 'columnStats' },
     },
@@ -283,11 +283,11 @@ const reportWithAttention: KloScanReport = {
   },
 };
 
-describe('runKloScan', () => {
+describe('runKtxScan', () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-cli-scan-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-cli-scan-'));
   });
 
   afterEach(async () => {
@@ -295,7 +295,7 @@ describe('runKloScan', () => {
   });
 
   it('runs structural scans and prints a dev-friendly plain summary', async () => {
-    await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
     const runLocalScan = vi.fn(
       async (_input: RunLocalScanOptions): Promise<LocalScanRunResult> => ({
         runId: 'scan-run-1',
@@ -311,7 +311,7 @@ describe('runKloScan', () => {
     const io = makeIo();
 
     await expect(
-      runKloScan(
+      runKtxScan(
         {
           command: 'run',
           projectDir: tempDir,
@@ -334,7 +334,7 @@ describe('runKloScan', () => {
         connector: undefined,
       }),
     );
-    expect(io.stdout()).toContain('KLO scan completed\n');
+    expect(io.stdout()).toContain('KTX scan completed\n');
     expect(io.stdout()).toContain('Run: scan-run-1');
     expect(io.stdout()).toContain('Mode: structural');
     expect(io.stdout()).toContain('What changed\n');
@@ -346,9 +346,9 @@ describe('runKloScan', () => {
     expect(io.stdout()).toContain('Artifacts\n');
     expect(io.stdout()).toContain('Report: raw-sources/warehouse/live-database/sync-1/scan-report.json');
     expect(io.stdout()).toContain('Next:\n');
-    expect(io.stdout()).toContain('klo dev scan status --project-dir ');
+    expect(io.stdout()).toContain('ktx dev scan status --project-dir ');
     expect(io.stdout()).toContain(' scan-run-1\n');
-    expect(io.stdout()).toContain('klo dev scan report --project-dir ');
+    expect(io.stdout()).toContain('ktx dev scan report --project-dir ');
     expect(io.stdout()).toContain(' scan-run-1\n');
     expect(io.stdout()).not.toContain('\u001b[');
     expect(io.stdout()).not.toContain('✓');
@@ -357,7 +357,7 @@ describe('runKloScan', () => {
   });
 
   it('explains warnings, capability gaps, and relationships in human scan summaries', async () => {
-    await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
     const runLocalScan = vi.fn(
       async (_input: RunLocalScanOptions): Promise<LocalScanRunResult> => ({
         runId: 'scan-run-1',
@@ -373,7 +373,7 @@ describe('runKloScan', () => {
     const io = makeIo();
 
     await expect(
-      runKloScan(
+      runKtxScan(
         {
           command: 'run',
           projectDir: tempDir,
@@ -408,14 +408,14 @@ describe('runKloScan', () => {
   });
 
   it('prints review-only relationship summaries and validation capability warnings', async () => {
-    await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
-    const reviewOnlyReport: KloScanReport = {
+    await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
+    const reviewOnlyReport: KtxScanReport = {
       ...reportWithAttention,
       capabilityGaps: [],
       warnings: [
         {
           code: 'connector_capability_missing',
-          message: 'KLO scan connector cannot run read-only SQL relationship validation',
+          message: 'KTX scan connector cannot run read-only SQL relationship validation',
           recoverable: true,
           metadata: { capability: 'readOnlySql' },
         },
@@ -437,7 +437,7 @@ describe('runKloScan', () => {
     const io = makeIo();
 
     await expect(
-      runKloScan(
+      runKtxScan(
         {
           command: 'run',
           projectDir: tempDir,
@@ -456,12 +456,12 @@ describe('runKloScan', () => {
     expect(io.stdout()).toContain('Review: 12');
     expect(io.stdout()).toContain('Rejected: 44');
     expect(io.stdout()).toContain(
-      'connector_capability_missing: KLO scan connector cannot run read-only SQL relationship validation',
+      'connector_capability_missing: KTX scan connector cannot run read-only SQL relationship validation',
     );
   });
 
   it('passes a scan progress port and prints TTY progress messages', async () => {
-    await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
     const runLocalScan = vi.fn(async (input: RunLocalScanOptions): Promise<LocalScanRunResult> => {
       await input.progress?.update(0.15, 'Inspecting database schema');
       await input.progress?.update(0.55, 'Semantic layer comparison found 5 changes across 18 tables');
@@ -481,7 +481,7 @@ describe('runKloScan', () => {
     delete process.env.CI;
 
     try {
-      const exitCode = await runKloScan(
+      const exitCode = await runKtxScan(
         {
           command: 'run',
           projectDir: tempDir,
@@ -531,7 +531,7 @@ describe('runKloScan', () => {
   });
 
   it('flushes transient TTY progress messages before printing scan failures', async () => {
-    await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
     const runLocalScan = vi.fn(async (input: RunLocalScanOptions): Promise<LocalScanRunResult> => {
       await input.progress?.update(0.42, 'Generating descriptions 3/35 tables', { transient: true });
       throw new Error('scan failed');
@@ -542,7 +542,7 @@ describe('runKloScan', () => {
 
     try {
       await expect(
-        runKloScan(
+        runKtxScan(
           {
             command: 'run',
             projectDir: tempDir,
@@ -568,7 +568,7 @@ describe('runKloScan', () => {
   });
 
   it('does not print live progress messages for non-TTY output', async () => {
-    await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
     const runLocalScan = vi.fn(async (input: RunLocalScanOptions): Promise<LocalScanRunResult> => {
       await input.progress?.update(0.15, 'Inspecting database schema');
       return {
@@ -585,7 +585,7 @@ describe('runKloScan', () => {
     const io = makeIo();
 
     await expect(
-      runKloScan(
+      runKtxScan(
         {
           command: 'run',
           projectDir: tempDir,
@@ -604,7 +604,7 @@ describe('runKloScan', () => {
   });
 
   it('uses terminal-aware visual styling only for TTY output', async () => {
-    await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
     const runLocalScan = vi.fn(
       async (_input: RunLocalScanOptions): Promise<LocalScanRunResult> => ({
         runId: 'scan-run-1',
@@ -627,7 +627,7 @@ describe('runKloScan', () => {
 
     try {
       await expect(
-        runKloScan(
+        runKtxScan(
           {
             command: 'run',
             projectDir: tempDir,
@@ -659,12 +659,12 @@ describe('runKloScan', () => {
     }
 
     expect(io.stdout()).toContain('✓');
-    expect(io.stdout()).toContain('KLO scan completed');
+    expect(io.stdout()).toContain('KTX scan completed');
     expect(io.stdout()).toContain('\u001b[');
   });
 
   it('honors NO_COLOR for TTY scan summaries', async () => {
-    await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
     const runLocalScan = vi.fn(
       async (_input: RunLocalScanOptions): Promise<LocalScanRunResult> => ({
         runId: 'scan-run-1',
@@ -683,7 +683,7 @@ describe('runKloScan', () => {
 
     try {
       await expect(
-        runKloScan(
+        runKtxScan(
           {
             command: 'run',
             projectDir: tempDir,
@@ -704,12 +704,12 @@ describe('runKloScan', () => {
       }
     }
 
-    expect(io.stdout()).toContain('KLO scan completed');
+    expect(io.stdout()).toContain('KTX scan completed');
     expect(io.stdout()).not.toContain('\u001b[');
   });
 
   it('prints status and human report output by default', async () => {
-    await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
     const status: LocalScanStatusResponse = {
       runId: 'scan-run-1',
       status: 'done',
@@ -727,7 +727,7 @@ describe('runKloScan', () => {
     const io = makeIo();
 
     await expect(
-      runKloScan({ command: 'status', projectDir: tempDir, runId: 'scan-run-1' }, io.io, {
+      runKtxScan({ command: 'status', projectDir: tempDir, runId: 'scan-run-1' }, io.io, {
         getLocalScanStatus: vi.fn().mockResolvedValue(status),
       }),
     ).resolves.toBe(0);
@@ -736,22 +736,22 @@ describe('runKloScan', () => {
 
     const reportIo = makeIo();
     await expect(
-      runKloScan({ command: 'report', projectDir: tempDir, runId: 'scan-run-1', json: false }, reportIo.io, {
+      runKtxScan({ command: 'report', projectDir: tempDir, runId: 'scan-run-1', json: false }, reportIo.io, {
         getLocalScanReport: vi.fn().mockResolvedValue(report),
       }),
     ).resolves.toBe(0);
-    expect(reportIo.stdout()).toContain('KLO scan report\n');
+    expect(reportIo.stdout()).toContain('KTX scan report\n');
     expect(reportIo.stdout()).toContain('Run: scan-run-1');
     expect(reportIo.stdout()).toContain('What changed\n');
     expect(() => JSON.parse(reportIo.stdout())).toThrow();
   });
 
   it('prints raw report JSON when requested', async () => {
-    await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
     const reportIo = makeIo();
 
     await expect(
-      runKloScan({ command: 'report', projectDir: tempDir, runId: 'scan-run-1', json: true }, reportIo.io, {
+      runKtxScan({ command: 'report', projectDir: tempDir, runId: 'scan-run-1', json: true }, reportIo.io, {
         getLocalScanReport: vi.fn().mockResolvedValue(report),
       }),
     ).resolves.toBe(0);
@@ -760,8 +760,8 @@ describe('runKloScan', () => {
   });
 
   it('prints review relationship artifacts in human form', async () => {
-    await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
-    const reviewReport: KloScanReport = {
+    await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
+    const reviewReport: KtxScanReport = {
       ...reportWithAttention,
       runId: 'scan-run-review',
       syncId: 'sync-review',
@@ -866,7 +866,7 @@ describe('runKloScan', () => {
         tables: [],
         columns: {},
         queryCount: 0,
-        warnings: ['KLO scan connector cannot run read-only SQL relationship validation'],
+        warnings: ['KTX scan connector cannot run read-only SQL relationship validation'],
       },
       paths: {
         relationships: 'raw-sources/warehouse/live-database/sync-review/enrichment/relationships.json',
@@ -878,7 +878,7 @@ describe('runKloScan', () => {
 
     const io = makeIo();
     await expect(
-      runKloScan(
+      runKtxScan(
         {
           command: 'relationships',
           projectDir: tempDir,
@@ -897,7 +897,7 @@ describe('runKloScan', () => {
       'scan-run-review',
     );
 
-    expect(io.stdout()).toContain('KLO relationship artifacts');
+    expect(io.stdout()).toContain('KTX relationship artifacts');
     expect(io.stdout()).toContain('Run: scan-run-review');
     expect(io.stdout()).toContain('Summary: accepted=0 review=1 rejected=1 skipped=0');
     expect(io.stdout()).toContain('Reason: relationship candidates require review before manifest writes');
@@ -911,8 +911,8 @@ describe('runKloScan', () => {
   });
 
   it('prints filtered relationship artifacts as JSON', async () => {
-    await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
-    const jsonReport: KloScanReport = {
+    await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
+    const jsonReport: KtxScanReport = {
       ...reportWithAttention,
       runId: 'scan-run-json',
       syncId: 'sync-json',
@@ -946,7 +946,7 @@ describe('runKloScan', () => {
 
     const io = makeIo();
     await expect(
-      runKloScan(
+      runKtxScan(
         {
           command: 'relationships',
           projectDir: tempDir,
@@ -974,7 +974,7 @@ describe('runKloScan', () => {
   });
 
   it('records an accepted relationship review decision in human form', async () => {
-    await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
     const decisionResult: WriteLocalScanRelationshipReviewDecisionResult = {
       path: 'raw-sources/warehouse/live-database/sync-review/enrichment/relationship-review-decisions.json',
       decision: {
@@ -1019,7 +1019,7 @@ describe('runKloScan', () => {
 
     const io = makeIo();
     await expect(
-      runKloScan(
+      runKtxScan(
         {
           command: 'relationshipDecision',
           projectDir: tempDir,
@@ -1055,7 +1055,7 @@ describe('runKloScan', () => {
   });
 
   it('records a rejected relationship review decision as JSON', async () => {
-    await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
     const decisionResult: WriteLocalScanRelationshipReviewDecisionResult = {
       path: 'raw-sources/warehouse/live-database/sync-review/enrichment/relationship-review-decisions.json',
       decision: {
@@ -1100,14 +1100,14 @@ describe('runKloScan', () => {
 
     const io = makeIo();
     await expect(
-      runKloScan(
+      runKtxScan(
         {
           command: 'relationshipDecision',
           projectDir: tempDir,
           runId: 'scan-run-review',
           candidateId: 'orders:orders.customer_id->customers:customers.id',
           decision: 'rejected',
-          reviewer: 'klo',
+          reviewer: 'ktx',
           note: null,
           json: true,
         },
@@ -1127,19 +1127,19 @@ describe('runKloScan', () => {
   });
 
   it('reports missing scan runs when recording relationship decisions', async () => {
-    await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
     const writeLocalScanRelationshipReviewDecision = vi.fn(async () => null);
 
     const io = makeIo();
     await expect(
-      runKloScan(
+      runKtxScan(
         {
           command: 'relationshipDecision',
           projectDir: tempDir,
           runId: 'missing-run',
           candidateId: 'orders:orders.customer_id->customers:customers.id',
           decision: 'accepted',
-          reviewer: 'klo',
+          reviewer: 'ktx',
           note: null,
           json: false,
         },
@@ -1152,7 +1152,7 @@ describe('runKloScan', () => {
   });
 
   it('applies accepted relationship review decisions with human output', async () => {
-    await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
     const applyLocalScanRelationshipReviewDecisions = vi.fn(
       async (): Promise<ApplyLocalScanRelationshipReviewDecisionsResult> => ({
         runId: 'scan-run-a',
@@ -1190,7 +1190,7 @@ describe('runKloScan', () => {
 
     const io = makeIo();
     await expect(
-      runKloScan(
+      runKtxScan(
         {
           command: 'relationshipApply',
           projectDir: tempDir,
@@ -1222,7 +1222,7 @@ describe('runKloScan', () => {
   });
 
   it('prints relationship review apply JSON', async () => {
-    await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
     const applyResult: ApplyLocalScanRelationshipReviewDecisionsResult = {
       runId: 'scan-run-a',
       connectionId: 'warehouse',
@@ -1239,7 +1239,7 @@ describe('runKloScan', () => {
 
     const io = makeIo();
     await expect(
-      runKloScan(
+      runKtxScan(
         {
           command: 'relationshipApply',
           projectDir: tempDir,
@@ -1267,7 +1267,7 @@ describe('runKloScan', () => {
   });
 
   it('prints relationship feedback export summary in human form', async () => {
-    await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
     const feedback: ExportLocalRelationshipFeedbackLabelsResult = {
       generatedAt: '2026-05-07T13:00:00.000Z',
       filters: { connectionId: null, decision: 'all' },
@@ -1328,7 +1328,7 @@ describe('runKloScan', () => {
 
     const io = makeIo();
     await expect(
-      runKloScan(
+      runKtxScan(
         {
           command: 'relationshipFeedback',
           projectDir: tempDir,
@@ -1349,7 +1349,7 @@ describe('runKloScan', () => {
         decision: 'all',
       },
     );
-    expect(io.stdout()).toContain('KLO relationship feedback labels');
+    expect(io.stdout()).toContain('KTX relationship feedback labels');
     expect(io.stdout()).toContain('Total: 2');
     expect(io.stdout()).toContain('Accepted: 1');
     expect(io.stdout()).toContain('Rejected: 1');
@@ -1358,7 +1358,7 @@ describe('runKloScan', () => {
   });
 
   it('prints relationship feedback labels as JSONL', async () => {
-    await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
     const feedback: ExportLocalRelationshipFeedbackLabelsResult = {
       generatedAt: '2026-05-07T13:00:00.000Z',
       filters: { connectionId: 'warehouse', decision: 'accepted' },
@@ -1373,7 +1373,7 @@ describe('runKloScan', () => {
           runId: 'scan-run-review',
           syncId: 'sync-review',
           decidedAt: '2026-05-07T12:00:00.000Z',
-          reviewer: 'klo',
+          reviewer: 'ktx',
           note: null,
           relationshipType: 'many_to_one',
           source: 'deterministic_name',
@@ -1392,13 +1392,13 @@ describe('runKloScan', () => {
       warnings: [],
     };
     const exportLocalRelationshipFeedbackLabels = vi.fn(async () => feedback);
-    const formatKloRelationshipFeedbackLabelsJsonl = vi.fn(
+    const formatKtxRelationshipFeedbackLabelsJsonl = vi.fn(
       () => '{"candidateId":"orders:orders.customer_id->customers:customers.id"}\n',
     );
 
     const io = makeIo();
     await expect(
-      runKloScan(
+      runKtxScan(
         {
           command: 'relationshipFeedback',
           projectDir: tempDir,
@@ -1408,7 +1408,7 @@ describe('runKloScan', () => {
           jsonl: true,
         },
         io.io,
-        { exportLocalRelationshipFeedbackLabels, formatKloRelationshipFeedbackLabelsJsonl },
+        { exportLocalRelationshipFeedbackLabels, formatKtxRelationshipFeedbackLabelsJsonl },
       ),
     ).resolves.toBe(0);
 
@@ -1419,12 +1419,12 @@ describe('runKloScan', () => {
         decision: 'accepted',
       },
     );
-    expect(formatKloRelationshipFeedbackLabelsJsonl).toHaveBeenCalledWith(feedback);
+    expect(formatKtxRelationshipFeedbackLabelsJsonl).toHaveBeenCalledWith(feedback);
     expect(JSON.parse(io.stdout())).toEqual({ candidateId: 'orders:orders.customer_id->customers:customers.id' });
   });
 
   it('prints relationship feedback export as JSON', async () => {
-    await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
     const feedback: ExportLocalRelationshipFeedbackLabelsResult = {
       generatedAt: '2026-05-07T13:00:00.000Z',
       filters: { connectionId: null, decision: 'rejected' },
@@ -1436,7 +1436,7 @@ describe('runKloScan', () => {
 
     const io = makeIo();
     await expect(
-      runKloScan(
+      runKtxScan(
         {
           command: 'relationshipFeedback',
           projectDir: tempDir,
@@ -1458,8 +1458,8 @@ describe('runKloScan', () => {
   });
 
   it('prints relationship feedback calibration as human output', async () => {
-    await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
-    const calibration: KloRelationshipFeedbackCalibrationReport = {
+    await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
+    const calibration: KtxRelationshipFeedbackCalibrationReport = {
       generatedAt: '2026-05-07T13:00:00.000Z',
       filters: { connectionId: null, decision: 'all' },
       thresholds: { accept: 0.85, review: 0.55 },
@@ -1520,13 +1520,13 @@ describe('runKloScan', () => {
       warnings: [],
     };
     const calibrateLocalRelationshipFeedbackLabels = vi.fn(async () => calibration);
-    const formatKloRelationshipFeedbackCalibrationMarkdown = vi.fn(
-      () => 'KLO relationship feedback calibration\nTotal labels: 2\n',
+    const formatKtxRelationshipFeedbackCalibrationMarkdown = vi.fn(
+      () => 'KTX relationship feedback calibration\nTotal labels: 2\n',
     );
 
     const io = makeIo();
     await expect(
-      runKloScan(
+      runKtxScan(
         {
           command: 'relationshipCalibration',
           projectDir: tempDir,
@@ -1537,7 +1537,7 @@ describe('runKloScan', () => {
           json: false,
         },
         io.io,
-        { calibrateLocalRelationshipFeedbackLabels, formatKloRelationshipFeedbackCalibrationMarkdown },
+        { calibrateLocalRelationshipFeedbackLabels, formatKtxRelationshipFeedbackCalibrationMarkdown },
       ),
     ).resolves.toBe(0);
 
@@ -1550,13 +1550,13 @@ describe('runKloScan', () => {
         reviewThreshold: 0.55,
       },
     );
-    expect(formatKloRelationshipFeedbackCalibrationMarkdown).toHaveBeenCalledWith(calibration);
-    expect(io.stdout()).toBe('KLO relationship feedback calibration\nTotal labels: 2\n');
+    expect(formatKtxRelationshipFeedbackCalibrationMarkdown).toHaveBeenCalledWith(calibration);
+    expect(io.stdout()).toBe('KTX relationship feedback calibration\nTotal labels: 2\n');
   });
 
   it('prints relationship feedback calibration as JSON', async () => {
-    await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
-    const calibration: KloRelationshipFeedbackCalibrationReport = {
+    await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
+    const calibration: KtxRelationshipFeedbackCalibrationReport = {
       generatedAt: '2026-05-07T13:00:00.000Z',
       filters: { connectionId: 'warehouse', decision: 'rejected' },
       thresholds: { accept: 0.9, review: 0.5 },
@@ -1583,7 +1583,7 @@ describe('runKloScan', () => {
 
     const io = makeIo();
     await expect(
-      runKloScan(
+      runKtxScan(
         {
           command: 'relationshipCalibration',
           projectDir: tempDir,
@@ -1606,8 +1606,8 @@ describe('runKloScan', () => {
   });
 
   it('prints relationship threshold advice as human output', async () => {
-    await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
-    const advice: KloRelationshipThresholdAdviceReport = {
+    await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
+    const advice: KtxRelationshipThresholdAdviceReport = {
       generatedAt: '2026-05-07T14:00:00.000Z',
       filters: { connectionId: null, decision: 'all' },
       status: 'ready',
@@ -1648,13 +1648,13 @@ describe('runKloScan', () => {
       warnings: [],
     };
     const adviseLocalRelationshipFeedbackThresholds = vi.fn(async () => advice);
-    const formatKloRelationshipThresholdAdviceMarkdown = vi.fn(
-      () => 'KLO relationship threshold advice\nRecommended: accept=0.90 review=0.55\n',
+    const formatKtxRelationshipThresholdAdviceMarkdown = vi.fn(
+      () => 'KTX relationship threshold advice\nRecommended: accept=0.90 review=0.55\n',
     );
 
     const io = makeIo();
     await expect(
-      runKloScan(
+      runKtxScan(
         {
           command: 'relationshipThresholds',
           projectDir: tempDir,
@@ -1665,7 +1665,7 @@ describe('runKloScan', () => {
           json: false,
         },
         io.io,
-        { adviseLocalRelationshipFeedbackThresholds, formatKloRelationshipThresholdAdviceMarkdown },
+        { adviseLocalRelationshipFeedbackThresholds, formatKtxRelationshipThresholdAdviceMarkdown },
       ),
     ).resolves.toBe(0);
 
@@ -1678,13 +1678,13 @@ describe('runKloScan', () => {
         minRejectedLabels: 2,
       },
     );
-    expect(formatKloRelationshipThresholdAdviceMarkdown).toHaveBeenCalledWith(advice);
-    expect(io.stdout()).toBe('KLO relationship threshold advice\nRecommended: accept=0.90 review=0.55\n');
+    expect(formatKtxRelationshipThresholdAdviceMarkdown).toHaveBeenCalledWith(advice);
+    expect(io.stdout()).toBe('KTX relationship threshold advice\nRecommended: accept=0.90 review=0.55\n');
   });
 
   it('prints relationship threshold advice as JSON', async () => {
-    await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
-    const advice: KloRelationshipThresholdAdviceReport = {
+    await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
+    const advice: KtxRelationshipThresholdAdviceReport = {
       generatedAt: '2026-05-07T14:00:00.000Z',
       filters: { connectionId: 'warehouse', decision: 'all' },
       status: 'insufficient_labels',
@@ -1714,7 +1714,7 @@ describe('runKloScan', () => {
 
     const io = makeIo();
     await expect(
-      runKloScan(
+      runKtxScan(
         {
           command: 'relationshipThresholds',
           projectDir: tempDir,
@@ -1737,10 +1737,10 @@ describe('runKloScan', () => {
   });
 
   it('passes native CLI adapters into local scan runs for mysql configs', async () => {
-    const tempProject = await mkdtemp(join(tmpdir(), 'klo-scan-cli-native-'));
-    await initKloProject({ projectDir: tempProject, projectName: 'warehouse' });
+    const tempProject = await mkdtemp(join(tmpdir(), 'ktx-scan-cli-native-'));
+    await initKtxProject({ projectDir: tempProject, projectName: 'warehouse' });
     await writeFile(
-      join(tempProject, 'klo.yaml'),
+      join(tempProject, 'ktx.yaml'),
       [
         'project: warehouse',
         'connections:',
@@ -1767,7 +1767,7 @@ describe('runKloScan', () => {
     );
 
     await expect(
-      runKloScan(
+      runKtxScan(
         {
           command: 'run',
           projectDir: tempProject,
@@ -1786,10 +1786,10 @@ describe('runKloScan', () => {
   });
 
   it('creates a native connector for standalone relationship scans', async () => {
-    const tempProject = await mkdtemp(join(tmpdir(), 'klo-scan-cli-relationships-'));
-    await initKloProject({ projectDir: tempProject, projectName: 'warehouse' });
+    const tempProject = await mkdtemp(join(tmpdir(), 'ktx-scan-cli-relationships-'));
+    await initKtxProject({ projectDir: tempProject, projectName: 'warehouse' });
     await writeFile(
-      join(tempProject, 'klo.yaml'),
+      join(tempProject, 'ktx.yaml'),
       [
         'project: warehouse',
         'connections:',
@@ -1816,7 +1816,7 @@ describe('runKloScan', () => {
     );
 
     await expect(
-      runKloScan(
+      runKtxScan(
         {
           command: 'run',
           projectDir: tempProject,
@@ -1841,10 +1841,10 @@ describe('runKloScan', () => {
   });
 
   it('routes standalone postgres scans through the native connector before daemon fallback', async () => {
-    const tempProject = await mkdtemp(join(tmpdir(), 'klo-scan-cli-native-postgres-'));
-    await initKloProject({ projectDir: tempProject, projectName: 'warehouse' });
+    const tempProject = await mkdtemp(join(tmpdir(), 'ktx-scan-cli-native-postgres-'));
+    await initKtxProject({ projectDir: tempProject, projectName: 'warehouse' });
     await writeFile(
-      join(tempProject, 'klo.yaml'),
+      join(tempProject, 'ktx.yaml'),
       [
         'project: warehouse',
         'connections:',
@@ -1874,7 +1874,7 @@ describe('runKloScan', () => {
     );
 
     await expect(
-      runKloScan(
+      runKtxScan(
         {
           command: 'run',
           projectDir: tempProject,
@@ -1905,10 +1905,10 @@ describe('runKloScan', () => {
   });
 
   it('passes native CLI adapters into local scan runs for clickhouse configs', async () => {
-    const tempProject = await mkdtemp(join(tmpdir(), 'klo-scan-cli-native-clickhouse-'));
-    await initKloProject({ projectDir: tempProject, projectName: 'warehouse' });
+    const tempProject = await mkdtemp(join(tmpdir(), 'ktx-scan-cli-native-clickhouse-'));
+    await initKtxProject({ projectDir: tempProject, projectName: 'warehouse' });
     await writeFile(
-      join(tempProject, 'klo.yaml'),
+      join(tempProject, 'ktx.yaml'),
       [
         'project: warehouse',
         'connections:',
@@ -1938,7 +1938,7 @@ describe('runKloScan', () => {
     );
 
     await expect(
-      runKloScan(
+      runKtxScan(
         {
           command: 'run',
           projectDir: tempProject,
@@ -1957,10 +1957,10 @@ describe('runKloScan', () => {
   });
 
   it('passes native CLI adapters into local scan runs for sqlserver configs', async () => {
-    const tempProject = await mkdtemp(join(tmpdir(), 'klo-scan-cli-native-sqlserver-'));
-    await initKloProject({ projectDir: tempProject, projectName: 'warehouse' });
+    const tempProject = await mkdtemp(join(tmpdir(), 'ktx-scan-cli-native-sqlserver-'));
+    await initKtxProject({ projectDir: tempProject, projectName: 'warehouse' });
     await writeFile(
-      join(tempProject, 'klo.yaml'),
+      join(tempProject, 'ktx.yaml'),
       [
         'project: warehouse',
         'connections:',
@@ -1990,7 +1990,7 @@ describe('runKloScan', () => {
     );
 
     await expect(
-      runKloScan(
+      runKtxScan(
         {
           command: 'run',
           projectDir: tempProject,
@@ -2021,10 +2021,10 @@ describe('runKloScan', () => {
   });
 
   it('passes native CLI adapters into local scan runs for bigquery configs', async () => {
-    const tempProject = await mkdtemp(join(tmpdir(), 'klo-scan-cli-native-bigquery-'));
-    await initKloProject({ projectDir: tempProject, projectName: 'warehouse' });
+    const tempProject = await mkdtemp(join(tmpdir(), 'ktx-scan-cli-native-bigquery-'));
+    await initKtxProject({ projectDir: tempProject, projectName: 'warehouse' });
     await writeFile(
-      join(tempProject, 'klo.yaml'),
+      join(tempProject, 'ktx.yaml'),
       [
         'project: warehouse',
         'connections:',
@@ -2053,7 +2053,7 @@ describe('runKloScan', () => {
     );
 
     await expect(
-      runKloScan(
+      runKtxScan(
         {
           command: 'run',
           projectDir: tempProject,
@@ -2084,10 +2084,10 @@ describe('runKloScan', () => {
   });
 
   it('passes native CLI adapters into local scan runs for snowflake configs', async () => {
-    const tempProject = await mkdtemp(join(tmpdir(), 'klo-scan-cli-native-snowflake-'));
-    await initKloProject({ projectDir: tempProject, projectName: 'warehouse' });
+    const tempProject = await mkdtemp(join(tmpdir(), 'ktx-scan-cli-native-snowflake-'));
+    await initKtxProject({ projectDir: tempProject, projectName: 'warehouse' });
     await writeFile(
-      join(tempProject, 'klo.yaml'),
+      join(tempProject, 'ktx.yaml'),
       [
         'project: warehouse',
         'connections:',
@@ -2119,7 +2119,7 @@ describe('runKloScan', () => {
     );
 
     await expect(
-      runKloScan(
+      runKtxScan(
         {
           command: 'run',
           projectDir: tempProject,

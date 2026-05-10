@@ -1,19 +1,19 @@
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { KloLlmProvider } from '@klo/llm';
+import type { KtxLlmProvider } from '@ktx/llm';
 import YAML from 'yaml';
 import { AgentRunnerService } from '../agent/index.js';
 import { localConnectionInfoFromConfig } from '../connections/index.js';
-import type { KloEmbeddingPort, KloFileStorePort, KloFileWriteResult } from '../core/index.js';
-import { type KloLogger, noopLogger, SessionWorktreeService } from '../core/index.js';
-import type { KloSemanticLayerComputePort } from '../daemon/index.js';
-import { createLocalKloLlmProviderFromConfig } from '../llm/index.js';
-import type { KloLocalProject } from '../project/index.js';
+import type { KtxEmbeddingPort, KtxFileStorePort, KtxFileWriteResult } from '../core/index.js';
+import { type KtxLogger, noopLogger, SessionWorktreeService } from '../core/index.js';
+import type { KtxSemanticLayerComputePort } from '../daemon/index.js';
+import { createLocalKtxLlmProviderFromConfig } from '../llm/index.js';
+import type { KtxLocalProject } from '../project/index.js';
 import { PromptService } from '../prompts/index.js';
 import { SkillsRegistryService } from '../skills/index.js';
 import {
-  type KloConnectionInfo,
-  type KloQueryResult,
+  type KtxConnectionInfo,
+  type KtxQueryResult,
   SemanticLayerService,
   type SemanticLayerSource,
   type SlConnectionCatalogPort,
@@ -58,21 +58,21 @@ import type {
 
 const promptsDir = fileURLToPath(new URL('../../prompts', import.meta.url));
 const skillsDir = fileURLToPath(new URL('../../skills', import.meta.url));
-const LOCAL_AUTHOR = { name: 'KLO Local', email: 'local@klo.local' };
+const LOCAL_AUTHOR = { name: 'KTX Local', email: 'local@ktx.local' };
 const LOCAL_SHAPE_WARNING = 'Local memory capture validates semantic-layer YAML shape only.';
 
 export interface CreateLocalProjectMemoryCaptureOptions {
-  llmProvider?: KloLlmProvider;
+  llmProvider?: KtxLlmProvider;
   agentRunner?: AgentRunnerService;
   memoryModel?: string;
-  semanticLayerCompute?: KloSemanticLayerComputePort;
-  queryExecutor?: { execute(input: { connectionId: string; sql: string; maxRows?: number }): Promise<KloQueryResult> };
+  semanticLayerCompute?: KtxSemanticLayerComputePort;
+  queryExecutor?: { execute(input: { connectionId: string; sql: string; maxRows?: number }): Promise<KtxQueryResult> };
   runIdFactory?: () => string;
-  logger?: KloLogger;
+  logger?: KtxLogger;
 }
 
 export function createLocalProjectMemoryCapture(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   options: CreateLocalProjectMemoryCaptureOptions = {},
 ): MemoryCaptureService {
   const logger = options.logger ?? noopLogger;
@@ -84,11 +84,11 @@ export function createLocalProjectMemoryCapture(
   const connections = new LocalMemoryConnections(project, options.queryExecutor);
   const slPython = new LocalSlPythonPort(options.semanticLayerCompute);
   const semanticLayerService = new SemanticLayerService(rootFileStore, connections, slPython, logger);
-  const slSourcesRepository = new SqliteSlSourcesIndex({ dbPath: join(project.projectDir, '.klo', 'db.sqlite') });
+  const slSourcesRepository = new SqliteSlSourcesIndex({ dbPath: join(project.projectDir, '.ktx', 'db.sqlite') });
   const slSearchService = new SlSearchService(embedding, slSourcesRepository, logger);
   const wikiService = new KnowledgeWikiService(rootFileStore, embedding, knowledgeIndex, project.git, logger);
   const authorResolver = new LocalAuthorResolver();
-  const llmProvider = options.llmProvider ?? createLocalKloLlmProviderFromConfig(project.config.llm);
+  const llmProvider = options.llmProvider ?? createLocalKtxLlmProviderFromConfig(project.config.llm);
   const toolsetFactory = new LocalMemoryToolsetFactory({
     project,
     embedding,
@@ -142,7 +142,7 @@ export function createLocalProjectMemoryCapture(
   });
 }
 
-function requireLlmProvider(provider: KloLlmProvider | null | undefined): KloLlmProvider {
+function requireLlmProvider(provider: KtxLlmProvider | null | undefined): KtxLlmProvider {
   if (!provider) {
     throw new Error('createLocalProjectMemoryCapture requires llm.provider.backend or an injected agentRunner');
   }
@@ -150,36 +150,36 @@ function requireLlmProvider(provider: KloLlmProvider | null | undefined): KloLlm
 }
 
 class LocalMemoryFileStore implements MemoryFileStorePort {
-  constructor(private readonly fileStore: MemoryFileStorePort | KloFileStorePort) {}
+  constructor(private readonly fileStore: MemoryFileStorePort | KtxFileStorePort) {}
 
   forWorktree(workdir: string): LocalMemoryFileStore {
-    return new LocalMemoryFileStore(this.fileStore.forWorktree(workdir) as KloFileStorePort);
+    return new LocalMemoryFileStore(this.fileStore.forWorktree(workdir) as KtxFileStorePort);
   }
 
-  writeFile(...args: Parameters<KloFileStorePort['writeFile']>): Promise<KloFileWriteResult> {
+  writeFile(...args: Parameters<KtxFileStorePort['writeFile']>): Promise<KtxFileWriteResult> {
     return this.fileStore.writeFile(...args);
   }
 
-  readFile(...args: Parameters<KloFileStorePort['readFile']>) {
+  readFile(...args: Parameters<KtxFileStorePort['readFile']>) {
     return this.fileStore.readFile(...args);
   }
 
-  deleteFile(...args: Parameters<KloFileStorePort['deleteFile']>) {
+  deleteFile(...args: Parameters<KtxFileStorePort['deleteFile']>) {
     return this.fileStore.deleteFile(...args);
   }
 
-  listFiles(...args: Parameters<KloFileStorePort['listFiles']>) {
+  listFiles(...args: Parameters<KtxFileStorePort['listFiles']>) {
     return this.fileStore.listFiles(...args);
   }
 
-  getFileHistory(...args: Parameters<KloFileStorePort['getFileHistory']>) {
+  getFileHistory(...args: Parameters<KtxFileStorePort['getFileHistory']>) {
     return this.fileStore.getFileHistory(...args);
   }
 
   async enqueueCommitMessageJobForExternalCommit(): Promise<void> {}
 }
 
-class NoopEmbeddingPort implements KloEmbeddingPort {
+class NoopEmbeddingPort implements KtxEmbeddingPort {
   readonly maxBatchSize = 64;
 
   async computeEmbedding(): Promise<number[]> {
@@ -192,7 +192,7 @@ class NoopEmbeddingPort implements KloEmbeddingPort {
 }
 
 class LocalKnowledgeIndex implements KnowledgeIndexPort {
-  constructor(private readonly project: KloLocalProject) {}
+  constructor(private readonly project: KtxLocalProject) {}
 
   async upsertPage(): Promise<void> {}
 
@@ -276,19 +276,19 @@ class NoopKnowledgeSlRefsPort implements MemoryKnowledgeSlRefsPort {
 
 class LocalMemoryConnections implements MemoryConnectionPort, SlConnectionCatalogPort {
   constructor(
-    private readonly project: KloLocalProject,
+    private readonly project: KtxLocalProject,
     private readonly queryExecutor?: {
-      execute(input: { connectionId: string; sql: string; maxRows?: number }): Promise<KloQueryResult>;
+      execute(input: { connectionId: string; sql: string; maxRows?: number }): Promise<KtxQueryResult>;
     },
   ) {}
 
-  async listEnabledConnections(ids: string[]): Promise<KloConnectionInfo[]> {
+  async listEnabledConnections(ids: string[]): Promise<KtxConnectionInfo[]> {
     return ids
       .map((id) => localConnectionInfoFromConfig(id, this.project.config.connections[id]))
-      .filter((connection): connection is KloConnectionInfo => connection !== null);
+      .filter((connection): connection is KtxConnectionInfo => connection !== null);
   }
 
-  async getConnectionById(connectionId: string): Promise<KloConnectionInfo> {
+  async getConnectionById(connectionId: string): Promise<KtxConnectionInfo> {
     const connection = localConnectionInfoFromConfig(connectionId, this.project.config.connections[connectionId]);
     if (!connection) {
       throw new Error(`Connection not found: ${connectionId}`);
@@ -296,7 +296,7 @@ class LocalMemoryConnections implements MemoryConnectionPort, SlConnectionCatalo
     return connection;
   }
 
-  async executeQuery(connectionId: string, sql: string): Promise<KloQueryResult> {
+  async executeQuery(connectionId: string, sql: string): Promise<KtxQueryResult> {
     if (!this.queryExecutor) {
       throw new Error('Local memory capture has no query executor configured');
     }
@@ -305,7 +305,7 @@ class LocalMemoryConnections implements MemoryConnectionPort, SlConnectionCatalo
 }
 
 class LocalSlPythonPort implements SlPythonPort {
-  constructor(private readonly compute?: KloSemanticLayerComputePort) {}
+  constructor(private readonly compute?: KtxSemanticLayerComputePort) {}
 
   async validateSources(input: Parameters<SlPythonPort['validateSources']>[0]) {
     if (!this.compute) {
@@ -394,8 +394,8 @@ class LocalMemoryToolsetFactory implements MemoryToolsetFactoryPort {
   private readonly slTools: BaseTool[];
 
   constructor(deps: {
-    project: KloLocalProject;
-    embedding: KloEmbeddingPort;
+    project: KtxLocalProject;
+    embedding: KtxEmbeddingPort;
     wikiService: KnowledgeWikiService;
     knowledgeIndex: KnowledgeIndexPort;
     knowledgeEvents: KnowledgeEventPort;

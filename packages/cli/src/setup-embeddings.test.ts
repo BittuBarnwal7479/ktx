@@ -1,14 +1,14 @@
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { initKloProject, parseKloProjectConfig } from '@klo/context/project';
+import { initKtxProject, parseKtxProjectConfig } from '@ktx/context/project';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { type KloSetupEmbeddingsPromptAdapter, runKloSetupEmbeddingsStep } from './setup-embeddings.js';
+import { type KtxSetupEmbeddingsPromptAdapter, runKtxSetupEmbeddingsStep } from './setup-embeddings.js';
 
 const EMBEDDING_OPTION_PROMPT_MESSAGE = [
-  'Which embedding option should KLO use?',
+  'Which embedding option should KTX use?',
   '',
-  'KLO uses embeddings for semantic search over semantic-layer sources, wiki context, schema metadata, ' +
+  'KTX uses embeddings for semantic search over semantic-layer sources, wiki context, schema metadata, ' +
     'and relationship evidence.',
 ].join('\n');
 
@@ -37,7 +37,7 @@ function makeIo() {
 function makePromptAdapter(options: {
   selectValues?: string[];
   passwordValue?: string;
-}): KloSetupEmbeddingsPromptAdapter {
+}): KtxSetupEmbeddingsPromptAdapter {
   const selectValues = [...(options.selectValues ?? [])];
   return {
     select: vi.fn(async () => selectValues.shift() ?? 'retry'),
@@ -50,8 +50,8 @@ describe('setup embeddings step', () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-setup-embeddings-'));
-    await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-setup-embeddings-'));
+    await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
   });
 
   afterEach(async () => {
@@ -63,7 +63,7 @@ describe('setup embeddings step', () => {
     const healthCheck = vi.fn(async () => ({ ok: true as const }));
     const prompts = makePromptAdapter({ selectValues: ['back'] });
 
-    const result = await runKloSetupEmbeddingsStep(
+    const result = await runKtxSetupEmbeddingsStep(
       {
         projectDir: tempDir,
         inputMode: 'auto',
@@ -90,7 +90,7 @@ describe('setup embeddings step', () => {
     const healthCheck = vi.fn(async () => ({ ok: true as const }));
     const prompts = makePromptAdapter({ selectValues: ['openai', 'back', 'sentence-transformers'] });
 
-    const result = await runKloSetupEmbeddingsStep(
+    const result = await runKtxSetupEmbeddingsStep(
       {
         projectDir: tempDir,
         inputMode: 'auto',
@@ -110,7 +110,7 @@ describe('setup embeddings step', () => {
     });
     expect(vi.mocked(prompts.select).mock.calls.map((call) => call[0].message)).toEqual([
       EMBEDDING_OPTION_PROMPT_MESSAGE,
-      'How should KLO find your OpenAI embedding API key?',
+      'How should KTX find your OpenAI embedding API key?',
       EMBEDDING_OPTION_PROMPT_MESSAGE,
     ]);
   });
@@ -120,7 +120,7 @@ describe('setup embeddings step', () => {
     const healthCheck = vi.fn(async () => ({ ok: true as const }));
     const prompts = makePromptAdapter({ selectValues: ['sentence-transformers'] });
 
-    const result = await runKloSetupEmbeddingsStep(
+    const result = await runKtxSetupEmbeddingsStep(
       {
         projectDir: tempDir,
         inputMode: 'auto',
@@ -137,7 +137,7 @@ describe('setup embeddings step', () => {
       dimensions: 384,
       sentenceTransformers: { baseURL: 'http://127.0.0.1:8765', pathPrefix: '' },
     });
-    const config = parseKloProjectConfig(await readFile(join(tempDir, 'klo.yaml'), 'utf-8'));
+    const config = parseKtxProjectConfig(await readFile(join(tempDir, 'ktx.yaml'), 'utf-8'));
     expect(config.ingest.embeddings).toMatchObject({
       backend: 'sentence-transformers',
       model: 'all-MiniLM-L6-v2',
@@ -163,7 +163,7 @@ describe('setup embeddings step', () => {
         }),
     );
 
-    const result = runKloSetupEmbeddingsStep(
+    const result = runKtxSetupEmbeddingsStep(
       {
         projectDir: tempDir,
         inputMode: 'auto',
@@ -188,7 +188,7 @@ describe('setup embeddings step', () => {
     const io = makeIo();
     const healthCheck = vi.fn(async () => ({ ok: true as const }));
 
-    const result = await runKloSetupEmbeddingsStep(
+    const result = await runKtxSetupEmbeddingsStep(
       {
         projectDir: tempDir,
         inputMode: 'disabled',
@@ -205,7 +205,7 @@ describe('setup embeddings step', () => {
       dimensions: 384,
       sentenceTransformers: { baseURL: 'http://127.0.0.1:8765', pathPrefix: '' },
     });
-    const config = parseKloProjectConfig(await readFile(join(tempDir, 'klo.yaml'), 'utf-8'));
+    const config = parseKtxProjectConfig(await readFile(join(tempDir, 'ktx.yaml'), 'utf-8'));
     expect(config.ingest.embeddings).toMatchObject({
       backend: 'sentence-transformers',
       model: 'all-MiniLM-L6-v2',
@@ -218,7 +218,7 @@ describe('setup embeddings step', () => {
 
   it('does not persist embedding completion when the health check fails', async () => {
     const io = makeIo();
-    const result = await runKloSetupEmbeddingsStep(
+    const result = await runKtxSetupEmbeddingsStep(
       {
         projectDir: tempDir,
         inputMode: 'disabled',
@@ -232,11 +232,11 @@ describe('setup embeddings step', () => {
     );
 
     expect(result.status).toBe('failed');
-    const config = parseKloProjectConfig(await readFile(join(tempDir, 'klo.yaml'), 'utf-8'));
+    const config = parseKtxProjectConfig(await readFile(join(tempDir, 'ktx.yaml'), 'utf-8'));
     expect(config.setup?.completed_steps ?? []).not.toContain('embeddings');
     expect(config.ingest.embeddings.backend).toBe('deterministic');
     expect(io.stderr()).toContain('Local embedding health check failed: 401 invalid api key [redacted]');
-    expect(io.stderr()).toContain('klo-daemon serve-http --host 127.0.0.1 --port 8765');
+    expect(io.stderr()).toContain('ktx-daemon serve-http --host 127.0.0.1 --port 8765');
     expect(io.stderr()).not.toContain('skip for now');
   });
 
@@ -244,7 +244,7 @@ describe('setup embeddings step', () => {
     const io = makeIo();
     const healthCheck = vi.fn(async () => ({ ok: true as const }));
 
-    const result = await runKloSetupEmbeddingsStep(
+    const result = await runKtxSetupEmbeddingsStep(
       {
         projectDir: tempDir,
         inputMode: 'disabled',
@@ -266,7 +266,7 @@ describe('setup embeddings step', () => {
       dimensions: 1536,
       openai: { apiKey: 'sk-openai-test' },
     });
-    const config = parseKloProjectConfig(await readFile(join(tempDir, 'klo.yaml'), 'utf-8'));
+    const config = parseKtxProjectConfig(await readFile(join(tempDir, 'ktx.yaml'), 'utf-8'));
     expect(config.ingest.embeddings).toMatchObject({
       backend: 'openai',
       model: 'text-embedding-3-small',
@@ -284,7 +284,7 @@ describe('setup embeddings step', () => {
       .mockResolvedValueOnce({ ok: false as const, message: 'fetch failed' })
       .mockResolvedValueOnce({ ok: true as const });
 
-    const result = await runKloSetupEmbeddingsStep(
+    const result = await runKtxSetupEmbeddingsStep(
       { projectDir: tempDir, inputMode: 'auto', skipEmbeddings: false },
       io.io,
       { prompts, env: { OPENAI_API_KEY: 'sk-openai-test' }, healthCheck },
@@ -305,7 +305,7 @@ describe('setup embeddings step', () => {
     });
     expect(prompts.select).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: 'Local embeddings are not reachable. Start the local KLO daemon, then retry.',
+        message: 'Local embeddings are not reachable. Start the local KTX daemon, then retry.',
         options: expect.arrayContaining([expect.objectContaining({ value: 'openai' })]),
       }),
     );
@@ -314,40 +314,40 @@ describe('setup embeddings step', () => {
       { value: 'openai', label: 'Use OpenAI embeddings' },
       { value: 'back', label: 'Back' },
     ]);
-    const config = parseKloProjectConfig(await readFile(join(tempDir, 'klo.yaml'), 'utf-8'));
+    const config = parseKtxProjectConfig(await readFile(join(tempDir, 'ktx.yaml'), 'utf-8'));
     expect(config.ingest.embeddings.backend).toBe('openai');
   });
 
   it('leaves setup incomplete when skipped', async () => {
-    const result = await runKloSetupEmbeddingsStep(
+    const result = await runKtxSetupEmbeddingsStep(
       { projectDir: tempDir, inputMode: 'disabled', skipEmbeddings: true },
       makeIo().io,
     );
 
     expect(result.status).toBe('skipped');
-    const config = parseKloProjectConfig(await readFile(join(tempDir, 'klo.yaml'), 'utf-8'));
+    const config = parseKtxProjectConfig(await readFile(join(tempDir, 'ktx.yaml'), 'utf-8'));
     expect(config.setup?.completed_steps ?? []).not.toContain('embeddings');
     expect(config.ingest.embeddings.backend).toBe('deterministic');
   });
 
   it('returns back without writing config when the local health check fails and Back is selected', async () => {
     const prompts = makePromptAdapter({ selectValues: ['sentence-transformers', 'back'] });
-    const result = await runKloSetupEmbeddingsStep(
+    const result = await runKtxSetupEmbeddingsStep(
       { projectDir: tempDir, inputMode: 'auto', skipEmbeddings: false },
       makeIo().io,
       { prompts, env: {}, healthCheck: vi.fn(async () => ({ ok: false as const, message: 'daemon unavailable' })) },
     );
 
     expect(result.status).toBe('back');
-    const config = parseKloProjectConfig(await readFile(join(tempDir, 'klo.yaml'), 'utf-8'));
+    const config = parseKtxProjectConfig(await readFile(join(tempDir, 'ktx.yaml'), 'utf-8'));
     expect(config.ingest.embeddings.backend).toBe('deterministic');
   });
 
   it('preserves already completed embeddings setup when no embedding args request changes', async () => {
-    await mkdir(join(tempDir, '.klo'), { recursive: true });
-    await initKloProject({ projectDir: tempDir, projectName: 'warehouse', force: true });
+    await mkdir(join(tempDir, '.ktx'), { recursive: true });
+    await initKtxProject({ projectDir: tempDir, projectName: 'warehouse', force: true });
     await writeFile(
-      join(tempDir, 'klo.yaml'),
+      join(tempDir, 'ktx.yaml'),
       [
         'project: warehouse',
         'setup:',
@@ -371,7 +371,7 @@ describe('setup embeddings step', () => {
 
     const healthCheck = vi.fn(async () => ({ ok: true as const }));
     await expect(
-      runKloSetupEmbeddingsStep({ projectDir: tempDir, inputMode: 'disabled', skipEmbeddings: false }, makeIo().io, {
+      runKtxSetupEmbeddingsStep({ projectDir: tempDir, inputMode: 'disabled', skipEmbeddings: false }, makeIo().io, {
         env: { OPENAI_API_KEY: 'sk-openai-test' },
         healthCheck,
       }),

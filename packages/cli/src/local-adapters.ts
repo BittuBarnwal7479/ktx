@@ -1,15 +1,15 @@
 import { join } from 'node:path';
-import { createBigQueryLiveDatabaseIntrospection, isKloBigQueryConnectionConfig } from '@klo/connector-bigquery';
-import { createClickHouseLiveDatabaseIntrospection, isKloClickHouseConnectionConfig } from '@klo/connector-clickhouse';
-import { createMysqlLiveDatabaseIntrospection, isKloMysqlConnectionConfig } from '@klo/connector-mysql';
+import { createBigQueryLiveDatabaseIntrospection, isKtxBigQueryConnectionConfig } from '@ktx/connector-bigquery';
+import { createClickHouseLiveDatabaseIntrospection, isKtxClickHouseConnectionConfig } from '@ktx/connector-clickhouse';
+import { createMysqlLiveDatabaseIntrospection, isKtxMysqlConnectionConfig } from '@ktx/connector-mysql';
 import {
   createPostgresLiveDatabaseIntrospection,
-  isKloPostgresConnectionConfig,
-  type KloPostgresConnectionConfig,
-  KloPostgresHistoricSqlQueryClient,
-} from '@klo/connector-postgres';
-import { createSqliteLiveDatabaseIntrospection, isKloSqliteConnectionConfig } from '@klo/connector-sqlite';
-import { createSqlServerLiveDatabaseIntrospection, isKloSqlServerConnectionConfig } from '@klo/connector-sqlserver';
+  isKtxPostgresConnectionConfig,
+  type KtxPostgresConnectionConfig,
+  KtxPostgresHistoricSqlQueryClient,
+} from '@ktx/connector-postgres';
+import { createSqliteLiveDatabaseIntrospection, isKtxSqliteConnectionConfig } from '@ktx/connector-sqlite';
+import { createSqlServerLiveDatabaseIntrospection, isKtxSqlServerConnectionConfig } from '@ktx/connector-sqlserver';
 import {
   createDaemonLiveDatabaseIntrospection,
   createDefaultLocalIngestAdapters,
@@ -17,9 +17,9 @@ import {
   type LiveDatabaseIntrospectionPort,
   LiveDatabaseSourceAdapter,
   type SourceAdapter,
-} from '@klo/context/ingest';
-import type { KloLocalProject } from '@klo/context/project';
-import { createHttpSqlAnalysisPort } from '@klo/context/sql-analysis';
+} from '@ktx/context/ingest';
+import type { KtxLocalProject } from '@ktx/context/project';
+import { createHttpSqlAnalysisPort } from '@ktx/context/sql-analysis';
 
 function hasSnowflakeDriver(connection: unknown): boolean {
   return (
@@ -29,8 +29,8 @@ function hasSnowflakeDriver(connection: unknown): boolean {
   );
 }
 
-function createKloCliLiveDatabaseIntrospection(
-  project: KloLocalProject,
+function createKtxCliLiveDatabaseIntrospection(
+  project: KtxLocalProject,
   options: DefaultLocalIngestAdaptersOptions = {},
 ): LiveDatabaseIntrospectionPort {
   const daemon = createDaemonLiveDatabaseIntrospection({
@@ -60,29 +60,29 @@ function createKloCliLiveDatabaseIntrospection(
   return {
     async extractSchema(connectionId: string) {
       const connection = project.config.connections[connectionId];
-      if (isKloPostgresConnectionConfig(connection)) {
+      if (isKtxPostgresConnectionConfig(connection)) {
         return postgres.extractSchema(connectionId);
       }
-      if (isKloSqliteConnectionConfig(connection)) {
+      if (isKtxSqliteConnectionConfig(connection)) {
         return sqlite.extractSchema(connectionId);
       }
-      if (isKloMysqlConnectionConfig(connection)) {
+      if (isKtxMysqlConnectionConfig(connection)) {
         return mysql.extractSchema(connectionId);
       }
-      if (isKloClickHouseConnectionConfig(connection)) {
+      if (isKtxClickHouseConnectionConfig(connection)) {
         return clickhouse.extractSchema(connectionId);
       }
-      if (isKloSqlServerConnectionConfig(connection)) {
+      if (isKtxSqlServerConnectionConfig(connection)) {
         return sqlserver.extractSchema(connectionId);
       }
-      if (isKloBigQueryConnectionConfig(connection)) {
+      if (isKtxBigQueryConnectionConfig(connection)) {
         return bigquery.extractSchema(connectionId);
       }
       if (hasSnowflakeDriver(connection)) {
-        const { createSnowflakeLiveDatabaseIntrospection, isKloSnowflakeConnectionConfig } = await import(
-          '@klo/connector-snowflake'
+        const { createSnowflakeLiveDatabaseIntrospection, isKtxSnowflakeConnectionConfig } = await import(
+          '@ktx/connector-snowflake'
         );
-        if (!isKloSnowflakeConnectionConfig(connection)) {
+        if (!isKtxSnowflakeConnectionConfig(connection)) {
           return daemon.extractSchema(connectionId);
         }
         const snowflake = createSnowflakeLiveDatabaseIntrospection({
@@ -95,13 +95,13 @@ function createKloCliLiveDatabaseIntrospection(
   };
 }
 
-interface KloCliLocalIngestAdaptersOptions extends DefaultLocalIngestAdaptersOptions {
+interface KtxCliLocalIngestAdaptersOptions extends DefaultLocalIngestAdaptersOptions {
   historicSqlConnectionId?: string;
   sqlAnalysisUrl?: string;
 }
 
-function isEnabledPostgresHistoricSqlConnection(connection: KloPostgresConnectionConfig | undefined): boolean {
-  if (!connection || !isKloPostgresConnectionConfig(connection)) {
+function isEnabledPostgresHistoricSqlConnection(connection: KtxPostgresConnectionConfig | undefined): boolean {
+  if (!connection || !isKtxPostgresConnectionConfig(connection)) {
     return false;
   }
   const historicSql =
@@ -113,16 +113,16 @@ function isEnabledPostgresHistoricSqlConnection(connection: KloPostgresConnectio
   return historicSql?.enabled === true && historicSql.dialect === 'postgres';
 }
 
-function createEphemeralPostgresHistoricSqlClient(project: KloLocalProject, connectionId: string) {
-  const connection = project.config.connections[connectionId] as KloPostgresConnectionConfig | undefined;
-  if (!isKloPostgresConnectionConfig(connection)) {
+function createEphemeralPostgresHistoricSqlClient(project: KtxLocalProject, connectionId: string) {
+  const connection = project.config.connections[connectionId] as KtxPostgresConnectionConfig | undefined;
+  if (!isKtxPostgresConnectionConfig(connection)) {
     throw new Error(
       `Historic SQL local ingest requires a Postgres connection, got ${String(connection?.driver ?? 'unknown')}`,
     );
   }
   return {
     async executeQuery(sql: string, params?: unknown[]) {
-      const client = new KloPostgresHistoricSqlQueryClient({
+      const client = new KtxPostgresHistoricSqlQueryClient({
         connectionId,
         connection,
       });
@@ -135,12 +135,12 @@ function createEphemeralPostgresHistoricSqlClient(project: KloLocalProject, conn
   };
 }
 
-function historicSqlOptionsForLocalRun(project: KloLocalProject, options: KloCliLocalIngestAdaptersOptions) {
+function historicSqlOptionsForLocalRun(project: KtxLocalProject, options: KtxCliLocalIngestAdaptersOptions) {
   const connectionId = options.historicSqlConnectionId;
   if (!connectionId) {
     return undefined;
   }
-  const connection = project.config.connections[connectionId] as KloPostgresConnectionConfig | undefined;
+  const connection = project.config.connections[connectionId] as KtxPostgresConnectionConfig | undefined;
   if (!isEnabledPostgresHistoricSqlConnection(connection)) {
     return undefined;
   }
@@ -148,18 +148,18 @@ function historicSqlOptionsForLocalRun(project: KloLocalProject, options: KloCli
     sqlAnalysis: createHttpSqlAnalysisPort({
       baseUrl:
         options.sqlAnalysisUrl ??
-        process.env.KLO_SQL_ANALYSIS_URL ??
-        process.env.KLO_DAEMON_URL ??
+        process.env.KTX_SQL_ANALYSIS_URL ??
+        process.env.KTX_DAEMON_URL ??
         'http://127.0.0.1:8765',
     }),
     postgresQueryClient: createEphemeralPostgresHistoricSqlClient(project, connectionId),
-    postgresBaselineRootDir: join(project.projectDir, '.klo/cache/historic-sql'),
+    postgresBaselineRootDir: join(project.projectDir, '.ktx/cache/historic-sql'),
   };
 }
 
-export function createKloCliLocalIngestAdapters(
-  project: KloLocalProject,
-  options: KloCliLocalIngestAdaptersOptions = {},
+export function createKtxCliLocalIngestAdapters(
+  project: KtxLocalProject,
+  options: KtxCliLocalIngestAdaptersOptions = {},
 ): SourceAdapter[] {
   const historicSql = historicSqlOptionsForLocalRun(project, options);
   const base = createDefaultLocalIngestAdapters(project, {
@@ -167,7 +167,7 @@ export function createKloCliLocalIngestAdapters(
     ...(historicSql ? { historicSql } : {}),
   });
   const liveDatabase = new LiveDatabaseSourceAdapter({
-    introspection: createKloCliLiveDatabaseIntrospection(project, options),
+    introspection: createKtxCliLiveDatabaseIntrospection(project, options),
   });
   return base.map((adapter) => (adapter.source === 'live-database' ? liveDatabase : adapter));
 }

@@ -1,10 +1,10 @@
-import type { KloDescriptionUpdate } from '../../../scan/enrichment-types.js';
-import { findMatchingKloTable, type DbtHostTableLite } from './match-tables.js';
+import type { KtxDescriptionUpdate } from '../../../scan/enrichment-types.js';
+import { findMatchingKtxTable, type DbtHostTableLite } from './match-tables.js';
 import type { DbtSchemaParseResult } from './parse-schema.js';
 
 export interface DbtDescriptionUpdates {
-  dbt: KloDescriptionUpdate[];
-  aiInvalidations: KloDescriptionUpdate[];
+  dbt: KtxDescriptionUpdate[];
+  aiInvalidations: KtxDescriptionUpdate[];
 }
 
 export function toDescriptionUpdates(input: {
@@ -13,11 +13,11 @@ export function toDescriptionUpdates(input: {
   hostTables: DbtHostTableLite[];
   targetSchema: string | null;
 }): DbtDescriptionUpdates {
-  const dbt: KloDescriptionUpdate[] = [];
-  const aiInvalidations: KloDescriptionUpdate[] = [];
+  const dbt: KtxDescriptionUpdate[] = [];
+  const aiInvalidations: KtxDescriptionUpdate[] = [];
 
   for (const dbtTable of input.parseResult.tables) {
-    const hostTable = findMatchingKloTable(dbtTable, input.hostTables, input.targetSchema);
+    const hostTable = findMatchingKtxTable(dbtTable, input.hostTables, input.targetSchema);
     if (!hostTable) {
       continue;
     }

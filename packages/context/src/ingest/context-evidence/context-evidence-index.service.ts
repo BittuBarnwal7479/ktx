@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { readdir, readFile } from 'node:fs/promises';
 import { basename, dirname, join, relative } from 'node:path';
-import { noopLogger, type KloLogger } from '../../core/index.js';
+import { noopLogger, type KtxLogger } from '../../core/index.js';
 import type { JsonValue } from '../ports.js';
 import type { DiffSet } from '../types.js';
 import type { ContextEvidenceIndexStorePort } from './store.js';
@@ -32,7 +32,7 @@ interface PublishSyncArgs {
 interface ContextEvidenceIndexServiceDeps {
   store: ContextEvidenceIndexStorePort;
   embeddings: ContextEvidenceEmbeddingPort;
-  logger?: Pick<KloLogger, 'warn'>;
+  logger?: Pick<KtxLogger, 'warn'>;
 }
 
 type JsonObject = { [key: string]: JsonValue | undefined };
@@ -66,7 +66,7 @@ interface MarkdownChunk {
 export class ContextEvidenceIndexService {
   private readonly store: ContextEvidenceIndexStorePort;
   private readonly embeddings: ContextEvidenceEmbeddingPort;
-  private readonly logger: Pick<KloLogger, 'warn'>;
+  private readonly logger: Pick<KtxLogger, 'warn'>;
 
   constructor(deps: ContextEvidenceIndexServiceDeps) {
     this.store = deps.store;

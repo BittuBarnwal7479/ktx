@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import type { KloEnrichedRelationship, KloRelationshipEndpoint } from './enrichment-types.js';
-import type { KloResolvedRelationshipDiscoveryCandidate } from './relationship-graph-resolver.js';
+import type { KtxEnrichedRelationship, KtxRelationshipEndpoint } from './enrichment-types.js';
+import type { KtxResolvedRelationshipDiscoveryCandidate } from './relationship-graph-resolver.js';
 import {
-  buildKloRelationshipArtifacts,
-  buildKloRelationshipDiagnostics,
-  emptyKloRelationshipProfileArtifact,
+  buildKtxRelationshipArtifacts,
+  buildKtxRelationshipDiagnostics,
+  emptyKtxRelationshipProfileArtifact,
 } from './relationship-diagnostics.js';
 
-function endpoint(table: string, column: string): KloRelationshipEndpoint {
+function endpoint(table: string, column: string): KtxRelationshipEndpoint {
   return {
     tableId: table,
     columnIds: [`${table}.${column}`],
@@ -23,7 +23,7 @@ function enrichedRelationship(input: {
   toTable: string;
   toColumn: string;
   confidence?: number;
-}): KloEnrichedRelationship {
+}): KtxEnrichedRelationship {
   return {
     id: input.id,
     source: 'inferred',
@@ -43,7 +43,7 @@ function resolvedRelationship(input: {
   pkScore?: number;
   validationReasons?: string[];
   graphReasons?: string[];
-}): KloResolvedRelationshipDiscoveryCandidate {
+}): KtxResolvedRelationshipDiscoveryCandidate {
   return {
     id: input.id,
     from: endpoint('orders', 'customer_id'),
@@ -99,7 +99,7 @@ function resolvedRelationship(input: {
 
 describe('relationship diagnostics artifacts', () => {
   it('groups graph-resolved relationships and preserves evidence reasons', () => {
-    const artifacts = buildKloRelationshipArtifacts({
+    const artifacts = buildKtxRelationshipArtifacts({
       connectionId: 'warehouse',
       resolvedRelationships: [
         resolvedRelationship({ id: 'accepted-edge', status: 'accepted', source: 'llm_proposal' }),
@@ -142,7 +142,7 @@ describe('relationship diagnostics artifacts', () => {
   });
 
   it('adapts legacy relationship updates into the richer artifact shape', () => {
-    const artifacts = buildKloRelationshipArtifacts({
+    const artifacts = buildKtxRelationshipArtifacts({
       connectionId: 'warehouse',
       relationshipUpdate: {
         connectionId: 'warehouse',
@@ -184,7 +184,7 @@ describe('relationship diagnostics artifacts', () => {
   });
 
   it('deduplicates resolved and formal relationship update artifacts by edge id', () => {
-    const artifacts = buildKloRelationshipArtifacts({
+    const artifacts = buildKtxRelationshipArtifacts({
       connectionId: 'warehouse',
       resolvedRelationships: [
         {
@@ -254,7 +254,7 @@ describe('relationship diagnostics artifacts', () => {
   });
 
   it('explains validation-unavailable review candidates', () => {
-    const artifacts = buildKloRelationshipArtifacts({
+    const artifacts = buildKtxRelationshipArtifacts({
       connectionId: 'warehouse',
       resolvedRelationships: [
         resolvedRelationship({
@@ -265,13 +265,13 @@ describe('relationship diagnostics artifacts', () => {
         }),
       ],
     });
-    const profile = emptyKloRelationshipProfileArtifact({
+    const profile = emptyKtxRelationshipProfileArtifact({
       connectionId: 'warehouse',
       driver: 'sqlite',
       reason: 'read_only_sql_unavailable',
     });
 
-    const diagnostics = buildKloRelationshipDiagnostics({
+    const diagnostics = buildKtxRelationshipDiagnostics({
       connectionId: 'warehouse',
       generatedAt: '2026-05-07T12:00:00.000Z',
       artifacts,
@@ -279,7 +279,7 @@ describe('relationship diagnostics artifacts', () => {
       warnings: [
         {
           code: 'connector_capability_missing',
-          message: 'KLO scan connector cannot run standalone statistical relationship validation',
+          message: 'KTX scan connector cannot run standalone statistical relationship validation',
           recoverable: true,
           metadata: { capability: 'readOnlySql' },
         },
@@ -300,12 +300,12 @@ describe('relationship diagnostics artifacts', () => {
   });
 
   it('explains empty relationship output as a no-candidate outcome', () => {
-    const artifacts = buildKloRelationshipArtifacts({ connectionId: 'warehouse' });
-    const diagnostics = buildKloRelationshipDiagnostics({
+    const artifacts = buildKtxRelationshipArtifacts({ connectionId: 'warehouse' });
+    const diagnostics = buildKtxRelationshipDiagnostics({
       connectionId: 'warehouse',
       generatedAt: '2026-05-07T12:00:00.000Z',
       artifacts,
-      profile: emptyKloRelationshipProfileArtifact({
+      profile: emptyKtxRelationshipProfileArtifact({
         connectionId: 'warehouse',
         driver: 'sqlite',
         reason: 'relationship_profiling_not_run',
@@ -318,7 +318,7 @@ describe('relationship diagnostics artifacts', () => {
   });
 
   it('records composite relationship endpoints in relationship artifacts', () => {
-    const artifacts = buildKloRelationshipArtifacts({
+    const artifacts = buildKtxRelationshipArtifacts({
       connectionId: 'warehouse',
       compositeRelationships: [
         {

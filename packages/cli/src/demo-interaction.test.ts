@@ -21,7 +21,7 @@ describe('demo interaction decisions', () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-demo-interaction-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-demo-interaction-'));
   });
 
   afterEach(async () => {
@@ -53,7 +53,7 @@ describe('demo interaction decisions', () => {
         prompts: createTestDemoPromptAdapter({ choices: [] }),
       }),
     ).rejects.toThrow(
-      `Demo project is not ready at ${tempDir}: missing demo.db. Run klo setup demo reset --project-dir ${tempDir} --force --no-input`,
+      `Demo project is not ready at ${tempDir}: missing demo.db. Run ktx setup demo reset --project-dir ${tempDir} --force --no-input`,
     );
   });
 

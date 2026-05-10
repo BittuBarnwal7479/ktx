@@ -3,12 +3,12 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import YAML from 'yaml';
-import { initKloProject, type KloLocalProject } from '../project/index.js';
-import type { KloLocalScanEnrichmentResult } from './local-enrichment.js';
+import { initKtxProject, type KtxLocalProject } from '../project/index.js';
+import type { KtxLocalScanEnrichmentResult } from './local-enrichment.js';
 import { writeLocalScanEnrichmentArtifacts, writeLocalScanManifestShards } from './local-enrichment-artifacts.js';
-import type { KloSchemaSnapshot } from './types.js';
+import type { KtxSchemaSnapshot } from './types.js';
 
-const snapshot: KloSchemaSnapshot = {
+const snapshot: KtxSchemaSnapshot = {
   connectionId: 'warehouse',
   driver: 'postgres',
   extractedAt: '2026-04-29T12:00:00.000Z',
@@ -76,7 +76,7 @@ const snapshot: KloSchemaSnapshot = {
   ],
 };
 
-function enrichment(): KloLocalScanEnrichmentResult {
+function enrichment(): KtxLocalScanEnrichmentResult {
   return {
     snapshot,
     summary: {
@@ -225,11 +225,11 @@ function enrichment(): KloLocalScanEnrichmentResult {
 
 describe('writeLocalScanEnrichmentArtifacts', () => {
   let tempDir: string;
-  let project: KloLocalProject;
+  let project: KtxLocalProject;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-local-enrichment-artifacts-'));
-    project = await initKloProject({
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-local-enrichment-artifacts-'));
+    project = await initKtxProject({
       projectDir: join(tempDir, 'project'),
       projectName: 'warehouse',
     });
@@ -269,8 +269,8 @@ describe('writeLocalScanEnrichmentArtifacts', () => {
         },
         { indent: 2, lineWidth: 0 },
       ),
-      'klo',
-      'klo@example.com',
+      'ktx',
+      'ktx@example.com',
       'Seed manifest shard',
     );
 
@@ -426,7 +426,7 @@ describe('writeLocalScanEnrichmentArtifacts', () => {
 
   it('writes formal accepted relationships into relationship artifacts and manifest shards', async () => {
     const source = enrichment();
-    const formalEnrichment: KloLocalScanEnrichmentResult = {
+    const formalEnrichment: KtxLocalScanEnrichmentResult = {
       ...source,
       relationshipUpdate: {
         connectionId: 'warehouse',
@@ -554,7 +554,7 @@ describe('writeLocalScanEnrichmentArtifacts', () => {
   });
 
   it('writes accepted composite relationships to relationship artifacts and manifest shards', async () => {
-    const compositeSnapshot: KloSchemaSnapshot = {
+    const compositeSnapshot: KtxSchemaSnapshot = {
       connectionId: 'warehouse',
       driver: 'postgres',
       extractedAt: '2026-05-07T12:00:00.000Z',
@@ -621,7 +621,7 @@ describe('writeLocalScanEnrichmentArtifacts', () => {
         },
       ],
     };
-    const compositeEnrichment: KloLocalScanEnrichmentResult = Object.assign(enrichment(), {
+    const compositeEnrichment: KtxLocalScanEnrichmentResult = Object.assign(enrichment(), {
       snapshot: compositeSnapshot,
       relationships: { accepted: 1, review: 0, rejected: 0, skipped: 0 },
       descriptionUpdates: [],
@@ -763,8 +763,8 @@ describe('writeLocalScanEnrichmentArtifacts', () => {
         },
         { indent: 2, lineWidth: 0 },
       ),
-      'klo',
-      'klo@example.com',
+      'ktx',
+      'ktx@example.com',
       'Seed structural manifest shard',
     );
 

@@ -1,10 +1,10 @@
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { buildDefaultKloProjectConfig } from '@klo/context/project';
+import { buildDefaultKtxProjectConfig } from '@ktx/context/project';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { runKloAgent } from './agent.js';
-import type { KloAgentRuntime } from './agent-runtime.js';
+import { runKtxAgent } from './agent.js';
+import type { KtxAgentRuntime } from './agent-runtime.js';
 
 function makeIo() {
   let stdout = '';
@@ -19,21 +19,21 @@ function makeIo() {
   };
 }
 
-function runtime(overrides: Record<string, unknown> = {}): KloAgentRuntime {
-  const config = buildDefaultKloProjectConfig('revenue');
+function runtime(overrides: Record<string, unknown> = {}): KtxAgentRuntime {
+  const config = buildDefaultKtxProjectConfig('revenue');
   return {
     project: {
       projectDir: '/tmp/revenue',
-      configPath: '/tmp/revenue/klo.yaml',
+      configPath: '/tmp/revenue/ktx.yaml',
       config: {
         ...config,
         connections: {
           warehouse: { driver: 'sqlite', path: 'warehouse.sqlite', readonly: true as const },
         },
       },
-      coreConfig: {} as KloAgentRuntime['project']['coreConfig'],
-      git: {} as KloAgentRuntime['project']['git'],
-      fileStore: {} as KloAgentRuntime['project']['fileStore'],
+      coreConfig: {} as KtxAgentRuntime['project']['coreConfig'],
+      git: {} as KtxAgentRuntime['project']['git'],
+      fileStore: {} as KtxAgentRuntime['project']['fileStore'],
     },
     ports: {
       connections: { list: vi.fn(async () => [{ id: 'warehouse', name: 'warehouse', connectionType: 'sqlite' }]) },
@@ -86,7 +86,7 @@ function runtime(overrides: Record<string, unknown> = {}): KloAgentRuntime {
   };
 }
 
-function runtimeWithoutConnections(): KloAgentRuntime {
+function runtimeWithoutConnections(): KtxAgentRuntime {
   const base = runtime();
   return {
     ...base,
@@ -107,11 +107,11 @@ function runtimeWithoutConnections(): KloAgentRuntime {
   };
 }
 
-describe('runKloAgent', () => {
+describe('runKtxAgent', () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-agent-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-agent-'));
   });
 
   afterEach(async () => {
@@ -121,7 +121,7 @@ describe('runKloAgent', () => {
   it('prints tool discovery with every stable command', async () => {
     const io = makeIo();
 
-    await expect(runKloAgent({ command: 'tools', projectDir: tempDir, json: true }, io.io)).resolves.toBe(0);
+    await expect(runKtxAgent({ command: 'tools', projectDir: tempDir, json: true }, io.io)).resolves.toBe(0);
 
     const body = JSON.parse(io.stdout());
     expect(body.projectDir).toBe(tempDir);
@@ -143,7 +143,7 @@ describe('runKloAgent', () => {
     const readSetupStatus = vi.fn(async () => ({ project: { path: tempDir, ready: true }, agents: [] }));
 
     await expect(
-      runKloAgent({ command: 'context', projectDir: tempDir, json: true }, io.io, { createRuntime, readSetupStatus }),
+      runKtxAgent({ command: 'context', projectDir: tempDir, json: true }, io.io, { createRuntime, readSetupStatus }),
     ).resolves.toBe(0);
 
     expect(JSON.parse(io.stdout())).toMatchObject({
@@ -168,7 +168,7 @@ describe('runKloAgent', () => {
       { command: 'wiki-read' as const, projectDir: tempDir, json: true as const, pageId: 'page-1' },
     ]) {
       const io = makeIo();
-      await expect(runKloAgent(args, io.io, { createRuntime: async () => runtime() })).resolves.toBe(0);
+      await expect(runKtxAgent(args, io.io, { createRuntime: async () => runtime() })).resolves.toBe(0);
       expect(JSON.parse(io.stdout())).toBeTruthy();
       expect(io.stderr()).toBe('');
     }
@@ -199,7 +199,7 @@ describe('runKloAgent', () => {
     const io = makeIo();
 
     await expect(
-      runKloAgent({ command: 'wiki-search', projectDir: tempDir, json: true, query: 'paid order', limit: 5 }, io.io, {
+      runKtxAgent({ command: 'wiki-search', projectDir: tempDir, json: true, query: 'paid order', limit: 5 }, io.io, {
         createRuntime: async () => fakeRuntime,
       }),
     ).resolves.toBe(0);
@@ -222,7 +222,7 @@ describe('runKloAgent', () => {
     await writeFile(queryFile, '{"measures":["total_revenue"],"dimensions":[]}', 'utf-8');
 
     await expect(
-      runKloAgent(
+      runKtxAgent(
         {
           command: 'sl-query',
           projectDir: tempDir,
@@ -247,7 +247,7 @@ describe('runKloAgent', () => {
     await writeFile(sqlFile, 'select 1', 'utf-8');
 
     await expect(
-      runKloAgent(
+      runKtxAgent(
         {
           command: 'sql-execute',
           projectDir: tempDir,
@@ -274,11 +274,11 @@ describe('runKloAgent', () => {
     const io = makeIo();
     const missingProjectError = Object.assign(new Error('ENOENT: no such file or directory'), {
       code: 'ENOENT',
-      path: join(tempDir, 'klo.yaml'),
+      path: join(tempDir, 'ktx.yaml'),
     });
 
     await expect(
-      runKloAgent(
+      runKtxAgent(
         { command: 'sl-list', projectDir: tempDir, json: true, query: 'gross revenue' },
         io.io,
         { createRuntime: vi.fn(async () => Promise.reject(missingProjectError)) },
@@ -289,12 +289,12 @@ describe('runKloAgent', () => {
       ok: false,
       error: {
         code: 'agent_sl_search_missing_project',
-        message: `Semantic-layer search needs an initialized KLO project at ${tempDir}.`,
+        message: `Semantic-layer search needs an initialized KTX project at ${tempDir}.`,
         nextSteps: [
-          'klo demo',
-          `klo setup --project-dir ${tempDir}`,
-          'klo ingest <connection>',
-          `klo agent sl list --json --query "gross revenue" --project-dir ${tempDir}`,
+          'ktx demo',
+          `ktx setup --project-dir ${tempDir}`,
+          'ktx ingest <connection>',
+          `ktx agent sl list --json --query "gross revenue" --project-dir ${tempDir}`,
         ],
       },
     });
@@ -305,7 +305,7 @@ describe('runKloAgent', () => {
     const io = makeIo();
 
     await expect(
-      runKloAgent(
+      runKtxAgent(
         { command: 'sl-list', projectDir: tempDir, json: true, query: 'revenue' },
         io.io,
         { createRuntime: async () => runtimeWithoutConnections() },
@@ -318,10 +318,10 @@ describe('runKloAgent', () => {
         code: 'agent_sl_search_no_connections',
         message: `Semantic-layer search found no configured connections in ${tempDir}.`,
         nextSteps: [
-          'klo demo',
-          `klo setup --project-dir ${tempDir}`,
-          'klo ingest <connection>',
-          `klo agent sl list --json --query "revenue" --project-dir ${tempDir}`,
+          'ktx demo',
+          `ktx setup --project-dir ${tempDir}`,
+          'ktx ingest <connection>',
+          `ktx agent sl list --json --query "revenue" --project-dir ${tempDir}`,
         ],
       },
     });
@@ -331,7 +331,7 @@ describe('runKloAgent', () => {
     const io = makeIo();
 
     await expect(
-      runKloAgent(
+      runKtxAgent(
         { command: 'sl-list', projectDir: tempDir, json: true, connectionId: 'missing', query: 'revenue' },
         io.io,
         { createRuntime: async () => runtime() },
@@ -357,7 +357,7 @@ describe('runKloAgent', () => {
     const io = makeIo();
 
     await expect(
-      runKloAgent(
+      runKtxAgent(
         { command: 'sl-list', projectDir: tempDir, json: true, connectionId: 'warehouse', query: 'revenue' },
         io.io,
         { createRuntime: async () => fakeRuntime },
@@ -377,7 +377,7 @@ describe('runKloAgent', () => {
     const io = makeIo();
 
     await expect(
-      runKloAgent({ command: 'wiki-read', projectDir: tempDir, json: true, pageId: 'missing' }, io.io, {
+      runKtxAgent({ command: 'wiki-read', projectDir: tempDir, json: true, pageId: 'missing' }, io.io, {
         createRuntime: async () =>
           runtime({
             ports: { knowledge: { read: vi.fn(async () => null) } },

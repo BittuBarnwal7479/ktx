@@ -1,4 +1,4 @@
-import type { KloProjectConnectionConfig } from '../project/config.js';
+import type { KtxProjectConnectionConfig } from '../project/config.js';
 import type { ConnectionType } from './connection-type.js';
 
 export interface LocalWarehouseDescriptor {
@@ -32,7 +32,7 @@ const DRIVER_TO_CONNECTION_TYPE: Record<string, ConnectionType> = {
 
 export function localConnectionToWarehouseDescriptor(
   id: string,
-  connection: KloProjectConnectionConfig | undefined,
+  connection: KtxProjectConnectionConfig | undefined,
 ): LocalWarehouseDescriptor | null {
   if (!connection) {
     return null;
@@ -74,7 +74,7 @@ export function localConnectionToWarehouseDescriptor(
   return info;
 }
 
-export function localConnectionTypeForConfig(id: string, connection: KloProjectConnectionConfig | undefined): string {
+export function localConnectionTypeForConfig(id: string, connection: KtxProjectConnectionConfig | undefined): string {
   const descriptor = localConnectionToWarehouseDescriptor(id, connection);
   if (descriptor) {
     return descriptor.connection_type;
@@ -85,7 +85,7 @@ export function localConnectionTypeForConfig(id: string, connection: KloProjectC
 
 export function localConnectionInfoFromConfig(
   id: string,
-  connection: KloProjectConnectionConfig | undefined,
+  connection: KtxProjectConnectionConfig | undefined,
 ): LocalConnectionInfo | null {
   if (!connection) {
     return null;

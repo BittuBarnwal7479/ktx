@@ -1,16 +1,16 @@
-export { KloClickHouseDialect } from './dialect.js';
+export { KtxClickHouseDialect } from './dialect.js';
 export {
   clickHouseClientConfigFromConfig,
-  isKloClickHouseConnectionConfig,
-  KloClickHouseScanConnector,
-  type KloClickHouseClient,
-  type KloClickHouseClientFactory,
-  type KloClickHouseColumnDistinctValuesOptions,
-  type KloClickHouseColumnDistinctValuesResult,
-  type KloClickHouseConnectionConfig,
-  type KloClickHouseEndpointResolver,
-  type KloClickHouseReadOnlyQueryInput,
-  type KloClickHouseResolvedClientConfig,
-  type KloClickHouseScanConnectorOptions,
+  isKtxClickHouseConnectionConfig,
+  KtxClickHouseScanConnector,
+  type KtxClickHouseClient,
+  type KtxClickHouseClientFactory,
+  type KtxClickHouseColumnDistinctValuesOptions,
+  type KtxClickHouseColumnDistinctValuesResult,
+  type KtxClickHouseConnectionConfig,
+  type KtxClickHouseEndpointResolver,
+  type KtxClickHouseReadOnlyQueryInput,
+  type KtxClickHouseResolvedClientConfig,
+  type KtxClickHouseScanConnectorOptions,
 } from './connector.js';
 export { createClickHouseLiveDatabaseIntrospection } from './live-database-introspection.js';

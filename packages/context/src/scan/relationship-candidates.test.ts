@@ -1,19 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import type { KloEnrichedColumn, KloEnrichedSchema, KloEnrichedTable } from './enrichment-types.js';
-import { normalizeKloRelationshipName } from './relationship-name-similarity.js';
+import type { KtxEnrichedColumn, KtxEnrichedSchema, KtxEnrichedTable } from './enrichment-types.js';
+import { normalizeKtxRelationshipName } from './relationship-name-similarity.js';
 import {
-  generateKloRelationshipDiscoveryCandidates,
-  inferKloRelationshipTargetPks,
-  mergeKloRelationshipDiscoveryCandidates,
+  generateKtxRelationshipDiscoveryCandidates,
+  inferKtxRelationshipTargetPks,
+  mergeKtxRelationshipDiscoveryCandidates,
 } from './relationship-candidates.js';
-import type { KloRelationshipProfileArtifact } from './relationship-profiling.js';
+import type { KtxRelationshipProfileArtifact } from './relationship-profiling.js';
 
 function column(
   tableId: string,
   id: string,
   name: string,
-  options: Partial<KloEnrichedColumn> = {},
-): KloEnrichedColumn {
+  options: Partial<KtxEnrichedColumn> = {},
+): KtxEnrichedColumn {
   const tableRef = options.tableRef ?? { catalog: null, db: 'public', name: tableId };
   return {
     id,
@@ -33,7 +33,7 @@ function column(
   };
 }
 
-function table(id: string, name: string, columns: KloEnrichedColumn[]): KloEnrichedTable {
+function table(id: string, name: string, columns: KtxEnrichedColumn[]): KtxEnrichedTable {
   const ref = { catalog: null, db: 'public', name };
   return {
     id,
@@ -44,7 +44,7 @@ function table(id: string, name: string, columns: KloEnrichedColumn[]): KloEnric
   };
 }
 
-function schema(tables: KloEnrichedTable[]): KloEnrichedSchema {
+function schema(tables: KtxEnrichedTable[]): KtxEnrichedSchema {
   return {
     connectionId: 'warehouse',
     tables,
@@ -52,7 +52,7 @@ function schema(tables: KloEnrichedTable[]): KloEnrichedSchema {
   };
 }
 
-function planCodeProfiles(): KloRelationshipProfileArtifact {
+function planCodeProfiles(): KtxRelationshipProfileArtifact {
   return {
     connectionId: 'warehouse',
     driver: 'sqlite',
@@ -192,7 +192,7 @@ describe('relationship discovery candidates', () => {
       column('invoices-id', 'account-id-col', 'account_id', { primaryKey: false }),
     ]);
 
-    const candidates = generateKloRelationshipDiscoveryCandidates(schema([accounts, invoices]));
+    const candidates = generateKtxRelationshipDiscoveryCandidates(schema([accounts, invoices]));
 
     expect(candidates).toHaveLength(1);
     expect(candidates[0]).toMatchObject({
@@ -232,7 +232,7 @@ describe('relationship discovery candidates', () => {
       column('album-id', 'artist-id-fk-col', 'ArtistId', { primaryKey: false }),
     ]);
 
-    const candidates = generateKloRelationshipDiscoveryCandidates(schema([artists, albums]));
+    const candidates = generateKtxRelationshipDiscoveryCandidates(schema([artists, albums]));
 
     expect(
       candidates.map(
@@ -260,7 +260,7 @@ describe('relationship discovery candidates', () => {
       column('invoices-id', 'account-id-col', 'account_id'),
     ]);
 
-    const candidates = generateKloRelationshipDiscoveryCandidates(schema([accounts, invoices]), {
+    const candidates = generateKtxRelationshipDiscoveryCandidates(schema([accounts, invoices]), {
       maxCandidateParentTables: 0,
     });
 
@@ -282,7 +282,7 @@ describe('relationship discovery candidates', () => {
       ]),
     );
 
-    const candidates = generateKloRelationshipDiscoveryCandidates(schema([albums, ...fillerTables, artists]), {
+    const candidates = generateKtxRelationshipDiscoveryCandidates(schema([albums, ...fillerTables, artists]), {
       maxCandidateParentTables: 1,
     });
 
@@ -304,7 +304,7 @@ describe('relationship discovery candidates', () => {
       column('order-id', 'customer-id-fk-col', 'CustomerID', { primaryKey: false }),
     ]);
 
-    const candidates = generateKloRelationshipDiscoveryCandidates(schema([customers, orders]));
+    const candidates = generateKtxRelationshipDiscoveryCandidates(schema([customers, orders]));
 
     expect(
       candidates.map(
@@ -337,7 +337,7 @@ describe('relationship discovery candidates', () => {
       column('subscriptions-id', 'customer-account-id-col', 'CustomerAccountID', { primaryKey: false }),
     ]);
 
-    const candidates = generateKloRelationshipDiscoveryCandidates(schema([customerAccounts, subscriptions]));
+    const candidates = generateKtxRelationshipDiscoveryCandidates(schema([customerAccounts, subscriptions]));
 
     expect(
       candidates.map(
@@ -383,7 +383,7 @@ describe('relationship discovery candidates', () => {
       }),
     ]);
 
-    const candidates = generateKloRelationshipDiscoveryCandidates(schema([customerAccounts, subscriptions]));
+    const candidates = generateKtxRelationshipDiscoveryCandidates(schema([customerAccounts, subscriptions]));
 
     expect(
       candidates.map(
@@ -403,7 +403,7 @@ describe('relationship discovery candidates', () => {
       }),
     ]);
 
-    const candidates = generateKloRelationshipDiscoveryCandidates(schema([customerAccounts]));
+    const candidates = generateKtxRelationshipDiscoveryCandidates(schema([customerAccounts]));
 
     expect(
       candidates.map(
@@ -471,9 +471,9 @@ describe('relationship discovery candidates', () => {
           maxTextLength: 2,
         },
       },
-    } satisfies KloRelationshipProfileArtifact;
+    } satisfies KtxRelationshipProfileArtifact;
 
-    const candidates = generateKloRelationshipDiscoveryCandidates(schema([countries, accounts]), { profiles });
+    const candidates = generateKtxRelationshipDiscoveryCandidates(schema([countries, accounts]), { profiles });
 
     expect(candidates).toHaveLength(1);
     expect(candidates[0]).toMatchObject({
@@ -508,7 +508,7 @@ describe('relationship discovery candidates', () => {
       }),
     ]);
 
-    const candidates = generateKloRelationshipDiscoveryCandidates(schema([accounts]));
+    const candidates = generateKtxRelationshipDiscoveryCandidates(schema([accounts]));
 
     expect(
       candidates.map(
@@ -524,7 +524,7 @@ describe('relationship discovery candidates', () => {
       column('employees-id', 'employees-parent-id-col', 'parent_id', { primaryKey: false }),
     ]);
 
-    const candidates = generateKloRelationshipDiscoveryCandidates(schema([employees]));
+    const candidates = generateKtxRelationshipDiscoveryCandidates(schema([employees]));
 
     expect(
       candidates.map(
@@ -603,7 +603,7 @@ describe('relationship discovery candidates', () => {
       }),
     ]);
 
-    const candidates = generateKloRelationshipDiscoveryCandidates(schema([plans, accountSegments, mapping]), {
+    const candidates = generateKtxRelationshipDiscoveryCandidates(schema([plans, accountSegments, mapping]), {
       profiles: planCodeProfiles(),
     });
     const candidateKeys = candidates.map(
@@ -698,9 +698,9 @@ describe('relationship discovery candidates', () => {
           maxTextLength: 1,
         },
       },
-    } satisfies KloRelationshipProfileArtifact;
+    } satisfies KtxRelationshipProfileArtifact;
 
-    const candidates = generateKloRelationshipDiscoveryCandidates(schema([users, plans, accounts]), { profiles });
+    const candidates = generateKtxRelationshipDiscoveryCandidates(schema([users, plans, accounts]), { profiles });
     const candidateKeys = candidates.map(
       (candidate) =>
         `${candidate.from.table.name}.${candidate.from.columns[0]}->${candidate.to.table.name}.${candidate.to.columns[0]}`,
@@ -734,7 +734,7 @@ describe('relationship discovery candidates', () => {
       }),
     ]);
 
-    const candidates = generateKloRelationshipDiscoveryCandidates(schema([customers, orders]), {
+    const candidates = generateKtxRelationshipDiscoveryCandidates(schema([customers, orders]), {
       embeddingSimilarityThreshold: 0.95,
     });
 
@@ -769,7 +769,7 @@ describe('relationship discovery candidates', () => {
       column('events-id', 'account-id-col', 'account_id'),
     ]);
 
-    const candidates = generateKloRelationshipDiscoveryCandidates(schema([events, archivedAccounts, accounts]), {
+    const candidates = generateKtxRelationshipDiscoveryCandidates(schema([events, archivedAccounts, accounts]), {
       maxCandidatesPerColumn: 1,
     });
 
@@ -790,8 +790,8 @@ describe('relationship discovery candidates', () => {
       column('events-id', 'user-id-col', 'user_id'),
     ]);
 
-    const candidates = generateKloRelationshipDiscoveryCandidates(schema([accounts, users, events]));
-    const inferredPks = inferKloRelationshipTargetPks(candidates);
+    const candidates = generateKtxRelationshipDiscoveryCandidates(schema([accounts, users, events]));
+    const inferredPks = inferKtxRelationshipTargetPks(candidates);
 
     expect(inferredPks).toEqual([
       {
@@ -821,21 +821,21 @@ describe('relationship discovery candidates', () => {
       column('invoices-id', 'account-id-col', 'account_id', { nativeType: 'INTEGER', normalizedType: 'integer' }),
     ]);
 
-    expect(generateKloRelationshipDiscoveryCandidates(schema([accounts, invoices]))).toEqual([]);
+    expect(generateKtxRelationshipDiscoveryCandidates(schema([accounts, invoices]))).toEqual([]);
   });
 
   it('normalizes layer prefixes, punctuation, plural forms, and non-plural trailing s words', () => {
-    expect(normalizeKloRelationshipName('mart__Sales_Accounts')).toMatchObject({
+    expect(normalizeKtxRelationshipName('mart__Sales_Accounts')).toMatchObject({
       normalized: 'sales_accounts',
       singular: 'sales_account',
       tokens: ['sales', 'accounts'],
     });
-    expect(normalizeKloRelationshipName('dim_users')).toMatchObject({
+    expect(normalizeKtxRelationshipName('dim_users')).toMatchObject({
       normalized: 'users',
       singular: 'user',
       tokens: ['users'],
     });
-    expect(normalizeKloRelationshipName('Address')).toMatchObject({
+    expect(normalizeKtxRelationshipName('Address')).toMatchObject({
       normalized: 'address',
       singular: 'address',
       plural: 'addresses',
@@ -846,7 +846,7 @@ describe('relationship discovery candidates', () => {
   it('merges duplicate deterministic and LLM proposal candidates without losing LLM rationale', () => {
     const accounts = table('accounts-id', 'accounts', [column('accounts-id', 'accounts-id-col', 'id')]);
     const invoices = table('invoices-id', 'invoices', [column('invoices-id', 'account-id-col', 'account_id')]);
-    const [deterministic] = generateKloRelationshipDiscoveryCandidates(schema([accounts, invoices]));
+    const [deterministic] = generateKtxRelationshipDiscoveryCandidates(schema([accounts, invoices]));
     if (!deterministic) {
       throw new Error('Expected deterministic relationship candidate');
     }
@@ -862,7 +862,7 @@ describe('relationship discovery candidates', () => {
       },
     };
 
-    const merged = mergeKloRelationshipDiscoveryCandidates([deterministic, llmCandidate]);
+    const merged = mergeKtxRelationshipDiscoveryCandidates([deterministic, llmCandidate]);
 
     expect(merged).toHaveLength(1);
     expect(merged[0]).toMatchObject({

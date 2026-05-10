@@ -71,8 +71,8 @@ describe('SqliteBundleIngestStore', () => {
   let dbPath: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-bundle-ingest-store-'));
-    dbPath = join(tempDir, '.klo', 'db.sqlite');
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-bundle-ingest-store-'));
+    dbPath = join(tempDir, '.ktx', 'db.sqlite');
   });
 
   afterEach(async () => {

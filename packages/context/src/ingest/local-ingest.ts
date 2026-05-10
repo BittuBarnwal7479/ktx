@@ -1,18 +1,18 @@
 import { randomUUID } from 'node:crypto';
 import { cp, mkdir, rm } from 'node:fs/promises';
 import { isAbsolute, resolve } from 'node:path';
-import type { KloLlmProvider } from '@klo/llm';
+import type { KtxLlmProvider } from '@ktx/llm';
 import type { AgentRunnerService } from '../agent/index.js';
-import type { KloLogger } from '../core/index.js';
-import type { KloSemanticLayerComputePort } from '../daemon/index.js';
-import type { KloLocalProject } from '../project/index.js';
-import { kloLocalStateDbPath } from '../project/index.js';
-import type { KloQueryResult } from '../sl/index.js';
+import type { KtxLogger } from '../core/index.js';
+import type { KtxSemanticLayerComputePort } from '../daemon/index.js';
+import type { KtxLocalProject } from '../project/index.js';
+import { ktxLocalStateDbPath } from '../project/index.js';
+import type { KtxQueryResult } from '../sl/index.js';
 import { planMetabaseFanoutChildren } from './adapters/metabase/fanout-planner.js';
 import { LocalMetabaseSourceStateReader } from './adapters/metabase/local-source-state-store.js';
 import { localPullConfigForAdapter, type DefaultLocalIngestAdaptersOptions } from './local-adapters.js';
 import { createLocalBundleIngestRuntime } from './local-bundle-runtime.js';
-import { seedLocalMappingStateFromKloYaml } from './local-mapping-reconcile.js';
+import { seedLocalMappingStateFromKtxYaml } from './local-mapping-reconcile.js';
 import type { MemoryFlowEventSink } from './memory-flow/types.js';
 import { buildSyncId } from './raw-sources-paths.js';
 import type { IngestReportBody, IngestReportSnapshot } from './reports.js';
@@ -20,7 +20,7 @@ import { SqliteBundleIngestStore } from './sqlite-bundle-ingest-store.js';
 import type { IngestBundleResult, IngestJobContext, IngestJobPhase, IngestTrigger, SourceAdapter } from './types.js';
 
 export interface RunLocalIngestOptions {
-  project: KloLocalProject;
+  project: KtxLocalProject;
   adapters: SourceAdapter[];
   adapter: string;
   connectionId: string;
@@ -30,12 +30,12 @@ export interface RunLocalIngestOptions {
   jobId?: string;
   memoryFlow?: MemoryFlowEventSink;
   agentRunner?: AgentRunnerService;
-  llmProvider?: KloLlmProvider;
+  llmProvider?: KtxLlmProvider;
   llmDebugRequestFile?: string;
   memoryModel?: string;
-  semanticLayerCompute?: KloSemanticLayerComputePort;
-  queryExecutor?: { execute(input: { connectionId: string; sql: string; maxRows?: number }): Promise<KloQueryResult> };
-  logger?: KloLogger;
+  semanticLayerCompute?: KtxSemanticLayerComputePort;
+  queryExecutor?: { execute(input: { connectionId: string; sql: string; maxRows?: number }): Promise<KtxQueryResult> };
+  logger?: KtxLogger;
 }
 
 export interface LocalIngestMcpOptions
@@ -116,12 +116,12 @@ function safeSegment(kind: string, value: string): string {
   return value;
 }
 
-function assertConfigured(project: KloLocalProject, adapter: string, connectionId: string): void {
+function assertConfigured(project: KtxLocalProject, adapter: string, connectionId: string): void {
   if (!project.config.connections[connectionId]) {
-    throw new Error(`Connection "${connectionId}" is not configured in klo.yaml`);
+    throw new Error(`Connection "${connectionId}" is not configured in ktx.yaml`);
   }
   if (!project.config.ingest.adapters.includes(adapter)) {
-    throw new Error(`Adapter "${adapter}" is not enabled in klo.yaml`);
+    throw new Error(`Adapter "${adapter}" is not enabled in ktx.yaml`);
   }
 }
 
@@ -153,7 +153,7 @@ async function copySourceDirToUpload(sourceDir: string, uploadDir: string): Prom
 }
 
 async function runScheduledPullJob(options: {
-  project: KloLocalProject;
+  project: KtxLocalProject;
   adapters: SourceAdapter[];
   adapter: SourceAdapter;
   connectionId: string;
@@ -162,11 +162,11 @@ async function runScheduledPullJob(options: {
   jobId?: string;
   memoryFlow?: MemoryFlowEventSink;
   agentRunner?: AgentRunnerService;
-  llmProvider?: KloLlmProvider;
+  llmProvider?: KtxLlmProvider;
   memoryModel?: string;
-  semanticLayerCompute?: KloSemanticLayerComputePort;
-  queryExecutor?: { execute(input: { connectionId: string; sql: string; maxRows?: number }): Promise<KloQueryResult> };
-  logger?: KloLogger;
+  semanticLayerCompute?: KtxSemanticLayerComputePort;
+  queryExecutor?: { execute(input: { connectionId: string; sql: string; maxRows?: number }): Promise<KtxQueryResult> };
+  logger?: KtxLogger;
 }): Promise<LocalIngestResult> {
   const runtime = createLocalBundleIngestRuntime(options);
   const jobId = options.jobId ?? runtime.nextJobId();
@@ -269,14 +269,14 @@ function metabaseChildJobId(metabaseDatabaseId: number): string {
 }
 
 async function recordLocalMetabaseChildFailure(options: {
-  project: KloLocalProject;
+  project: KtxLocalProject;
   jobId: string;
   targetConnectionId: string;
   metabaseDatabaseId: number;
   trigger?: IngestTrigger;
   error: unknown;
 }): Promise<LocalIngestResult> {
-  const store = new SqliteBundleIngestStore({ dbPath: kloLocalStateDbPath(options.project) });
+  const store = new SqliteBundleIngestStore({ dbPath: ktxLocalStateDbPath(options.project) });
   const syncId = buildSyncId(new Date(), options.jobId);
   const diffSummary = { added: 0, modified: 0, deleted: 0, unchanged: 0 };
   const reason = errorMessage(options.error);
@@ -357,14 +357,14 @@ export async function runLocalMetabaseIngest(
 
   const metabaseConnectionId = safeSegment('metabase connection id', options.metabaseConnectionId);
   assertConfigured(options.project, 'metabase', metabaseConnectionId);
-  await seedLocalMappingStateFromKloYaml(options.project, metabaseConnectionId);
+  await seedLocalMappingStateFromKtxYaml(options.project, metabaseConnectionId);
   const adapter = findAdapter(options.adapters, 'metabase');
-  const sourceStateReader = new LocalMetabaseSourceStateReader({ dbPath: kloLocalStateDbPath(options.project) });
+  const sourceStateReader = new LocalMetabaseSourceStateReader({ dbPath: ktxLocalStateDbPath(options.project) });
 
   const unhydrated = await sourceStateReader.getUnhydratedSyncEnabledMappingIds(metabaseConnectionId);
   if (unhydrated.length > 0) {
     throw new Error(
-      `Metabase mappings ${unhydrated.join(', ')} are not hydrated; run \`klo connection mapping refresh ${metabaseConnectionId}\` before local Metabase ingest.`,
+      `Metabase mappings ${unhydrated.join(', ')} are not hydrated; run \`ktx connection mapping refresh ${metabaseConnectionId}\` before local Metabase ingest.`,
     );
   }
 
@@ -385,7 +385,7 @@ export async function runLocalMetabaseIngest(
   for (const childPlan of childPlans) {
     const targetConnectionId = safeSegment('target connection id', childPlan.targetConnectionId);
     if (!options.project.config.connections[targetConnectionId]) {
-      throw new Error(`Target connection "${targetConnectionId}" is not configured in klo.yaml`);
+      throw new Error(`Target connection "${targetConnectionId}" is not configured in ktx.yaml`);
     }
     const childJobId = options.jobIdFactory?.() ?? metabaseChildJobId(childPlan.metabaseDatabaseId);
     options.progress?.onMetabaseChildStarted?.({
@@ -448,12 +448,12 @@ export async function runLocalMetabaseIngest(
 }
 
 export async function getLocalIngestStatus(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   id: string,
 ): Promise<IngestReportSnapshot | null> {
-  return new SqliteBundleIngestStore({ dbPath: kloLocalStateDbPath(project) }).findReportByAnyId(id);
+  return new SqliteBundleIngestStore({ dbPath: ktxLocalStateDbPath(project) }).findReportByAnyId(id);
 }
 
-export async function getLatestLocalIngestStatus(project: KloLocalProject): Promise<IngestReportSnapshot | null> {
-  return new SqliteBundleIngestStore({ dbPath: kloLocalStateDbPath(project) }).findLatestReport();
+export async function getLatestLocalIngestStatus(project: KtxLocalProject): Promise<IngestReportSnapshot | null> {
+  return new SqliteBundleIngestStore({ dbPath: ktxLocalStateDbPath(project) }).findLatestReport();
 }

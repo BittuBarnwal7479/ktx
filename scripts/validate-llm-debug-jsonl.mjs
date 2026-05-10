@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 const [backend, filePath] = process.argv.slice(2);
 
 function usage() {
-  process.stderr.write('Usage: node klo/scripts/validate-llm-debug-jsonl.mjs anthropic|vertex /path/to/debug.jsonl\n');
+  process.stderr.write('Usage: node ktx/scripts/validate-llm-debug-jsonl.mjs anthropic|vertex /path/to/debug.jsonl\n');
 }
 
 function fail(message) {

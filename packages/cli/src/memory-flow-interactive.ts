@@ -7,26 +7,26 @@ import {
   type MemoryFlowInteractionCommand,
   type MemoryFlowInteractionState,
   type MemoryFlowReplayInput,
-} from '@klo/context/ingest';
+} from '@ktx/context/ingest';
 
-interface KloMemoryFlowKey {
+interface KtxMemoryFlowKey {
   name?: string;
   ctrl?: boolean;
 }
 
-export interface KloMemoryFlowStdin {
+export interface KtxMemoryFlowStdin {
   isTTY?: boolean;
   isRaw?: boolean;
   setRawMode?(value: boolean): void;
   resume?(): void;
   pause?(): void;
-  on(event: 'keypress', listener: (chunk: string, key: KloMemoryFlowKey) => void): this;
-  off?(event: 'keypress', listener: (chunk: string, key: KloMemoryFlowKey) => void): this;
-  removeListener?(event: 'keypress', listener: (chunk: string, key: KloMemoryFlowKey) => void): this;
+  on(event: 'keypress', listener: (chunk: string, key: KtxMemoryFlowKey) => void): this;
+  off?(event: 'keypress', listener: (chunk: string, key: KtxMemoryFlowKey) => void): this;
+  removeListener?(event: 'keypress', listener: (chunk: string, key: KtxMemoryFlowKey) => void): this;
 }
 
-interface KloMemoryFlowInteractiveIo {
-  stdin?: KloMemoryFlowStdin;
+interface KtxMemoryFlowInteractiveIo {
+  stdin?: KtxMemoryFlowStdin;
   stdout: {
     isTTY?: boolean;
     columns?: number;
@@ -35,17 +35,17 @@ interface KloMemoryFlowInteractiveIo {
 }
 
 interface RenderMemoryFlowInteractiveOptions {
-  prepareKeypressEvents?(stdin: KloMemoryFlowStdin): void;
+  prepareKeypressEvents?(stdin: KtxMemoryFlowStdin): void;
 }
 
-function defaultPrepareKeypressEvents(stdin: KloMemoryFlowStdin): void {
+function defaultPrepareKeypressEvents(stdin: KtxMemoryFlowStdin): void {
   emitKeypressEvents(stdin as Parameters<typeof emitKeypressEvents>[0]);
 }
 
 export function memoryFlowCommandForKey(
   chunk: string,
   search: MemoryFlowInteractionState['search'],
-  key: KloMemoryFlowKey,
+  key: KtxMemoryFlowKey,
 ): MemoryFlowInteractionCommand | null {
   if (search.editing) {
     if (key.name === 'escape') return 'search-clear';
@@ -76,8 +76,8 @@ export function memoryFlowCommandForKey(
 }
 
 function removeKeypressListener(
-  stdin: KloMemoryFlowStdin,
-  handler: (chunk: string, key: KloMemoryFlowKey) => void,
+  stdin: KtxMemoryFlowStdin,
+  handler: (chunk: string, key: KtxMemoryFlowKey) => void,
 ): void {
   if (stdin.off) {
     stdin.off('keypress', handler);
@@ -86,7 +86,7 @@ function removeKeypressListener(
   stdin.removeListener?.('keypress', handler);
 }
 
-function repaint(input: MemoryFlowReplayInput, state: MemoryFlowInteractionState, io: KloMemoryFlowInteractiveIo): void {
+function repaint(input: MemoryFlowReplayInput, state: MemoryFlowInteractionState, io: KtxMemoryFlowInteractiveIo): void {
   const view = buildMemoryFlowViewModel(input);
   io.stdout.write('\u001b[2J\u001b[H');
   io.stdout.write(renderMemoryFlowInteractive(view, state, { terminalWidth: io.stdout.columns }));
@@ -94,7 +94,7 @@ function repaint(input: MemoryFlowReplayInput, state: MemoryFlowInteractionState
 
 export async function renderMemoryFlowInteractively(
   input: MemoryFlowReplayInput,
-  io: KloMemoryFlowInteractiveIo,
+  io: KtxMemoryFlowInteractiveIo,
   options: RenderMemoryFlowInteractiveOptions = {},
 ): Promise<void> {
   const stdin = io.stdin;
@@ -119,7 +119,7 @@ export async function renderMemoryFlowInteractively(
       stdin.pause?.();
     };
 
-    const handleKeypress = (_chunk: string, key: KloMemoryFlowKey): void => {
+    const handleKeypress = (_chunk: string, key: KtxMemoryFlowKey): void => {
       const command = memoryFlowCommandForKey(_chunk, state.search, key);
       if (!command) {
         return;

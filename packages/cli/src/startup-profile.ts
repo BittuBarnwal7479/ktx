@@ -1,4 +1,4 @@
-const enabled = process.env.KLO_PROFILE_STARTUP === '1' || process.env.KLO_PROFILE_STARTUP === 'true';
+const enabled = process.env.KTX_PROFILE_STARTUP === '1' || process.env.KTX_PROFILE_STARTUP === 'true';
 const processStart = performance.now() - process.uptime() * 1000;
 
 interface StartupProfileEvent {
@@ -39,7 +39,7 @@ export function installStartupProfileReporter(): void {
 
   process.once('beforeExit', () => {
     const total = now();
-    process.stderr.write('\nKLO startup profile\n');
+    process.stderr.write('\nKTX startup profile\n');
     for (const event of events) {
       const elapsed = event.at.toFixed(1).padStart(7);
       if (event.duration === undefined) {

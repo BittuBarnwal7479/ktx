@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import { runKloEmbeddingHealthCheck } from './embedding-health.js';
+import { runKtxEmbeddingHealthCheck } from './embedding-health.js';
 
-describe('KLO embedding health check', () => {
+describe('KTX embedding health check', () => {
   it('runs a one-shot OpenAI embedding check through the configured provider', async () => {
     const createOpenAIClient = vi.fn(() => ({
       embeddings: {
@@ -12,7 +12,7 @@ describe('KLO embedding health check', () => {
     }));
 
     await expect(
-      runKloEmbeddingHealthCheck(
+      runKtxEmbeddingHealthCheck(
         {
           backend: 'openai',
           model: 'text-embedding-3-small',
@@ -36,7 +36,7 @@ describe('KLO embedding health check', () => {
     }));
 
     await expect(
-      runKloEmbeddingHealthCheck(
+      runKtxEmbeddingHealthCheck(
         {
           backend: 'openai',
           model: 'text-embedding-3-small',
@@ -61,7 +61,7 @@ describe('KLO embedding health check', () => {
     }));
 
     await expect(
-      runKloEmbeddingHealthCheck(
+      runKtxEmbeddingHealthCheck(
         {
           backend: 'openai',
           model: 'text-embedding-3-small',
@@ -89,7 +89,7 @@ describe('KLO embedding health check', () => {
     }));
 
     await expect(
-      runKloEmbeddingHealthCheck(
+      runKtxEmbeddingHealthCheck(
         {
           backend: 'openai',
           model: 'text-embedding-3-small',

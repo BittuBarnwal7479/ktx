@@ -1,79 +1,79 @@
-import { redactKloScanReport } from './credentials.js';
-import { completedKloScanEnrichmentStateSummary, summarizeKloScanEnrichmentState } from './enrichment-state.js';
+import { redactKtxScanReport } from './credentials.js';
+import { completedKtxScanEnrichmentStateSummary, summarizeKtxScanEnrichmentState } from './enrichment-state.js';
 import {
-  failedKloScanEnrichmentSummary,
-  kloScanErrorMessage,
-  skippedKloScanEnrichmentSummary,
+  failedKtxScanEnrichmentSummary,
+  ktxScanErrorMessage,
+  skippedKtxScanEnrichmentSummary,
 } from './enrichment-summary.js';
 import type {
-  KloConnectorCapabilities,
-  KloScanArtifactPaths,
-  KloScanConnector,
-  KloScanContext,
-  KloScanDiffSummary,
-  KloScanEnrichmentSummary,
-  KloScanEnrichmentStateSummary,
-  KloScanInput,
-  KloScanRelationshipSummary,
-  KloScanReport,
-  KloScanTrigger,
-  KloScanWarning,
-  KloSchemaSnapshot,
-  KloStructuralSyncStats,
+  KtxConnectorCapabilities,
+  KtxScanArtifactPaths,
+  KtxScanConnector,
+  KtxScanContext,
+  KtxScanDiffSummary,
+  KtxScanEnrichmentSummary,
+  KtxScanEnrichmentStateSummary,
+  KtxScanInput,
+  KtxScanRelationshipSummary,
+  KtxScanReport,
+  KtxScanTrigger,
+  KtxScanWarning,
+  KtxSchemaSnapshot,
+  KtxStructuralSyncStats,
 } from './types.js';
 
-type CapabilityGap = keyof Omit<KloConnectorCapabilities, 'structuralIntrospection'>;
+type CapabilityGap = keyof Omit<KtxConnectorCapabilities, 'structuralIntrospection'>;
 
-export interface KloStructuralScanPhaseResult<TResult = unknown> {
+export interface KtxStructuralScanPhaseResult<TResult = unknown> {
   result: TResult;
-  diffSummary?: Partial<KloScanDiffSummary>;
-  structuralSyncStats?: Partial<KloStructuralSyncStats>;
+  diffSummary?: Partial<KtxScanDiffSummary>;
+  structuralSyncStats?: Partial<KtxStructuralSyncStats>;
   manifestShardsWritten?: number;
-  artifactPaths?: Partial<KloScanArtifactPaths>;
-  relationships?: Partial<KloScanRelationshipSummary>;
-  warnings?: KloScanWarning[];
+  artifactPaths?: Partial<KtxScanArtifactPaths>;
+  relationships?: Partial<KtxScanRelationshipSummary>;
+  warnings?: KtxScanWarning[];
 }
 
-export interface KloEnrichmentScanPhaseResult<TResult = unknown> {
+export interface KtxEnrichmentScanPhaseResult<TResult = unknown> {
   result: TResult;
-  enrichment?: Partial<KloScanEnrichmentSummary>;
-  enrichmentState?: Partial<KloScanEnrichmentStateSummary>;
+  enrichment?: Partial<KtxScanEnrichmentSummary>;
+  enrichmentState?: Partial<KtxScanEnrichmentStateSummary>;
   manifestShardsWritten?: number;
-  artifactPaths?: Partial<KloScanArtifactPaths>;
-  relationships?: Partial<KloScanRelationshipSummary>;
-  warnings?: KloScanWarning[];
+  artifactPaths?: Partial<KtxScanArtifactPaths>;
+  relationships?: Partial<KtxScanRelationshipSummary>;
+  warnings?: KtxScanWarning[];
 }
 
-export interface KloScanOrchestratorRunInput<TStructuralResult = unknown, TEnrichmentResult = unknown> {
-  connector: KloScanConnector;
-  input: KloScanInput;
-  trigger: KloScanTrigger;
-  context: KloScanContext;
+export interface KtxScanOrchestratorRunInput<TStructuralResult = unknown, TEnrichmentResult = unknown> {
+  connector: KtxScanConnector;
+  input: KtxScanInput;
+  trigger: KtxScanTrigger;
+  context: KtxScanContext;
   syncId?: string;
   runStructural: (
-    snapshot: KloSchemaSnapshot,
-    context: KloScanContext,
-  ) => Promise<KloStructuralScanPhaseResult<TStructuralResult>>;
+    snapshot: KtxSchemaSnapshot,
+    context: KtxScanContext,
+  ) => Promise<KtxStructuralScanPhaseResult<TStructuralResult>>;
   runEnrichment?: (
-    snapshot: KloSchemaSnapshot,
-    structural: KloStructuralScanPhaseResult<TStructuralResult>,
-    context: KloScanContext,
-  ) => Promise<KloEnrichmentScanPhaseResult<TEnrichmentResult>>;
+    snapshot: KtxSchemaSnapshot,
+    structural: KtxStructuralScanPhaseResult<TStructuralResult>,
+    context: KtxScanContext,
+  ) => Promise<KtxEnrichmentScanPhaseResult<TEnrichmentResult>>;
 }
 
-export interface KloScanOrchestratorRunResult<TStructuralResult = unknown, TEnrichmentResult = unknown> {
-  snapshot: KloSchemaSnapshot;
-  structural: KloStructuralScanPhaseResult<TStructuralResult>;
-  enrichment: KloEnrichmentScanPhaseResult<TEnrichmentResult> | null;
-  report: KloScanReport;
+export interface KtxScanOrchestratorRunResult<TStructuralResult = unknown, TEnrichmentResult = unknown> {
+  snapshot: KtxSchemaSnapshot;
+  structural: KtxStructuralScanPhaseResult<TStructuralResult>;
+  enrichment: KtxEnrichmentScanPhaseResult<TEnrichmentResult> | null;
+  report: KtxScanReport;
 }
 
-export interface KloScanOrchestratorOptions {
+export interface KtxScanOrchestratorOptions {
   now?: () => Date;
-  syncIdFactory?: (input: KloScanInput, context: KloScanContext) => string;
+  syncIdFactory?: (input: KtxScanInput, context: KtxScanContext) => string;
 }
 
-const emptyDiffSummary: KloScanDiffSummary = {
+const emptyDiffSummary: KtxScanDiffSummary = {
   tablesAdded: 0,
   tablesModified: 0,
   tablesDeleted: 0,
@@ -83,7 +83,7 @@ const emptyDiffSummary: KloScanDiffSummary = {
   columnsDeleted: 0,
 };
 
-const emptyStructuralSyncStats: KloStructuralSyncStats = {
+const emptyStructuralSyncStats: KtxStructuralSyncStats = {
   tablesCreated: 0,
   tablesUpdated: 0,
   tablesDeleted: 0,
@@ -92,31 +92,31 @@ const emptyStructuralSyncStats: KloStructuralSyncStats = {
   columnsDeleted: 0,
 };
 
-const emptyArtifactPaths: KloScanArtifactPaths = {
+const emptyArtifactPaths: KtxScanArtifactPaths = {
   rawSourcesDir: null,
   reportPath: null,
   manifestShards: [],
   enrichmentArtifacts: [],
 };
 
-function mergeDiffSummary(input?: Partial<KloScanDiffSummary>): KloScanDiffSummary {
+function mergeDiffSummary(input?: Partial<KtxScanDiffSummary>): KtxScanDiffSummary {
   return { ...emptyDiffSummary, ...input };
 }
 
-function mergeStructuralSyncStats(input?: Partial<KloStructuralSyncStats>): KloStructuralSyncStats {
+function mergeStructuralSyncStats(input?: Partial<KtxStructuralSyncStats>): KtxStructuralSyncStats {
   return { ...emptyStructuralSyncStats, ...input };
 }
 
-function mergeEnrichmentSummary(input?: Partial<KloScanEnrichmentSummary>): KloScanEnrichmentSummary {
-  return { ...skippedKloScanEnrichmentSummary, ...input };
+function mergeEnrichmentSummary(input?: Partial<KtxScanEnrichmentSummary>): KtxScanEnrichmentSummary {
+  return { ...skippedKtxScanEnrichmentSummary, ...input };
 }
 
-function mergeEnrichmentState(input?: Partial<KloScanEnrichmentStateSummary>): KloScanEnrichmentStateSummary {
+function mergeEnrichmentState(input?: Partial<KtxScanEnrichmentStateSummary>): KtxScanEnrichmentStateSummary {
   if (!input) {
-    return completedKloScanEnrichmentStateSummary();
+    return completedKtxScanEnrichmentStateSummary();
   }
 
-  return summarizeKloScanEnrichmentState({
+  return summarizeKtxScanEnrichmentState({
     resumedStages: input.resumedStages ?? [],
     completedStages: input.completedStages ?? [],
     failedStages: input.failedStages ?? [],
@@ -124,9 +124,9 @@ function mergeEnrichmentState(input?: Partial<KloScanEnrichmentStateSummary>): K
 }
 
 function mergeArtifactPaths(
-  structural?: Partial<KloScanArtifactPaths>,
-  enrichment?: Partial<KloScanArtifactPaths>,
-): KloScanArtifactPaths {
+  structural?: Partial<KtxScanArtifactPaths>,
+  enrichment?: Partial<KtxScanArtifactPaths>,
+): KtxScanArtifactPaths {
   return {
     ...emptyArtifactPaths,
     ...structural,
@@ -137,9 +137,9 @@ function mergeArtifactPaths(
 }
 
 function mergeRelationshipSummary(
-  structural?: Partial<KloScanRelationshipSummary>,
-  enrichment?: Partial<KloScanRelationshipSummary>,
-): KloScanRelationshipSummary {
+  structural?: Partial<KtxScanRelationshipSummary>,
+  enrichment?: Partial<KtxScanRelationshipSummary>,
+): KtxScanRelationshipSummary {
   return {
     accepted: (structural?.accepted ?? 0) + (enrichment?.accepted ?? 0),
     review: (structural?.review ?? 0) + (enrichment?.review ?? 0),
@@ -150,12 +150,12 @@ function mergeRelationshipSummary(
 
 function manifestShardsWritten(phase: {
   manifestShardsWritten?: number;
-  artifactPaths?: Partial<KloScanArtifactPaths>;
+  artifactPaths?: Partial<KtxScanArtifactPaths>;
 }): number {
   return phase.manifestShardsWritten ?? phase.artifactPaths?.manifestShards?.length ?? 0;
 }
 
-function requiredCapabilities(mode: KloScanInput['mode'], detectRelationships: boolean | undefined): CapabilityGap[] {
+function requiredCapabilities(mode: KtxScanInput['mode'], detectRelationships: boolean | undefined): CapabilityGap[] {
   const required = new Set<CapabilityGap>();
 
   if (mode === 'enriched') {
@@ -173,45 +173,45 @@ function requiredCapabilities(mode: KloScanInput['mode'], detectRelationships: b
   return [...required];
 }
 
-function capabilityGaps(capabilities: KloConnectorCapabilities, input: KloScanInput): CapabilityGap[] {
+function capabilityGaps(capabilities: KtxConnectorCapabilities, input: KtxScanInput): CapabilityGap[] {
   return requiredCapabilities(input.mode ?? 'structural', input.detectRelationships).filter(
     (capability) => !capabilities[capability],
   );
 }
 
-function warningsForCapabilityGaps(gaps: CapabilityGap[]): KloScanWarning[] {
+function warningsForCapabilityGaps(gaps: CapabilityGap[]): KtxScanWarning[] {
   return gaps.map((gap) => ({
     code: 'connector_capability_missing',
-    message: `KLO scan connector is missing optional capability: ${gap}`,
+    message: `KTX scan connector is missing optional capability: ${gap}`,
     recoverable: true,
     metadata: { capability: gap },
   }));
 }
 
-function assertNotAborted(context: KloScanContext): void {
+function assertNotAborted(context: KtxScanContext): void {
   if (context.signal?.aborted) {
-    throw new Error('KLO scan aborted');
+    throw new Error('KTX scan aborted');
   }
 }
 
-export class KloScanOrchestrator {
+export class KtxScanOrchestrator {
   private readonly now: () => Date;
-  private readonly syncIdFactory: (input: KloScanInput, context: KloScanContext) => string;
+  private readonly syncIdFactory: (input: KtxScanInput, context: KtxScanContext) => string;
 
-  constructor(options: KloScanOrchestratorOptions = {}) {
+  constructor(options: KtxScanOrchestratorOptions = {}) {
     this.now = options.now ?? (() => new Date());
     this.syncIdFactory = options.syncIdFactory ?? ((_, context) => context.runId);
   }
 
   async run<TStructuralResult = unknown, TEnrichmentResult = unknown>(
-    input: KloScanOrchestratorRunInput<TStructuralResult, TEnrichmentResult>,
-  ): Promise<KloScanOrchestratorRunResult<TStructuralResult, TEnrichmentResult>> {
+    input: KtxScanOrchestratorRunInput<TStructuralResult, TEnrichmentResult>,
+  ): Promise<KtxScanOrchestratorRunResult<TStructuralResult, TEnrichmentResult>> {
     const mode = input.input.mode ?? 'structural';
     const syncId = input.syncId ?? this.syncIdFactory(input.input, input.context);
     const gaps = capabilityGaps(input.connector.capabilities, input.input);
     const warnings = warningsForCapabilityGaps(gaps);
 
-    input.context.logger?.info('Starting KLO scan', {
+    input.context.logger?.info('Starting KTX scan', {
       connectionId: input.input.connectionId,
       connectorId: input.connector.id,
       mode,
@@ -224,23 +224,23 @@ export class KloScanOrchestrator {
     assertNotAborted(input.context);
     const structural = await input.runStructural(snapshot, input.context);
 
-    let enrichment: KloEnrichmentScanPhaseResult<TEnrichmentResult> | null = null;
-    let failedEnrichment: KloScanEnrichmentSummary | null = null;
+    let enrichment: KtxEnrichmentScanPhaseResult<TEnrichmentResult> | null = null;
+    let failedEnrichment: KtxScanEnrichmentSummary | null = null;
     if (mode !== 'structural' || input.input.detectRelationships) {
       if (input.runEnrichment) {
         assertNotAborted(input.context);
         try {
           enrichment = await input.runEnrichment(snapshot, structural, input.context);
         } catch (error) {
-          const message = kloScanErrorMessage(error);
-          failedEnrichment = failedKloScanEnrichmentSummary(mode, input.input.detectRelationships ?? false);
+          const message = ktxScanErrorMessage(error);
+          failedEnrichment = failedKtxScanEnrichmentSummary(mode, input.input.detectRelationships ?? false);
           warnings.push({
             code: 'enrichment_failed',
-            message: `KLO scan enrichment failed after structural scan completed: ${message}`,
+            message: `KTX scan enrichment failed after structural scan completed: ${message}`,
             recoverable: true,
             metadata: { mode, detectRelationships: input.input.detectRelationships ?? false },
           });
-          input.context.logger?.warn('KLO scan enrichment failed after structural scan completed', {
+          input.context.logger?.warn('KTX scan enrichment failed after structural scan completed', {
             connectionId: input.input.connectionId,
             runId: input.context.runId,
             mode,
@@ -248,10 +248,10 @@ export class KloScanOrchestrator {
           });
         }
       } else {
-        failedEnrichment = failedKloScanEnrichmentSummary(mode, input.input.detectRelationships ?? false);
+        failedEnrichment = failedKtxScanEnrichmentSummary(mode, input.input.detectRelationships ?? false);
         warnings.push({
           code: 'connector_capability_missing',
-          message: 'KLO scan requested enrichment or relationship detection, but no enrichment phase was provided',
+          message: 'KTX scan requested enrichment or relationship detection, but no enrichment phase was provided',
           recoverable: true,
           metadata: { mode, detectRelationships: input.input.detectRelationships ?? false },
         });
@@ -260,7 +260,7 @@ export class KloScanOrchestrator {
 
     const manifestShardCount = manifestShardsWritten(structural) + (enrichment ? manifestShardsWritten(enrichment) : 0);
 
-    const report: KloScanReport = redactKloScanReport({
+    const report: KtxScanReport = redactKtxScanReport({
       connectionId: input.input.connectionId,
       driver: input.input.driver,
       syncId,
@@ -280,7 +280,7 @@ export class KloScanOrchestrator {
       createdAt: this.now().toISOString(),
     });
 
-    input.context.logger?.info('Completed KLO scan', {
+    input.context.logger?.info('Completed KTX scan', {
       connectionId: report.connectionId,
       runId: report.runId,
       syncId: report.syncId,

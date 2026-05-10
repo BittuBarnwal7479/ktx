@@ -1,4 +1,4 @@
-import type { KloSchemaSnapshot, KloSchemaTable } from '../../../scan/types.js';
+import type { KtxSchemaSnapshot, KtxSchemaTable } from '../../../scan/types.js';
 
 export interface LiveDatabaseExtractedForeignKey {
   fromTable: string;
@@ -30,11 +30,11 @@ export interface LiveDatabaseExtractedSchema {
   tables: LiveDatabaseExtractedTable[];
 }
 
-export function buildLiveDatabaseTableNaturalKey(table: Pick<KloSchemaTable, 'catalog' | 'db' | 'name'>): string {
+export function buildLiveDatabaseTableNaturalKey(table: Pick<KtxSchemaTable, 'catalog' | 'db' | 'name'>): string {
   return `${table.catalog ?? ''}|${table.db ?? ''}|${table.name}`;
 }
 
-export function kloSchemaSnapshotToExtractedSchema(snapshot: KloSchemaSnapshot): LiveDatabaseExtractedSchema {
+export function ktxSchemaSnapshotToExtractedSchema(snapshot: KtxSchemaSnapshot): LiveDatabaseExtractedSchema {
   return {
     connectionId: snapshot.connectionId,
     tables: snapshot.tables.map((table) => ({

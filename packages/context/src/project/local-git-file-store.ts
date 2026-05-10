@@ -3,11 +3,11 @@ import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import type {
   GitCommitInfo,
   GitService,
-  KloFileHistoryEntry,
-  KloFileListResult,
-  KloFileReadResult,
-  KloFileStorePort,
-  KloFileWriteResult,
+  KtxFileHistoryEntry,
+  KtxFileListResult,
+  KtxFileReadResult,
+  KtxFileStorePort,
+  KtxFileWriteResult,
 } from '../core/index.js';
 
 export interface LocalGitFileStoreDeps {
@@ -19,7 +19,7 @@ function normalizeRelativePath(filePath: string): string {
   return filePath.replaceAll('\\', '/').replace(/^\.\/+/, '');
 }
 
-function gitInfoToWriteResult(info: GitCommitInfo): KloFileWriteResult {
+function gitInfoToWriteResult(info: GitCommitInfo): KtxFileWriteResult {
   return {
     success: true,
     commitHash: info.commitHash,
@@ -31,7 +31,7 @@ function gitInfoToWriteResult(info: GitCommitInfo): KloFileWriteResult {
   };
 }
 
-export class LocalGitFileStore implements KloFileStorePort<LocalGitFileStore> {
+export class LocalGitFileStore implements KtxFileStorePort<LocalGitFileStore> {
   private readonly rootDir: string;
   private readonly git: GitService;
 
@@ -51,7 +51,7 @@ export class LocalGitFileStore implements KloFileStorePort<LocalGitFileStore> {
     authorEmail: string,
     commitMessage: string,
     options?: { skipLock?: boolean },
-  ): Promise<KloFileWriteResult> {
+  ): Promise<KtxFileWriteResult> {
     const relativePath = this.safeRelativePath(path);
     const absolutePath = this.absolutePath(relativePath);
     await fs.mkdir(dirname(absolutePath), { recursive: true });
@@ -65,7 +65,7 @@ export class LocalGitFileStore implements KloFileStorePort<LocalGitFileStore> {
     return { ...gitInfoToWriteResult(info), path: relativePath, operation: 'write' };
   }
 
-  async readFile(path: string): Promise<KloFileReadResult> {
+  async readFile(path: string): Promise<KtxFileReadResult> {
     const relativePath = this.safeRelativePath(path);
     const absolutePath = this.absolutePath(relativePath);
     const content = await fs.readFile(absolutePath, 'utf-8');
@@ -84,7 +84,7 @@ export class LocalGitFileStore implements KloFileStorePort<LocalGitFileStore> {
     authorEmail: string,
     commitMessage: string,
     options?: { skipLock?: boolean },
-  ): Promise<KloFileWriteResult | null> {
+  ): Promise<KtxFileWriteResult | null> {
     const relativePath = this.safeRelativePath(path);
     const absolutePath = this.absolutePath(relativePath);
     try {
@@ -103,7 +103,7 @@ export class LocalGitFileStore implements KloFileStorePort<LocalGitFileStore> {
     return { ...gitInfoToWriteResult(info), path: relativePath, operation: 'delete' };
   }
 
-  async listFiles(path = '', stripPrefix = false): Promise<KloFileListResult> {
+  async listFiles(path = '', stripPrefix = false): Promise<KtxFileListResult> {
     const relativePath = path ? this.safeRelativePath(path) : '';
     const searchRoot = relativePath ? this.absolutePath(relativePath) : this.rootDir;
     let files: string[];
@@ -121,14 +121,14 @@ export class LocalGitFileStore implements KloFileStorePort<LocalGitFileStore> {
     const relativeFiles = files
       .map((file) => normalizeRelativePath(relative(this.rootDir, file)))
       .filter((file) => !file.startsWith('.git/') && !file.includes('/.git/'))
-      .filter((file) => !file.startsWith('.klo/cache/'))
+      .filter((file) => !file.startsWith('.ktx/cache/'))
       .map((file) => (stripPrefix && prefix && file.startsWith(prefix) ? file.slice(prefix.length) : file))
       .sort();
 
     return { files: relativeFiles };
   }
 
-  async getFileHistory(path: string): Promise<KloFileHistoryEntry[]> {
+  async getFileHistory(path: string): Promise<KtxFileHistoryEntry[]> {
     const relativePath = this.safeRelativePath(path);
     const history = await this.git.getFileHistory(relativePath);
     return history.map((entry) => ({

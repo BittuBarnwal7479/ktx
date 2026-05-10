@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { buildDefaultKloProjectConfig, parseKloProjectConfig, serializeKloProjectConfig } from './config.js';
+import { buildDefaultKtxProjectConfig, parseKtxProjectConfig, serializeKtxProjectConfig } from './config.js';
 
-describe('KLO project config', () => {
+describe('KTX project config', () => {
   it('builds the default standalone project config', () => {
-    expect(buildDefaultKloProjectConfig('warehouse')).toEqual({
+    expect(buildDefaultKtxProjectConfig('warehouse')).toEqual({
       project: 'warehouse',
       connections: {},
       storage: {
@@ -11,7 +11,7 @@ describe('KLO project config', () => {
         search: 'sqlite-fts5',
         git: {
           auto_commit: true,
-          author: 'klo <klo@example.com>',
+          author: 'ktx <ktx@example.com>',
         },
       },
       llm: {
@@ -63,8 +63,8 @@ describe('KLO project config', () => {
   });
 
   it('round-trips through YAML with stable defaults', () => {
-    const serialized = serializeKloProjectConfig(buildDefaultKloProjectConfig('warehouse'));
-    const parsed = parseKloProjectConfig(serialized);
+    const serialized = serializeKtxProjectConfig(buildDefaultKtxProjectConfig('warehouse'));
+    const parsed = parseKtxProjectConfig(serialized);
 
     expect(serialized).toContain('project: warehouse');
     expect(serialized).toContain('live-database');
@@ -82,7 +82,7 @@ describe('KLO project config', () => {
   });
 
   it('parses and serializes setup wizard metadata', () => {
-    const config = parseKloProjectConfig(`
+    const config = parseKtxProjectConfig(`
 project: revenue
 setup:
   database_connection_ids:
@@ -102,14 +102,14 @@ connections:
       completed_steps: ['project', 'llm'],
     });
 
-    const serialized = serializeKloProjectConfig(config);
+    const serialized = serializeKtxProjectConfig(config);
     expect(serialized).toContain('setup:');
     expect(serialized).toContain('database_connection_ids:');
     expect(serialized).toContain('completed_steps:');
   });
 
   it('parses global direct Anthropic LLM config', () => {
-    const config = parseKloProjectConfig(`
+    const config = parseKtxProjectConfig(`
 project: demo
 llm:
   provider:
@@ -149,7 +149,7 @@ ingest:
   });
 
   it('parses global Vertex LLM config', () => {
-    const config = parseKloProjectConfig(`
+    const config = parseKtxProjectConfig(`
 project: demo
 llm:
   provider:
@@ -171,7 +171,7 @@ llm:
   });
 
   it('parses gateway LLM, OpenAI scan embeddings, and sentence-transformers ingest embeddings', () => {
-    const config = parseKloProjectConfig(`
+    const config = parseKtxProjectConfig(`
 project: demo
 llm:
   provider:
@@ -215,7 +215,7 @@ scan:
   });
 
   it('parses scan relationship settings', () => {
-    const config = parseKloProjectConfig(`
+    const config = parseKtxProjectConfig(`
 project: demo
 scan:
   relationships:
@@ -243,20 +243,20 @@ scan:
       validationConcurrency: 2,
       validationBudget: 0,
     });
-    expect(serializeKloProjectConfig(config)).toContain('enabled: false');
-    expect(serializeKloProjectConfig(config)).toContain('llmProposals: false');
-    expect(serializeKloProjectConfig(config)).toContain('validationRequiredForManifest: true');
-    expect(serializeKloProjectConfig(config)).toContain('acceptThreshold: 0.91');
-    expect(serializeKloProjectConfig(config)).toContain('reviewThreshold: 0.61');
-    expect(serializeKloProjectConfig(config)).toContain('maxLlmTablesPerBatch: 12');
-    expect(serializeKloProjectConfig(config)).toContain('maxCandidatesPerColumn: 7');
-    expect(serializeKloProjectConfig(config)).toContain('profileSampleRows: 500');
-    expect(serializeKloProjectConfig(config)).toContain('validationConcurrency: 2');
-    expect(serializeKloProjectConfig(config)).toContain('validationBudget: 0');
+    expect(serializeKtxProjectConfig(config)).toContain('enabled: false');
+    expect(serializeKtxProjectConfig(config)).toContain('llmProposals: false');
+    expect(serializeKtxProjectConfig(config)).toContain('validationRequiredForManifest: true');
+    expect(serializeKtxProjectConfig(config)).toContain('acceptThreshold: 0.91');
+    expect(serializeKtxProjectConfig(config)).toContain('reviewThreshold: 0.61');
+    expect(serializeKtxProjectConfig(config)).toContain('maxLlmTablesPerBatch: 12');
+    expect(serializeKtxProjectConfig(config)).toContain('maxCandidatesPerColumn: 7');
+    expect(serializeKtxProjectConfig(config)).toContain('profileSampleRows: 500');
+    expect(serializeKtxProjectConfig(config)).toContain('validationConcurrency: 2');
+    expect(serializeKtxProjectConfig(config)).toContain('validationBudget: 0');
   });
 
   it('parses the scan relationship validation budget sentinel', () => {
-    const config = parseKloProjectConfig(`
+    const config = parseKtxProjectConfig(`
 project: demo
 scan:
   relationships:
@@ -264,11 +264,11 @@ scan:
 `);
 
     expect(config.scan.relationships.validationBudget).toBe('all');
-    expect(serializeKloProjectConfig(config)).toContain('validationBudget: all');
+    expect(serializeKtxProjectConfig(config)).toContain('validationBudget: all');
   });
 
   it('falls back to safe scan relationship defaults for invalid numeric settings', () => {
-    const config = parseKloProjectConfig(`
+    const config = parseKtxProjectConfig(`
 project: demo
 scan:
   relationships:
@@ -293,7 +293,7 @@ scan:
   });
 
   it('falls back for invalid scan relationship validation budget strings', () => {
-    const config = parseKloProjectConfig(`
+    const config = parseKtxProjectConfig(`
 project: demo
 scan:
   relationships:
@@ -305,7 +305,7 @@ scan:
 
   it('rejects legacy local LLM and embedding fields', () => {
     expect(() =>
-      parseKloProjectConfig(`
+      parseKtxProjectConfig(`
 project: demo
 ingest:
   llm:
@@ -314,7 +314,7 @@ ingest:
     ).toThrow('Unsupported ingest.llm: use top-level llm.provider, llm.models, and ingest.workUnits');
 
     expect(() =>
-      parseKloProjectConfig(`
+      parseKtxProjectConfig(`
 project: demo
 scan:
   enrichment:
@@ -323,7 +323,7 @@ scan:
     ).toThrow('Unsupported scan.enrichment.backend: use scan.enrichment.mode');
 
     expect(() =>
-      parseKloProjectConfig(`
+      parseKtxProjectConfig(`
 project: demo
 scan:
   enrichment:
@@ -334,7 +334,7 @@ scan:
     ).toThrow('Unsupported scan.enrichment.llm: use top-level llm.provider and llm.models');
 
     expect(() =>
-      parseKloProjectConfig(`
+      parseKtxProjectConfig(`
 project: demo
 ingest:
   embeddings:
@@ -346,7 +346,7 @@ ingest:
 
   it('rejects gateway embedding configs', () => {
     expect(() =>
-      parseKloProjectConfig(`
+      parseKtxProjectConfig(`
 project: demo
 ingest:
   embeddings:
@@ -357,7 +357,7 @@ ingest:
     ).toThrow('Unsupported ingest.embeddings.backend: gateway');
 
     expect(() =>
-      parseKloProjectConfig(`
+      parseKtxProjectConfig(`
 project: demo
 scan:
   enrichment:
@@ -371,9 +371,9 @@ scan:
   });
 
   it('fills optional sections when a minimal config is loaded', () => {
-    const config = parseKloProjectConfig('project: local\n');
+    const config = parseKtxProjectConfig('project: local\n');
 
-    expect(config).toEqual(buildDefaultKloProjectConfig('local'));
+    expect(config).toEqual(buildDefaultKtxProjectConfig('local'));
     expect(config.ingest.embeddings).toEqual({
       backend: 'deterministic',
       model: 'deterministic',
@@ -382,10 +382,10 @@ scan:
   });
 
   it('rejects configs without an object root', () => {
-    expect(() => parseKloProjectConfig('- nope\n')).toThrow('klo.yaml must contain a YAML object');
+    expect(() => parseKtxProjectConfig('- nope\n')).toThrow('ktx.yaml must contain a YAML object');
   });
 
   it('rejects configs with a missing project name', () => {
-    expect(() => parseKloProjectConfig('connections: {}\n')).toThrow('klo.yaml field "project" is required');
+    expect(() => parseKtxProjectConfig('connections: {}\n')).toThrow('ktx.yaml field "project" is required');
   });
 });

@@ -1,67 +1,67 @@
-import type { KloConnectionMetabaseSetupArgs } from './commands/connection-metabase-setup.js';
-import type { KloConnectionNotionArgs } from './commands/connection-notion.js';
-import type { KloAgentArgs } from './agent.js';
-import type { KloConnectionArgs } from './connection.js';
-import type { KloDemoArgs } from './demo.js';
-import type { KloDoctorArgs } from './doctor.js';
-import type { KloIngestArgs } from './ingest.js';
-import type { KloKnowledgeArgs } from './knowledge.js';
-import type { KloPublicIngestArgs } from './public-ingest.js';
-import type { KloScanArgs } from './scan.js';
-import type { KloServeArgs } from './serve.js';
-import type { KloSetupArgs } from './setup.js';
-import type { KloSlArgs } from './sl.js';
+import type { KtxConnectionMetabaseSetupArgs } from './commands/connection-metabase-setup.js';
+import type { KtxConnectionNotionArgs } from './commands/connection-notion.js';
+import type { KtxAgentArgs } from './agent.js';
+import type { KtxConnectionArgs } from './connection.js';
+import type { KtxDemoArgs } from './demo.js';
+import type { KtxDoctorArgs } from './doctor.js';
+import type { KtxIngestArgs } from './ingest.js';
+import type { KtxKnowledgeArgs } from './knowledge.js';
+import type { KtxPublicIngestArgs } from './public-ingest.js';
+import type { KtxScanArgs } from './scan.js';
+import type { KtxServeArgs } from './serve.js';
+import type { KtxSetupArgs } from './setup.js';
+import type { KtxSlArgs } from './sl.js';
 import { profileMark, profileSpan } from './startup-profile.js';
 
 profileMark('module:cli-runtime');
 
-export interface KloCliPackageInfo {
-  name: '@klo/cli';
+export interface KtxCliPackageInfo {
+  name: '@ktx/cli';
   version: '0.0.0-private';
-  contextPackageName: '@klo/context';
+  contextPackageName: '@ktx/context';
 }
 
-export interface KloCliIo {
+export interface KtxCliIo {
   stdout: { isTTY?: boolean; write(chunk: string): void };
   stderr: { write(chunk: string): void };
 }
 
-export interface KloCliDeps {
-  serveStdio?: (args: KloServeArgs) => Promise<number>;
-  setup?: (args: KloSetupArgs, io: KloCliIo) => Promise<number>;
-  agent?: (args: KloAgentArgs, io: KloCliIo) => Promise<number>;
-  connection?: (args: KloConnectionArgs, io: KloCliIo) => Promise<number>;
-  connectionNotion?: (args: KloConnectionNotionArgs, io: KloCliIo) => Promise<number>;
-  connectionMetabaseSetup?: (args: KloConnectionMetabaseSetupArgs, io: KloCliIo) => Promise<number>;
-  demo?: (args: KloDemoArgs, io: KloCliIo) => Promise<number>;
-  doctor?: (args: KloDoctorArgs, io: KloCliIo) => Promise<number>;
-  ingest?: (args: KloIngestArgs, io: KloCliIo) => Promise<number>;
-  publicIngest?: (args: KloPublicIngestArgs, io: KloCliIo) => Promise<number>;
-  scan?: (args: KloScanArgs, io: KloCliIo) => Promise<number>;
-  knowledge?: (args: KloKnowledgeArgs, io: KloCliIo) => Promise<number>;
-  sl?: (args: KloSlArgs, io: KloCliIo) => Promise<number>;
+export interface KtxCliDeps {
+  serveStdio?: (args: KtxServeArgs) => Promise<number>;
+  setup?: (args: KtxSetupArgs, io: KtxCliIo) => Promise<number>;
+  agent?: (args: KtxAgentArgs, io: KtxCliIo) => Promise<number>;
+  connection?: (args: KtxConnectionArgs, io: KtxCliIo) => Promise<number>;
+  connectionNotion?: (args: KtxConnectionNotionArgs, io: KtxCliIo) => Promise<number>;
+  connectionMetabaseSetup?: (args: KtxConnectionMetabaseSetupArgs, io: KtxCliIo) => Promise<number>;
+  demo?: (args: KtxDemoArgs, io: KtxCliIo) => Promise<number>;
+  doctor?: (args: KtxDoctorArgs, io: KtxCliIo) => Promise<number>;
+  ingest?: (args: KtxIngestArgs, io: KtxCliIo) => Promise<number>;
+  publicIngest?: (args: KtxPublicIngestArgs, io: KtxCliIo) => Promise<number>;
+  scan?: (args: KtxScanArgs, io: KtxCliIo) => Promise<number>;
+  knowledge?: (args: KtxKnowledgeArgs, io: KtxCliIo) => Promise<number>;
+  sl?: (args: KtxSlArgs, io: KtxCliIo) => Promise<number>;
 }
 
-export function getKloCliPackageInfo(): KloCliPackageInfo {
+export function getKtxCliPackageInfo(): KtxCliPackageInfo {
   return {
-    name: '@klo/cli',
+    name: '@ktx/cli',
     version: '0.0.0-private',
-    contextPackageName: '@klo/context',
+    contextPackageName: '@ktx/context',
   };
 }
 
 async function runInit(
   args: { projectDir: string; projectName?: string; force: boolean },
-  io: KloCliIo,
+  io: KtxCliIo,
 ): Promise<number> {
-  const { initKloProject } = await import('@klo/context/project');
-  const result = await initKloProject({
+  const { initKtxProject } = await import('@ktx/context/project');
+  const result = await initKtxProject({
     projectDir: args.projectDir,
     projectName: args.projectName,
     force: args.force,
   });
 
-  io.stdout.write(`Initialized KLO project at ${result.projectDir}\n`);
+  io.stdout.write(`Initialized KTX project at ${result.projectDir}\n`);
   io.stdout.write(`Config: ${result.configPath}\n`);
   io.stdout.write(`Commit: ${result.commitHash ?? 'none'}\n`);
   return 0;
@@ -69,21 +69,21 @@ async function runInit(
 
 export async function runInitForCommander(
   args: { projectDir: string; projectName?: string; force: boolean },
-  io: KloCliIo,
+  io: KtxCliIo,
 ): Promise<number> {
   return await runInit(args, io);
 }
 
-export async function runKloCli(
+export async function runKtxCli(
   argv = process.argv.slice(2),
-  io: KloCliIo = process,
-  deps: KloCliDeps = {},
+  io: KtxCliIo = process,
+  deps: KtxCliDeps = {},
 ): Promise<number> {
-  const info = getKloCliPackageInfo();
-  profileMark('runtime:runKloCli');
-  const { runCommanderKloCli } = await profileSpan('import ./cli-program.js', () => import('./cli-program.js'));
+  const info = getKtxCliPackageInfo();
+  profileMark('runtime:runKtxCli');
+  const { runCommanderKtxCli } = await profileSpan('import ./cli-program.js', () => import('./cli-program.js'));
 
-  return await runCommanderKloCli(argv, io, deps, info, {
+  return await runCommanderKtxCli(argv, io, deps, info, {
     runInit: runInitForCommander,
   });
 }

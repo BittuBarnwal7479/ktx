@@ -8,7 +8,7 @@ describe('fetchDbtRepo', () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-dbt-fetch-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-dbt-fetch-'));
   });
 
   afterEach(async () => {

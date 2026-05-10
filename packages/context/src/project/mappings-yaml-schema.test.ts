@@ -6,7 +6,7 @@ import {
   parseMetabaseMappingBootstrap,
 } from './mappings-yaml-schema.js';
 
-describe('klo.yaml mapping bootstrap schema', () => {
+describe('ktx.yaml mapping bootstrap schema', () => {
   it('parses Metabase mapping intent with CLI syncMode default ALL', () => {
     const bootstrap = parseMetabaseMappingBootstrap('prod-metabase', {
       driver: 'metabase',
@@ -14,7 +14,7 @@ describe('klo.yaml mapping bootstrap schema', () => {
         databaseMappings: { '1': 'prod-warehouse', '2': null },
         syncEnabled: { '1': true, '2': false },
         selections: { collections: [12], items: [345] },
-        defaultTagNames: ['klo', 'prod'],
+        defaultTagNames: ['ktx', 'prod'],
       },
     });
 
@@ -25,7 +25,7 @@ describe('klo.yaml mapping bootstrap schema', () => {
       syncEnabled: { '1': true, '2': false },
       syncMode: 'ALL',
       selections: { collections: [12], items: [345] },
-      defaultTagNames: ['klo', 'prod'],
+      defaultTagNames: ['ktx', 'prod'],
     });
   });
 

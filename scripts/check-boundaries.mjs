@@ -6,7 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const codeExtensions = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.py']);
 const runtimeAssetPatterns = [/^packages\/[^/]+\/prompts\/.+\.md$/, /^packages\/[^/]+\/skills\/.+\.md$/];
-const identifierSkipPrefixes = ['docs/', 'examples/', 'python/klo-sl/plans/', 'python/klo-sl/openspec/'];
+const identifierSkipPrefixes = ['docs/', 'examples/', 'python/ktx-sl/plans/', 'python/ktx-sl/openspec/'];
 const forbiddenIdentifierTerms = ['kae' + 'lio', 'Kae' + 'lio', 'KAE' + 'LIO_'];
 
 const appImportPatterns = [
@@ -47,7 +47,7 @@ const llmBoundaryPatterns = [
   },
   {
     label: 'legacy scan LLM provider port',
-    pattern: /\bKloScanLlmPort\b/,
+    pattern: /\bKtxScanLlmPort\b/,
   },
   {
     label: 'legacy gateway LLM provider helper',
@@ -120,7 +120,7 @@ export function scanFileContent(relativePath, content) {
         violations.push({
           file: normalizedPath,
           kind: 'llm-boundary',
-          message: `Forbidden ${llmBoundaryPattern.label}; use @klo/llm`,
+          message: `Forbidden ${llmBoundaryPattern.label}; use @ktx/llm`,
         });
       }
     }
@@ -132,7 +132,7 @@ export function scanFileContent(relativePath, content) {
         violations.push({
           file: normalizedPath,
           kind: 'llm-boundary',
-          message: `Forbidden ${llmBoundaryPattern.label}; use getModel(role) inside @klo/context`,
+          message: `Forbidden ${llmBoundaryPattern.label}; use getModel(role) inside @ktx/context`,
         });
       }
     }
@@ -197,7 +197,7 @@ async function main() {
   const violations = await collectViolations(rootDir);
 
   if (violations.length === 0) {
-    process.stdout.write('klo boundary check passed\n');
+    process.stdout.write('ktx boundary check passed\n');
     return;
   }
 

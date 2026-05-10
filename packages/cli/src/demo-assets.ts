@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomBytes } from 'node:crypto';
-import type { MemoryFlowReplayInput } from '@klo/context/ingest/memory-flow';
+import type { MemoryFlowReplayInput } from '@ktx/context/ingest/memory-flow';
 import { loadDemoReplayFile, loadLatestDemoReplay } from './demo-replay-store.js';
 
 interface DemoProjectResult {
@@ -33,7 +33,7 @@ export const DEMO_REPLAY_FILE = 'replay.memory-flow.v1.json';
 export const DEMO_FULL_JOB_ID = 'demo-full-ingest';
 
 const REQUIRED_BASE_PROJECT_PATHS = [
-  'klo.yaml',
+  'ktx.yaml',
   'demo.db',
   'state.sqlite',
   join('replays', DEMO_REPLAY_FILE),
@@ -70,7 +70,7 @@ async function exists(path: string): Promise<boolean> {
 
 export function defaultDemoProjectDir(): string {
   const suffix = randomBytes(4).toString('hex');
-  return join(tmpdir(), `klo-demo-${suffix}`);
+  return join(tmpdir(), `ktx-demo-${suffix}`);
 }
 
 export async function inspectDemoProjectState(projectDir: string): Promise<DemoProjectState> {
@@ -97,10 +97,10 @@ export async function inspectDemoProjectState(projectDir: string): Promise<DemoP
 export async function resetDemoProject(options: EnsureDemoProjectOptions): Promise<DemoProjectResult> {
   const projectDir = resolve(options.projectDir);
   if (!options.force) {
-    throw new Error(`klo setup demo reset is destructive; pass --force to recreate ${projectDir}`);
+    throw new Error(`ktx setup demo reset is destructive; pass --force to recreate ${projectDir}`);
   }
 
-  const preservedConfig = await readExistingConfig(join(projectDir, 'klo.yaml'));
+  const preservedConfig = await readExistingConfig(join(projectDir, 'ktx.yaml'));
   const result = await ensureDemoProject({ projectDir, force: true });
   if (preservedConfig !== null) {
     await writeFile(result.configPath, preservedConfig, 'utf-8');
@@ -118,7 +118,7 @@ async function readExistingConfig(configPath: string): Promise<string | null> {
 
 function demoConfig(databasePath: string): string {
   return [
-    'project: klo-demo-orbit',
+    'project: ktx-demo-orbit',
     'connections:',
     `  ${DEMO_CONNECTION_ID}:`,
     '    driver: sqlite',
@@ -129,7 +129,7 @@ function demoConfig(databasePath: string): string {
     '  search: sqlite-fts5',
     '  git:',
     '    auto_commit: true',
-    '    author: klo <klo@example.com>',
+    '    author: ktx <ktx@example.com>',
     'llm:',
     '  provider:',
     '    backend: anthropic',
@@ -185,7 +185,7 @@ async function assertPackagedSeededAssetsPresent(): Promise<void> {
 
 export async function ensureDemoProject(options: EnsureDemoProjectOptions): Promise<DemoProjectResult> {
   const projectDir = resolve(options.projectDir);
-  const configPath = join(projectDir, 'klo.yaml');
+  const configPath = join(projectDir, 'ktx.yaml');
   if (!options.force && (await exists(configPath))) {
     throw new Error(`Demo project already exists at ${projectDir}; pass --force to recreate it`);
   }
@@ -237,7 +237,7 @@ export async function ensureSeededDemoProject(options: EnsureDemoProjectOptions)
     if (!options.force && error instanceof Error && error.message.includes('Demo project already exists')) {
       return {
         projectDir,
-        configPath: join(projectDir, 'klo.yaml'),
+        configPath: join(projectDir, 'ktx.yaml'),
         databasePath: join(projectDir, 'demo.db'),
         replayPath: join(projectDir, 'replays', DEMO_REPLAY_FILE),
       };

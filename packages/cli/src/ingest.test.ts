@@ -2,7 +2,7 @@ import { EventEmitter } from 'node:events';
 import { access, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { AgentRunnerService, type RunLoopParams } from '@klo/context/agent';
+import { AgentRunnerService, type RunLoopParams } from '@ktx/context/agent';
 import {
   LocalLookerRuntimeStore,
   LocalMetabaseSourceStateReader,
@@ -22,10 +22,10 @@ import {
   type RunLocalIngestOptions,
   type SourceAdapter,
   type SqliteBundleIngestStore,
-} from '@klo/context/ingest';
-import { initKloProject, kloLocalStateDbPath, loadKloProject } from '@klo/context/project';
+} from '@ktx/context/ingest';
+import { initKtxProject, ktxLocalStateDbPath, loadKtxProject } from '@ktx/context/project';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { type KloIngestArgs, runKloIngest } from './ingest.js';
+import { type KtxIngestArgs, runKtxIngest } from './ingest.js';
 import { resetVizFallbackWarningsForTest } from './viz-fallback.js';
 
 function makeIo(
@@ -104,7 +104,7 @@ function makeIo(
 
 async function writeWarehouseConfig(projectDir: string): Promise<void> {
   await writeFile(
-    join(projectDir, 'klo.yaml'),
+    join(projectDir, 'ktx.yaml'),
     [
       'project: warehouse',
       'connections:',
@@ -123,7 +123,7 @@ async function writeWarehouseConfig(projectDir: string): Promise<void> {
 
 async function writeMetabaseConfig(projectDir: string): Promise<void> {
   await writeFile(
-    join(projectDir, 'klo.yaml'),
+    join(projectDir, 'ktx.yaml'),
     [
       'project: warehouse',
       'connections:',
@@ -438,9 +438,9 @@ type SyncModeCase = {
 
 async function runPublicMetabaseSyncModeCase(tempDir: string, input: SyncModeCase): Promise<void> {
   const projectDir = join(tempDir, `metabase-sync-mode-${input.name}`);
-  await initKloProject({ projectDir, projectName: `metabase-sync-mode-${input.name}` });
+  await initKtxProject({ projectDir, projectName: `metabase-sync-mode-${input.name}` });
   await writeFile(
-    join(projectDir, 'klo.yaml'),
+    join(projectDir, 'ktx.yaml'),
     [
       `project: metabase-sync-mode-${input.name}`,
       'connections:',
@@ -461,8 +461,8 @@ async function runPublicMetabaseSyncModeCase(tempDir: string, input: SyncModeCas
     'utf-8',
   );
 
-  const project = await loadKloProject({ projectDir });
-  const store = new LocalMetabaseSourceStateReader({ dbPath: kloLocalStateDbPath(project) });
+  const project = await loadKtxProject({ projectDir });
+  const store = new LocalMetabaseSourceStateReader({ dbPath: ktxLocalStateDbPath(project) });
   await store.replaceSourceState({
     connectionId: 'prod-metabase',
     syncMode: input.syncMode,
@@ -490,7 +490,7 @@ async function runPublicMetabaseSyncModeCase(tempDir: string, input: SyncModeCas
   const io = makeIo();
 
   await expect(
-    runKloIngest(
+    runKtxIngest(
       {
         command: 'run',
         projectDir,
@@ -640,10 +640,10 @@ function localFakeBundleReport(jobId: string, overrides: Partial<IngestReportSna
 }
 
 async function localBundleStore(projectDir: string, ids: [string, string]): Promise<SqliteBundleIngestStore> {
-  const { SqliteBundleIngestStore } = await import('@klo/context/ingest');
-  const project = await loadKloProject({ projectDir });
+  const { SqliteBundleIngestStore } = await import('@ktx/context/ingest');
+  const project = await loadKtxProject({ projectDir });
   return new SqliteBundleIngestStore({
-    dbPath: kloLocalStateDbPath(project),
+    dbPath: ktxLocalStateDbPath(project),
     idFactory: (() => {
       let index = 0;
       return () => ids[index++] ?? `generated-${index}`;
@@ -696,7 +696,7 @@ function emitLiveLocalMemoryFlow(memoryFlow: MemoryFlowEventSink | undefined): v
   memoryFlow?.finish('done');
 }
 
-describe('runKloIngest', () => {
+describe('runKtxIngest', () => {
   let tempDir: string;
   let originalTerm: string | undefined;
 
@@ -704,7 +704,7 @@ describe('runKloIngest', () => {
     resetVizFallbackWarningsForTest();
     originalTerm = process.env.TERM;
     process.env.TERM = 'xterm-256color';
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-cli-ingest-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-cli-ingest-'));
   });
 
   afterEach(async () => {
@@ -718,7 +718,7 @@ describe('runKloIngest', () => {
 
   it('runs local ingest and reads status', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeWarehouseConfig(projectDir);
     const sourceDir = join(tempDir, 'source');
     await mkdir(join(sourceDir, 'orders'), { recursive: true });
@@ -731,7 +731,7 @@ describe('runKloIngest', () => {
 
     const runIo = makeIo();
     await expect(
-      runKloIngest(
+      runKtxIngest(
         {
           command: 'run',
           projectDir,
@@ -757,7 +757,7 @@ describe('runKloIngest', () => {
 
     const statusIo = makeIo();
     await expect(
-      runKloIngest({ command: 'status', projectDir, runId: 'cli-local-run-1', outputMode: 'plain' }, statusIo.io),
+      runKtxIngest({ command: 'status', projectDir, runId: 'cli-local-run-1', outputMode: 'plain' }, statusIo.io),
     ).resolves.toBe(0);
 
     expect(statusIo.stdout()).toContain('Report: report-live-1');
@@ -770,7 +770,7 @@ describe('runKloIngest', () => {
 
   it('routes metabase scheduled pulls to the fan-out runner and prints child summaries', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeMetabaseConfig(projectDir);
     const io = makeIo();
     const report = localFakeBundleReport('metabase-child-1', {
@@ -782,7 +782,7 @@ describe('runKloIngest', () => {
     });
 
     await expect(
-      runKloIngest(
+      runKtxIngest(
         {
           command: 'run',
           projectDir,
@@ -828,7 +828,7 @@ describe('runKloIngest', () => {
 
   it('prints Metabase fan-out progress before the final summary', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeMetabaseConfig(projectDir);
     const io = makeIo();
     const report = localFakeBundleReport('metabase-child-1', {
@@ -840,7 +840,7 @@ describe('runKloIngest', () => {
     });
 
     await expect(
-      runKloIngest(
+      runKtxIngest(
         {
           command: 'run',
           projectDir,
@@ -908,9 +908,9 @@ describe('runKloIngest', () => {
 
   it('runs Metabase scheduled ingest through the public CLI command path with real fan-out', async () => {
     const projectDir = join(tempDir, 'metabase-cli-project');
-    await initKloProject({ projectDir, projectName: 'metabase-cli' });
+    await initKtxProject({ projectDir, projectName: 'metabase-cli' });
     await writeFile(
-      join(projectDir, 'klo.yaml'),
+      join(projectDir, 'ktx.yaml'),
       [
         'project: metabase-cli',
         'connections:',
@@ -933,12 +933,12 @@ describe('runKloIngest', () => {
       ].join('\n'),
       'utf-8',
     );
-    const project = await loadKloProject({ projectDir });
-    const store = new LocalMetabaseSourceStateReader({ dbPath: kloLocalStateDbPath(project) });
+    const project = await loadKtxProject({ projectDir });
+    const store = new LocalMetabaseSourceStateReader({ dbPath: ktxLocalStateDbPath(project) });
     await store.replaceSourceState({
       connectionId: 'prod-metabase',
       syncMode: 'ALL',
-      defaultTagNames: ['klo'],
+      defaultTagNames: ['ktx'],
       selections: [],
       mappings: [
         {
@@ -969,7 +969,7 @@ describe('runKloIngest', () => {
     const io = makeIo();
 
     await expect(
-      runKloIngest(
+      runKtxIngest(
         {
           command: 'run',
           projectDir,
@@ -1001,7 +1001,7 @@ describe('runKloIngest', () => {
 
     const statusIo = makeIo();
     await expect(
-      runKloIngest(
+      runKtxIngest(
         { command: 'status', projectDir, runId: 'metabase-child-1', outputMode: 'plain' },
         statusIo.io,
       ),
@@ -1046,12 +1046,12 @@ describe('runKloIngest', () => {
 
   it('prints metabase fan-out JSON results', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeMetabaseConfig(projectDir);
     const io = makeIo();
 
     await expect(
-      runKloIngest(
+      runKtxIngest(
         {
           command: 'run',
           projectDir,
@@ -1081,12 +1081,12 @@ describe('runKloIngest', () => {
 
   it('rejects source-dir uploads through the metabase fan-out route', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeMetabaseConfig(projectDir);
     const io = makeIo();
 
     await expect(
-      runKloIngest(
+      runKtxIngest(
         {
           command: 'run',
           projectDir,
@@ -1105,13 +1105,13 @@ describe('runKloIngest', () => {
     ).resolves.toBe(1);
 
     expect(io.stderr()).toContain('source-dir uploads are not supported for the Metabase fan-out adapter');
-    expect(io.stderr()).not.toContain('klo dev ingest run requires llm.provider.backend');
+    expect(io.stderr()).not.toContain('ktx dev ingest run requires llm.provider.backend');
     expect(io.stdout()).toBe('');
   });
 
   it('prints previous run and diff summary for local ingest results', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeWarehouseConfig(projectDir);
     const sourceDir = join(tempDir, 'source');
     await mkdir(join(sourceDir, 'orders'), { recursive: true });
@@ -1120,7 +1120,7 @@ describe('runKloIngest', () => {
 
     const io = makeIo();
     await expect(
-      runKloIngest(
+      runKtxIngest(
         {
           command: 'run',
           projectDir,
@@ -1145,15 +1145,15 @@ describe('runKloIngest', () => {
 
   it('passes the debug LLM request file to local ingest runs', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeWarehouseConfig(projectDir);
     const runLocalIngest = vi.fn(async (input: RunLocalIngestOptions) =>
       completedLocalBundleRun(input, 'job-debug'),
     );
     const io = makeIo();
-    const debugFile = join(projectDir, '.klo', 'llm-debug.jsonl');
+    const debugFile = join(projectDir, '.ktx', 'llm-debug.jsonl');
 
-    const exitCode = await runKloIngest(
+    const exitCode = await runKtxIngest(
       {
         command: 'run',
         projectDir,
@@ -1172,7 +1172,7 @@ describe('runKloIngest', () => {
 
   it('passes daemon database introspection URL to default local ingest adapters', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeWarehouseConfig(projectDir);
     const sourceDir = join(tempDir, 'source');
     await mkdir(join(sourceDir, 'orders'), { recursive: true });
@@ -1187,7 +1187,7 @@ describe('runKloIngest', () => {
     const io = makeIo();
 
     await expect(
-      runKloIngest(
+      runKtxIngest(
         {
           command: 'run',
           projectDir,
@@ -1196,7 +1196,7 @@ describe('runKloIngest', () => {
           sourceDir,
           databaseIntrospectionUrl: 'http://127.0.0.1:8765',
           outputMode: 'plain',
-        } satisfies KloIngestArgs,
+        } satisfies KtxIngestArgs,
         io.io,
         {
           createAdapters,
@@ -1220,9 +1220,9 @@ describe('runKloIngest', () => {
 
   it('passes the target connection id when constructing local historic-sql adapters', async () => {
     const projectDir = join(tempDir, 'historic-sql-project');
-    await initKloProject({ projectDir, projectName: 'historic-sql-project' });
+    await initKtxProject({ projectDir, projectName: 'historic-sql-project' });
     await writeFile(
-      join(projectDir, 'klo.yaml'),
+      join(projectDir, 'ktx.yaml'),
       [
         'project: historic-sql-project',
         'connections:',
@@ -1250,7 +1250,7 @@ describe('runKloIngest', () => {
     const io = makeIo();
 
     await expect(
-      runKloIngest(
+      runKtxIngest(
         {
           command: 'run',
           projectDir,
@@ -1281,7 +1281,7 @@ describe('runKloIngest', () => {
 
   it('passes local Looker pull-config options and agent runner into scheduled ingest for Looker scheduled ingest', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeWarehouseConfig(projectDir);
     const pullConfigOptions = {
       looker: {
@@ -1299,14 +1299,14 @@ describe('runKloIngest', () => {
     const io = makeIo();
 
     await expect(
-      runKloIngest(
+      runKtxIngest(
         {
           command: 'run',
           projectDir,
           connectionId: 'warehouse',
           adapter: 'fake',
           outputMode: 'plain',
-        } satisfies KloIngestArgs,
+        } satisfies KtxIngestArgs,
         io.io,
         {
           createAdapters,
@@ -1335,9 +1335,9 @@ describe('runKloIngest', () => {
 
   it('runs Looker scheduled ingest through the public CLI command path', async () => {
     const projectDir = join(tempDir, 'looker-project');
-    await initKloProject({ projectDir, projectName: 'looker-cli' });
+    await initKtxProject({ projectDir, projectName: 'looker-cli' });
     await writeFile(
-      join(projectDir, 'klo.yaml'),
+      join(projectDir, 'ktx.yaml'),
       [
         'project: looker-cli',
         'connections:',
@@ -1357,8 +1357,8 @@ describe('runKloIngest', () => {
       ].join('\n'),
       'utf-8',
     );
-    const project = await loadKloProject({ projectDir });
-    const store = new LocalLookerRuntimeStore({ dbPath: kloLocalStateDbPath(project) });
+    const project = await loadKtxProject({ projectDir });
+    const store = new LocalLookerRuntimeStore({ dbPath: ktxLocalStateDbPath(project) });
     await store.setCursors('prod-looker', {
       dashboardsLastSyncedAt: null,
       looksLastSyncedAt: null,
@@ -1366,7 +1366,7 @@ describe('runKloIngest', () => {
     await store.upsertConnectionMapping({
       lookerConnectionId: 'prod-looker',
       lookerConnectionName: 'analytics',
-      kloConnectionId: 'prod-warehouse',
+      ktxConnectionId: 'prod-warehouse',
       source: 'cli',
     });
     const runtimeClient = makeCliLookerRuntimeClient();
@@ -1375,7 +1375,7 @@ describe('runKloIngest', () => {
     const io = makeIo();
 
     await expect(
-      runKloIngest(
+      runKtxIngest(
         {
           command: 'run',
           projectDir,
@@ -1419,7 +1419,7 @@ describe('runKloIngest', () => {
 
     const statusIo = makeIo();
     await expect(
-      runKloIngest(
+      runKtxIngest(
         { command: 'status', projectDir, runId: 'cli-looker-job', outputMode: 'plain' },
         statusIo.io,
       ),
@@ -1431,7 +1431,7 @@ describe('runKloIngest', () => {
 
   it('renders live memory-flow frames for run --viz when stdout is interactive', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeWarehouseConfig(projectDir);
     const sourceDir = join(tempDir, 'source');
     await mkdir(join(sourceDir, 'orders'), { recursive: true });
@@ -1462,7 +1462,7 @@ describe('runKloIngest', () => {
     const startLiveMemoryFlow = vi.fn(async (_input: MemoryFlowReplayInput, _io: unknown) => null);
 
     await expect(
-      runKloIngest(
+      runKtxIngest(
         {
           command: 'run',
           projectDir,
@@ -1483,15 +1483,15 @@ describe('runKloIngest', () => {
 
     expect(runLocal).toHaveBeenCalledWith(expect.objectContaining({ memoryFlow: expect.any(Object) }));
     expect(io.stdout()).toContain('\u001b[2J\u001b[H');
-    expect((io.stdout().match(/KLO memory flow/g) ?? []).length).toBeGreaterThan(1);
-    expect(io.stdout()).toContain('KLO memory flow  warehouse/fake  done');
+    expect((io.stdout().match(/KTX memory flow/g) ?? []).length).toBeGreaterThan(1);
+    expect(io.stdout()).toContain('KTX memory flow  warehouse/fake  done');
     expect(io.stdout()).toContain('fake-orders');
     expect(io.stderr()).toBe('');
   });
 
   it('uses the TUI live session for run --viz when stdin and stdout are interactive', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeWarehouseConfig(projectDir);
     const sourceDir = join(tempDir, 'source');
     await mkdir(join(sourceDir, 'orders'), { recursive: true });
@@ -1510,7 +1510,7 @@ describe('runKloIngest', () => {
     const io = makeIo({ isTTY: true, stdinIsTTY: true, columns: 120 });
 
     await expect(
-      runKloIngest(
+      runKtxIngest(
         {
           command: 'run',
           projectDir,
@@ -1539,13 +1539,13 @@ describe('runKloIngest', () => {
     expect(liveSession.update).toHaveBeenCalled();
     expect(liveSession.close).toHaveBeenCalledTimes(1);
     expect(io.stdout()).not.toContain('\u001b[2J\u001b[H');
-    expect(io.stdout()).not.toContain('KLO memory flow');
+    expect(io.stdout()).not.toContain('KTX memory flow');
     expect(io.stderr()).toBe('');
   });
 
   it('prints a final plain summary after live viz completes', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeWarehouseConfig(projectDir);
     const io = makeIo({ isTTY: true, stdinIsTTY: true, columns: 120 });
     const liveSession = {
@@ -1560,7 +1560,7 @@ describe('runKloIngest', () => {
     });
 
     await expect(
-      runKloIngest(
+      runKtxIngest(
         {
           command: 'run',
           projectDir,
@@ -1580,7 +1580,7 @@ describe('runKloIngest', () => {
 
   it('falls back to text live rendering when the TUI live session is unavailable', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeWarehouseConfig(projectDir);
     const sourceDir = join(tempDir, 'source');
     await mkdir(join(sourceDir, 'orders'), { recursive: true });
@@ -1594,7 +1594,7 @@ describe('runKloIngest', () => {
     const io = makeIo({ isTTY: true, stdinIsTTY: true, columns: 120 });
 
     await expect(
-      runKloIngest(
+      runKtxIngest(
         {
           command: 'run',
           projectDir,
@@ -1614,12 +1614,12 @@ describe('runKloIngest', () => {
 
     expect(startLiveMemoryFlow).toHaveBeenCalledTimes(1);
     expect(io.stdout()).toContain('\u001b[2J\u001b[H');
-    expect(io.stdout()).toContain('KLO memory flow  warehouse/fake  done');
+    expect(io.stdout()).toContain('KTX memory flow  warehouse/fake  done');
   });
 
   it('falls back to text live rendering when TUI startup fails with a redacted warning', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeWarehouseConfig(projectDir);
     const sourceDir = join(tempDir, 'source');
     await mkdir(join(sourceDir, 'orders'), { recursive: true });
@@ -1638,7 +1638,7 @@ describe('runKloIngest', () => {
     const io = makeIo({ isTTY: true, stdinIsTTY: true, columns: 120 });
 
     await expect(
-      runKloIngest(
+      runKtxIngest(
         {
           command: 'run',
           projectDir,
@@ -1657,13 +1657,13 @@ describe('runKloIngest', () => {
     ).resolves.toBe(0);
 
     expect(io.stderr()).toContain('TUI visualization unavailable: Failed [redacted-url] [redacted]');
-    expect(io.stdout()).toContain('KLO memory flow  warehouse/fake  done');
+    expect(io.stdout()).toContain('KTX memory flow  warehouse/fake  done');
     expect(io.stdout()).toContain('\u001b[2J\u001b[H');
   });
 
   it('does not start live TUI when run --viz disables input', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeWarehouseConfig(projectDir);
     const sourceDir = join(tempDir, 'source');
     await mkdir(join(sourceDir, 'orders'), { recursive: true });
@@ -1680,7 +1680,7 @@ describe('runKloIngest', () => {
     const io = makeIo({ isTTY: true, stdinIsTTY: true, columns: 120 });
 
     await expect(
-      runKloIngest(
+      runKtxIngest(
         {
           command: 'run',
           projectDir,
@@ -1697,12 +1697,12 @@ describe('runKloIngest', () => {
 
     expect(startLiveMemoryFlow).not.toHaveBeenCalled();
     expect(runLocal).toHaveBeenCalledWith(expect.not.objectContaining({ memoryFlow: expect.anything() }));
-    expect(io.stdout()).toContain('KLO memory flow  warehouse/fake  done');
+    expect(io.stdout()).toContain('KTX memory flow  warehouse/fake  done');
   });
 
   it('does not attach a live memory-flow sink for plain run output', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeWarehouseConfig(projectDir);
     const sourceDir = join(tempDir, 'source');
     await mkdir(join(sourceDir, 'orders'), { recursive: true });
@@ -1712,7 +1712,7 @@ describe('runKloIngest', () => {
     const io = makeIo({ isTTY: true });
 
     await expect(
-      runKloIngest(
+      runKtxIngest(
         {
           command: 'run',
           projectDir,
@@ -1728,12 +1728,12 @@ describe('runKloIngest', () => {
 
     expect(runLocal).toHaveBeenCalledWith(expect.not.objectContaining({ memoryFlow: expect.anything() }));
     expect(io.stdout()).toContain('Job: plain-run');
-    expect(io.stdout()).not.toContain('KLO memory flow');
+    expect(io.stdout()).not.toContain('KTX memory flow');
   });
 
   it('falls back to plain run output for run --viz when stdout is not interactive', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeWarehouseConfig(projectDir);
     const sourceDir = join(tempDir, 'source');
     await mkdir(join(sourceDir, 'orders'), { recursive: true });
@@ -1742,7 +1742,7 @@ describe('runKloIngest', () => {
     const io = makeIo({ isTTY: false });
     const runLocal = vi.fn(async (input: RunLocalIngestOptions) => completedLocalBundleRun(input, 'non-tty-viz-run'));
     await expect(
-      runKloIngest(
+      runKtxIngest(
         {
           command: 'run',
           projectDir,
@@ -1760,7 +1760,7 @@ describe('runKloIngest', () => {
     ).resolves.toBe(0);
 
     expect(io.stdout()).toContain('Job: non-tty-viz-run');
-    expect(io.stdout()).not.toContain('KLO memory flow');
+    expect(io.stdout()).not.toContain('KTX memory flow');
     expect(io.stderr()).toContain(
       'Visualization requested but stdout is not an interactive terminal; printing plain output.',
     );
@@ -1768,7 +1768,7 @@ describe('runKloIngest', () => {
 
   it('falls back to plain run output for run --viz when stdin raw mode is unavailable', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeWarehouseConfig(projectDir);
     const sourceDir = join(tempDir, 'source');
     await mkdir(join(sourceDir, 'orders'), { recursive: true });
@@ -1783,7 +1783,7 @@ describe('runKloIngest', () => {
     }));
 
     await expect(
-      runKloIngest(
+      runKtxIngest(
         {
           command: 'run',
           projectDir,
@@ -1804,7 +1804,7 @@ describe('runKloIngest', () => {
     expect(startLiveMemoryFlow).not.toHaveBeenCalled();
     expect(runLocal).toHaveBeenCalledWith(expect.not.objectContaining({ memoryFlow: expect.anything() }));
     expect(io.stdout()).toContain('Job: raw-missing-viz-run');
-    expect(io.stdout()).not.toContain('KLO memory flow');
+    expect(io.stdout()).not.toContain('KTX memory flow');
     expect(io.stderr()).toContain(
       'Visualization requested but stdin raw mode is unavailable; printing plain output.',
     );
@@ -1812,11 +1812,11 @@ describe('runKloIngest', () => {
 
   it('returns an error code for missing status', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     const io = makeIo();
 
     await expect(
-      runKloIngest({ command: 'status', projectDir, runId: 'missing-run', outputMode: 'plain' }, io.io),
+      runKtxIngest({ command: 'status', projectDir, runId: 'missing-run', outputMode: 'plain' }, io.io),
     ).resolves.toBe(1);
 
     expect(io.stderr()).toContain('Local ingest run or report "missing-run" was not found');
@@ -1824,13 +1824,13 @@ describe('runKloIngest', () => {
 
   it('uses the latest local ingest report when status has no run id', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeWarehouseConfig(projectDir);
     await persistLocalBundleReport(projectDir, localFakeBundleReport('older-run'));
     await persistLocalBundleReport(projectDir, localFakeBundleReport('newer-run'));
     const io = makeIo();
 
-    await expect(runKloIngest({ command: 'status', projectDir, outputMode: 'plain' }, io.io)).resolves.toBe(0);
+    await expect(runKtxIngest({ command: 'status', projectDir, outputMode: 'plain' }, io.io)).resolves.toBe(0);
 
     expect(io.stdout()).toContain('Run: run-newer-run');
     expect(io.stdout()).toContain('Job: newer-run');
@@ -1839,28 +1839,28 @@ describe('runKloIngest', () => {
 
   it('renders the latest local ingest report through watch when run id is omitted', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeWarehouseConfig(projectDir);
     await persistLocalBundleReport(projectDir, localFakeBundleReport('watch-latest'));
     const io = makeIo({ isTTY: true });
 
     await expect(
-      runKloIngest({ command: 'watch', projectDir, outputMode: 'viz', inputMode: 'disabled' }, io.io),
+      runKtxIngest({ command: 'watch', projectDir, outputMode: 'viz', inputMode: 'disabled' }, io.io),
     ).resolves.toBe(0);
 
-    expect(io.stdout()).toContain('KLO memory flow  warehouse/fake  done');
+    expect(io.stdout()).toContain('KTX memory flow  warehouse/fake  done');
     expect(io.stdout()).toContain('Run: run-watch-latest');
     expect(io.stderr()).toBe('');
   });
 
   it('renders report-file replay through the memory-flow TUI', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     const reportFile = await writeBundleReportFile(tempDir);
     const io = makeIo({ isTTY: true });
 
     await expect(
-      runKloIngest(
+      runKtxIngest(
         {
           command: 'replay',
           projectDir,
@@ -1873,7 +1873,7 @@ describe('runKloIngest', () => {
       ),
     ).resolves.toBe(0);
 
-    expect(io.stdout()).toContain('KLO memory flow  warehouse/metabase  done');
+    expect(io.stdout()).toContain('KTX memory flow  warehouse/metabase  done');
     expect(io.stdout()).toContain('Saved 2 memories from 2 raw files');
     expect(io.stdout()).toContain('Commit: abc12345  Run: run-1  Report: report-1');
     expect(io.stdout()).toContain('SOURCE');
@@ -1884,12 +1884,12 @@ describe('runKloIngest', () => {
 
   it('prints report-file JSON without looking up local ingest status', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     const reportFile = await writeBundleReportFile(tempDir);
     const io = makeIo();
 
     await expect(
-      runKloIngest({ command: 'status', projectDir, runId: 'report-1', reportFile, outputMode: 'json' }, io.io),
+      runKtxIngest({ command: 'status', projectDir, runId: 'report-1', reportFile, outputMode: 'json' }, io.io),
     ).resolves.toBe(0);
 
     const parsed = JSON.parse(io.stdout());
@@ -1905,13 +1905,13 @@ describe('runKloIngest', () => {
 
   it('routes interactive report-file replay through the stored TUI renderer', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     const reportFile = await writeBundleReportFile(tempDir);
     const io = makeIo({ isTTY: true, stdinIsTTY: true, columns: 120 });
     const renderStoredMemoryFlow = vi.fn(async (_input: MemoryFlowReplayInput, _io: unknown) => true);
 
     await expect(
-      runKloIngest(
+      runKtxIngest(
         {
           command: 'replay',
           projectDir,
@@ -1937,12 +1937,12 @@ describe('runKloIngest', () => {
 
   it('rejects report-file replay when the requested id does not match the report', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     const reportFile = await writeBundleReportFile(tempDir);
     const io = makeIo();
 
     await expect(
-      runKloIngest({ command: 'replay', projectDir, runId: 'unrelated-id', reportFile, outputMode: 'plain' }, io.io),
+      runKtxIngest({ command: 'replay', projectDir, runId: 'unrelated-id', reportFile, outputMode: 'plain' }, io.io),
     ).resolves.toBe(1);
 
     expect(io.stderr()).toContain(
@@ -1953,7 +1953,7 @@ describe('runKloIngest', () => {
 
   it('renders memory-flow snapshot for status --viz when stdout is interactive', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeWarehouseConfig(projectDir);
     const sourceDir = join(tempDir, 'source');
     await mkdir(join(sourceDir, 'orders'), { recursive: true });
@@ -1963,13 +1963,13 @@ describe('runKloIngest', () => {
 
     const io = makeIo({ isTTY: true });
     await expect(
-      runKloIngest(
+      runKtxIngest(
         { command: 'status', projectDir, runId: 'viz-run-1', outputMode: 'viz', inputMode: 'disabled' },
         io.io,
       ),
     ).resolves.toBe(0);
 
-    expect(io.stdout()).toContain('KLO memory flow  warehouse/fake  done');
+    expect(io.stdout()).toContain('KTX memory flow  warehouse/fake  done');
     expect(io.stdout()).toContain('SOURCE');
     expect(io.stdout()).toContain('CHUNKS');
     expect(io.stdout()).toContain('WORKUNITS');
@@ -1979,7 +1979,7 @@ describe('runKloIngest', () => {
 
   it('uses the TUI renderer for stored status --viz when stdin and stdout are interactive', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeWarehouseConfig(projectDir);
     const sourceDir = join(tempDir, 'source');
     await mkdir(join(sourceDir, 'orders'), { recursive: true });
@@ -1991,7 +1991,7 @@ describe('runKloIngest', () => {
     const renderStoredMemoryFlow = vi.fn(async (_input: MemoryFlowReplayInput, _io: unknown) => true);
 
     await expect(
-      runKloIngest(
+      runKtxIngest(
         {
           command: 'status',
           projectDir,
@@ -2015,7 +2015,7 @@ describe('runKloIngest', () => {
 
   it('falls back to the text renderer when TUI declines stored status --viz', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeWarehouseConfig(projectDir);
     const sourceDir = join(tempDir, 'source');
     await mkdir(join(sourceDir, 'orders'), { recursive: true });
@@ -2027,7 +2027,7 @@ describe('runKloIngest', () => {
     const renderStoredMemoryFlow = vi.fn(async (_input: MemoryFlowReplayInput, _io: unknown) => false);
 
     await expect(
-      runKloIngest(
+      runKtxIngest(
         {
           command: 'status',
           projectDir,
@@ -2040,12 +2040,12 @@ describe('runKloIngest', () => {
     ).resolves.toBe(0);
 
     expect(renderStoredMemoryFlow).toHaveBeenCalledTimes(1);
-    expect(io.stdout()).toContain('KLO memory flow  warehouse/fake  done');
+    expect(io.stdout()).toContain('KTX memory flow  warehouse/fake  done');
   });
 
   it('does not use TUI for stored --viz when input is disabled', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeWarehouseConfig(projectDir);
     const sourceDir = join(tempDir, 'source');
     await mkdir(join(sourceDir, 'orders'), { recursive: true });
@@ -2057,7 +2057,7 @@ describe('runKloIngest', () => {
     const renderStoredMemoryFlow = vi.fn(async (_input: MemoryFlowReplayInput, _io: unknown) => true);
 
     await expect(
-      runKloIngest(
+      runKtxIngest(
         {
           command: 'replay',
           projectDir,
@@ -2071,12 +2071,12 @@ describe('runKloIngest', () => {
     ).resolves.toBe(0);
 
     expect(renderStoredMemoryFlow).not.toHaveBeenCalled();
-    expect(io.stdout()).toContain('KLO memory flow  warehouse/fake  done');
+    expect(io.stdout()).toContain('KTX memory flow  warehouse/fake  done');
   });
 
   it('falls back to plain status for stored --viz when stdin raw mode is unavailable', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeWarehouseConfig(projectDir);
     const sourceDir = join(tempDir, 'source');
     await mkdir(join(sourceDir, 'orders'), { recursive: true });
@@ -2088,7 +2088,7 @@ describe('runKloIngest', () => {
     const renderStoredMemoryFlow = vi.fn(async (_input: MemoryFlowReplayInput, _io: unknown) => true);
 
     await expect(
-      runKloIngest(
+      runKtxIngest(
         {
           command: 'replay',
           projectDir,
@@ -2103,7 +2103,7 @@ describe('runKloIngest', () => {
     expect(renderStoredMemoryFlow).not.toHaveBeenCalled();
     expect(io.stdout()).toContain('Run: run-raw-missing-stored-viz-run');
     expect(io.stdout()).toContain('Job: raw-missing-stored-viz-run');
-    expect(io.stdout()).not.toContain('KLO memory flow');
+    expect(io.stdout()).not.toContain('KTX memory flow');
     expect(io.stderr()).toContain(
       'Visualization requested but stdin raw mode is unavailable; printing plain output.',
     );
@@ -2111,7 +2111,7 @@ describe('runKloIngest', () => {
 
   it('keeps stored --viz snapshot-only when input is disabled', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeWarehouseConfig(projectDir);
     const sourceDir = join(tempDir, 'source');
     await mkdir(join(sourceDir, 'orders'), { recursive: true });
@@ -2121,7 +2121,7 @@ describe('runKloIngest', () => {
 
     const io = makeIo({ isTTY: true, columns: 120 });
     await expect(
-      runKloIngest(
+      runKtxIngest(
         {
           command: 'replay',
           projectDir,
@@ -2133,14 +2133,14 @@ describe('runKloIngest', () => {
       ),
     ).resolves.toBe(0);
 
-    expect(io.stdout()).toContain('KLO memory flow  warehouse/fake  done');
+    expect(io.stdout()).toContain('KTX memory flow  warehouse/fake  done');
     expect(io.stdout()).not.toContain('\u001b[2J\u001b[H');
     expect(io.stderr()).toBe('');
   });
 
   it('keeps disabled-input stored --viz snapshot output even when stdin raw mode is unavailable', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeWarehouseConfig(projectDir);
     const sourceDir = join(tempDir, 'source');
     await mkdir(join(sourceDir, 'orders'), { recursive: true });
@@ -2150,7 +2150,7 @@ describe('runKloIngest', () => {
 
     const io = makeIo({ isTTY: true, stdinIsTTY: true, rawMode: false, columns: 120 });
     await expect(
-      runKloIngest(
+      runKtxIngest(
         {
           command: 'replay',
           projectDir,
@@ -2162,14 +2162,14 @@ describe('runKloIngest', () => {
       ),
     ).resolves.toBe(0);
 
-    expect(io.stdout()).toContain('KLO memory flow  warehouse/fake  done');
+    expect(io.stdout()).toContain('KTX memory flow  warehouse/fake  done');
     expect(io.stdout()).not.toContain('\u001b[2J\u001b[H');
     expect(io.stderr()).toBe('');
   });
 
   it('degrades stored --viz snapshots to plain status when stdout is redirected even when input is disabled', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeWarehouseConfig(projectDir);
     const sourceDir = join(tempDir, 'source');
     await mkdir(join(sourceDir, 'orders'), { recursive: true });
@@ -2179,7 +2179,7 @@ describe('runKloIngest', () => {
 
     const io = makeIo({ isTTY: false });
     await expect(
-      runKloIngest(
+      runKtxIngest(
         {
           command: 'replay',
           projectDir,
@@ -2193,7 +2193,7 @@ describe('runKloIngest', () => {
 
     expect(io.stdout()).toContain('Run: run-redirected-no-input-viz-run');
     expect(io.stdout()).toContain('Job: redirected-no-input-viz-run');
-    expect(io.stdout()).not.toContain('KLO memory flow');
+    expect(io.stdout()).not.toContain('KTX memory flow');
     expect(io.stderr()).toContain(
       'Visualization requested but stdout is not an interactive terminal; printing plain output.',
     );
@@ -2201,7 +2201,7 @@ describe('runKloIngest', () => {
 
   it('degrades ingest replay --viz to plain status when TERM is dumb', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeWarehouseConfig(projectDir);
     const sourceDir = join(tempDir, 'source');
     await mkdir(join(sourceDir, 'orders'), { recursive: true });
@@ -2211,7 +2211,7 @@ describe('runKloIngest', () => {
 
     const io = makeIo({ isTTY: true });
     await expect(
-      runKloIngest(
+      runKtxIngest(
         { command: 'replay', projectDir, runId: 'dumb-terminal-viz-run', outputMode: 'viz' },
         io.io,
         { env: { ...process.env, TERM: 'dumb' } },
@@ -2220,7 +2220,7 @@ describe('runKloIngest', () => {
 
     expect(io.stdout()).toContain('Run: run-dumb-terminal-viz-run');
     expect(io.stdout()).toContain('Job: dumb-terminal-viz-run');
-    expect(io.stdout()).not.toContain('KLO memory flow');
+    expect(io.stdout()).not.toContain('KTX memory flow');
     expect(io.stderr()).toContain(
       'Visualization requested but TERM=dumb does not support the visual renderer; printing plain output.',
     );
@@ -2228,7 +2228,7 @@ describe('runKloIngest', () => {
 
   it('falls back to plain status for --viz when stdout is not interactive', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeWarehouseConfig(projectDir);
     const sourceDir = join(tempDir, 'source');
     await mkdir(join(sourceDir, 'orders'), { recursive: true });
@@ -2238,12 +2238,12 @@ describe('runKloIngest', () => {
 
     const io = makeIo({ isTTY: false });
     await expect(
-      runKloIngest({ command: 'replay', projectDir, runId: 'viz-run-2', outputMode: 'viz' }, io.io),
+      runKtxIngest({ command: 'replay', projectDir, runId: 'viz-run-2', outputMode: 'viz' }, io.io),
     ).resolves.toBe(0);
 
     expect(io.stdout()).toContain('Run: run-viz-run-2');
     expect(io.stdout()).toContain('Job: viz-run-2');
-    expect(io.stdout()).not.toContain('KLO memory flow');
+    expect(io.stdout()).not.toContain('KTX memory flow');
     expect(io.stderr()).toContain(
       'Visualization requested but stdout is not an interactive terminal; printing plain output.',
     );
@@ -2251,7 +2251,7 @@ describe('runKloIngest', () => {
 
   it('prints JSON for status --json', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeWarehouseConfig(projectDir);
     const sourceDir = join(tempDir, 'source');
     await mkdir(join(sourceDir, 'orders'), { recursive: true });
@@ -2261,7 +2261,7 @@ describe('runKloIngest', () => {
 
     const io = makeIo();
     await expect(
-      runKloIngest({ command: 'status', projectDir, runId: 'json-run-1', outputMode: 'json' }, io.io),
+      runKtxIngest({ command: 'status', projectDir, runId: 'json-run-1', outputMode: 'json' }, io.io),
     ).resolves.toBe(0);
 
     expect(JSON.parse(io.stdout())).toMatchObject({

@@ -1,5 +1,5 @@
-import type { AgentRunnerService } from '@klo/context/agent';
-import type { KloModelRole } from '@klo/llm';
+import type { AgentRunnerService } from '@ktx/context/agent';
+import type { KtxModelRole } from '@ktx/llm';
 import type { Tool } from 'ai';
 import type { CaptureSession, MemoryAction } from '../../memory/index.js';
 import { listTouchedSlSources, type TouchedSlSource } from '../../tools/index.js';
@@ -22,7 +22,7 @@ export interface WorkUnitExecutionDeps {
   buildToolSet: (wu: WorkUnit) => Record<string, Tool>;
   captureSession: CaptureSession;
   sessionActions: MemoryAction[];
-  modelRole: KloModelRole;
+  modelRole: KtxModelRole;
   stepBudget: number;
   sourceKey: string;
   connectionId: string;

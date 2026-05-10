@@ -1,16 +1,16 @@
-import type { KloLocalProject } from '../project/index.js';
+import type { KtxLocalProject } from '../project/index.js';
 import type {
-  KloConnectionDriver,
-  KloSchemaColumn,
-  KloSchemaForeignKey,
-  KloSchemaSnapshot,
-  KloSchemaTable,
+  KtxConnectionDriver,
+  KtxSchemaColumn,
+  KtxSchemaForeignKey,
+  KtxSchemaSnapshot,
+  KtxSchemaTable,
 } from './types.js';
 
 export interface ReadLocalScanStructuralSnapshotInput {
-  project: KloLocalProject;
+  project: KtxLocalProject;
   connectionId: string;
-  driver: KloConnectionDriver;
+  driver: KtxConnectionDriver;
   rawSourcesDir: string;
   extractedAtFallback: string;
 }
@@ -37,7 +37,7 @@ function optionalStringOrNull(value: unknown): string | null | undefined {
   return typeof value === 'string' ? value : null;
 }
 
-function parseColumn(rawColumn: unknown, path: string): KloSchemaColumn {
+function parseColumn(rawColumn: unknown, path: string): KtxSchemaColumn {
   if (
     !isRecord(rawColumn) ||
     typeof rawColumn.name !== 'string' ||
@@ -48,7 +48,7 @@ function parseColumn(rawColumn: unknown, path: string): KloSchemaColumn {
       rawColumn.dimensionType !== 'number' &&
       rawColumn.dimensionType !== 'boolean')
   ) {
-    throw new Error(`Invalid KLO schema column artifact: ${path}`);
+    throw new Error(`Invalid KTX schema column artifact: ${path}`);
   }
   return {
     name: rawColumn.name,
@@ -61,14 +61,14 @@ function parseColumn(rawColumn: unknown, path: string): KloSchemaColumn {
   };
 }
 
-function parseForeignKey(rawForeignKey: unknown, path: string): KloSchemaForeignKey {
+function parseForeignKey(rawForeignKey: unknown, path: string): KtxSchemaForeignKey {
   if (
     !isRecord(rawForeignKey) ||
     typeof rawForeignKey.fromColumn !== 'string' ||
     typeof rawForeignKey.toTable !== 'string' ||
     typeof rawForeignKey.toColumn !== 'string'
   ) {
-    throw new Error(`Invalid KLO schema foreign key artifact: ${path}`);
+    throw new Error(`Invalid KTX schema foreign key artifact: ${path}`);
   }
   return {
     fromColumn: rawForeignKey.fromColumn,
@@ -80,10 +80,10 @@ function parseForeignKey(rawForeignKey: unknown, path: string): KloSchemaForeign
   };
 }
 
-function parseTable(raw: string, path: string): KloSchemaTable {
+function parseTable(raw: string, path: string): KtxSchemaTable {
   const parsed = JSON.parse(raw) as unknown;
   if (!isRecord(parsed) || typeof parsed.name !== 'string' || !Array.isArray(parsed.columns)) {
-    throw new Error(`Invalid KLO schema table artifact: ${path}`);
+    throw new Error(`Invalid KTX schema table artifact: ${path}`);
   }
   return {
     catalog: optionalStringOrNull(parsed.catalog) ?? null,
@@ -102,13 +102,13 @@ function parseTable(raw: string, path: string): KloSchemaTable {
 
 export async function readLocalScanStructuralSnapshot(
   input: ReadLocalScanStructuralSnapshotInput,
-): Promise<KloSchemaSnapshot> {
+): Promise<KtxSchemaSnapshot> {
   const connectionRaw = await input.project.fileStore.readFile(`${input.rawSourcesDir}/connection.json`);
   const connection = JSON.parse(connectionRaw.content) as LiveDatabaseConnectionArtifact;
   const listedTables = await input.project.fileStore.listFiles(`${input.rawSourcesDir}/tables`);
   const tablePaths = listedTables.files.filter((path) => path.endsWith('.json')).sort();
 
-  const tables: KloSchemaTable[] = [];
+  const tables: KtxSchemaTable[] = [];
   for (const path of tablePaths) {
     const tableRaw = await input.project.fileStore.readFile(path);
     tables.push(parseTable(tableRaw.content, path));

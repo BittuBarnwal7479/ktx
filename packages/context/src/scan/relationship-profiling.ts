@@ -1,18 +1,18 @@
-import type { KloEnrichedColumn, KloEnrichedSchema, KloEnrichedTable } from './enrichment-types.js';
+import type { KtxEnrichedColumn, KtxEnrichedSchema, KtxEnrichedTable } from './enrichment-types.js';
 import type {
-  KloConnectionDriver,
-  KloQueryResult,
-  KloReadOnlyQueryInput,
-  KloScanContext,
-  KloTableRef,
+  KtxConnectionDriver,
+  KtxQueryResult,
+  KtxReadOnlyQueryInput,
+  KtxScanContext,
+  KtxTableRef,
 } from './types.js';
 
-export interface KloRelationshipReadOnlyExecutor {
-  executeReadOnly(input: KloReadOnlyQueryInput, ctx: KloScanContext): Promise<KloQueryResult>;
+export interface KtxRelationshipReadOnlyExecutor {
+  executeReadOnly(input: KtxReadOnlyQueryInput, ctx: KtxScanContext): Promise<KtxQueryResult>;
 }
 
-export interface KloRelationshipColumnProfile {
-  table: KloTableRef;
+export interface KtxRelationshipColumnProfile {
+  table: KtxTableRef;
   column: string;
   nativeType: string;
   normalizedType: string;
@@ -26,43 +26,43 @@ export interface KloRelationshipColumnProfile {
   maxTextLength: number | null;
 }
 
-export interface KloRelationshipTableProfile {
-  table: KloTableRef;
+export interface KtxRelationshipTableProfile {
+  table: KtxTableRef;
   rowCount: number;
 }
 
-export interface KloRelationshipProfileArtifact {
+export interface KtxRelationshipProfileArtifact {
   connectionId: string;
-  driver: KloConnectionDriver;
+  driver: KtxConnectionDriver;
   sqlAvailable: boolean;
   queryCount: number;
-  tables: KloRelationshipTableProfile[];
-  columns: Record<string, KloRelationshipColumnProfile>;
+  tables: KtxRelationshipTableProfile[];
+  columns: Record<string, KtxRelationshipColumnProfile>;
   warnings: string[];
 }
 
-interface KloRelationshipCachedTableProfile {
-  table: KloRelationshipTableProfile;
-  columns: Record<string, KloRelationshipColumnProfile>;
+interface KtxRelationshipCachedTableProfile {
+  table: KtxRelationshipTableProfile;
+  columns: Record<string, KtxRelationshipColumnProfile>;
   warnings: string[];
 }
 
-export interface KloRelationshipProfileCache {
-  readonly tableProfiles: Map<string, KloRelationshipCachedTableProfile>;
+export interface KtxRelationshipProfileCache {
+  readonly tableProfiles: Map<string, KtxRelationshipCachedTableProfile>;
 }
 
-export interface ProfileKloRelationshipSchemaInput {
+export interface ProfileKtxRelationshipSchemaInput {
   connectionId: string;
-  driver: KloConnectionDriver;
-  schema: KloEnrichedSchema;
-  executor: KloRelationshipReadOnlyExecutor | null;
-  ctx: KloScanContext;
+  driver: KtxConnectionDriver;
+  schema: KtxEnrichedSchema;
+  executor: KtxRelationshipReadOnlyExecutor | null;
+  ctx: KtxScanContext;
   sampleValuesPerColumn?: number;
   profileSampleRows?: number;
-  cache?: KloRelationshipProfileCache;
+  cache?: KtxRelationshipProfileCache;
 }
 
-export function createKloRelationshipProfileCache(): KloRelationshipProfileCache {
+export function createKtxRelationshipProfileCache(): KtxRelationshipProfileCache {
   return { tableProfiles: new Map() };
 }
 
@@ -70,7 +70,7 @@ const SAMPLE_VALUE_DELIMITER = '\u001f';
 
 type QuoteStyle = 'double' | 'backtick' | 'bracket';
 
-function quoteStyle(driver: KloConnectionDriver): QuoteStyle {
+function quoteStyle(driver: KtxConnectionDriver): QuoteStyle {
   if (driver === 'mysql' || driver === 'clickhouse' || driver === 'posthog') {
     return 'backtick';
   }
@@ -80,7 +80,7 @@ function quoteStyle(driver: KloConnectionDriver): QuoteStyle {
   return 'double';
 }
 
-export function quoteKloRelationshipIdentifier(driver: KloConnectionDriver, identifier: string): string {
+export function quoteKtxRelationshipIdentifier(driver: KtxConnectionDriver, identifier: string): string {
   switch (quoteStyle(driver)) {
     case 'backtick':
       return `\`${identifier.replace(/`/g, '``')}\``;
@@ -91,15 +91,15 @@ export function quoteKloRelationshipIdentifier(driver: KloConnectionDriver, iden
   }
 }
 
-export function formatKloRelationshipTableRef(driver: KloConnectionDriver, table: KloTableRef): string {
+export function formatKtxRelationshipTableRef(driver: KtxConnectionDriver, table: KtxTableRef): string {
   const parts =
     driver === 'sqlite' || driver === 'posthog'
       ? [table.name]
       : [table.catalog, table.db, table.name].filter((value): value is string => Boolean(value));
-  return parts.map((part) => quoteKloRelationshipIdentifier(driver, part)).join('.');
+  return parts.map((part) => quoteKtxRelationshipIdentifier(driver, part)).join('.');
 }
 
-function textLengthExpression(driver: KloConnectionDriver, columnSql: string): string {
+function textLengthExpression(driver: KtxConnectionDriver, columnSql: string): string {
   if (driver === 'mysql') {
     return `CHAR_LENGTH(CAST(${columnSql} AS CHAR))`;
   }
@@ -115,21 +115,21 @@ function textLengthExpression(driver: KloConnectionDriver, columnSql: string): s
   return `LENGTH(CAST(${columnSql} AS TEXT))`;
 }
 
-function limitSql(driver: KloConnectionDriver, limit: number): string {
+function limitSql(driver: KtxConnectionDriver, limit: number): string {
   if (driver === 'sqlserver') {
     return '';
   }
   return ` LIMIT ${Math.max(1, Math.floor(limit))}`;
 }
 
-function topSql(driver: KloConnectionDriver, limit: number): string {
+function topSql(driver: KtxConnectionDriver, limit: number): string {
   if (driver === 'sqlserver') {
     return ` TOP (${Math.max(1, Math.floor(limit))})`;
   }
   return '';
 }
 
-function sampledTableSql(driver: KloConnectionDriver, tableSql: string, limit: number): string {
+function sampledTableSql(driver: KtxConnectionDriver, tableSql: string, limit: number): string {
   const safeLimit = Math.max(1, Math.floor(limit));
   if (driver === 'sqlserver') {
     return `(SELECT TOP (${safeLimit}) * FROM ${tableSql}) AS relationship_profile_sample`;
@@ -137,15 +137,15 @@ function sampledTableSql(driver: KloConnectionDriver, tableSql: string, limit: n
   return `(SELECT * FROM ${tableSql}${limitSql(driver, safeLimit)}) AS relationship_profile_sample`;
 }
 
-function firstRow(result: KloQueryResult): unknown[] {
+function firstRow(result: KtxQueryResult): unknown[] {
   return result.rows[0] ?? [];
 }
 
-function headerIndex(result: KloQueryResult, header: string): number {
+function headerIndex(result: KtxQueryResult, header: string): number {
   return result.headers.findIndex((candidate) => candidate.toLowerCase() === header.toLowerCase());
 }
 
-function valueAt(result: KloQueryResult, row: unknown[], header: string): unknown {
+function valueAt(result: KtxQueryResult, row: unknown[], header: string): unknown {
   return row[headerIndex(result, header)];
 }
 
@@ -178,19 +178,19 @@ function nullableNumberFromValue(value: unknown): number | null {
   return null;
 }
 
-function numberAt(result: KloQueryResult, header: string): number {
+function numberAt(result: KtxQueryResult, header: string): number {
   return numberFromValue(valueAt(result, firstRow(result), header));
 }
 
-function columnKey(table: KloEnrichedTable, column: KloEnrichedColumn): string {
+function columnKey(table: KtxEnrichedTable, column: KtxEnrichedColumn): string {
   return `${table.ref.name}.${column.name}`;
 }
 
 function tableProfileCacheKey(input: {
   connectionId: string;
-  driver: KloConnectionDriver;
-  ctx: KloScanContext;
-  table: KloTableRef;
+  driver: KtxConnectionDriver;
+  ctx: KtxScanContext;
+  table: KtxTableRef;
   sampleValuesPerColumn: number;
   profileSampleRows: number;
 }): string {
@@ -210,7 +210,7 @@ function sqlStringLiteral(value: string): string {
   return `'${value.replace(/'/g, "''")}'`;
 }
 
-function sampleAggregateSql(driver: KloConnectionDriver, innerSql: string): string {
+function sampleAggregateSql(driver: KtxConnectionDriver, innerSql: string): string {
   if (driver === 'postgres') {
     return `(SELECT STRING_AGG(CAST(value AS TEXT), CHR(31)) FROM (${innerSql}) AS relationship_profile_values)`;
   }
@@ -230,7 +230,7 @@ function sampleAggregateSql(driver: KloConnectionDriver, innerSql: string): stri
 }
 
 function sampleValuesSql(input: {
-  driver: KloConnectionDriver;
+  driver: KtxConnectionDriver;
   tableSql: string;
   columnSql: string;
   limit: number;
@@ -246,13 +246,13 @@ function sampleValuesSql(input: {
 }
 
 function columnProfileSelectSql(input: {
-  connectionDriver: KloConnectionDriver;
+  connectionDriver: KtxConnectionDriver;
   tableSql: string;
   profileTableSql: string;
-  column: KloEnrichedColumn;
+  column: KtxEnrichedColumn;
   sampleValuesPerColumn: number;
 }): string {
-  const columnSql = quoteKloRelationshipIdentifier(input.connectionDriver, input.column.name);
+  const columnSql = quoteKtxRelationshipIdentifier(input.connectionDriver, input.column.name);
   const textLengthSql = textLengthExpression(input.connectionDriver, columnSql);
   const samplesSql = sampleAggregateSql(
     input.connectionDriver,
@@ -290,12 +290,12 @@ function splitSampleValues(value: unknown): string[] {
 
 async function queryCount(input: {
   connectionId: string;
-  driver: KloConnectionDriver;
-  table: KloTableRef;
-  executor: KloRelationshipReadOnlyExecutor;
-  ctx: KloScanContext;
+  driver: KtxConnectionDriver;
+  table: KtxTableRef;
+  executor: KtxRelationshipReadOnlyExecutor;
+  ctx: KtxScanContext;
 }): Promise<{ rowCount: number; queryCount: number }> {
-  const tableSql = formatKloRelationshipTableRef(input.driver, input.table);
+  const tableSql = formatKtxRelationshipTableRef(input.driver, input.table);
   const result = await input.executor.executeReadOnly(
     { connectionId: input.connectionId, sql: `SELECT COUNT(*) AS row_count FROM ${tableSql}`, maxRows: 1 },
     input.ctx,
@@ -305,15 +305,15 @@ async function queryCount(input: {
 
 async function queryTableProfile(input: {
   connectionId: string;
-  driver: KloConnectionDriver;
-  table: KloEnrichedTable;
-  executor: KloRelationshipReadOnlyExecutor;
-  ctx: KloScanContext;
+  driver: KtxConnectionDriver;
+  table: KtxEnrichedTable;
+  executor: KtxRelationshipReadOnlyExecutor;
+  ctx: KtxScanContext;
   sampleValuesPerColumn: number;
   profileSampleRows: number;
 }): Promise<{
-  table: KloRelationshipTableProfile;
-  columns: Record<string, KloRelationshipColumnProfile>;
+  table: KtxRelationshipTableProfile;
+  columns: Record<string, KtxRelationshipColumnProfile>;
   queryCount: number;
 }> {
   if (input.table.columns.length === 0) {
@@ -331,7 +331,7 @@ async function queryTableProfile(input: {
     };
   }
 
-  const tableSql = formatKloRelationshipTableRef(input.driver, input.table.ref);
+  const tableSql = formatKtxRelationshipTableRef(input.driver, input.table.ref);
   const profileTableSql = sampledTableSql(input.driver, tableSql, input.profileSampleRows);
   const sql = input.table.columns
     .map((column) =>
@@ -349,7 +349,7 @@ async function queryTableProfile(input: {
     input.ctx,
   );
   const columnsByName = new Map(input.table.columns.map((column) => [column.name, column]));
-  const profiles: Record<string, KloRelationshipColumnProfile> = {};
+  const profiles: Record<string, KtxRelationshipColumnProfile> = {};
   let tableRowCount = 0;
 
   for (const row of result.rows) {
@@ -385,9 +385,9 @@ async function queryTableProfile(input: {
   };
 }
 
-export async function profileKloRelationshipSchema(
-  input: ProfileKloRelationshipSchemaInput,
-): Promise<KloRelationshipProfileArtifact> {
+export async function profileKtxRelationshipSchema(
+  input: ProfileKtxRelationshipSchemaInput,
+): Promise<KtxRelationshipProfileArtifact> {
   if (!input.executor) {
     return {
       connectionId: input.connectionId,
@@ -401,8 +401,8 @@ export async function profileKloRelationshipSchema(
   }
 
   let queryTotal = 0;
-  const tables: KloRelationshipTableProfile[] = [];
-  const columns: Record<string, KloRelationshipColumnProfile> = {};
+  const tables: KtxRelationshipTableProfile[] = [];
+  const columns: Record<string, KtxRelationshipColumnProfile> = {};
   const warnings: string[] = [];
 
   for (const table of input.schema.tables.filter((candidate) => candidate.enabled)) {

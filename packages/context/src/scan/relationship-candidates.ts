@@ -1,26 +1,26 @@
 import type {
-  KloEnrichedColumn,
-  KloEnrichedSchema,
-  KloEnrichedTable,
-  KloRelationshipEndpoint,
-  KloRelationshipType,
+  KtxEnrichedColumn,
+  KtxEnrichedSchema,
+  KtxEnrichedTable,
+  KtxRelationshipEndpoint,
+  KtxRelationshipType,
 } from './enrichment-types.js';
 import { localCandidateTables } from './relationship-locality.js';
 import {
-  normalizeKloRelationshipName,
-  pluralizeKloRelationshipToken,
-  singularizeKloRelationshipToken,
+  normalizeKtxRelationshipName,
+  pluralizeKtxRelationshipToken,
+  singularizeKtxRelationshipToken,
 } from './relationship-name-similarity.js';
-export type { KloRelationshipNormalizedName } from './relationship-name-similarity.js';
-export { normalizeKloRelationshipName } from './relationship-name-similarity.js';
-import type { KloRelationshipProfileArtifact } from './relationship-profiling.js';
+export type { KtxRelationshipNormalizedName } from './relationship-name-similarity.js';
+export { normalizeKtxRelationshipName } from './relationship-name-similarity.js';
+import type { KtxRelationshipProfileArtifact } from './relationship-profiling.js';
 import {
-  scoreKloRelationshipCandidate,
-  type KloRelationshipScoreBreakdown,
-  type KloRelationshipSignalVector,
+  scoreKtxRelationshipCandidate,
+  type KtxRelationshipScoreBreakdown,
+  type KtxRelationshipSignalVector,
 } from './relationship-scoring.js';
 
-export type KloRelationshipDiscoveryCandidateSource =
+export type KtxRelationshipDiscoveryCandidateSource =
   | 'exact_column_match'
   | 'normalized_table_match'
   | 'parent_table_name_match'
@@ -31,44 +31,44 @@ export type KloRelationshipDiscoveryCandidateSource =
   | 'embedding_similarity'
   | 'llm_proposal';
 
-export type KloRelationshipDiscoveryCandidateStatus = 'review';
+export type KtxRelationshipDiscoveryCandidateStatus = 'review';
 
-export interface KloRelationshipDiscoveryCandidateEvidence {
+export interface KtxRelationshipDiscoveryCandidateEvidence {
   sourceColumnBase: string;
   targetTableBase: string;
   targetColumnBase: string;
   targetKeyScore: number;
   nameScore: number;
   reasons: string[];
-  signalVector?: KloRelationshipSignalVector;
-  scoreBreakdown?: KloRelationshipScoreBreakdown;
+  signalVector?: KtxRelationshipSignalVector;
+  scoreBreakdown?: KtxRelationshipScoreBreakdown;
   embeddingSimilarity?: number;
   llmConfidence?: number;
   llmRationale?: string;
 }
 
-export interface KloRelationshipDiscoveryCandidate {
+export interface KtxRelationshipDiscoveryCandidate {
   id: string;
-  from: KloRelationshipEndpoint;
-  to: KloRelationshipEndpoint;
-  relationshipType: KloRelationshipType;
+  from: KtxRelationshipEndpoint;
+  to: KtxRelationshipEndpoint;
+  relationshipType: KtxRelationshipType;
   confidence: number;
-  source: KloRelationshipDiscoveryCandidateSource;
-  status: KloRelationshipDiscoveryCandidateStatus;
-  evidence: KloRelationshipDiscoveryCandidateEvidence;
+  source: KtxRelationshipDiscoveryCandidateSource;
+  status: KtxRelationshipDiscoveryCandidateStatus;
+  evidence: KtxRelationshipDiscoveryCandidateEvidence;
 }
 
-export interface KloRelationshipDiscoveryCandidateOptions {
+export interface KtxRelationshipDiscoveryCandidateOptions {
   maxCandidatesPerColumn?: number;
   maxCandidateParentTables?: number;
   maxEmbeddingCandidatesPerColumn?: number;
   minConfidence?: number;
   embeddingSimilarityThreshold?: number;
   useEmbeddings?: boolean;
-  profiles?: KloRelationshipProfileArtifact;
+  profiles?: KtxRelationshipProfileArtifact;
 }
 
-export interface KloRelationshipInferredTargetPk {
+export interface KtxRelationshipInferredTargetPk {
   table: string;
   columns: string[];
   score: number;
@@ -76,12 +76,12 @@ export interface KloRelationshipInferredTargetPk {
   incomingCandidateCount: number;
 }
 
-interface KloRelationshipSourceColumnReference {
+interface KtxRelationshipSourceColumnReference {
   base: string;
   reason: string;
 }
 
-interface KloRelationshipTargetKeyEvidence {
+interface KtxRelationshipTargetKeyEvidence {
   score: number;
   reasons: string[];
 }
@@ -98,26 +98,26 @@ const REFERENCE_SUFFIXES: Array<{ suffix: string; reason: string }> = [
 ];
 const RELATIONSHIP_KEY_TARGET_SUFFIXES = ['_id', '_key', '_code', '_uuid'] as const;
 
-function isRelationshipKeyShapedTarget(column: KloEnrichedColumn): boolean {
-  const normalized = normalizeKloRelationshipName(column.name);
+function isRelationshipKeyShapedTarget(column: KtxEnrichedColumn): boolean {
+  const normalized = normalizeKtxRelationshipName(column.name);
   return (
     normalized.tokens.length >= 2 &&
     RELATIONSHIP_KEY_TARGET_SUFFIXES.some((suffix) => normalized.normalized.endsWith(suffix))
   );
 }
 
-function columnSuffixMatchesTarget(input: { fromColumn: KloEnrichedColumn; toColumn: KloEnrichedColumn }): boolean {
-  const source = normalizeKloRelationshipName(input.fromColumn.name).normalized;
-  const target = normalizeKloRelationshipName(input.toColumn.name).normalized;
+function columnSuffixMatchesTarget(input: { fromColumn: KtxEnrichedColumn; toColumn: KtxEnrichedColumn }): boolean {
+  const source = normalizeKtxRelationshipName(input.fromColumn.name).normalized;
+  const target = normalizeKtxRelationshipName(input.toColumn.name).normalized;
   return source !== target && target.length > 0 && source.endsWith(`_${target}`);
 }
 
-function normalizeType(column: KloEnrichedColumn): string {
+function normalizeType(column: KtxEnrichedColumn): string {
   const rawType = (column.normalizedType || column.nativeType || '').toLowerCase().trim();
   return rawType.includes('(') ? (rawType.split('(')[0] ?? '') : rawType;
 }
 
-function typesCompatible(left: KloEnrichedColumn, right: KloEnrichedColumn): boolean {
+function typesCompatible(left: KtxEnrichedColumn, right: KtxEnrichedColumn): boolean {
   const leftType = normalizeType(left);
   const rightType = normalizeType(right);
   if (leftType === rightType) {
@@ -155,12 +155,12 @@ function cosineSimilarity(left: readonly number[] | null, right: readonly number
   return dot / (Math.sqrt(leftMagnitude) * Math.sqrt(rightMagnitude));
 }
 
-function hasUsableEmbedding(column: KloEnrichedColumn): boolean {
+function hasUsableEmbedding(column: KtxEnrichedColumn): boolean {
   return Array.isArray(column.embedding) && column.embedding.length > 0;
 }
 
-function sourceColumnReference(column: KloEnrichedColumn): KloRelationshipSourceColumnReference | null {
-  const normalized = normalizeKloRelationshipName(column.name);
+function sourceColumnReference(column: KtxEnrichedColumn): KtxRelationshipSourceColumnReference | null {
+  const normalized = normalizeKtxRelationshipName(column.name);
   if (SELF_REFERENCE_NAMES.has(normalized.normalized)) {
     return { base: normalized.normalized.replace(/_id$/u, ''), reason: 'foreign_key_suffix' };
   }
@@ -171,7 +171,7 @@ function sourceColumnReference(column: KloEnrichedColumn): KloRelationshipSource
     }
     const base = normalized.normalized.slice(0, -item.suffix.length);
     if (base.length > 1) {
-      return { base: singularizeKloRelationshipToken(base), reason: item.reason };
+      return { base: singularizeKtxRelationshipToken(base), reason: item.reason };
     }
   }
 
@@ -179,7 +179,7 @@ function sourceColumnReference(column: KloEnrichedColumn): KloRelationshipSource
 }
 
 function addNormalizedTableAlias(aliases: Set<string>, name: string): void {
-  const normalized = normalizeKloRelationshipName(name);
+  const normalized = normalizeKtxRelationshipName(name);
   if (normalized.normalized.length > 0) {
     aliases.add(normalized.normalized);
   }
@@ -191,34 +191,34 @@ function addNormalizedTableAlias(aliases: Set<string>, name: string): void {
   }
 }
 
-function tableAliases(table: KloEnrichedTable): Set<string> {
-  const normalized = normalizeKloRelationshipName(table.ref.name);
+function tableAliases(table: KtxEnrichedTable): Set<string> {
+  const normalized = normalizeKtxRelationshipName(table.ref.name);
   const aliases = new Set([normalized.normalized, normalized.singular, normalized.plural]);
   if (normalized.tokens.length > 1) {
     const lastToken = normalized.tokens[normalized.tokens.length - 1];
     if (lastToken) {
       aliases.add(lastToken);
-      const singularLastToken = singularizeKloRelationshipToken(lastToken);
+      const singularLastToken = singularizeKtxRelationshipToken(lastToken);
       aliases.add(singularLastToken);
-      aliases.add(pluralizeKloRelationshipToken(singularLastToken));
+      aliases.add(pluralizeKtxRelationshipToken(singularLastToken));
     }
   }
   return aliases;
 }
 
-function finalTableNamePart(table: KloEnrichedTable): string {
+function finalTableNamePart(table: KtxEnrichedTable): string {
   const parts = table.ref.name.split(/[^\p{L}\p{N}]+/u).filter(Boolean);
   return parts[parts.length - 1] ?? table.ref.name;
 }
 
-function parentTableNameAliases(table: KloEnrichedTable): Set<string> {
+function parentTableNameAliases(table: KtxEnrichedTable): Set<string> {
   const aliases = tableAliases(table);
   addNormalizedTableAlias(aliases, finalTableNamePart(table));
   return aliases;
 }
 
-function targetKeyScore(table: KloEnrichedTable, column: KloEnrichedColumn): number {
-  const columnName = normalizeKloRelationshipName(column.name).normalized;
+function targetKeyScore(table: KtxEnrichedTable, column: KtxEnrichedColumn): number {
+  const columnName = normalizeKtxRelationshipName(column.name).normalized;
   const tableKeyBases = parentTableNameAliases(table);
   if (column.primaryKey) {
     return 1;
@@ -239,7 +239,7 @@ function targetKeyScore(table: KloEnrichedTable, column: KloEnrichedColumn): num
 }
 
 function profileColumn(
-  profiles: KloRelationshipProfileArtifact | undefined,
+  profiles: KtxRelationshipProfileArtifact | undefined,
   tableName: string,
   columnName: string,
 ) {
@@ -247,11 +247,11 @@ function profileColumn(
 }
 
 function profileSampleOverlap(input: {
-  profiles: KloRelationshipProfileArtifact | undefined;
-  fromTable: KloEnrichedTable;
-  fromColumn: KloEnrichedColumn;
-  toTable: KloEnrichedTable;
-  toColumn: KloEnrichedColumn;
+  profiles: KtxRelationshipProfileArtifact | undefined;
+  fromTable: KtxEnrichedTable;
+  fromColumn: KtxEnrichedColumn;
+  toTable: KtxEnrichedTable;
+  toColumn: KtxEnrichedColumn;
 }): number {
   const source = profileColumn(input.profiles, input.fromTable.ref.name, input.fromColumn.name);
   const target = profileColumn(input.profiles, input.toTable.ref.name, input.toColumn.name);
@@ -263,14 +263,14 @@ function profileSampleOverlap(input: {
   return overlap / source.sampleValues.length;
 }
 
-function tableProfileRowCount(profiles: KloRelationshipProfileArtifact | undefined, tableName: string): number | null {
+function tableProfileRowCount(profiles: KtxRelationshipProfileArtifact | undefined, tableName: string): number | null {
   return profiles?.tables.find((table) => table.table.name === tableName)?.rowCount ?? null;
 }
 
 function structuralPriorScore(input: {
-  profiles: KloRelationshipProfileArtifact | undefined;
-  fromTable: KloEnrichedTable;
-  toTable: KloEnrichedTable;
+  profiles: KtxRelationshipProfileArtifact | undefined;
+  fromTable: KtxEnrichedTable;
+  toTable: KtxEnrichedTable;
 }): number {
   if (input.fromTable.id === input.toTable.id) {
     return 0.72;
@@ -290,16 +290,16 @@ function structuralPriorScore(input: {
 }
 
 function candidateSignalVector(input: {
-  profiles: KloRelationshipProfileArtifact | undefined;
-  fromTable: KloEnrichedTable;
-  fromColumn: KloEnrichedColumn;
-  toTable: KloEnrichedTable;
-  toColumn: KloEnrichedColumn;
+  profiles: KtxRelationshipProfileArtifact | undefined;
+  fromTable: KtxEnrichedTable;
+  fromColumn: KtxEnrichedColumn;
+  toTable: KtxEnrichedTable;
+  toColumn: KtxEnrichedColumn;
   targetKeyScore: number;
   nameScore: number;
   valueOverlap: number;
   embeddingSimilarity?: number;
-}): KloRelationshipSignalVector {
+}): KtxRelationshipSignalVector {
   const sourceProfile = profileColumn(input.profiles, input.fromTable.ref.name, input.fromColumn.name);
   const targetProfile = profileColumn(input.profiles, input.toTable.ref.name, input.toColumn.name);
   const targetUniqueness = targetProfile?.uniquenessRatio ?? input.targetKeyScore;
@@ -321,11 +321,11 @@ function candidateSignalVector(input: {
 }
 
 function candidateParentTables(input: {
-  tables: readonly KloEnrichedTable[];
-  fromTable: KloEnrichedTable;
-  fromColumn: KloEnrichedColumn;
-  options: KloRelationshipDiscoveryCandidateOptions;
-}): KloEnrichedTable[] {
+  tables: readonly KtxEnrichedTable[];
+  fromTable: KtxEnrichedTable;
+  fromColumn: KtxEnrichedColumn;
+  options: KtxRelationshipDiscoveryCandidateOptions;
+}): KtxEnrichedTable[] {
   const maxParentTables = input.options.maxCandidateParentTables ?? 20;
   if (maxParentTables <= 0) {
     return [];
@@ -338,7 +338,7 @@ function candidateParentTables(input: {
     maxParentTables,
   }).map((item) => item.table);
 
-  const normalizedColumn = normalizeKloRelationshipName(input.fromColumn.name).normalized;
+  const normalizedColumn = normalizeKtxRelationshipName(input.fromColumn.name).normalized;
   if (!SELF_REFERENCE_NAMES.has(normalizedColumn) || ranked.some((table) => table.id === input.fromTable.id)) {
     return ranked;
   }
@@ -350,10 +350,10 @@ function candidateParentTables(input: {
 }
 
 function targetKeyEvidence(
-  table: KloEnrichedTable,
-  column: KloEnrichedColumn,
-  profiles: KloRelationshipProfileArtifact | undefined,
-): KloRelationshipTargetKeyEvidence {
+  table: KtxEnrichedTable,
+  column: KtxEnrichedColumn,
+  profiles: KtxRelationshipProfileArtifact | undefined,
+): KtxRelationshipTargetKeyEvidence {
   const deterministicScore = targetKeyScore(table, column);
   if (deterministicScore > 0) {
     return { score: deterministicScore, reasons: ['target_key_like'] };
@@ -364,7 +364,7 @@ function targetKeyEvidence(
     return { score: 0, reasons: [] };
   }
 
-  const columnName = normalizeKloRelationshipName(column.name).normalized;
+  const columnName = normalizeKtxRelationshipName(column.name).normalized;
   if (columnName === 'code' || columnName.endsWith('_code') || columnName === 'key' || columnName.endsWith('_key')) {
     return { score: 0.86, reasons: ['profile_unique_target'] };
   }
@@ -372,7 +372,7 @@ function targetKeyEvidence(
   return { score: 0.78, reasons: ['profile_unique_target'] };
 }
 
-function endpoint(table: KloEnrichedTable, column: KloEnrichedColumn): KloRelationshipEndpoint {
+function endpoint(table: KtxEnrichedTable, column: KtxEnrichedColumn): KtxRelationshipEndpoint {
   return {
     tableId: table.id,
     columnIds: [column.id],
@@ -381,11 +381,11 @@ function endpoint(table: KloEnrichedTable, column: KloEnrichedColumn): KloRelati
   };
 }
 
-function relationshipId(from: KloRelationshipEndpoint, to: KloRelationshipEndpoint): string {
+function relationshipId(from: KtxRelationshipEndpoint, to: KtxRelationshipEndpoint): string {
   return `${from.tableId}:(${from.columnIds.join(',')})->${to.tableId}:(${to.columnIds.join(',')})`;
 }
 
-function endpointsHaveSameOrderedColumns(left: KloRelationshipEndpoint, right: KloRelationshipEndpoint): boolean {
+function endpointsHaveSameOrderedColumns(left: KtxRelationshipEndpoint, right: KtxRelationshipEndpoint): boolean {
   if (left.columnIds.length !== right.columnIds.length || left.columns.length !== right.columns.length) {
     return false;
   }
@@ -394,11 +394,11 @@ function endpointsHaveSameOrderedColumns(left: KloRelationshipEndpoint, right: K
   );
 }
 
-function isDegenerateSameColumnSelfLink(candidate: Pick<KloRelationshipDiscoveryCandidate, 'from' | 'to'>): boolean {
+function isDegenerateSameColumnSelfLink(candidate: Pick<KtxRelationshipDiscoveryCandidate, 'from' | 'to'>): boolean {
   return candidate.from.tableId === candidate.to.tableId && endpointsHaveSameOrderedColumns(candidate.from, candidate.to);
 }
 
-function singleRelationshipColumn(endpointValue: KloRelationshipEndpoint): string {
+function singleRelationshipColumn(endpointValue: KtxRelationshipEndpoint): string {
   const column = endpointValue.columns[0];
   if (!column) {
     throw new Error(`Expected relationship endpoint ${endpointValue.table.name} to contain one column`);
@@ -406,7 +406,7 @@ function singleRelationshipColumn(endpointValue: KloRelationshipEndpoint): strin
   return column;
 }
 
-function candidateSortKey(candidate: KloRelationshipDiscoveryCandidate): string {
+function candidateSortKey(candidate: KtxRelationshipDiscoveryCandidate): string {
   return `${candidate.from.table.name}.${singleRelationshipColumn(candidate.from)}->${candidate.to.table.name}.${singleRelationshipColumn(candidate.to)}`;
 }
 
@@ -415,9 +415,9 @@ function uniqueReasons(values: readonly string[]): string[] {
 }
 
 function mergeCandidateEvidence(
-  left: KloRelationshipDiscoveryCandidate,
-  right: KloRelationshipDiscoveryCandidate,
-): KloRelationshipDiscoveryCandidate {
+  left: KtxRelationshipDiscoveryCandidate,
+  right: KtxRelationshipDiscoveryCandidate,
+): KtxRelationshipDiscoveryCandidate {
   const preferred = right.confidence > left.confidence && left.source === 'llm_proposal' ? right : left;
   const supplement = preferred === left ? right : left;
   return {
@@ -432,7 +432,7 @@ function mergeCandidateEvidence(
   };
 }
 
-function sourceForEvidence(reasons: string[]): KloRelationshipDiscoveryCandidateSource {
+function sourceForEvidence(reasons: string[]): KtxRelationshipDiscoveryCandidateSource {
   if (reasons.includes('self_reference')) {
     return 'self_reference';
   }
@@ -461,19 +461,19 @@ function sourceForEvidence(reasons: string[]): KloRelationshipDiscoveryCandidate
 }
 
 function createCandidate(input: {
-  fromTable: KloEnrichedTable;
-  fromColumn: KloEnrichedColumn;
-  toTable: KloEnrichedTable;
-  toColumn: KloEnrichedColumn;
+  fromTable: KtxEnrichedTable;
+  fromColumn: KtxEnrichedColumn;
+  toTable: KtxEnrichedTable;
+  toColumn: KtxEnrichedColumn;
   sourceBase: string;
   targetBase: string;
   targetKeyScore: number;
   nameScore: number;
   reasons: string[];
-  profiles: KloRelationshipProfileArtifact | undefined;
+  profiles: KtxRelationshipProfileArtifact | undefined;
   valueOverlap: number;
   embeddingSimilarity?: number;
-}): KloRelationshipDiscoveryCandidate {
+}): KtxRelationshipDiscoveryCandidate {
   const from = endpoint(input.fromTable, input.fromColumn);
   const to = endpoint(input.toTable, input.toColumn);
   const signalVector = candidateSignalVector({
@@ -487,7 +487,7 @@ function createCandidate(input: {
     valueOverlap: input.valueOverlap,
     embeddingSimilarity: input.embeddingSimilarity,
   });
-  const scoreBreakdown = scoreKloRelationshipCandidate(signalVector);
+  const scoreBreakdown = scoreKtxRelationshipCandidate(signalVector);
 
   return {
     id: relationshipId(from, to),
@@ -500,7 +500,7 @@ function createCandidate(input: {
     evidence: {
       sourceColumnBase: input.sourceBase,
       targetTableBase: input.targetBase,
-      targetColumnBase: normalizeKloRelationshipName(input.toColumn.name).normalized,
+      targetColumnBase: normalizeKtxRelationshipName(input.toColumn.name).normalized,
       targetKeyScore: input.targetKeyScore,
       nameScore: input.nameScore,
       reasons: input.reasons,
@@ -513,10 +513,10 @@ function createCandidate(input: {
   };
 }
 
-function generateKloEmbeddingRelationshipCandidates(
-  schema: KloEnrichedSchema,
-  options: KloRelationshipDiscoveryCandidateOptions,
-): KloRelationshipDiscoveryCandidate[] {
+function generateKtxEmbeddingRelationshipCandidates(
+  schema: KtxEnrichedSchema,
+  options: KtxRelationshipDiscoveryCandidateOptions,
+): KtxRelationshipDiscoveryCandidate[] {
   if (options.useEmbeddings === false) {
     return [];
   }
@@ -524,7 +524,7 @@ function generateKloEmbeddingRelationshipCandidates(
   const threshold = options.embeddingSimilarityThreshold ?? 0.92;
   const maxCandidatesPerColumn = options.maxEmbeddingCandidatesPerColumn ?? options.maxCandidatesPerColumn ?? 25;
   const tables = schema.tables.filter((table) => table.enabled);
-  const candidates: KloRelationshipDiscoveryCandidate[] = [];
+  const candidates: KtxRelationshipDiscoveryCandidate[] = [];
 
   for (const fromTable of tables) {
     for (const fromColumn of fromTable.columns) {
@@ -532,7 +532,7 @@ function generateKloEmbeddingRelationshipCandidates(
         continue;
       }
 
-      const columnCandidates: KloRelationshipDiscoveryCandidate[] = [];
+      const columnCandidates: KtxRelationshipDiscoveryCandidate[] = [];
       for (const toTable of candidateParentTables({ tables, fromTable, fromColumn, options })) {
         if (fromTable.id === toTable.id) {
           continue;
@@ -553,8 +553,8 @@ function generateKloEmbeddingRelationshipCandidates(
             continue;
           }
 
-          const sourceBase = normalizeKloRelationshipName(fromColumn.name).normalized;
-          const targetBase = normalizeKloRelationshipName(toTable.ref.name).singular;
+          const sourceBase = normalizeKtxRelationshipName(fromColumn.name).normalized;
+          const targetBase = normalizeKtxRelationshipName(toTable.ref.name).singular;
           const reasons = ['embedding_similarity', ...keyEvidence.reasons];
           const candidate = createCandidate({
             fromTable,
@@ -592,14 +592,14 @@ function generateKloEmbeddingRelationshipCandidates(
   return candidates;
 }
 
-export function generateKloRelationshipDiscoveryCandidates(
-  schema: KloEnrichedSchema,
-  options: KloRelationshipDiscoveryCandidateOptions = {},
-): KloRelationshipDiscoveryCandidate[] {
+export function generateKtxRelationshipDiscoveryCandidates(
+  schema: KtxEnrichedSchema,
+  options: KtxRelationshipDiscoveryCandidateOptions = {},
+): KtxRelationshipDiscoveryCandidate[] {
   const maxCandidatesPerColumn = options.maxCandidatesPerColumn ?? 25;
   const minConfidence = options.minConfidence ?? 0.72;
   const tables = schema.tables.filter((table) => table.enabled);
-  const candidates: KloRelationshipDiscoveryCandidate[] = [];
+  const candidates: KtxRelationshipDiscoveryCandidate[] = [];
 
   for (const fromTable of tables) {
     for (const fromColumn of fromTable.columns) {
@@ -612,15 +612,15 @@ export function generateKloRelationshipDiscoveryCandidates(
       }
       const sourceBase = sourceReference.base;
 
-      const columnCandidates: KloRelationshipDiscoveryCandidate[] = [];
+      const columnCandidates: KtxRelationshipDiscoveryCandidate[] = [];
       for (const toTable of candidateParentTables({ tables, fromTable, fromColumn, options })) {
         const strictAliases = tableAliases(toTable);
         const parentAliases = parentTableNameAliases(toTable);
-        const targetBase = normalizeKloRelationshipName(toTable.ref.name).singular;
+        const targetBase = normalizeKtxRelationshipName(toTable.ref.name).singular;
         const sameTable = fromTable.id === toTable.id;
         const nameMatchesTarget = strictAliases.has(sourceBase);
         const parentTableNameMatcher = !sameTable && !nameMatchesTarget && parentAliases.has(sourceBase);
-        const selfReference = sameTable && SELF_REFERENCE_NAMES.has(normalizeKloRelationshipName(fromColumn.name).normalized);
+        const selfReference = sameTable && SELF_REFERENCE_NAMES.has(normalizeKtxRelationshipName(fromColumn.name).normalized);
         const strictTableMatcher = (!sameTable && nameMatchesTarget) || selfReference;
 
         for (const toColumn of toTable.columns) {
@@ -665,7 +665,7 @@ export function generateKloRelationshipDiscoveryCandidates(
           } else if (selfReference) {
             reasons.push('self_reference');
             nameScore = 0.82;
-          } else if (!suffixMatcher && normalizeKloRelationshipName(toTable.ref.name).singular === sourceBase) {
+          } else if (!suffixMatcher && normalizeKtxRelationshipName(toTable.ref.name).singular === sourceBase) {
             reasons.push('normalized_table_name');
             nameScore = 0.92;
           } else if (!suffixMatcher && strictAliases.has(sourceBase)) {
@@ -675,7 +675,7 @@ export function generateKloRelationshipDiscoveryCandidates(
           if (
             !suffixMatcher &&
             !parentTableNameMatcher &&
-            normalizeKloRelationshipName(fromColumn.name).normalized === normalizeKloRelationshipName(toColumn.name).normalized
+            normalizeKtxRelationshipName(fromColumn.name).normalized === normalizeKtxRelationshipName(toColumn.name).normalized
           ) {
             reasons.push('exact_column_name');
             nameScore = Math.max(nameScore, 0.9);
@@ -707,9 +707,9 @@ export function generateKloRelationshipDiscoveryCandidates(
     }
   }
 
-  candidates.push(...generateKloEmbeddingRelationshipCandidates(schema, options));
+  candidates.push(...generateKtxEmbeddingRelationshipCandidates(schema, options));
 
-  const byId = new Map<string, KloRelationshipDiscoveryCandidate>();
+  const byId = new Map<string, KtxRelationshipDiscoveryCandidate>();
   for (const candidate of candidates) {
     const existing = byId.get(candidate.id);
     if (!existing || candidate.confidence > existing.confidence) {
@@ -721,10 +721,10 @@ export function generateKloRelationshipDiscoveryCandidates(
   );
 }
 
-export function mergeKloRelationshipDiscoveryCandidates(
-  candidates: readonly KloRelationshipDiscoveryCandidate[],
-): KloRelationshipDiscoveryCandidate[] {
-  const byId = new Map<string, KloRelationshipDiscoveryCandidate>();
+export function mergeKtxRelationshipDiscoveryCandidates(
+  candidates: readonly KtxRelationshipDiscoveryCandidate[],
+): KtxRelationshipDiscoveryCandidate[] {
+  const byId = new Map<string, KtxRelationshipDiscoveryCandidate>();
   for (const candidate of candidates) {
     const existing = byId.get(candidate.id);
     byId.set(candidate.id, existing ? mergeCandidateEvidence(existing, candidate) : candidate);
@@ -732,9 +732,9 @@ export function mergeKloRelationshipDiscoveryCandidates(
   return Array.from(byId.values()).sort((left, right) => candidateSortKey(left).localeCompare(candidateSortKey(right)));
 }
 
-export function inferKloRelationshipTargetPks(
-  candidates: readonly KloRelationshipDiscoveryCandidate[],
-): KloRelationshipInferredTargetPk[] {
+export function inferKtxRelationshipTargetPks(
+  candidates: readonly KtxRelationshipDiscoveryCandidate[],
+): KtxRelationshipInferredTargetPk[] {
   const incoming = new Map<string, { table: string; column: string; scores: number[] }>();
   for (const candidate of candidates) {
     const toColumn = singleRelationshipColumn(candidate.to);

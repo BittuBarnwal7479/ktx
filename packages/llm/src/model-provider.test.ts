@@ -1,16 +1,16 @@
 import type { LanguageModel } from 'ai';
 import { describe, expect, it, vi } from 'vitest';
-import { createKloLlmProvider } from './model-provider.js';
+import { createKtxLlmProvider } from './model-provider.js';
 
 const languageModel = (modelId: string, provider = 'test'): LanguageModel => ({ modelId, provider }) as LanguageModel;
 
-describe('createKloLlmProvider', () => {
+describe('createKtxLlmProvider', () => {
   it('uses direct Anthropic with both beta headers', () => {
     const anthropicModel = languageModel('claude-sonnet-4-6', 'anthropic');
     const anthropic = vi.fn(() => anthropicModel);
     const createAnthropic = vi.fn(() => anthropic);
 
-    const provider = createKloLlmProvider(
+    const provider = createKtxLlmProvider(
       {
         backend: 'anthropic',
         anthropic: { apiKey: 'test-anthropic-key', baseURL: 'https://anthropic.test' }, // pragma: allowlist secret
@@ -36,10 +36,10 @@ describe('createKloLlmProvider', () => {
     const vertex = vi.fn(() => vertexModel);
     const createVertexAnthropic = vi.fn(() => vertex);
 
-    const provider = createKloLlmProvider(
+    const provider = createKtxLlmProvider(
       {
         backend: 'vertex',
-        vertex: { project: 'klo-test', location: 'us-east5' },
+        vertex: { project: 'ktx-test', location: 'us-east5' },
         modelSlots: { default: 'claude-sonnet-4-6' },
         promptCaching: { enabled: false },
       },
@@ -47,7 +47,7 @@ describe('createKloLlmProvider', () => {
     );
 
     expect(provider.getModel('default')).toBe(vertexModel);
-    expect(createVertexAnthropic).toHaveBeenCalledWith({ project: 'klo-test', location: 'us-east5' });
+    expect(createVertexAnthropic).toHaveBeenCalledWith({ project: 'ktx-test', location: 'us-east5' });
     expect(vertex).toHaveBeenCalledWith('claude-sonnet-4-6');
   });
 
@@ -56,7 +56,7 @@ describe('createKloLlmProvider', () => {
     const gateway = vi.fn(() => gatewayModel);
     const createGateway = vi.fn(() => gateway);
 
-    const provider = createKloLlmProvider(
+    const provider = createKtxLlmProvider(
       {
         backend: 'gateway',
         gateway: { apiKey: 'gateway-key', baseURL: 'https://gateway.test/v1' }, // pragma: allowlist secret
@@ -77,7 +77,7 @@ describe('createKloLlmProvider', () => {
   it('uses explicit role overrides before default', () => {
     const anthropic = vi.fn((modelId: string) => languageModel(modelId, 'anthropic'));
 
-    const provider = createKloLlmProvider(
+    const provider = createKtxLlmProvider(
       {
         backend: 'anthropic',
         anthropic: { apiKey: 'test-anthropic-key' }, // pragma: allowlist secret
@@ -97,7 +97,7 @@ describe('createKloLlmProvider', () => {
   });
 
   it('emits cache markers only when enabled and the model speaks Anthropic protocol', () => {
-    const provider = createKloLlmProvider(
+    const provider = createKtxLlmProvider(
       {
         backend: 'gateway',
         gateway: { baseURL: 'https://gateway.test/v1' },
@@ -114,7 +114,7 @@ describe('createKloLlmProvider', () => {
   });
 
   it('returns Anthropic thinking provider options', () => {
-    const provider = createKloLlmProvider(
+    const provider = createKtxLlmProvider(
       {
         backend: 'anthropic',
         anthropic: { apiKey: 'test-anthropic-key' }, // pragma: allowlist secret
@@ -132,7 +132,7 @@ describe('createKloLlmProvider', () => {
   });
 
   it('defaults prompt caching to enabled with canonical TTLs', () => {
-    const provider = createKloLlmProvider(
+    const provider = createKtxLlmProvider(
       {
         backend: 'gateway',
         gateway: { baseURL: 'https://gateway.test/v1' },
@@ -157,7 +157,7 @@ describe('createKloLlmProvider', () => {
   });
 
   it('preserves explicit prompt caching opt-out', () => {
-    const provider = createKloLlmProvider(
+    const provider = createKtxLlmProvider(
       {
         backend: 'anthropic',
         anthropic: { apiKey: 'test-anthropic-key' }, // pragma: allowlist secret

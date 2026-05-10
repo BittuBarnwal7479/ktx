@@ -3,7 +3,7 @@ import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { initKloProject, type KloLocalProject } from '../project/index.js';
+import { initKtxProject, type KtxLocalProject } from '../project/index.js';
 import { assertSearchBackendConformanceCase } from '../search/index.js';
 import { searchLocalSlSources, writeLocalSlSource, type LocalSlSourceSearchResult } from './local-sl.js';
 import { searchLocalSlSourcesWithPglitePrototype } from './pglite-sl-search-prototype.js';
@@ -103,7 +103,7 @@ function toConformanceResult(result: LocalSlSourceSearchResult) {
   };
 }
 
-async function seedSemanticLayerProject(project: KloLocalProject): Promise<void> {
+async function seedSemanticLayerProject(project: KtxLocalProject): Promise<void> {
   await writeLocalSlSource(project, { connectionId: 'warehouse', sourceName: 'orders', yaml: ORDERS_YAML });
   await writeLocalSlSource(project, { connectionId: 'finance', sourceName: 'orders', yaml: FINANCE_ORDERS_YAML });
   await writeLocalSlSource(project, { connectionId: 'warehouse', sourceName: 'customers', yaml: CUSTOMERS_YAML });
@@ -152,21 +152,21 @@ async function seedSemanticLayerProject(project: KloLocalProject): Promise<void>
       null,
       2,
     )}\n`,
-    'klo',
-    'klo@example.com',
+    'ktx',
+    'ktx@example.com',
     'Seed PGlite dictionary profile',
   );
 }
 
 describe('PGlite semantic-layer search prototype', () => {
   let tempDir: string;
-  let project: KloLocalProject;
+  let project: KtxLocalProject;
   let pgliteDataDir: string;
   let port: number;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-pglite-sl-prototype-'));
-    project = await initKloProject({ projectDir: join(tempDir, 'project'), projectName: 'warehouse' });
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-pglite-sl-prototype-'));
+    project = await initKtxProject({ projectDir: join(tempDir, 'project'), projectName: 'warehouse' });
     project.config.ingest.embeddings.dimensions = 3;
     pgliteDataDir = join(tempDir, 'pglite-search');
     port = await allocatePort();

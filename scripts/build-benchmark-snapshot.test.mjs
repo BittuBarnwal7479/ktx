@@ -7,7 +7,7 @@ const require = createRequire(new URL('../packages/context/package.json', import
 const Database = require('better-sqlite3');
 
 describe('buildBenchmarkSnapshot', () => {
-  it('emits a KloSchemaSnapshot-shaped object plus expected-links from declared FKs', () => {
+  it('emits a KtxSchemaSnapshot-shaped object plus expected-links from declared FKs', () => {
     const db = new Database(':memory:');
     db.exec(`
       PRAGMA foreign_keys = ON;

@@ -1,20 +1,20 @@
-import type { KloLocalProject } from '../project/index.js';
+import type { KtxLocalProject } from '../project/index.js';
 import {
   exportLocalRelationshipFeedbackLabels,
   type ExportLocalRelationshipFeedbackLabelsInput,
   type ExportLocalRelationshipFeedbackLabelsResult,
-  type KloRelationshipFeedbackExportWarning,
-  type KloRelationshipFeedbackLabel,
+  type KtxRelationshipFeedbackExportWarning,
+  type KtxRelationshipFeedbackLabel,
 } from './relationship-feedback-export.js';
-import type { KloResolvedRelationshipStatus } from './relationship-graph-resolver.js';
+import type { KtxResolvedRelationshipStatus } from './relationship-graph-resolver.js';
 
 const DEFAULT_ACCEPT_THRESHOLDS = [0.95, 0.9, 0.85, 0.8, 0.75] as const;
 const DEFAULT_REVIEW_THRESHOLDS = [0.65, 0.6, 0.55, 0.5, 0.45] as const;
 
-type AdvicePredictedStatus = KloResolvedRelationshipStatus;
-export type KloRelationshipThresholdAdviceStatus = 'ready' | 'insufficient_labels' | 'no_eligible_thresholds';
+type AdvicePredictedStatus = KtxResolvedRelationshipStatus;
+export type KtxRelationshipThresholdAdviceStatus = 'ready' | 'insufficient_labels' | 'no_eligible_thresholds';
 
-export interface BuildKloRelationshipThresholdAdviceReportInput {
+export interface BuildKtxRelationshipThresholdAdviceReportInput {
   acceptThresholds?: readonly number[];
   reviewThresholds?: readonly number[];
   minTotalLabels?: number;
@@ -27,11 +27,11 @@ export interface BuildKloRelationshipThresholdAdviceReportInput {
 
 export interface AdviseLocalRelationshipFeedbackThresholdsInput
   extends Omit<ExportLocalRelationshipFeedbackLabelsInput, 'decision'>,
-    BuildKloRelationshipThresholdAdviceReportInput {
+    BuildKtxRelationshipThresholdAdviceReportInput {
   exportLocalRelationshipFeedbackLabels?: typeof exportLocalRelationshipFeedbackLabels;
 }
 
-export interface KloRelationshipThresholdAdviceCandidate {
+export interface KtxRelationshipThresholdAdviceCandidate {
   acceptThreshold: number;
   reviewThreshold: number;
   eligible: boolean;
@@ -47,10 +47,10 @@ export interface KloRelationshipThresholdAdviceCandidate {
   falseRejectedAcceptedLabels: number;
 }
 
-export interface KloRelationshipThresholdAdviceReport {
+export interface KtxRelationshipThresholdAdviceReport {
   generatedAt: string;
   filters: ExportLocalRelationshipFeedbackLabelsResult['filters'];
-  status: KloRelationshipThresholdAdviceStatus;
+  status: KtxRelationshipThresholdAdviceStatus;
   gates: {
     minTotalLabels: number;
     minAcceptedLabels: number;
@@ -68,10 +68,10 @@ export interface KloRelationshipThresholdAdviceReport {
     evaluatedCandidates: number;
     eligibleCandidates: number;
   };
-  recommended: KloRelationshipThresholdAdviceCandidate | null;
-  candidates: KloRelationshipThresholdAdviceCandidate[];
+  recommended: KtxRelationshipThresholdAdviceCandidate | null;
+  candidates: KtxRelationshipThresholdAdviceCandidate[];
   reasons: string[];
-  warnings: KloRelationshipFeedbackExportWarning[];
+  warnings: KtxRelationshipFeedbackExportWarning[];
 }
 
 interface ResolvedAdviceInput {
@@ -85,7 +85,7 @@ interface ResolvedAdviceInput {
   minRejectedBandPrecision: number;
 }
 
-function resolveInput(input: BuildKloRelationshipThresholdAdviceReportInput): ResolvedAdviceInput {
+function resolveInput(input: BuildKtxRelationshipThresholdAdviceReportInput): ResolvedAdviceInput {
   return {
     acceptThresholds: [...(input.acceptThresholds ?? DEFAULT_ACCEPT_THRESHOLDS)].sort((left, right) => right - left),
     reviewThresholds: [...(input.reviewThresholds ?? DEFAULT_REVIEW_THRESHOLDS)].sort((left, right) => right - left),
@@ -121,12 +121,12 @@ function isMetricAtLeast(value: number | null, minimum: number): boolean {
 }
 
 function thresholdCandidate(
-  labels: readonly KloRelationshipFeedbackLabel[],
+  labels: readonly KtxRelationshipFeedbackLabel[],
   acceptThreshold: number,
   reviewThreshold: number,
   gates: ResolvedAdviceInput,
-): KloRelationshipThresholdAdviceCandidate {
-  const scored = labels.filter((label): label is KloRelationshipFeedbackLabel & { score: number } => label.score !== null);
+): KtxRelationshipThresholdAdviceCandidate {
+  const scored = labels.filter((label): label is KtxRelationshipFeedbackLabel & { score: number } => label.score !== null);
   const acceptedLabels = scored.filter((label) => label.decision === 'accepted');
   const rejectedLabels = scored.filter((label) => label.decision === 'rejected');
   const predictions = scored.map((label) => ({
@@ -182,8 +182,8 @@ function metricRank(value: number | null): number {
 }
 
 function sortCandidates(
-  candidates: readonly KloRelationshipThresholdAdviceCandidate[],
-): KloRelationshipThresholdAdviceCandidate[] {
+  candidates: readonly KtxRelationshipThresholdAdviceCandidate[],
+): KtxRelationshipThresholdAdviceCandidate[] {
   return [...candidates].sort(
     (left, right) =>
       Number(right.eligible) - Number(left.eligible) ||
@@ -195,7 +195,7 @@ function sortCandidates(
   );
 }
 
-function labelGateReasons(labels: readonly KloRelationshipFeedbackLabel[], gates: ResolvedAdviceInput): string[] {
+function labelGateReasons(labels: readonly KtxRelationshipFeedbackLabel[], gates: ResolvedAdviceInput): string[] {
   const scored = labels.filter((label) => label.score !== null);
   const accepted = scored.filter((label) => label.decision === 'accepted');
   const rejected = scored.filter((label) => label.decision === 'rejected');
@@ -212,10 +212,10 @@ function labelGateReasons(labels: readonly KloRelationshipFeedbackLabel[], gates
   return reasons;
 }
 
-export function buildKloRelationshipThresholdAdviceReport(
+export function buildKtxRelationshipThresholdAdviceReport(
   feedback: ExportLocalRelationshipFeedbackLabelsResult,
-  input: BuildKloRelationshipThresholdAdviceReportInput = {},
-): KloRelationshipThresholdAdviceReport {
+  input: BuildKtxRelationshipThresholdAdviceReportInput = {},
+): KtxRelationshipThresholdAdviceReport {
   const gates = resolveInput(input);
   const scored = feedback.labels.filter((label) => label.score !== null);
   const acceptedLabels = scored.filter((label) => label.decision === 'accepted');
@@ -231,7 +231,7 @@ export function buildKloRelationshipThresholdAdviceReport(
   );
   const labelReasons = labelGateReasons(feedback.labels, gates);
   const eligibleCandidates = candidates.filter((candidate) => candidate.eligible);
-  const status: KloRelationshipThresholdAdviceStatus =
+  const status: KtxRelationshipThresholdAdviceStatus =
     labelReasons.length > 0 ? 'insufficient_labels' : eligibleCandidates.length > 0 ? 'ready' : 'no_eligible_thresholds';
   const reasons =
     status === 'insufficient_labels'
@@ -269,22 +269,22 @@ export function buildKloRelationshipThresholdAdviceReport(
 }
 
 export async function adviseLocalRelationshipFeedbackThresholds(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   input: AdviseLocalRelationshipFeedbackThresholdsInput = {},
-): Promise<KloRelationshipThresholdAdviceReport> {
+): Promise<KtxRelationshipThresholdAdviceReport> {
   const exporter = input.exportLocalRelationshipFeedbackLabels ?? exportLocalRelationshipFeedbackLabels;
   const feedback = await exporter(project, {
     connectionId: input.connectionId,
     decision: 'all',
   });
-  return buildKloRelationshipThresholdAdviceReport(feedback, input);
+  return buildKtxRelationshipThresholdAdviceReport(feedback, input);
 }
 
 function formatMetric(value: number | null): string {
   return value === null ? 'n/a' : value.toFixed(3);
 }
 
-function candidateLine(candidate: KloRelationshipThresholdAdviceCandidate): string {
+function candidateLine(candidate: KtxRelationshipThresholdAdviceCandidate): string {
   return [
     `accept=${candidate.acceptThreshold.toFixed(2)}`,
     `review=${candidate.reviewThreshold.toFixed(2)}`,
@@ -299,9 +299,9 @@ function candidateLine(candidate: KloRelationshipThresholdAdviceCandidate): stri
   ].join(' ');
 }
 
-export function formatKloRelationshipThresholdAdviceMarkdown(report: KloRelationshipThresholdAdviceReport): string {
+export function formatKtxRelationshipThresholdAdviceMarkdown(report: KtxRelationshipThresholdAdviceReport): string {
   const lines = [
-    'KLO relationship threshold advice',
+    'KTX relationship threshold advice',
     `Generated: ${report.generatedAt}`,
     `Filter connection: ${report.filters.connectionId ?? 'all'}`,
     `Status: ${report.status}`,

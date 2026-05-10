@@ -1,13 +1,13 @@
-import { loadKloProject } from '@klo/context/project';
+import { loadKtxProject } from '@ktx/context/project';
 import {
   type LocalKnowledgeScope,
   listLocalKnowledgePages,
   readLocalKnowledgePage,
   searchLocalKnowledgePages,
   writeLocalKnowledgePage,
-} from '@klo/context/wiki';
+} from '@ktx/context/wiki';
 
-export type KloKnowledgeArgs =
+export type KtxKnowledgeArgs =
   | { command: 'list'; projectDir: string; userId: string }
   | { command: 'read'; projectDir: string; key: string; userId: string }
   | { command: 'search'; projectDir: string; query: string; userId: string }
@@ -24,14 +24,14 @@ export type KloKnowledgeArgs =
       slRefs: string[];
     };
 
-interface KloKnowledgeIo {
+interface KtxKnowledgeIo {
   stdout: { write(chunk: string): void };
   stderr: { write(chunk: string): void };
 }
 
-export async function runKloKnowledge(args: KloKnowledgeArgs, io: KloKnowledgeIo = process): Promise<number> {
+export async function runKtxKnowledge(args: KtxKnowledgeArgs, io: KtxKnowledgeIo = process): Promise<number> {
   try {
-    const project = await loadKloProject({ projectDir: args.projectDir });
+    const project = await loadKtxProject({ projectDir: args.projectDir });
     if (args.command === 'list') {
       const pages = await listLocalKnowledgePages(project, { userId: args.userId });
       for (const page of pages) {
@@ -56,11 +56,11 @@ export async function runKloKnowledge(args: KloKnowledgeArgs, io: KloKnowledgeIo
         const pages = await listLocalKnowledgePages(project, { userId: args.userId });
         if (pages.length === 0) {
           io.stderr.write(
-            `No local wiki pages found in ${project.projectDir}. Create one with \`klo wiki write <key> --summary <summary> --content <content>\` or run ingest.\n`,
+            `No local wiki pages found in ${project.projectDir}. Create one with \`ktx wiki write <key> --summary <summary> --content <content>\` or run ingest.\n`,
           );
         } else {
           io.stderr.write(
-            `No local wiki pages matched "${args.query}". Run \`klo wiki list\` to inspect available pages.\n`,
+            `No local wiki pages matched "${args.query}". Run \`ktx wiki list\` to inspect available pages.\n`,
           );
         }
         return 0;

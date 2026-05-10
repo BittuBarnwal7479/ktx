@@ -1,8 +1,8 @@
 import { join } from 'node:path';
 import YAML from 'yaml';
 import { z } from 'zod';
-import type { KloEmbeddingPort, KloFileWriteResult } from '../core/index.js';
-import type { KloLocalProject } from '../project/index.js';
+import type { KtxEmbeddingPort, KtxFileWriteResult } from '../core/index.js';
+import type { KtxLocalProject } from '../project/index.js';
 import { HybridSearchCore, type SearchCandidateGenerator } from '../search/index.js';
 import { DEFAULT_PRIORITY, resolveDescription } from './descriptions.js';
 import { sourceDefinitionSchema, sourceOverlaySchema } from './schemas.js';
@@ -33,7 +33,7 @@ export interface LocalSlSourceSearchResult extends LocalSlSourceSummary {
 export interface LocalSlSearchInput {
   connectionId?: string;
   query: string;
-  embeddingService?: KloEmbeddingPort | null;
+  embeddingService?: KtxEmbeddingPort | null;
   limit?: number;
   backend?: 'pglite-owner-prototype';
   pglite?: PgliteSlSearchPrototypeOwnerOptions;
@@ -52,8 +52,8 @@ export interface LocalSlValidationResult {
   errors: string[];
 }
 
-const LOCAL_AUTHOR = 'klo';
-const LOCAL_AUTHOR_EMAIL = 'klo@example.com';
+const LOCAL_AUTHOR = 'ktx';
+const LOCAL_AUTHOR_EMAIL = 'ktx@example.com';
 
 function assertSafePathToken(kind: string, value: string): string {
   if (
@@ -191,7 +191,7 @@ function parsedStandaloneSource(parsed: Record<string, unknown>, name: string): 
 }
 
 export async function loadLocalSlSourceRecords(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   input: { connectionId: string },
 ): Promise<LocalSlSourceRecord[]> {
   const connectionId = assertSafeConnectionId(input.connectionId);
@@ -255,9 +255,9 @@ export async function validateLocalSlSource(rawYaml: string): Promise<LocalSlVal
 }
 
 export async function writeLocalSlSource(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   input: { connectionId: string; sourceName: string; yaml: string },
-): Promise<KloFileWriteResult> {
+): Promise<KtxFileWriteResult> {
   const validation = await validateLocalSlSource(input.yaml);
   if (!validation.valid) {
     throw new Error(`Invalid semantic-layer source: ${validation.errors.join('; ')}`);
@@ -279,7 +279,7 @@ export async function writeLocalSlSource(
 }
 
 export async function readLocalSlSource(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   input: { connectionId: string; sourceName: string },
 ): Promise<LocalSlSource | null> {
   const path = slPath(input.connectionId, input.sourceName);
@@ -299,7 +299,7 @@ export async function readLocalSlSource(
 }
 
 export async function listLocalSlSources(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   input: { connectionId?: string } = {},
 ): Promise<LocalSlSourceSummary[]> {
   if (input.connectionId) {
@@ -325,12 +325,12 @@ interface LocalSlSearchCandidate {
   searchText: string;
 }
 
-function sqliteSlDbPath(project: KloLocalProject): string {
-  return join(project.projectDir, '.klo', 'db.sqlite');
+function sqliteSlDbPath(project: KtxLocalProject): string {
+  return join(project.projectDir, '.ktx', 'db.sqlite');
 }
 
 async function loadLocalSlSearchCandidates(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   input: { connectionId?: string } = {},
 ): Promise<LocalSlSearchCandidate[]> {
   if (input.connectionId) {
@@ -390,9 +390,9 @@ function tokenLaneCandidates(candidates: LocalSlSearchCandidate[], terms: readon
 
 async function refreshHybridSlIndexes(input: {
   index: SqliteSlSourcesIndex;
-  project: KloLocalProject;
+  project: KtxLocalProject;
   candidates: LocalSlSearchCandidate[];
-  embeddingService?: KloEmbeddingPort | null;
+  embeddingService?: KtxEmbeddingPort | null;
 }): Promise<void> {
   const candidatesByConnection = new Map<string, LocalSlSearchCandidate[]>();
   for (const candidate of input.candidates) {
@@ -435,7 +435,7 @@ async function refreshHybridSlIndexes(input: {
 }
 
 export async function searchLocalSlSources(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   input: LocalSlSearchInput,
 ): Promise<LocalSlSourceSearchResult[]> {
   const query = input.query.trim();

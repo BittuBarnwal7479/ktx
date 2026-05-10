@@ -1,20 +1,20 @@
 import { generateText } from 'ai';
-import { createKloLlmProvider, type KloLlmProviderFactoryDeps } from './model-provider.js';
-import type { KloLlmConfig } from './types.js';
+import { createKtxLlmProvider, type KtxLlmProviderFactoryDeps } from './model-provider.js';
+import type { KtxLlmConfig } from './types.js';
 
-export type KloLlmHealthCheckResult = { ok: true } | { ok: false; message: string };
+export type KtxLlmHealthCheckResult = { ok: true } | { ok: false; message: string };
 
-export interface KloLlmHealthCheckDeps extends Omit<KloLlmProviderFactoryDeps, 'generateText'> {
+export interface KtxLlmHealthCheckDeps extends Omit<KtxLlmProviderFactoryDeps, 'generateText'> {
   generateText?: (options: Parameters<typeof generateText>[0]) => Promise<unknown>;
 }
 
-export interface KloLlmHealthCheckOptions {
+export interface KtxLlmHealthCheckOptions {
   prompt?: string;
   timeoutMs?: number;
-  deps?: KloLlmHealthCheckDeps;
+  deps?: KtxLlmHealthCheckDeps;
 }
 
-function redactHealthCheckMessage(message: string, config: KloLlmConfig): string {
+function redactHealthCheckMessage(message: string, config: KtxLlmConfig): string {
   const secrets = [config.anthropic?.apiKey, config.gateway?.apiKey].filter(
     (value): value is string => typeof value === 'string' && value.length > 0,
   );
@@ -35,13 +35,13 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T
   }
 }
 
-export async function runKloLlmHealthCheck(
-  config: KloLlmConfig,
-  options: KloLlmHealthCheckOptions = {},
-): Promise<KloLlmHealthCheckResult> {
+export async function runKtxLlmHealthCheck(
+  config: KtxLlmConfig,
+  options: KtxLlmHealthCheckOptions = {},
+): Promise<KtxLlmHealthCheckResult> {
   try {
     const { generateText: runGenerateTextOverride, ...providerDeps } = options.deps ?? {};
-    const provider = createKloLlmProvider(config, providerDeps);
+    const provider = createKtxLlmProvider(config, providerDeps);
     const runGenerateText = runGenerateTextOverride ?? generateText;
     await withTimeout(
       runGenerateText({

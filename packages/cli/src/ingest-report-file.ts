@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises';
-import { parseIngestReportSnapshot, type IngestReportSnapshot } from '@klo/context/ingest';
+import { parseIngestReportSnapshot, type IngestReportSnapshot } from '@ktx/context/ingest';
 
 export async function readIngestReportSnapshotFile(reportFile: string): Promise<IngestReportSnapshot> {
   const raw = await readFile(reportFile, 'utf-8');

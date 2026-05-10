@@ -50,7 +50,7 @@ function successReportJson() {
 }
 
 describe('relationship Orbit verification helper', () => {
-  it('exposes the Orbit verification command from the KLO workspace package', async () => {
+  it('exposes the Orbit verification command from the KTX workspace package', async () => {
     const packageJson = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
 
     assert.equal(
@@ -59,7 +59,7 @@ describe('relationship Orbit verification helper', () => {
     );
   });
 
-  it('builds the current KLO launcher arguments for scan and JSON report commands', () => {
+  it('builds the current KTX launcher arguments for scan and JSON report commands', () => {
     assert.deepEqual(buildOrbitScanArgv({ connectionId: 'orbit', projectDir: '/tmp/orbit-project' }), [
       'dev',
       'scan',
@@ -92,14 +92,14 @@ describe('relationship Orbit verification helper', () => {
       writeFile: async (path, content) => {
         writes.push({ path, content });
       },
-      runWorkspaceKlo: async (argv, options) => {
+      runWorkspaceKtx: async (argv, options) => {
         calls.push(argv);
         envs.push(options.env);
         if (argv[2] === 'report') {
           options.stdout.write(successReportJson());
           return 0;
         }
-        options.stdout.write('KLO scan completed\nRun: scan-orbit-1\nConnection: orbit\n');
+        options.stdout.write('KTX scan completed\nRun: scan-orbit-1\nConnection: orbit\n');
         return 0;
       },
     });
@@ -116,8 +116,8 @@ describe('relationship Orbit verification helper', () => {
   });
 
   it('extracts the run id from human scan output', () => {
-    assert.equal(extractRunId(`KLO scan completed\nStatus: done\nRun: scan-orbit-1\nConnection: orbit\n`), 'scan-orbit-1');
-    assert.equal(extractRunId('KLO scan completed without a run line\n'), null);
+    assert.equal(extractRunId(`KTX scan completed\nStatus: done\nRun: scan-orbit-1\nConnection: orbit\n`), 'scan-orbit-1');
+    assert.equal(extractRunId('KTX scan completed without a run line\n'), null);
   });
 
   it('formats successful Orbit verification evidence from the JSON report', () => {
@@ -126,16 +126,16 @@ describe('relationship Orbit verification helper', () => {
       date: '2026-05-07',
       connectionId: 'orbit',
       projectDir: '/tmp/orbit-project',
-      scanCommand: 'pnpm run klo -- dev scan orbit --enrich --project-dir /tmp/orbit-project',
-      reportCommand: 'pnpm run klo -- dev scan report --json --project-dir /tmp/orbit-project scan-orbit-1',
+      scanCommand: 'pnpm run ktx -- dev scan orbit --enrich --project-dir /tmp/orbit-project',
+      reportCommand: 'pnpm run ktx -- dev scan report --json --project-dir /tmp/orbit-project scan-orbit-1',
       scanExitCode: 0,
       reportExitCode: 0,
-      scanStdout: 'KLO scan completed\nRun: scan-orbit-1\n',
+      scanStdout: 'KTX scan completed\nRun: scan-orbit-1\n',
       scanStderr: '',
       report: JSON.parse(successReportJson()),
     });
 
-    assert.match(markdown, /# KLO Relationship Discovery Orbit Verification/);
+    assert.match(markdown, /# KTX Relationship Discovery Orbit Verification/);
     assert.match(markdown, /Outcome/);
     assert.match(markdown, /Exit code: 0/);
     assert.match(markdown, /Accepted: 14/);
@@ -152,7 +152,7 @@ describe('relationship Orbit verification helper', () => {
       date: '2026-05-07',
       connectionId: 'orbit',
       projectDir: '/tmp/orbit-project',
-      scanCommand: 'pnpm run klo -- dev scan orbit --enrich --project-dir /tmp/orbit-project',
+      scanCommand: 'pnpm run ktx -- dev scan orbit --enrich --project-dir /tmp/orbit-project',
       scanExitCode: 1,
       blocker: 'Connection "orbit" was not found',
       scanStdout: '',
@@ -177,13 +177,13 @@ describe('relationship Orbit verification helper', () => {
       writeFile: async (path, content) => {
         writes.push({ path, content });
       },
-      runWorkspaceKlo: async (argv, options) => {
+      runWorkspaceKtx: async (argv, options) => {
         calls.push(argv);
         if (argv[2] === 'report') {
           options.stdout.write(successReportJson());
           return 0;
         }
-        options.stdout.write('KLO scan completed\nRun: scan-orbit-1\nConnection: orbit\n');
+        options.stdout.write('KTX scan completed\nRun: scan-orbit-1\nConnection: orbit\n');
         return 0;
       },
     });
@@ -209,7 +209,7 @@ describe('relationship Orbit verification helper', () => {
       writeFile: async (path, content) => {
         writes.push({ path, content });
       },
-      runWorkspaceKlo: async (_argv, options) => {
+      runWorkspaceKtx: async (_argv, options) => {
         options.stderr.write('Connection "orbit" was not found\n');
         return 1;
       },
@@ -231,14 +231,14 @@ describe('relationship Orbit verification helper', () => {
       mkdir: async () => {},
       writeFile: async () => {},
       execFile: async () => ({ stdout: '', stderr: '' }),
-      runWorkspaceKlo: async (_argv, options) => {
+      runWorkspaceKtx: async (_argv, options) => {
         sawExecFile = typeof options.execFile === 'function';
-        options.stderr.write('ENOENT: no such file or directory, open \'/tmp/orbit-project/klo.yaml\'\n');
+        options.stderr.write('ENOENT: no such file or directory, open \'/tmp/orbit-project/ktx.yaml\'\n');
         return 1;
       },
     });
 
     assert.equal(sawExecFile, true);
-    assert.equal(result.blocker, "ENOENT: no such file or directory, open '/tmp/orbit-project/klo.yaml'");
+    assert.equal(result.blocker, "ENOENT: no such file or directory, open '/tmp/orbit-project/ktx.yaml'");
   });
 });

@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { promisify } from 'node:util';
-import { parseKloProjectConfig } from '@klo/context/project';
+import { parseKtxProjectConfig } from '@ktx/context/project';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import Database from 'better-sqlite3';
@@ -68,7 +68,7 @@ function structuredContent<T extends object>(result: unknown): T {
 
 async function writeWarehouseConfig(projectDir: string): Promise<void> {
   await writeFile(
-    join(projectDir, 'klo.yaml'),
+    join(projectDir, 'ktx.yaml'),
     [
       'project: warehouse',
       'connections:',
@@ -115,7 +115,7 @@ function createSqliteWarehouse(dbPath: string): void {
 
 async function writeSqliteScanConfig(projectDir: string, dbPath: string, enrich = false): Promise<void> {
   await writeFile(
-    join(projectDir, 'klo.yaml'),
+    join(projectDir, 'ktx.yaml'),
     [
       'project: warehouse',
       'connections:',
@@ -162,11 +162,11 @@ async function runSetupNewProject(projectDir: string): Promise<CliResult> {
   ]);
 }
 
-describe('standalone built klo CLI smoke', () => {
+describe('standalone built ktx CLI smoke', () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-standalone-smoke-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-standalone-smoke-'));
   });
 
   afterEach(async () => {
@@ -199,7 +199,7 @@ describe('standalone built klo CLI smoke', () => {
     ]);
     expect(run).toMatchObject({ code: 1, stdout: '' });
     expect(run.stderr).toContain(
-      'klo dev ingest run requires llm.provider.backend: anthropic, vertex, or gateway, or an injected agentRunner',
+      'ktx dev ingest run requires llm.provider.backend: anthropic, vertex, or gateway, or an injected agentRunner',
     );
   });
 
@@ -221,7 +221,7 @@ describe('standalone built klo CLI smoke', () => {
     expect(result.stdout).toContain('Notion:');
     expect(result.stdout).toContain('Semantic-layer sources:');
     expect(result.stdout).toContain('Knowledge pages:');
-    expect(result.stdout).toContain('klo serve --mcp stdio');
+    expect(result.stdout).toContain('ktx serve --mcp stdio');
     expect(result.stdout).not.toContain(['--mode', 'deterministic'].join(' '));
   });
 
@@ -297,12 +297,12 @@ describe('standalone built klo CLI smoke', () => {
       ok: false,
       error: {
         code: 'agent_sl_search_missing_project',
-        message: `Semantic-layer search needs an initialized KLO project at ${projectDir}.`,
+        message: `Semantic-layer search needs an initialized KTX project at ${projectDir}.`,
         nextSteps: [
-          'klo demo',
-          `klo setup --project-dir ${projectDir}`,
-          'klo ingest <connection>',
-          `klo agent sl list --json --query "revenue" --project-dir ${projectDir}`,
+          'ktx demo',
+          `ktx setup --project-dir ${projectDir}`,
+          'ktx ingest <connection>',
+          `ktx agent sl list --json --query "revenue" --project-dir ${projectDir}`,
         ],
       },
     });
@@ -333,10 +333,10 @@ describe('standalone built klo CLI smoke', () => {
     expect(inspect.stdout).toContain('Report: reports/seeded-demo-report.json');
     expect(inspect.stdout).toContain('Replay: replays/replay.memory-flow.v1.json');
     expect(inspect.stdout).toContain('Latest replay: seeded (packaged, prebuilt)');
-    expect(inspect.stdout).toContain('klo agent tools --json');
-    expect(inspect.stdout).toContain('klo agent context --json');
-    expect(inspect.stdout).not.toContain('klo ask "your question here"');
-    expect(inspect.stdout).toContain('klo serve --mcp stdio');
+    expect(inspect.stdout).toContain('ktx agent tools --json');
+    expect(inspect.stdout).toContain('ktx agent context --json');
+    expect(inspect.stdout).not.toContain('ktx ask "your question here"');
+    expect(inspect.stdout).toContain('ktx serve --mcp stdio');
   });
 
   it('serves seeded demo wiki and semantic-layer context over stdio MCP', async () => {
@@ -351,7 +351,7 @@ describe('standalone built klo CLI smoke', () => {
     expect(seeded).toMatchObject({ code: 0, stderr: '' });
     expect(seeded.stdout).toContain('Mode: seeded');
 
-    const client = new Client({ name: 'klo-seeded-demo-smoke-client', version: '0.0.0' });
+    const client = new Client({ name: 'ktx-seeded-demo-smoke-client', version: '0.0.0' });
     const transport = new StdioClientTransport({
       command: process.execPath,
       args: [CLI_BIN, 'serve', '--mcp', 'stdio', '--project-dir', projectDir, '--user-id', 'smoke-user'],
@@ -410,7 +410,7 @@ describe('standalone built klo CLI smoke', () => {
   it('runs doctor setup through the built binary', async () => {
     const result = await runBuiltCli(['dev', 'doctor', 'setup', '--no-input']);
 
-    expect(result.stdout).toContain('KLO setup doctor');
+    expect(result.stdout).toContain('KTX setup doctor');
     expect(result.stdout).toContain('Node 22+');
     expect(result.stdout).toContain('Workspace-local CLI');
     expect(result.stderr).toBe('');
@@ -425,8 +425,8 @@ describe('standalone built klo CLI smoke', () => {
     });
 
     expect(result.code).toBe(1);
-    expect(result.stderr).toContain('klo setup demo --mode full needs ANTHROPIC_API_KEY');
-    expect(result.stderr).toContain('klo setup demo --mode seeded --no-input');
+    expect(result.stderr).toContain('ktx setup demo --mode full needs ANTHROPIC_API_KEY');
+    expect(result.stderr).toContain('ktx setup demo --mode seeded --no-input');
   });
 
   it('requires force for demo reset through the built binary', async () => {
@@ -438,7 +438,7 @@ describe('standalone built klo CLI smoke', () => {
     const withoutForce = await runBuiltCli(['setup', 'demo', 'reset', '--project-dir', projectDir, '--no-input']);
     expect(withoutForce.code).toBe(1);
     expect(withoutForce.stderr).toContain(
-      `klo setup demo reset is destructive; pass --force to recreate ${projectDir}`,
+      `ktx setup demo reset is destructive; pass --force to recreate ${projectDir}`,
     );
 
     const withForce = await runBuiltCli([
@@ -464,7 +464,7 @@ describe('standalone built klo CLI smoke', () => {
     const replay = await runBuiltCli(['setup', 'demo', '--mode', 'replay', '--project-dir', projectDir, '--no-input']);
     expect(replay.code).toBe(1);
     expect(replay.stderr).toContain(`Demo project is not ready at ${projectDir}: missing demo.db`);
-    expect(replay.stderr).toContain(`klo setup demo reset --project-dir ${projectDir} --force --no-input`);
+    expect(replay.stderr).toContain(`ktx setup demo reset --project-dir ${projectDir} --force --no-input`);
   });
 
   it('runs demo doctor through the built binary', async () => {
@@ -474,7 +474,7 @@ describe('standalone built klo CLI smoke', () => {
     expect(init).toMatchObject({ code: 0, stderr: '' });
 
     const result = await runBuiltCli(['setup', 'demo', 'doctor', '--project-dir', projectDir, '--no-input']);
-    expect(result.stdout).toContain('KLO demo doctor');
+    expect(result.stdout).toContain('KTX demo doctor');
     expect(result.stdout).toContain('Demo dataset');
     expect(result.stdout).toContain('Demo replay');
     expect(result.stdout).toContain('Demo LLM provider');
@@ -658,7 +658,7 @@ describe('standalone built klo CLI smoke', () => {
     const projectDir = join(tempDir, 'gateway-config-project');
     await mkdir(projectDir, { recursive: true });
     await writeFile(
-      join(projectDir, 'klo.yaml'),
+      join(projectDir, 'ktx.yaml'),
       [
         'project: gateway-smoke',
         'llm:',
@@ -667,13 +667,13 @@ describe('standalone built klo CLI smoke', () => {
         '    gateway:',
         '      api_key: env:AI_GATEWAY_API_KEY', // pragma: allowlist secret
         '  models:',
-        '    default: env:KLO_SCAN_LLM_MODEL',
+        '    default: env:KTX_SCAN_LLM_MODEL',
         'scan:',
         '  enrichment:',
         '    mode: llm',
         '    embeddings:',
         '      backend: openai',
-        '      model: env:KLO_SCAN_EMBEDDING_MODEL',
+        '      model: env:KTX_SCAN_EMBEDDING_MODEL',
         '      dimensions: 1536',
         '      openai:',
         '        api_key: env:OPENAI_API_KEY', // pragma: allowlist secret
@@ -683,19 +683,19 @@ describe('standalone built klo CLI smoke', () => {
       'utf8',
     );
 
-    const config = parseKloProjectConfig(await readFile(join(projectDir, 'klo.yaml'), 'utf8'));
+    const config = parseKtxProjectConfig(await readFile(join(projectDir, 'ktx.yaml'), 'utf8'));
     expect(config.llm).toEqual({
       provider: {
         backend: 'gateway',
         gateway: { api_key: 'env:AI_GATEWAY_API_KEY' }, // pragma: allowlist secret
       },
-      models: { default: 'env:KLO_SCAN_LLM_MODEL' },
+      models: { default: 'env:KTX_SCAN_LLM_MODEL' },
     });
     expect(config.scan.enrichment).toEqual({
       mode: 'llm',
       embeddings: {
         backend: 'openai',
-        model: 'env:KLO_SCAN_EMBEDDING_MODEL',
+        model: 'env:KTX_SCAN_EMBEDDING_MODEL',
         dimensions: 1536,
         openai: { api_key: 'env:OPENAI_API_KEY' }, // pragma: allowlist secret
         batchSize: 16,
@@ -727,14 +727,14 @@ describe('standalone built klo CLI smoke', () => {
     expect(add.stdout).toContain('Connection: notion-main');
     expect(add.stdout).toContain('Driver: notion');
 
-    const yaml = await readFile(join(projectDir, 'klo.yaml'), 'utf-8');
+    const yaml = await readFile(join(projectDir, 'ktx.yaml'), 'utf-8');
     expect(yaml).toContain('driver: notion');
     expect(yaml).toContain('auth_token_ref: env:NOTION_AUTH_TOKEN');
     expect(yaml).toContain('crawl_mode: all_accessible');
     expect(yaml).toContain('max_pages_per_run: 5');
     expect(yaml).not.toContain('ntn_');
 
-    const parsed = parseKloProjectConfig(yaml);
+    const parsed = parseKtxProjectConfig(yaml);
     expect(parsed.connections['notion-main']).toMatchObject({
       driver: 'notion',
       auth_token_ref: 'env:NOTION_AUTH_TOKEN',
@@ -749,7 +749,7 @@ describe('standalone built klo CLI smoke', () => {
     expect(init).toMatchObject({ code: 0, stderr: '' });
     await writeWarehouseConfig(projectDir);
 
-    const client = new Client({ name: 'klo-smoke-client', version: '0.0.0' });
+    const client = new Client({ name: 'ktx-smoke-client', version: '0.0.0' });
     const transport = new StdioClientTransport({
       command: process.execPath,
       args: [CLI_BIN, 'serve', '--mcp', 'stdio', '--project-dir', projectDir, '--user-id', 'smoke-user'],
@@ -818,7 +818,7 @@ describe('standalone built klo CLI smoke', () => {
     createSqliteWarehouse(dbPath);
     await writeSqliteScanConfig(projectDir, dbPath);
 
-    const client = new Client({ name: 'klo-scan-smoke-client', version: '0.0.0' });
+    const client = new Client({ name: 'ktx-scan-smoke-client', version: '0.0.0' });
     const transport = new StdioClientTransport({
       command: process.execPath,
       args: [CLI_BIN, 'serve', '--mcp', 'stdio', '--project-dir', projectDir, '--user-id', 'smoke-user'],

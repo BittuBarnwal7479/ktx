@@ -1,5 +1,5 @@
 import { Command, InvalidArgumentError } from '@commander-js/extra-typings';
-import type { KloCliDeps, KloCliIo, KloCliPackageInfo } from './cli-runtime.js';
+import type { KtxCliDeps, KtxCliIo, KtxCliPackageInfo } from './cli-runtime.js';
 import { registerAgentCommands } from './commands/agent-commands.js';
 import { registerConnectionCommands } from './commands/connection-commands.js';
 import { registerWikiCommands } from './commands/knowledge-commands.js';
@@ -9,16 +9,16 @@ import { registerSetupCommands } from './commands/setup-commands.js';
 import { registerSlCommands } from './commands/sl-commands.js';
 import { registerStatusCommands } from './commands/status-commands.js';
 import { registerDevCommands } from './dev.js';
-import { findNearestKloProjectDir, resolveKloProjectDir } from './project-resolver.js';
+import { findNearestKtxProjectDir, resolveKtxProjectDir } from './project-resolver.js';
 import { profileMark, profileSpan } from './startup-profile.js';
 
 profileMark('module:cli-program');
 
-export interface KloCliCommandContext {
-  io: KloCliIo;
-  deps: KloCliDeps;
+export interface KtxCliCommandContext {
+  io: KtxCliIo;
+  deps: KtxCliDeps;
   setExitCode: (code: number) => void;
-  runInit: (args: { projectDir: string; projectName?: string; force: boolean }, io: KloCliIo) => Promise<number>;
+  runInit: (args: { projectDir: string; projectName?: string; force: boolean }, io: KtxCliIo) => Promise<number>;
   writeDebug?: (command: string, commandContext: CommandWithGlobalOptions) => void;
 }
 
@@ -29,13 +29,13 @@ export interface OutputModeOptions {
   input?: boolean;
 }
 
-interface KloCommanderProgramOptions {
-  runInit: (args: { projectDir: string; projectName?: string; force: boolean }, io: KloCliIo) => Promise<number>;
+interface KtxCommanderProgramOptions {
+  runInit: (args: { projectDir: string; projectName?: string; force: boolean }, io: KtxCliIo) => Promise<number>;
 }
 
 type CommanderExitLike = { exitCode: number; code: string; message: string };
 
-interface KloGlobalOptionValues {
+interface KtxGlobalOptionValues {
   projectDir?: string;
   debug?: boolean;
 }
@@ -104,7 +104,7 @@ export function parseNonEmptyAssignmentOption(value: string): { key: string; val
   };
 }
 
-function optionsWithGlobals(command: CommandWithGlobalOptions): KloGlobalOptionValues {
+function optionsWithGlobals(command: CommandWithGlobalOptions): KtxGlobalOptionValues {
   const options = command.optsWithGlobals ? command.optsWithGlobals() : command.opts();
   const values = options as { projectDir?: unknown; debug?: unknown };
   return {
@@ -114,25 +114,25 @@ function optionsWithGlobals(command: CommandWithGlobalOptions): KloGlobalOptionV
 }
 
 export function resolveCommandProjectDir(command: CommandWithGlobalOptions): string {
-  return resolveKloProjectDir({ explicitProjectDir: optionsWithGlobals(command).projectDir });
+  return resolveKtxProjectDir({ explicitProjectDir: optionsWithGlobals(command).projectDir });
 }
 
 export function resolveCommandProjectDirOverride(command: CommandWithGlobalOptions): string | undefined {
-  return optionsWithGlobals(command).projectDir ?? process.env.KLO_PROJECT_DIR;
+  return optionsWithGlobals(command).projectDir ?? process.env.KTX_PROJECT_DIR;
 }
 
-function createBaseProgram(info: KloCliPackageInfo, io: KloCliIo): Command {
+function createBaseProgram(info: KtxCliPackageInfo, io: KtxCliIo): Command {
   return new Command()
-    .name('klo')
-    .description('Standalone KLO developer CLI')
-    .option('--project-dir <path>', 'KLO project directory (default: KLO_PROJECT_DIR, nearest klo.yaml, or cwd)')
+    .name('ktx')
+    .description('Standalone KTX developer CLI')
+    .option('--project-dir <path>', 'KTX project directory (default: KTX_PROJECT_DIR, nearest ktx.yaml, or cwd)')
     .option('--debug', 'Enable diagnostic logging to stderr')
     .version(`${info.name} ${info.version}`, '-v, --version', 'Show CLI version')
     .helpOption('-h, --help', 'Show this help text')
     .configureHelp({ showGlobalOptions: true })
     .addHelpText(
       'after',
-      '\nAdvanced:\n  klo dev        Low-level diagnostics, scans, adapter commands, and mapping tools.\n',
+      '\nAdvanced:\n  ktx dev        Low-level diagnostics, scans, adapter commands, and mapping tools.\n',
     )
     .showHelpAfterError()
     .exitOverride()
@@ -143,7 +143,7 @@ function createBaseProgram(info: KloCliPackageInfo, io: KloCliIo): Command {
     });
 }
 
-function writeDebug(io: KloCliIo, commandContext: CommandWithGlobalOptions, command: string): void {
+function writeDebug(io: KtxCliIo, commandContext: CommandWithGlobalOptions, command: string): void {
   const global = optionsWithGlobals(commandContext);
   if (global.debug !== true) {
     return;
@@ -158,18 +158,18 @@ function formatCliError(error: unknown): string {
 
 async function runBareInteractiveCommand(
   program: Command,
-  io: KloCliIo,
-  context: KloCliCommandContext,
+  io: KtxCliIo,
+  context: KtxCliCommandContext,
 ): Promise<number> {
-  const nearestProjectDir = findNearestKloProjectDir(process.cwd());
-  const envProjectDir = process.env.KLO_PROJECT_DIR;
-  const runner = context.deps.setup ?? (await import('./setup.js')).runKloSetup;
+  const nearestProjectDir = findNearestKtxProjectDir(process.cwd());
+  const envProjectDir = process.env.KTX_PROJECT_DIR;
+  const runner = context.deps.setup ?? (await import('./setup.js')).runKtxSetup;
 
   if (!nearestProjectDir && !envProjectDir) {
     return await runner(
       {
         command: 'run',
-        projectDir: resolveKloProjectDir(),
+        projectDir: resolveKtxProjectDir(),
         mode: 'auto',
         agents: false,
         agentScope: 'project',
@@ -191,18 +191,18 @@ async function runBareInteractiveCommand(
   return 0;
 }
 
-export async function runCommanderKloCli(
+export async function runCommanderKtxCli(
   argv: string[],
-  io: KloCliIo,
-  deps: KloCliDeps,
-  info: KloCliPackageInfo,
-  options: KloCommanderProgramOptions,
+  io: KtxCliIo,
+  deps: KtxCliDeps,
+  info: KtxCliPackageInfo,
+  options: KtxCommanderProgramOptions,
 ): Promise<number> {
   profileMark('commander:entry');
   let exitCode = 0;
   const program = createBaseProgram(info, io);
   profileMark('commander:base-program');
-  const context: KloCliCommandContext = {
+  const context: KtxCliCommandContext = {
     io,
     deps,
     setExitCode: (code: number) => {

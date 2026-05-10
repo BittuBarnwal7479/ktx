@@ -1,21 +1,21 @@
-export { KloPostgresDialect } from './dialect.js';
+export { KtxPostgresDialect } from './dialect.js';
 export {
-  isKloPostgresConnectionConfig,
-  KloPostgresScanConnector,
+  isKtxPostgresConnectionConfig,
+  KtxPostgresScanConnector,
   postgresPoolConfigFromConfig,
-  type KloPostgresColumnDistinctValuesOptions,
-  type KloPostgresColumnDistinctValuesResult,
-  type KloPostgresColumnStatisticsResult,
-  type KloPostgresConnectionConfig,
-  type KloPostgresEndpointResolver,
-  type KloPostgresPoolConfig,
-  type KloPostgresPoolFactory,
-  type KloPostgresReadOnlyQueryInput,
-  type KloPostgresScanConnectorOptions,
-  type KloPostgresTableSampleResult,
+  type KtxPostgresColumnDistinctValuesOptions,
+  type KtxPostgresColumnDistinctValuesResult,
+  type KtxPostgresColumnStatisticsResult,
+  type KtxPostgresConnectionConfig,
+  type KtxPostgresEndpointResolver,
+  type KtxPostgresPoolConfig,
+  type KtxPostgresPoolFactory,
+  type KtxPostgresReadOnlyQueryInput,
+  type KtxPostgresScanConnectorOptions,
+  type KtxPostgresTableSampleResult,
 } from './connector.js';
 export {
-  KloPostgresHistoricSqlQueryClient,
-  type KloPostgresHistoricSqlQueryClientOptions,
+  KtxPostgresHistoricSqlQueryClient,
+  type KtxPostgresHistoricSqlQueryClientOptions,
 } from './historic-sql-query-client.js';
 export { createPostgresLiveDatabaseIntrospection } from './live-database-introspection.js';

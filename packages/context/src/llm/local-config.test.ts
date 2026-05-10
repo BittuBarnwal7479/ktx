@@ -1,31 +1,31 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
-  buildDefaultKloProjectConfig,
-  type KloProjectEmbeddingConfig,
-  type KloProjectLlmConfig,
+  buildDefaultKtxProjectConfig,
+  type KtxProjectEmbeddingConfig,
+  type KtxProjectLlmConfig,
 } from '../project/config.js';
 import {
-  createLocalKloEmbeddingProviderFromConfig,
-  createLocalKloLlmProviderFromConfig,
-  resolveLocalKloEmbeddingConfig,
-  resolveLocalKloLlmConfig,
+  createLocalKtxEmbeddingProviderFromConfig,
+  createLocalKtxLlmProviderFromConfig,
+  resolveLocalKtxEmbeddingConfig,
+  resolveLocalKtxLlmConfig,
 } from './local-config.js';
 
-describe('local KLO LLM config', () => {
-  it('resolves env and file references into a KloLlmConfig', () => {
-    const config: KloProjectLlmConfig = {
+describe('local KTX LLM config', () => {
+  it('resolves env and file references into a KtxLlmConfig', () => {
+    const config: KtxProjectLlmConfig = {
       provider: {
         backend: 'gateway',
         gateway: { api_key: 'env:AI_GATEWAY_API_KEY', base_url: 'https://gateway.example/v1' }, // pragma: allowlist secret
       },
-      models: { default: 'env:KLO_MODEL', triage: 'anthropic/claude-haiku-4-5' },
+      models: { default: 'env:KTX_MODEL', triage: 'anthropic/claude-haiku-4-5' },
       promptCaching: { enabled: false },
     };
 
     expect(
-      resolveLocalKloLlmConfig(config, {
+      resolveLocalKtxLlmConfig(config, {
         AI_GATEWAY_API_KEY: 'gateway-key', // pragma: allowlist secret
-        KLO_MODEL: 'anthropic/claude-sonnet-4-6',
+        KTX_MODEL: 'anthropic/claude-sonnet-4-6',
       }),
     ).toEqual({
       backend: 'gateway',
@@ -37,16 +37,16 @@ describe('local KLO LLM config', () => {
 
   it('returns null when the local LLM backend is disabled', () => {
     expect(
-      createLocalKloLlmProviderFromConfig({
+      createLocalKtxLlmProviderFromConfig({
         provider: { backend: 'none' },
         models: {},
       }),
     ).toBeNull();
   });
 
-  it('constructs providers through @klo/llm', () => {
-    const createKloLlmProvider = vi.fn(() => ({ getModel: vi.fn() }) as never);
-    const result = createLocalKloLlmProviderFromConfig(
+  it('constructs providers through @ktx/llm', () => {
+    const createKtxLlmProvider = vi.fn(() => ({ getModel: vi.fn() }) as never);
+    const result = createLocalKtxLlmProviderFromConfig(
       {
         provider: {
           backend: 'anthropic',
@@ -54,11 +54,11 @@ describe('local KLO LLM config', () => {
         },
         models: { default: 'claude-sonnet-4-6' },
       },
-      { env: { ANTHROPIC_API_KEY: 'sk-ant-test' }, createKloLlmProvider }, // pragma: allowlist secret
+      { env: { ANTHROPIC_API_KEY: 'sk-ant-test' }, createKtxLlmProvider }, // pragma: allowlist secret
     );
 
     expect(result).not.toBeNull();
-    expect(createKloLlmProvider).toHaveBeenCalledWith({
+    expect(createKtxLlmProvider).toHaveBeenCalledWith({
       backend: 'anthropic',
       anthropic: { apiKey: 'sk-ant-test' }, // pragma: allowlist secret
       modelSlots: { default: 'claude-sonnet-4-6' },
@@ -66,8 +66,8 @@ describe('local KLO LLM config', () => {
     });
   });
 
-  it('inherits enabled prompt caching from @klo/llm when local config omits promptCaching', () => {
-    const provider = createLocalKloLlmProviderFromConfig({
+  it('inherits enabled prompt caching from @ktx/llm when local config omits promptCaching', () => {
+    const provider = createLocalKtxLlmProviderFromConfig({
       provider: {
         backend: 'gateway',
         gateway: { base_url: 'https://gateway.example/v1' },
@@ -85,9 +85,9 @@ describe('local KLO LLM config', () => {
   });
 });
 
-describe('local KLO embedding config', () => {
+describe('local KTX embedding config', () => {
   it('resolves sentence-transformers config', () => {
-    const config: KloProjectEmbeddingConfig = {
+    const config: KtxProjectEmbeddingConfig = {
       backend: 'sentence-transformers',
       model: 'all-MiniLM-L6-v2',
       dimensions: 384,
@@ -95,7 +95,7 @@ describe('local KLO embedding config', () => {
       batchSize: 16,
     };
 
-    expect(resolveLocalKloEmbeddingConfig(config, {})).toEqual({
+    expect(resolveLocalKtxEmbeddingConfig(config, {})).toEqual({
       backend: 'sentence-transformers',
       model: 'all-MiniLM-L6-v2',
       dimensions: 384,
@@ -105,14 +105,14 @@ describe('local KLO embedding config', () => {
   });
 
   it('constructs deterministic embeddings from the default project config', () => {
-    const createKloEmbeddingProvider = vi.fn(() => ({}) as never);
-    const provider = createLocalKloEmbeddingProviderFromConfig(
-      buildDefaultKloProjectConfig('warehouse').ingest.embeddings,
-      { createKloEmbeddingProvider },
+    const createKtxEmbeddingProvider = vi.fn(() => ({}) as never);
+    const provider = createLocalKtxEmbeddingProviderFromConfig(
+      buildDefaultKtxProjectConfig('warehouse').ingest.embeddings,
+      { createKtxEmbeddingProvider },
     );
 
     expect(provider).not.toBeNull();
-    expect(createKloEmbeddingProvider).toHaveBeenCalledWith(
+    expect(createKtxEmbeddingProvider).toHaveBeenCalledWith(
       expect.objectContaining({
         backend: 'deterministic',
         model: 'deterministic',
@@ -122,6 +122,6 @@ describe('local KLO embedding config', () => {
   });
 
   it('returns null when embeddings are disabled', () => {
-    expect(createLocalKloEmbeddingProviderFromConfig({ backend: 'none', dimensions: 8 })).toBeNull();
+    expect(createLocalKtxEmbeddingProviderFromConfig({ backend: 'none', dimensions: 8 })).toBeNull();
   });
 });

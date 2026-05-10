@@ -2,27 +2,27 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { initKloProject, type KloLocalProject, loadKloProject } from '../project/index.js';
+import { initKtxProject, type KtxLocalProject, loadKtxProject } from '../project/index.js';
 import type { SqlAnalysisPort } from '../sql-analysis/index.js';
 import { LocalLookerRuntimeStore } from './adapters/looker/local-runtime-store.js';
 import { createDefaultLocalIngestAdapters, localPullConfigForAdapter } from './local-adapters.js';
 
 describe('local ingest adapters', () => {
   let tempDir: string;
-  let project: KloLocalProject;
+  let project: KtxLocalProject;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-local-adapters-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-local-adapters-'));
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
-    project = await loadKloProject({ projectDir });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
+    project = await loadKtxProject({ projectDir });
   });
 
   afterEach(async () => {
     await rm(tempDir, { recursive: true, force: true });
   });
 
-  function projectWithConnections(connections: KloLocalProject['config']['connections']): KloLocalProject {
+  function projectWithConnections(connections: KtxLocalProject['config']['connections']): KtxLocalProject {
     return {
       ...project,
       config: {
@@ -101,7 +101,7 @@ describe('local ingest adapters', () => {
             return { headers: [], rows: [] };
           },
         },
-        postgresBaselineRootDir: join(project.projectDir, '.klo/cache/historic-sql'),
+        postgresBaselineRootDir: join(project.projectDir, '.ktx/cache/historic-sql'),
       },
     });
 
@@ -187,7 +187,7 @@ describe('local ingest adapters', () => {
   });
 
   it('builds Looker pull config from local mapping state', async () => {
-    const projectDir = await mkdtemp(join(tmpdir(), 'klo-local-looker-'));
+    const projectDir = await mkdtemp(join(tmpdir(), 'ktx-local-looker-'));
     const lookerProject = {
       projectDir,
       config: {
@@ -204,12 +204,12 @@ describe('local ingest adapters', () => {
         },
       },
     } as never;
-    const store = new LocalLookerRuntimeStore({ dbPath: join(projectDir, '.klo/db.sqlite') });
+    const store = new LocalLookerRuntimeStore({ dbPath: join(projectDir, '.ktx/db.sqlite') });
     await store.setCursors('prod-looker', { dashboardsLastSyncedAt: null, looksLastSyncedAt: null });
     await store.upsertConnectionMapping({
       lookerConnectionId: 'prod-looker',
       lookerConnectionName: 'analytics',
-      kloConnectionId: 'prod-warehouse',
+      ktxConnectionId: 'prod-warehouse',
       source: 'cli',
     });
     const lookerDeps = {
@@ -263,7 +263,7 @@ describe('local ingest adapters', () => {
   });
 
   it('builds Looker pull config from yaml mapping bootstrap when SQLite is empty', async () => {
-    const projectDir = await mkdtemp(join(tmpdir(), 'klo-local-looker-yaml-'));
+    const projectDir = await mkdtemp(join(tmpdir(), 'ktx-local-looker-yaml-'));
     const lookerProject = {
       projectDir,
       config: {
@@ -327,7 +327,7 @@ describe('local ingest adapters', () => {
     });
   });
 
-  it('builds LookML pull config from flat klo.yaml connection fields', async () => {
+  it('builds LookML pull config from flat ktx.yaml connection fields', async () => {
     const lookmlProject = {
       projectDir: tempDir,
       config: {

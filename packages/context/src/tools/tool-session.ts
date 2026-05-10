@@ -1,4 +1,4 @@
-import type { GitService, KloFileStorePort } from '../core/index.js';
+import type { GitService, KtxFileStorePort } from '../core/index.js';
 import type { SemanticLayerService } from '../sl/index.js';
 import type { KnowledgeWikiService } from '../wiki/index.js';
 import type { TouchedSlSourceSet } from './touched-sl-sources.js';
@@ -47,7 +47,7 @@ export interface ToolSession {
   actions: MemoryAction[];
   semanticLayerService: SemanticLayerService;
   wikiService: KnowledgeWikiService;
-  configService: KloFileStorePort;
+  configService: KtxFileStorePort;
   gitService: GitService;
   ingest?: IngestToolMetadata;
   evictionDecisions?: EvictionDecisionRecord[];

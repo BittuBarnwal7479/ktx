@@ -2,8 +2,8 @@ import { randomUUID } from 'node:crypto';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type { MemoryAgentInput } from '../memory/index.js';
-import { jsonErrorToolResult, jsonToolResult, registerKloContextTools } from './context-tools.js';
-import type { KloMcpServerDeps, KloMcpServerLike, MemoryCapturePort } from './types.js';
+import { jsonErrorToolResult, jsonToolResult, registerKtxContextTools } from './context-tools.js';
+import type { KtxMcpServerDeps, KtxMcpServerLike, MemoryCapturePort } from './types.js';
 
 const memoryCaptureInputSchema = {
   userMessage: z.string().min(1).describe('The user message that may contain durable knowledge.'),
@@ -16,9 +16,9 @@ const memoryCaptureStatusInputSchema = {
 };
 
 function registerMemoryCaptureTools(deps: {
-  server: KloMcpServerLike;
+  server: KtxMcpServerLike;
   memoryCapture: MemoryCapturePort;
-  userContext: KloMcpServerDeps['userContext'];
+  userContext: KtxMcpServerDeps['userContext'];
 }): void {
   deps.server.registerTool(
     'memory_capture',
@@ -57,7 +57,7 @@ function registerMemoryCaptureTools(deps: {
   );
 }
 
-export function createKloMcpServer(deps: KloMcpServerDeps): KloMcpServerDeps['server'] {
+export function createKtxMcpServer(deps: KtxMcpServerDeps): KtxMcpServerDeps['server'] {
   if (deps.memoryCapture) {
     registerMemoryCaptureTools({
       server: deps.server,
@@ -67,7 +67,7 @@ export function createKloMcpServer(deps: KloMcpServerDeps): KloMcpServerDeps['se
   }
 
   if (deps.contextTools) {
-    registerKloContextTools({
+    registerKtxContextTools({
       server: deps.server,
       ports: deps.contextTools,
       userContext: deps.userContext,
@@ -77,15 +77,15 @@ export function createKloMcpServer(deps: KloMcpServerDeps): KloMcpServerDeps['se
   return deps.server;
 }
 
-export function createDefaultKloMcpServer(
-  deps: Omit<KloMcpServerDeps, 'server'> & { name?: string; version?: string },
+export function createDefaultKtxMcpServer(
+  deps: Omit<KtxMcpServerDeps, 'server'> & { name?: string; version?: string },
 ): McpServer {
   const server = new McpServer({
-    name: deps.name ?? 'klo',
+    name: deps.name ?? 'ktx',
     version: deps.version ?? '0.0.0-private',
   });
-  createKloMcpServer({
-    server: server as KloMcpServerLike,
+  createKtxMcpServer({
+    server: server as KtxMcpServerLike,
     memoryCapture: deps.memoryCapture,
     userContext: deps.userContext,
     contextTools: deps.contextTools,

@@ -1,4 +1,4 @@
-name: KLO CI
+name: KTX CI
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: klo-ci-${{ github.ref }}
+  group: ktx-ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -62,7 +62,7 @@ jobs:
       - name: Upload package artifacts
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
-          name: klo-package-artifacts-${{ github.sha }}
+          name: ktx-package-artifacts-${{ github.sha }}
           path: |
             dist/artifacts/manifest.json
             dist/artifacts/npm/*.tgz

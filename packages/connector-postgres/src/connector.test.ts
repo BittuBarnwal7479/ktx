@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   createPostgresLiveDatabaseIntrospection,
-  isKloPostgresConnectionConfig,
-  KloPostgresScanConnector,
+  isKtxPostgresConnectionConfig,
+  KtxPostgresScanConnector,
   postgresPoolConfigFromConfig,
-  type KloPostgresPoolFactory,
+  type KtxPostgresPoolFactory,
 } from './index.js';
 
 interface FakeQueryResult {
@@ -12,7 +12,7 @@ interface FakeQueryResult {
   fields?: Array<{ name: string; dataTypeID: number }>;
 }
 
-function fakePoolFactory(results: Map<string, FakeQueryResult>): KloPostgresPoolFactory {
+function fakePoolFactory(results: Map<string, FakeQueryResult>): KtxPostgresPoolFactory {
   const query = vi.fn(async (sql: string, params?: unknown[]) => {
     const normalized = sql.replace(/\s+/g, ' ').trim();
     for (const [key, value] of results.entries()) {
@@ -100,11 +100,11 @@ function metadataResults(): Map<string, FakeQueryResult> {
   ]);
 }
 
-describe('KloPostgresScanConnector', () => {
+describe('KtxPostgresScanConnector', () => {
   it('resolves configuration safely', () => {
-    expect(isKloPostgresConnectionConfig({ driver: 'postgres', url: 'env:DATABASE_URL', readonly: true })).toBe(true);
-    expect(isKloPostgresConnectionConfig({ driver: 'postgresql', host: 'db', database: 'analytics' })).toBe(true);
-    expect(isKloPostgresConnectionConfig({ driver: 'mysql', host: 'db' })).toBe(false);
+    expect(isKtxPostgresConnectionConfig({ driver: 'postgres', url: 'env:DATABASE_URL', readonly: true })).toBe(true);
+    expect(isKtxPostgresConnectionConfig({ driver: 'postgresql', host: 'db', database: 'analytics' })).toBe(true);
+    expect(isKtxPostgresConnectionConfig({ driver: 'mysql', host: 'db' })).toBe(false);
     expect(
       postgresPoolConfigFromConfig({
         connectionId: 'warehouse',
@@ -138,7 +138,7 @@ describe('KloPostgresScanConnector', () => {
   });
 
   it('introspects schemas, tables, views, primary keys, comments, row counts, and foreign keys', async () => {
-    const connector = new KloPostgresScanConnector({
+    const connector = new KtxPostgresScanConnector({
       connectionId: 'warehouse',
       connection: {
         driver: 'postgres',
@@ -197,7 +197,7 @@ describe('KloPostgresScanConnector', () => {
   });
 
   it('runs samples, distinct values, statistics, read-only SQL, and schema listing', async () => {
-    const connector = new KloPostgresScanConnector({
+    const connector = new KtxPostgresScanConnector({
       connectionId: 'warehouse',
       connection: {
         driver: 'postgres',
@@ -298,7 +298,7 @@ describe('KloPostgresScanConnector', () => {
 
   it('does not end the pool before introspection completes', async () => {
     let endCalled = false;
-    const endAwarePoolFactory: KloPostgresPoolFactory = {
+    const endAwarePoolFactory: KtxPostgresPoolFactory = {
       createPool() {
         const inner = fakePoolFactory(metadataResults()).createPool({
           max: 1,

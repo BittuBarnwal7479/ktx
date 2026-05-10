@@ -1,5 +1,5 @@
-import type { MemoryFlowEvent, MemoryFlowReplayInput } from '@klo/context/ingest/memory-flow';
-import type { KloDemoIo } from './demo.js';
+import type { MemoryFlowEvent, MemoryFlowReplayInput } from '@ktx/context/ingest/memory-flow';
+import type { KtxDemoIo } from './demo.js';
 
 function plural(n: number, one: string, many = `${one}s`): string {
   return `${n} ${n === 1 ? one : many}`;
@@ -62,7 +62,7 @@ export function formatMemoryFlowEventLine(event: MemoryFlowEvent): string | null
   }
 }
 
-export function createPlainProgressEmitter(io: KloDemoIo): (snapshot: MemoryFlowReplayInput) => void {
+export function createPlainProgressEmitter(io: KtxDemoIo): (snapshot: MemoryFlowReplayInput) => void {
   let printed = 0;
   return (snapshot) => {
     while (printed < snapshot.events.length) {

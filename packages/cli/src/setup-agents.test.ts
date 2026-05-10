@@ -3,10 +3,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  plannedKloAgentFiles,
-  readKloAgentInstallManifest,
-  removeKloAgentInstall,
-  runKloSetupAgentsStep,
+  plannedKtxAgentFiles,
+  readKtxAgentInstallManifest,
+  removeKtxAgentInstall,
+  runKtxSetupAgentsStep,
 } from './setup-agents.js';
 
 function makeIo() {
@@ -26,9 +26,9 @@ describe('setup agents', () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-setup-agents-'));
-    await mkdir(join(tempDir, '.klo', 'agents'), { recursive: true });
-    await writeFile(join(tempDir, 'klo.yaml'), 'project: revenue\nconnections: {}\n', 'utf-8');
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-setup-agents-'));
+    await mkdir(join(tempDir, '.ktx', 'agents'), { recursive: true });
+    await writeFile(join(tempDir, 'ktx.yaml'), 'project: revenue\nconnections: {}\n', 'utf-8');
   });
 
   afterEach(async () => {
@@ -36,22 +36,22 @@ describe('setup agents', () => {
   });
 
   it('plans project-scoped CLI and MCP files for every target', () => {
-    expect(plannedKloAgentFiles({ projectDir: tempDir, target: 'claude-code', scope: 'project', mode: 'both' })).toEqual([
-      { kind: 'file', path: join(tempDir, '.claude/skills/klo/SKILL.md') },
-      { kind: 'json-key', path: join(tempDir, '.mcp.json'), jsonPath: ['mcpServers', 'klo'] },
+    expect(plannedKtxAgentFiles({ projectDir: tempDir, target: 'claude-code', scope: 'project', mode: 'both' })).toEqual([
+      { kind: 'file', path: join(tempDir, '.claude/skills/ktx/SKILL.md') },
+      { kind: 'json-key', path: join(tempDir, '.mcp.json'), jsonPath: ['mcpServers', 'ktx'] },
     ]);
-    expect(plannedKloAgentFiles({ projectDir: tempDir, target: 'codex', scope: 'project', mode: 'cli' })).toEqual([
-      { kind: 'file', path: join(tempDir, '.agents/skills/klo/SKILL.md') },
+    expect(plannedKtxAgentFiles({ projectDir: tempDir, target: 'codex', scope: 'project', mode: 'cli' })).toEqual([
+      { kind: 'file', path: join(tempDir, '.agents/skills/ktx/SKILL.md') },
     ]);
-    expect(plannedKloAgentFiles({ projectDir: tempDir, target: 'cursor', scope: 'project', mode: 'mcp' })).toEqual([
-      { kind: 'json-key', path: join(tempDir, '.cursor/mcp.json'), jsonPath: ['mcpServers', 'klo'] },
+    expect(plannedKtxAgentFiles({ projectDir: tempDir, target: 'cursor', scope: 'project', mode: 'mcp' })).toEqual([
+      { kind: 'json-key', path: join(tempDir, '.cursor/mcp.json'), jsonPath: ['mcpServers', 'ktx'] },
     ]);
-    expect(plannedKloAgentFiles({ projectDir: tempDir, target: 'opencode', scope: 'project', mode: 'cli' })).toEqual([
-      { kind: 'file', path: join(tempDir, '.opencode/commands/klo.md') },
+    expect(plannedKtxAgentFiles({ projectDir: tempDir, target: 'opencode', scope: 'project', mode: 'cli' })).toEqual([
+      { kind: 'file', path: join(tempDir, '.opencode/commands/ktx.md') },
     ]);
-    expect(plannedKloAgentFiles({ projectDir: tempDir, target: 'universal', scope: 'project', mode: 'both' })).toEqual([
-      { kind: 'file', path: join(tempDir, '.agents/skills/klo/SKILL.md') },
-      { kind: 'json-key', path: join(tempDir, '.agents/mcp/klo.json'), jsonPath: ['mcpServers', 'klo'] },
+    expect(plannedKtxAgentFiles({ projectDir: tempDir, target: 'universal', scope: 'project', mode: 'both' })).toEqual([
+      { kind: 'file', path: join(tempDir, '.agents/skills/ktx/SKILL.md') },
+      { kind: 'json-key', path: join(tempDir, '.agents/mcp/ktx.json'), jsonPath: ['mcpServers', 'ktx'] },
     ]);
   });
 
@@ -59,7 +59,7 @@ describe('setup agents', () => {
     const io = makeIo();
 
     await expect(
-      runKloSetupAgentsStep(
+      runKtxSetupAgentsStep(
         {
           projectDir: tempDir,
           inputMode: 'disabled',
@@ -78,24 +78,24 @@ describe('setup agents', () => {
       installs: [{ target: 'universal', scope: 'project', mode: 'both' }],
     });
 
-    await expect(stat(join(tempDir, '.agents/skills/klo/SKILL.md'))).resolves.toBeDefined();
-    await expect(stat(join(tempDir, '.agents/mcp/klo.json'))).resolves.toBeDefined();
-    const skill = await readFile(join(tempDir, '.agents/skills/klo/SKILL.md'), 'utf-8');
+    await expect(stat(join(tempDir, '.agents/skills/ktx/SKILL.md'))).resolves.toBeDefined();
+    await expect(stat(join(tempDir, '.agents/mcp/ktx.json'))).resolves.toBeDefined();
+    const skill = await readFile(join(tempDir, '.agents/skills/ktx/SKILL.md'), 'utf-8');
     expect(skill).toContain(`--project-dir ${tempDir}`);
     expect(skill).toContain('must not print secrets');
-    expect(skill).toContain('klo agent sql execute');
-    expect(await readKloAgentInstallManifest(tempDir)).toMatchObject({
+    expect(skill).toContain('ktx agent sql execute');
+    expect(await readKtxAgentInstallManifest(tempDir)).toMatchObject({
       version: 1,
       projectDir: tempDir,
       installs: [{ target: 'universal', scope: 'project', mode: 'both' }],
     });
-    expect(await readFile(join(tempDir, 'klo.yaml'), 'utf-8')).toContain('agents');
+    expect(await readFile(join(tempDir, 'ktx.yaml'), 'utf-8')).toContain('agents');
     expect(io.stderr()).toBe('');
   });
 
   it('removes only manifest-listed files and JSON keys', async () => {
     const io = makeIo();
-    await runKloSetupAgentsStep(
+    await runKtxSetupAgentsStep(
       {
         projectDir: tempDir,
         inputMode: 'disabled',
@@ -108,13 +108,13 @@ describe('setup agents', () => {
       },
       io.io,
     );
-    await writeFile(join(tempDir, '.claude/skills/klo/keep.txt'), 'user file', 'utf-8');
+    await writeFile(join(tempDir, '.claude/skills/ktx/keep.txt'), 'user file', 'utf-8');
 
-    await expect(removeKloAgentInstall(tempDir, io.io)).resolves.toBe(0);
+    await expect(removeKtxAgentInstall(tempDir, io.io)).resolves.toBe(0);
 
-    await expect(stat(join(tempDir, '.claude/skills/klo/SKILL.md'))).rejects.toThrow();
-    await expect(stat(join(tempDir, '.claude/skills/klo/keep.txt'))).resolves.toBeDefined();
-    await expect(readKloAgentInstallManifest(tempDir)).resolves.toEqual(null);
+    await expect(stat(join(tempDir, '.claude/skills/ktx/SKILL.md'))).rejects.toThrow();
+    await expect(stat(join(tempDir, '.claude/skills/ktx/keep.txt'))).resolves.toBeDefined();
+    await expect(readKtxAgentInstallManifest(tempDir)).resolves.toEqual(null);
   });
 
   it('uses prompts in interactive mode and supports Back', async () => {
@@ -126,7 +126,7 @@ describe('setup agents', () => {
     };
 
     await expect(
-      runKloSetupAgentsStep(
+      runKtxSetupAgentsStep(
         {
           projectDir: tempDir,
           inputMode: 'auto',
@@ -151,7 +151,7 @@ describe('setup agents', () => {
     };
 
     await expect(
-      runKloSetupAgentsStep(
+      runKtxSetupAgentsStep(
         {
           projectDir: tempDir,
           inputMode: 'auto',
@@ -169,7 +169,7 @@ describe('setup agents', () => {
     expect(prompts.multiselect).toHaveBeenCalledWith(
       expect.objectContaining({
         message:
-          'Which agent targets should KLO install?\nUse Up/Down to move, Space to select or unselect, Enter to confirm, Escape to go back, or Ctrl+C to exit.',
+          'Which agent targets should KTX install?\nUse Up/Down to move, Space to select or unselect, Enter to confirm, Escape to go back, or Ctrl+C to exit.',
       }),
     );
   });

@@ -1,4 +1,4 @@
-import type { MemoryFlowEvent, MemoryFlowReplayInput } from '@klo/context/ingest/memory-flow';
+import type { MemoryFlowEvent, MemoryFlowReplayInput } from '@ktx/context/ingest/memory-flow';
 import { describe, expect, it } from 'vitest';
 import {
   buildDemoMetrics,

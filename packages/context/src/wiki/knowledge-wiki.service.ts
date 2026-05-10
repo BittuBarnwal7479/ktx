@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import YAML from 'yaml';
-import type { KloEmbeddingPort, KloFileStorePort, KloLogger } from '../core/index.js';
+import type { KtxEmbeddingPort, KtxFileStorePort, KtxLogger } from '../core/index.js';
 import { noopLogger } from '../core/index.js';
 import { buildKnowledgeSearchText } from './knowledge-search-text.js';
 import type { KnowledgeGitDiffPort, KnowledgeIndexPort, UpsertPageParams } from './ports.js';
@@ -14,11 +14,11 @@ export class KnowledgeWikiService {
   private isWorktreeScoped = false;
 
   constructor(
-    private readonly configService: KloFileStorePort,
-    private readonly embeddingService: KloEmbeddingPort,
+    private readonly configService: KtxFileStorePort,
+    private readonly embeddingService: KtxEmbeddingPort,
     private readonly pagesRepository: KnowledgeIndexPort,
     private readonly gitService: KnowledgeGitDiffPort,
-    private readonly logger: KloLogger = noopLogger,
+    private readonly logger: KtxLogger = noopLogger,
   ) {}
 
   /**
@@ -30,7 +30,7 @@ export class KnowledgeWikiService {
    */
   forWorktree(workdir: string): KnowledgeWikiService {
     return new KnowledgeWikiService(
-      this.configService.forWorktree(workdir) as KloFileStorePort,
+      this.configService.forWorktree(workdir) as KtxFileStorePort,
       this.embeddingService,
       this.pagesRepository,
       this.gitService,

@@ -9,8 +9,8 @@ export type {
   SlSearchMetadata,
 } from './types.js';
 export type {
-  KloConnectionInfo,
-  KloQueryResult,
+  KtxConnectionInfo,
+  KtxQueryResult,
   SlConnectionCatalogPort,
   SlPythonPort,
   SlSourcesIndexPort,

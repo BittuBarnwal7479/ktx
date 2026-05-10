@@ -1,4 +1,4 @@
-import type { MemoryFlowReplayInput } from '@klo/context/ingest/memory-flow';
+import type { MemoryFlowReplayInput } from '@ktx/context/ingest/memory-flow';
 import {
   ensureSeededDemoProject,
   loadPackagedDemoReplay,

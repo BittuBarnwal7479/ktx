@@ -2,8 +2,8 @@ import { Buffer } from 'node:buffer';
 import type { Dirent } from 'node:fs';
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
-import { redactKloSensitiveMetadata } from '../../../core/redaction.js';
-import type { KloSchemaSnapshot, KloSchemaTable, KloTableRef } from '../../../scan/types.js';
+import { redactKtxSensitiveMetadata } from '../../../core/redaction.js';
+import type { KtxSchemaSnapshot, KtxSchemaTable, KtxTableRef } from '../../../scan/types.js';
 
 export const LIVE_DATABASE_META_FILE = 'connection.json';
 export const LIVE_DATABASE_FOREIGN_KEYS_FILE = 'foreign-keys.json';
@@ -11,7 +11,7 @@ const LIVE_DATABASE_TABLES_DIR = 'tables';
 
 interface LiveDatabaseTableFile {
   path: string;
-  table: KloSchemaTable;
+  table: KtxSchemaTable;
 }
 
 interface ForeignKeyIndexEntry {
@@ -29,11 +29,11 @@ function encodePathPart(value: string | null | undefined): string {
   return Buffer.from(value ?? '_', 'utf8').toString('base64url');
 }
 
-function tableSortKey(table: KloTableRef): string {
+function tableSortKey(table: KtxTableRef): string {
   return `${table.catalog ?? ''}\u0000${table.db ?? ''}\u0000${table.name}`;
 }
 
-export function liveDatabaseTablePath(table: KloTableRef): string {
+export function liveDatabaseTablePath(table: KtxTableRef): string {
   return `${LIVE_DATABASE_TABLES_DIR}/${encodePathPart(table.catalog)}.${encodePathPart(table.db)}.${encodePathPart(
     table.name,
   )}.json`;
@@ -62,7 +62,7 @@ function stableJson(value: unknown): string {
   return `${JSON.stringify(value, null, 2)}\n`;
 }
 
-function foreignKeyIndex(snapshot: KloSchemaSnapshot): ForeignKeyIndexEntry[] {
+function foreignKeyIndex(snapshot: KtxSchemaSnapshot): ForeignKeyIndexEntry[] {
   const entries: ForeignKeyIndexEntry[] = [];
   for (const table of snapshot.tables) {
     for (const fk of table.foreignKeys) {
@@ -88,7 +88,7 @@ function foreignKeyIndex(snapshot: KloSchemaSnapshot): ForeignKeyIndexEntry[] {
   return entries;
 }
 
-export async function writeLiveDatabaseSnapshot(stagedDir: string, snapshot: KloSchemaSnapshot): Promise<void> {
+export async function writeLiveDatabaseSnapshot(stagedDir: string, snapshot: KtxSchemaSnapshot): Promise<void> {
   await mkdir(join(stagedDir, LIVE_DATABASE_TABLES_DIR), { recursive: true });
   const sortedTables = [...snapshot.tables].sort((a, b) => tableSortKey(a).localeCompare(tableSortKey(b)));
   const metadata = {
@@ -96,7 +96,7 @@ export async function writeLiveDatabaseSnapshot(stagedDir: string, snapshot: Klo
     driver: snapshot.driver,
     extractedAt: snapshot.extractedAt,
     scope: snapshot.scope,
-    metadata: redactKloSensitiveMetadata(snapshot.metadata),
+    metadata: redactKtxSensitiveMetadata(snapshot.metadata),
     tableCount: sortedTables.length,
   };
   await writeFile(join(stagedDir, LIVE_DATABASE_META_FILE), stableJson(metadata));
@@ -115,7 +115,7 @@ export async function readLiveDatabaseTableFiles(stagedDir: string): Promise<Liv
   for (const file of files.filter((path) => path.endsWith('.json'))) {
     const path = `${LIVE_DATABASE_TABLES_DIR}/${file}`;
     const raw = await readFile(join(stagedDir, path), 'utf8');
-    const parsed = JSON.parse(raw) as KloSchemaTable;
+    const parsed = JSON.parse(raw) as KtxSchemaTable;
     if (parsed && typeof parsed.name === 'string' && Array.isArray(parsed.columns)) {
       out.push({ path, table: parsed });
     }

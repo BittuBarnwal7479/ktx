@@ -1,11 +1,11 @@
-import type { KloSchemaDimensionType, KloTableRef } from '@klo/context/scan';
+import type { KtxSchemaDimensionType, KtxTableRef } from '@ktx/context/scan';
 
-type MysqlTableNameRef = Pick<KloTableRef, 'name'> & Partial<Pick<KloTableRef, 'catalog' | 'db'>>;
+type MysqlTableNameRef = Pick<KtxTableRef, 'name'> & Partial<Pick<KtxTableRef, 'catalog' | 'db'>>;
 
-export class KloMysqlDialect {
+export class KtxMysqlDialect {
   readonly type = 'mysql';
 
-  private readonly typeMappings: Record<string, KloSchemaDimensionType> = {
+  private readonly typeMappings: Record<string, KtxSchemaDimensionType> = {
     datetime: 'time',
     timestamp: 'time',
     date: 'time',
@@ -50,7 +50,7 @@ export class KloMysqlDialect {
     return nativeType;
   }
 
-  mapToDimensionType(nativeType: string): KloSchemaDimensionType {
+  mapToDimensionType(nativeType: string): KtxSchemaDimensionType {
     if (!nativeType) {
       return 'string';
     }

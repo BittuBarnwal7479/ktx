@@ -1,17 +1,17 @@
 import Database from 'better-sqlite3';
 import { afterEach, describe, expect, it } from 'vitest';
-import type { KloEnrichedColumn, KloEnrichedSchema, KloEnrichedTable } from './enrichment-types.js';
-import { generateKloRelationshipDiscoveryCandidates } from './relationship-candidates.js';
-import type { KloRelationshipProfileArtifact } from './relationship-profiling.js';
-import { profileKloRelationshipSchema } from './relationship-profiling.js';
-import { validateKloRelationshipDiscoveryCandidates } from './relationship-validation.js';
-import type { KloQueryResult, KloReadOnlyQueryInput, KloScanContext } from './types.js';
+import type { KtxEnrichedColumn, KtxEnrichedSchema, KtxEnrichedTable } from './enrichment-types.js';
+import { generateKtxRelationshipDiscoveryCandidates } from './relationship-candidates.js';
+import type { KtxRelationshipProfileArtifact } from './relationship-profiling.js';
+import { profileKtxRelationshipSchema } from './relationship-profiling.js';
+import { validateKtxRelationshipDiscoveryCandidates } from './relationship-validation.js';
+import type { KtxQueryResult, KtxReadOnlyQueryInput, KtxScanContext } from './types.js';
 
 class InMemorySqliteExecutor {
   readonly db = new Database(':memory:');
   queryCount = 0;
 
-  executeReadOnly(input: KloReadOnlyQueryInput, _ctx: KloScanContext): Promise<KloQueryResult> {
+  executeReadOnly(input: KtxReadOnlyQueryInput, _ctx: KtxScanContext): Promise<KtxQueryResult> {
     this.queryCount += 1;
     const rows = this.db.prepare(input.sql).all() as Record<string, unknown>[];
     const headers = Object.keys(rows[0] ?? {});
@@ -28,7 +28,7 @@ class InMemorySqliteExecutor {
   }
 }
 
-function column(tableId: string, name: string, overrides: Partial<KloEnrichedColumn> = {}): KloEnrichedColumn {
+function column(tableId: string, name: string, overrides: Partial<KtxEnrichedColumn> = {}): KtxEnrichedColumn {
   const tableRef = overrides.tableRef ?? { catalog: null, db: null, name: tableId };
   return {
     id: `${tableId}.${name}`,
@@ -49,7 +49,7 @@ function column(tableId: string, name: string, overrides: Partial<KloEnrichedCol
   };
 }
 
-function table(name: string, columns: KloEnrichedColumn[]): KloEnrichedTable {
+function table(name: string, columns: KtxEnrichedColumn[]): KtxEnrichedTable {
   const ref = { catalog: null, db: null, name };
   return {
     id: name,
@@ -60,7 +60,7 @@ function table(name: string, columns: KloEnrichedColumn[]): KloEnrichedTable {
   };
 }
 
-function schema(tables?: KloEnrichedTable[]): KloEnrichedSchema {
+function schema(tables?: KtxEnrichedTable[]): KtxEnrichedSchema {
   return {
     connectionId: 'warehouse',
     tables: tables ?? [
@@ -97,18 +97,18 @@ describe('relationship validation', () => {
       INSERT INTO invoices (id, account_id) VALUES (20, 1), (21, 2), (22, 999);
     `);
     const testSchema = schema();
-    const profiles = await profileKloRelationshipSchema({
+    const profiles = await profileKtxRelationshipSchema({
       connectionId: 'warehouse',
       driver: 'sqlite',
       schema: testSchema,
       executor,
       ctx: { runId: 'validate-test' },
     });
-    const candidates = generateKloRelationshipDiscoveryCandidates(testSchema).filter(
+    const candidates = generateKtxRelationshipDiscoveryCandidates(testSchema).filter(
       (candidate) => candidate.from.table.name === 'users',
     );
 
-    const validated = await validateKloRelationshipDiscoveryCandidates({
+    const validated = await validateKtxRelationshipDiscoveryCandidates({
       connectionId: 'warehouse',
       driver: 'sqlite',
       candidates,
@@ -145,18 +145,18 @@ describe('relationship validation', () => {
       INSERT INTO invoices (id, account_id) VALUES (20, 1), (21, 999), (22, 1000);
     `);
     const testSchema = schema();
-    const profiles = await profileKloRelationshipSchema({
+    const profiles = await profileKtxRelationshipSchema({
       connectionId: 'warehouse',
       driver: 'sqlite',
       schema: testSchema,
       executor,
       ctx: { runId: 'validate-test' },
     });
-    const candidates = generateKloRelationshipDiscoveryCandidates(testSchema).filter(
+    const candidates = generateKtxRelationshipDiscoveryCandidates(testSchema).filter(
       (candidate) => candidate.from.table.name === 'invoices',
     );
 
-    const validated = await validateKloRelationshipDiscoveryCandidates({
+    const validated = await validateKtxRelationshipDiscoveryCandidates({
       connectionId: 'warehouse',
       driver: 'sqlite',
       candidates,
@@ -194,7 +194,7 @@ describe('relationship validation', () => {
       INSERT INTO invoices (id, account_id) VALUES (20, 1), (21, 2), (22, 3);
     `);
     const testSchema = schema();
-    const profiles = await profileKloRelationshipSchema({
+    const profiles = await profileKtxRelationshipSchema({
       connectionId: 'warehouse',
       driver: 'sqlite',
       schema: testSchema,
@@ -202,12 +202,12 @@ describe('relationship validation', () => {
       ctx: { runId: 'validate-budget-profile' },
     });
     executor.queryCount = 0;
-    const candidates = generateKloRelationshipDiscoveryCandidates(testSchema).map((candidate) => ({
+    const candidates = generateKtxRelationshipDiscoveryCandidates(testSchema).map((candidate) => ({
       ...candidate,
       confidence: candidate.from.table.name === 'users' ? 0.99 : 0.5,
     }));
 
-    const validated = await validateKloRelationshipDiscoveryCandidates({
+    const validated = await validateKtxRelationshipDiscoveryCandidates({
       connectionId: 'warehouse',
       driver: 'sqlite',
       candidates,
@@ -249,7 +249,7 @@ describe('relationship validation', () => {
       ]),
       table('users', [column('users', 'id', { nullable: false }), column('users', 'account_id', { nullable: false })]),
     ]);
-    const profiles = await profileKloRelationshipSchema({
+    const profiles = await profileKtxRelationshipSchema({
       connectionId: 'warehouse',
       driver: 'sqlite',
       schema: testSchema,
@@ -257,9 +257,9 @@ describe('relationship validation', () => {
       ctx: { runId: 'validate-zero-budget-profile' },
     });
     executor.queryCount = 0;
-    const candidates = generateKloRelationshipDiscoveryCandidates(testSchema);
+    const candidates = generateKtxRelationshipDiscoveryCandidates(testSchema);
 
-    const validated = await validateKloRelationshipDiscoveryCandidates({
+    const validated = await validateKtxRelationshipDiscoveryCandidates({
       connectionId: 'warehouse',
       driver: 'sqlite',
       candidates,
@@ -296,14 +296,14 @@ describe('relationship validation', () => {
       table('customers', [column('customers', 'id', { nullable: false })]),
       table('orders', [column('orders', 'buyer_ref')]),
     ]);
-    const profiles = await profileKloRelationshipSchema({
+    const profiles = await profileKtxRelationshipSchema({
       connectionId: 'warehouse',
       driver: 'sqlite',
       schema: testSchema,
       executor,
       ctx: { runId: 'llm-rejected-validation' },
     });
-    const [candidate] = generateKloRelationshipDiscoveryCandidates(
+    const [candidate] = generateKtxRelationshipDiscoveryCandidates(
       schema([
         table('customers', [column('customers', 'id', { nullable: false })]),
         table('orders', [column('orders', 'customer_id')]),
@@ -325,7 +325,7 @@ describe('relationship validation', () => {
       },
     };
 
-    const [validated] = await validateKloRelationshipDiscoveryCandidates({
+    const [validated] = await validateKtxRelationshipDiscoveryCandidates({
       connectionId: 'warehouse',
       driver: 'sqlite',
       candidates: [llmCandidate],
@@ -354,7 +354,7 @@ describe('relationship validation', () => {
     let active = 0;
     let maxActive = 0;
     const throttled = {
-      executeReadOnly: async (input: KloReadOnlyQueryInput, ctx: KloScanContext) => {
+      executeReadOnly: async (input: KtxReadOnlyQueryInput, ctx: KtxScanContext) => {
         active += 1;
         maxActive = Math.max(maxActive, active);
         await new Promise((resolve) => setTimeout(resolve, input.sql.includes('WITH child_values') ? 10 : 0));
@@ -369,16 +369,16 @@ describe('relationship validation', () => {
       table('orders', [column('orders', 'id', { nullable: false }), column('orders', 'account_id')]),
       table('invoices', [column('invoices', 'id', { nullable: false }), column('invoices', 'account_id')]),
     ]);
-    const profiles = await profileKloRelationshipSchema({
+    const profiles = await profileKtxRelationshipSchema({
       connectionId: 'warehouse',
       driver: 'sqlite',
       schema: testSchema,
       executor,
       ctx: { runId: 'validation-concurrency-profile' },
     });
-    const candidates = generateKloRelationshipDiscoveryCandidates(testSchema);
+    const candidates = generateKtxRelationshipDiscoveryCandidates(testSchema);
 
-    await validateKloRelationshipDiscoveryCandidates({
+    await validateKtxRelationshipDiscoveryCandidates({
       connectionId: 'warehouse',
       driver: 'sqlite',
       candidates,
@@ -457,7 +457,7 @@ describe('relationship validation', () => {
           maxTextLength: 10,
         },
       },
-    } satisfies KloRelationshipProfileArtifact;
+    } satisfies KtxRelationshipProfileArtifact;
     const executor = {
       async executeReadOnly() {
         return {
@@ -469,7 +469,7 @@ describe('relationship validation', () => {
       },
     };
 
-    const [validated] = await validateKloRelationshipDiscoveryCandidates({
+    const [validated] = await validateKtxRelationshipDiscoveryCandidates({
       connectionId: 'warehouse',
       driver: 'sqlite',
       candidates: [candidate],

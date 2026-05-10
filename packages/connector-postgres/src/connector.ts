@@ -1,28 +1,28 @@
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { resolve } from 'node:path';
-import { assertReadOnlySql, limitSqlForExecution } from '@klo/context/connections';
+import { assertReadOnlySql, limitSqlForExecution } from '@ktx/context/connections';
 import {
-  createKloConnectorCapabilities,
-  type KloColumnSampleInput,
-  type KloColumnSampleResult,
-  type KloColumnStatsInput,
-  type KloColumnStatsResult,
-  type KloQueryResult,
-  type KloReadOnlyQueryInput,
-  type KloScanConnector,
-  type KloScanContext,
-  type KloScanInput,
-  type KloSchemaColumn,
-  type KloSchemaForeignKey,
-  type KloSchemaSnapshot,
-  type KloSchemaTable,
-  type KloTableRef,
-  type KloTableSampleInput,
-  type KloTableSampleResult,
-} from '@klo/context/scan';
+  createKtxConnectorCapabilities,
+  type KtxColumnSampleInput,
+  type KtxColumnSampleResult,
+  type KtxColumnStatsInput,
+  type KtxColumnStatsResult,
+  type KtxQueryResult,
+  type KtxReadOnlyQueryInput,
+  type KtxScanConnector,
+  type KtxScanContext,
+  type KtxScanInput,
+  type KtxSchemaColumn,
+  type KtxSchemaForeignKey,
+  type KtxSchemaSnapshot,
+  type KtxSchemaTable,
+  type KtxTableRef,
+  type KtxTableSampleInput,
+  type KtxTableSampleResult,
+} from '@ktx/context/scan';
 import { Pool } from 'pg';
-import { KloPostgresDialect } from './dialect.js';
+import { KtxPostgresDialect } from './dialect.js';
 
 const PG_OID_TYPE_MAP: Record<number, string> = {
   16: 'boolean',
@@ -45,7 +45,7 @@ const PG_OID_TYPE_MAP: Record<number, string> = {
   1016: 'bigint[]',
 };
 
-export interface KloPostgresConnectionConfig {
+export interface KtxPostgresConnectionConfig {
   driver?: string;
   host?: string;
   port?: number;
@@ -62,7 +62,7 @@ export interface KloPostgresConnectionConfig {
   [key: string]: unknown;
 }
 
-export interface KloPostgresPoolConfig {
+export interface KtxPostgresPoolConfig {
   host?: string;
   port?: number;
   database?: string;
@@ -76,72 +76,72 @@ export interface KloPostgresPoolConfig {
   ssl?: { rejectUnauthorized: boolean };
 }
 
-interface KloPostgresQueryResult {
+interface KtxPostgresQueryResult {
   fields?: Array<{ name: string; dataTypeID: number }>;
   rows: Record<string, unknown>[];
 }
 
-interface KloPostgresClient {
-  query(sql: string, params?: unknown[]): Promise<KloPostgresQueryResult>;
+interface KtxPostgresClient {
+  query(sql: string, params?: unknown[]): Promise<KtxPostgresQueryResult>;
   release(): void;
 }
 
-interface KloPostgresPool {
-  connect(): Promise<KloPostgresClient>;
+interface KtxPostgresPool {
+  connect(): Promise<KtxPostgresClient>;
   end(): Promise<void>;
 }
 
-export interface KloPostgresPoolFactory {
-  createPool(config: KloPostgresPoolConfig): KloPostgresPool;
+export interface KtxPostgresPoolFactory {
+  createPool(config: KtxPostgresPoolConfig): KtxPostgresPool;
 }
 
-interface KloPostgresResolvedEndpoint {
+interface KtxPostgresResolvedEndpoint {
   host: string;
   port: number;
   close?: () => Promise<void>;
 }
 
-export interface KloPostgresEndpointResolver {
+export interface KtxPostgresEndpointResolver {
   resolve(input: {
     host: string;
     port: number;
-    connection: KloPostgresConnectionConfig;
-  }): Promise<KloPostgresResolvedEndpoint>;
+    connection: KtxPostgresConnectionConfig;
+  }): Promise<KtxPostgresResolvedEndpoint>;
 }
 
-export interface KloPostgresScanConnectorOptions {
+export interface KtxPostgresScanConnectorOptions {
   connectionId: string;
-  connection: KloPostgresConnectionConfig | undefined;
-  poolFactory?: KloPostgresPoolFactory;
-  endpointResolver?: KloPostgresEndpointResolver;
+  connection: KtxPostgresConnectionConfig | undefined;
+  poolFactory?: KtxPostgresPoolFactory;
+  endpointResolver?: KtxPostgresEndpointResolver;
   env?: NodeJS.ProcessEnv;
   now?: () => Date;
 }
 
-export interface KloPostgresReadOnlyQueryInput extends KloReadOnlyQueryInput {
+export interface KtxPostgresReadOnlyQueryInput extends KtxReadOnlyQueryInput {
   params?: Record<string, unknown> | unknown[];
 }
 
-export interface KloPostgresColumnDistinctValuesOptions {
+export interface KtxPostgresColumnDistinctValuesOptions {
   maxCardinality: number;
   limit: number;
   sampleSize?: number;
 }
 
-export interface KloPostgresColumnDistinctValuesResult {
+export interface KtxPostgresColumnDistinctValuesResult {
   values: string[] | null;
   cardinality: number;
 }
 
-export interface KloPostgresColumnStatisticsResult {
+export interface KtxPostgresColumnStatisticsResult {
   cardinalityByColumn: Map<string, number>;
 }
 
-export interface KloPostgresTableSampleResult extends KloTableSampleResult {
+export interface KtxPostgresTableSampleResult extends KtxTableSampleResult {
   headerTypes?: string[];
 }
 
-type PostgresTableRef = Pick<KloTableRef, 'name'> & Partial<Pick<KloTableRef, 'catalog' | 'db'>>;
+type PostgresTableRef = Pick<KtxTableRef, 'name'> & Partial<Pick<KtxTableRef, 'catalog' | 'db'>>;
 
 interface PostgresTableRow {
   table_name: string;
@@ -190,8 +190,8 @@ interface PostgresStatsRow {
   estimated_cardinality: unknown;
 }
 
-class DefaultPostgresPoolFactory implements KloPostgresPoolFactory {
-  createPool(config: KloPostgresPoolConfig): KloPostgresPool {
+class DefaultPostgresPoolFactory implements KtxPostgresPoolFactory {
+  createPool(config: KtxPostgresPoolConfig): KtxPostgresPool {
     return new Pool(config);
   }
 }
@@ -216,7 +216,7 @@ function primaryKeyMap(rows: PostgresPrimaryKeyRow[]): Map<string, Set<string>> 
   return grouped;
 }
 
-function queryRows(result: KloPostgresQueryResult): unknown[][] {
+function queryRows(result: KtxPostgresQueryResult): unknown[][] {
   const headers = (result.fields ?? []).map((field) => field.name);
   return result.rows.map((row) => headers.map((header) => row[header]));
 }
@@ -227,8 +227,8 @@ function finiteNumber(value: unknown): number | null {
 }
 
 function stringConfigValue(
-  connection: KloPostgresConnectionConfig | undefined,
-  key: keyof KloPostgresConnectionConfig,
+  connection: KtxPostgresConnectionConfig | undefined,
+  key: keyof KtxPostgresConnectionConfig,
   env: NodeJS.ProcessEnv,
 ): string | undefined {
   const value = connection?.[key];
@@ -251,7 +251,7 @@ function numberValue(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
-function parsePostgresUrl(url: string): Partial<KloPostgresConnectionConfig> {
+function parsePostgresUrl(url: string): Partial<KtxPostgresConnectionConfig> {
   const parsed = new URL(url);
   return {
     host: parsed.hostname,
@@ -262,29 +262,29 @@ function parsePostgresUrl(url: string): Partial<KloPostgresConnectionConfig> {
   };
 }
 
-function schemasFromConnection(connection: KloPostgresConnectionConfig): string[] {
+function schemasFromConnection(connection: KtxPostgresConnectionConfig): string[] {
   if (Array.isArray(connection.schemas) && connection.schemas.length > 0) {
     return connection.schemas.filter((schema): schema is string => typeof schema === 'string' && schema.length > 0);
   }
   return typeof connection.schema === 'string' && connection.schema.length > 0 ? [connection.schema] : ['public'];
 }
 
-function searchPathSchemasFromConnection(connection: KloPostgresConnectionConfig): string[] {
+function searchPathSchemasFromConnection(connection: KtxPostgresConnectionConfig): string[] {
   const schemas = schemasFromConnection(connection);
   return schemas.includes('public') ? schemas : [...schemas, 'public'];
 }
 
-export function isKloPostgresConnectionConfig(connection: KloPostgresConnectionConfig | undefined): boolean {
+export function isKtxPostgresConnectionConfig(connection: KtxPostgresConnectionConfig | undefined): boolean {
   const driver = String(connection?.driver ?? '').toLowerCase();
   return driver === 'postgres' || driver === 'postgresql';
 }
 
 export function postgresPoolConfigFromConfig(input: {
   connectionId: string;
-  connection: KloPostgresConnectionConfig | undefined;
+  connection: KtxPostgresConnectionConfig | undefined;
   env?: NodeJS.ProcessEnv;
-}): KloPostgresPoolConfig {
-  if (!isKloPostgresConnectionConfig(input.connection)) {
+}): KtxPostgresPoolConfig {
+  if (!isKtxPostgresConnectionConfig(input.connection)) {
     throw new Error(`Native PostgreSQL connector cannot run driver "${input.connection?.driver ?? 'unknown'}"`);
   }
   if (input.connection?.readonly !== true) {
@@ -294,7 +294,7 @@ export function postgresPoolConfigFromConfig(input: {
   const env = input.env ?? process.env;
   const referencedUrl = stringConfigValue(input.connection, 'url', env);
   const urlConfig = referencedUrl ? parsePostgresUrl(referencedUrl) : {};
-  const merged: KloPostgresConnectionConfig = { ...urlConfig, ...input.connection };
+  const merged: KtxPostgresConnectionConfig = { ...urlConfig, ...input.connection };
   const host = stringConfigValue(merged, 'host', env);
   const database = stringConfigValue(merged, 'database', env);
   const user = stringConfigValue(merged, 'username', env) ?? stringConfigValue(merged, 'user', env);
@@ -310,7 +310,7 @@ export function postgresPoolConfigFromConfig(input: {
     throw new Error(`Native PostgreSQL connector requires connections.${input.connectionId}.username, user, or url`);
   }
 
-  const config: KloPostgresPoolConfig = {
+  const config: KtxPostgresPoolConfig = {
     max: 10,
     idleTimeoutMillis: 30_000,
     connectionTimeoutMillis: 10_000,
@@ -328,10 +328,10 @@ export function postgresPoolConfigFromConfig(input: {
   return config;
 }
 
-export class KloPostgresScanConnector implements KloScanConnector {
+export class KtxPostgresScanConnector implements KtxScanConnector {
   readonly id: string;
   readonly driver = 'postgres' as const;
-  readonly capabilities = createKloConnectorCapabilities({
+  readonly capabilities = createKtxConnectorCapabilities({
     tableSampling: true,
     columnSampling: true,
     columnStats: true,
@@ -342,16 +342,16 @@ export class KloPostgresScanConnector implements KloScanConnector {
   });
 
   private readonly connectionId: string;
-  private readonly connection: KloPostgresConnectionConfig;
-  private readonly poolConfig: KloPostgresPoolConfig;
-  private readonly poolFactory: KloPostgresPoolFactory;
-  private readonly endpointResolver?: KloPostgresEndpointResolver;
+  private readonly connection: KtxPostgresConnectionConfig;
+  private readonly poolConfig: KtxPostgresPoolConfig;
+  private readonly poolFactory: KtxPostgresPoolFactory;
+  private readonly endpointResolver?: KtxPostgresEndpointResolver;
   private readonly now: () => Date;
-  private readonly dialect = new KloPostgresDialect();
-  private pool: KloPostgresPool | null = null;
-  private resolvedEndpoint: KloPostgresResolvedEndpoint | null = null;
+  private readonly dialect = new KtxPostgresDialect();
+  private pool: KtxPostgresPool | null = null;
+  private resolvedEndpoint: KtxPostgresResolvedEndpoint | null = null;
 
-  constructor(options: KloPostgresScanConnectorOptions) {
+  constructor(options: KtxPostgresScanConnectorOptions) {
     this.connectionId = options.connectionId;
     this.connection = options.connection ?? {};
     this.poolConfig = postgresPoolConfigFromConfig({
@@ -374,10 +374,10 @@ export class KloPostgresScanConnector implements KloScanConnector {
     }
   }
 
-  async introspect(input: KloScanInput, _ctx: KloScanContext): Promise<KloSchemaSnapshot> {
+  async introspect(input: KtxScanInput, _ctx: KtxScanContext): Promise<KtxSchemaSnapshot> {
     this.assertConnection(input.connectionId);
     const schemas = schemasFromConnection(this.connection);
-    const allTables: KloSchemaTable[] = [];
+    const allTables: KtxSchemaTable[] = [];
     for (const schema of schemas) {
       const tables = await this.loadSchemaTables(schema);
       allTables.push(...tables);
@@ -398,7 +398,7 @@ export class KloPostgresScanConnector implements KloScanConnector {
     };
   }
 
-  async sampleTable(input: KloTableSampleInput, _ctx: KloScanContext): Promise<KloPostgresTableSampleResult> {
+  async sampleTable(input: KtxTableSampleInput, _ctx: KtxScanContext): Promise<KtxPostgresTableSampleResult> {
     this.assertConnection(input.connectionId);
     const result = await this.query(this.dialect.generateSampleQuery(this.qTableName(input.table), input.limit, input.columns));
     return {
@@ -409,7 +409,7 @@ export class KloPostgresScanConnector implements KloScanConnector {
     };
   }
 
-  async sampleColumn(input: KloColumnSampleInput, _ctx: KloScanContext): Promise<KloColumnSampleResult> {
+  async sampleColumn(input: KtxColumnSampleInput, _ctx: KtxScanContext): Promise<KtxColumnSampleResult> {
     this.assertConnection(input.connectionId);
     const result = await this.query(
       this.dialect.generateColumnSampleQuery(this.qTableName(input.table), input.column, input.limit),
@@ -418,7 +418,7 @@ export class KloPostgresScanConnector implements KloScanConnector {
     return { values, nullCount: null, distinctCount: null };
   }
 
-  async columnStats(input: KloColumnStatsInput, _ctx: KloScanContext): Promise<KloColumnStatsResult | null> {
+  async columnStats(input: KtxColumnStatsInput, _ctx: KtxScanContext): Promise<KtxColumnStatsResult | null> {
     const stats = await this.getColumnStatistics(input.table);
     const value = stats?.cardinalityByColumn.get(input.column);
     return value === undefined
@@ -426,7 +426,7 @@ export class KloPostgresScanConnector implements KloScanConnector {
       : { min: null, max: null, average: null, nullCount: null, distinctCount: value };
   }
 
-  async executeReadOnly(input: KloPostgresReadOnlyQueryInput, _ctx: KloScanContext): Promise<KloQueryResult> {
+  async executeReadOnly(input: KtxPostgresReadOnlyQueryInput, _ctx: KtxScanContext): Promise<KtxQueryResult> {
     this.assertConnection(input.connectionId);
     const limitedSql = limitSqlForExecution(assertReadOnlySql(input.sql), input.maxRows);
     const prepared = Array.isArray(input.params)
@@ -437,10 +437,10 @@ export class KloPostgresScanConnector implements KloScanConnector {
   }
 
   async getColumnDistinctValues(
-    table: KloTableRef,
+    table: KtxTableRef,
     columnName: string,
-    options: KloPostgresColumnDistinctValuesOptions,
-  ): Promise<KloPostgresColumnDistinctValuesResult | null> {
+    options: KtxPostgresColumnDistinctValuesOptions,
+  ): Promise<KtxPostgresColumnDistinctValuesResult | null> {
     const sampleSize = options.sampleSize ?? 10000;
     const tableName = this.qTableName(table);
     const quotedColumn = this.dialect.quoteIdentifier(columnName);
@@ -466,7 +466,7 @@ export class KloPostgresScanConnector implements KloScanConnector {
     };
   }
 
-  async getColumnStatistics(table: KloTableRef): Promise<KloPostgresColumnStatisticsResult | null> {
+  async getColumnStatistics(table: KtxTableRef): Promise<KtxPostgresColumnStatisticsResult | null> {
     const schema = table.db ?? schemasFromConnection(this.connection)[0] ?? 'public';
     const sql = this.dialect.generateColumnStatisticsQuery(schema, table.name);
     if (!sql) {
@@ -522,7 +522,7 @@ export class KloPostgresScanConnector implements KloScanConnector {
     }
   }
 
-  private async loadSchemaTables(schema: string): Promise<KloSchemaTable[]> {
+  private async loadSchemaTables(schema: string): Promise<KtxSchemaTable[]> {
     const tables = await this.queryRaw<PostgresTableRow>(
       `
       SELECT
@@ -617,7 +617,7 @@ export class KloPostgresScanConnector implements KloScanConnector {
     columns: PostgresColumnRow[],
     primaryKeys: Set<string>,
     foreignKeys: PostgresForeignKeyRow[],
-  ): KloSchemaTable {
+  ): KtxSchemaTable {
     const kind = table.table_kind === 'v' ? 'view' : 'table';
     return {
       catalog: null,
@@ -631,7 +631,7 @@ export class KloPostgresScanConnector implements KloScanConnector {
     };
   }
 
-  private toSchemaColumn(column: PostgresColumnRow, primaryKeys: Set<string>): KloSchemaColumn {
+  private toSchemaColumn(column: PostgresColumnRow, primaryKeys: Set<string>): KtxSchemaColumn {
     return {
       name: column.column_name,
       nativeType: column.data_type,
@@ -643,7 +643,7 @@ export class KloPostgresScanConnector implements KloScanConnector {
     };
   }
 
-  private toSchemaForeignKey(row: PostgresForeignKeyRow): KloSchemaForeignKey {
+  private toSchemaForeignKey(row: PostgresForeignKeyRow): KtxSchemaForeignKey {
     return {
       fromColumn: row.column_name,
       toCatalog: null,
@@ -654,7 +654,7 @@ export class KloPostgresScanConnector implements KloScanConnector {
     };
   }
 
-  private async getPool(): Promise<KloPostgresPool> {
+  private async getPool(): Promise<KtxPostgresPool> {
     if (!this.pool) {
       let config = { ...this.poolConfig };
       if (this.endpointResolver) {
@@ -682,7 +682,7 @@ export class KloPostgresScanConnector implements KloScanConnector {
     }
   }
 
-  private async query(sql: string, params?: Record<string, unknown> | unknown[]): Promise<KloQueryResult> {
+  private async query(sql: string, params?: Record<string, unknown> | unknown[]): Promise<KtxQueryResult> {
     const pool = await this.getPool();
     const client = await pool.connect();
     try {

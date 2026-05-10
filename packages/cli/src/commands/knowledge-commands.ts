@@ -1,24 +1,24 @@
 import { type Command, Option } from '@commander-js/extra-typings';
-import { collectOption, type KloCliCommandContext, resolveCommandProjectDir } from '../cli-program.js';
+import { collectOption, type KtxCliCommandContext, resolveCommandProjectDir } from '../cli-program.js';
 import { wikiWriteCommandSchema } from '../command-schemas.js';
-import type { KloKnowledgeArgs } from '../knowledge.js';
+import type { KtxKnowledgeArgs } from '../knowledge.js';
 import { profileMark } from '../startup-profile.js';
 
 profileMark('module:commands/knowledge-commands');
 
-async function runKnowledgeArgs(context: KloCliCommandContext, args: KloKnowledgeArgs): Promise<void> {
-  const runner = context.deps.knowledge ?? (await import('../knowledge.js')).runKloKnowledge;
+async function runKnowledgeArgs(context: KtxCliCommandContext, args: KtxKnowledgeArgs): Promise<void> {
+  const runner = context.deps.knowledge ?? (await import('../knowledge.js')).runKtxKnowledge;
   context.setExitCode(await runner(args, context.io));
 }
 
-export function registerWikiCommands(program: Command, context: KloCliCommandContext): void {
+export function registerWikiCommands(program: Command, context: KtxCliCommandContext): void {
   const wiki = program
     .command('wiki')
     .description('List, read, search, or write local wiki pages')
     .showHelpAfterError()
     .addHelpText(
       'after',
-      '\nProject directory defaults to KLO_PROJECT_DIR when set, otherwise the current working directory.\n',
+      '\nProject directory defaults to KTX_PROJECT_DIR when set, otherwise the current working directory.\n',
     );
 
   wiki

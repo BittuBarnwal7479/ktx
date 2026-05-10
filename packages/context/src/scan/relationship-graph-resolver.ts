@@ -1,24 +1,24 @@
 import type {
-  KloEnrichedColumn,
-  KloEnrichedSchema,
-  KloEnrichedTable,
-  KloRelationshipEndpoint,
+  KtxEnrichedColumn,
+  KtxEnrichedSchema,
+  KtxEnrichedTable,
+  KtxRelationshipEndpoint,
 } from './enrichment-types.js';
-import { normalizeKloRelationshipName } from './relationship-candidates.js';
-import type { KloRelationshipProfileArtifact } from './relationship-profiling.js';
-import { scoreKloRelationshipCandidate } from './relationship-scoring.js';
-import type { KloValidatedRelationshipDiscoveryCandidate } from './relationship-validation.js';
+import { normalizeKtxRelationshipName } from './relationship-candidates.js';
+import type { KtxRelationshipProfileArtifact } from './relationship-profiling.js';
+import { scoreKtxRelationshipCandidate } from './relationship-scoring.js';
+import type { KtxValidatedRelationshipDiscoveryCandidate } from './relationship-validation.js';
 
-export type KloResolvedRelationshipStatus = 'accepted' | 'review' | 'rejected';
+export type KtxResolvedRelationshipStatus = 'accepted' | 'review' | 'rejected';
 
-export interface KloRelationshipGraphResolverSettings {
+export interface KtxRelationshipGraphResolverSettings {
   acceptThreshold: number;
   reviewThreshold: number;
   minTargetPkScoreForAcceptance: number;
   validationRequiredForManifest: boolean;
 }
 
-export interface KloResolvedRelationshipPkEvidence {
+export interface KtxResolvedRelationshipPkEvidence {
   declaredPrimaryKey: boolean;
   targetUniqueness: number;
   incomingAcceptedCount: number;
@@ -26,43 +26,43 @@ export interface KloResolvedRelationshipPkEvidence {
   reasons: string[];
 }
 
-export interface KloResolvedRelationshipPk {
+export interface KtxResolvedRelationshipPk {
   table: string;
   columns: string[];
   pkScore: number;
-  status: KloResolvedRelationshipStatus;
+  status: KtxResolvedRelationshipStatus;
   incomingCandidateCount: number;
-  evidence: KloResolvedRelationshipPkEvidence;
+  evidence: KtxResolvedRelationshipPkEvidence;
 }
 
-export interface KloResolvedRelationshipGraphEvidence {
+export interface KtxResolvedRelationshipGraphEvidence {
   targetPkScore: number;
   incomingCandidateCount: number;
   conflictRank: number;
   reasons: string[];
 }
 
-export interface KloResolvedRelationshipDiscoveryCandidate
-  extends Omit<KloValidatedRelationshipDiscoveryCandidate, 'status'> {
-  status: KloResolvedRelationshipStatus;
+export interface KtxResolvedRelationshipDiscoveryCandidate
+  extends Omit<KtxValidatedRelationshipDiscoveryCandidate, 'status'> {
+  status: KtxResolvedRelationshipStatus;
   pkScore: number;
   fkScore: number;
-  graph: KloResolvedRelationshipGraphEvidence;
+  graph: KtxResolvedRelationshipGraphEvidence;
 }
 
-export interface KloRelationshipGraphResolutionResult {
-  pks: KloResolvedRelationshipPk[];
-  relationships: KloResolvedRelationshipDiscoveryCandidate[];
+export interface KtxRelationshipGraphResolutionResult {
+  pks: KtxResolvedRelationshipPk[];
+  relationships: KtxResolvedRelationshipDiscoveryCandidate[];
 }
 
-export interface ResolveKloRelationshipGraphInput {
-  schema: KloEnrichedSchema;
-  profiles: KloRelationshipProfileArtifact;
-  candidates: readonly KloValidatedRelationshipDiscoveryCandidate[];
-  settings?: Partial<KloRelationshipGraphResolverSettings>;
+export interface ResolveKtxRelationshipGraphInput {
+  schema: KtxEnrichedSchema;
+  profiles: KtxRelationshipProfileArtifact;
+  candidates: readonly KtxValidatedRelationshipDiscoveryCandidate[];
+  settings?: Partial<KtxRelationshipGraphResolverSettings>;
 }
 
-const DEFAULT_SETTINGS: KloRelationshipGraphResolverSettings = {
+const DEFAULT_SETTINGS: KtxRelationshipGraphResolverSettings = {
   acceptThreshold: 0.85,
   reviewThreshold: 0.55,
   minTargetPkScoreForAcceptance: 0.78,
@@ -72,8 +72,8 @@ const DEFAULT_SETTINGS: KloRelationshipGraphResolverSettings = {
 const PROFILE_ONLY_PK_MEASURE_NAME_TOKENS = new Set(['amount', 'count', 'price', 'quantity', 'subtotal', 'total']);
 
 function mergeSettings(
-  settings: Partial<KloRelationshipGraphResolverSettings> | undefined,
-): KloRelationshipGraphResolverSettings {
+  settings: Partial<KtxRelationshipGraphResolverSettings> | undefined,
+): KtxRelationshipGraphResolverSettings {
   return { ...DEFAULT_SETTINGS, ...settings };
 }
 
@@ -81,15 +81,15 @@ function roundScore(value: number): number {
   return Number(Math.max(0, Math.min(1, value)).toFixed(3));
 }
 
-function endpointKey(endpoint: KloRelationshipEndpoint): string {
+function endpointKey(endpoint: KtxRelationshipEndpoint): string {
   return `${endpoint.table.name}.${singleRelationshipColumn(endpoint)}`;
 }
 
-function sourceKey(endpoint: KloRelationshipEndpoint): string {
+function sourceKey(endpoint: KtxRelationshipEndpoint): string {
   return `${endpoint.tableId}:${endpoint.columnIds.join(',')}`;
 }
 
-function singleRelationshipColumn(endpoint: KloRelationshipEndpoint): string {
+function singleRelationshipColumn(endpoint: KtxRelationshipEndpoint): string {
   const column = endpoint.columns[0];
   if (!column) {
     throw new Error(`Expected relationship endpoint ${endpoint.table.name} to contain one column`);
@@ -97,19 +97,19 @@ function singleRelationshipColumn(endpoint: KloRelationshipEndpoint): string {
   return column;
 }
 
-function pkKey(pk: Pick<KloResolvedRelationshipPk, 'table' | 'columns'>): string {
+function pkKey(pk: Pick<KtxResolvedRelationshipPk, 'table' | 'columns'>): string {
   return `${pk.table}.(${pk.columns.join(',')})`;
 }
 
-function candidateSortKey(candidate: Pick<KloValidatedRelationshipDiscoveryCandidate, 'from' | 'to'>): string {
+function candidateSortKey(candidate: Pick<KtxValidatedRelationshipDiscoveryCandidate, 'from' | 'to'>): string {
   return `${candidate.from.table.name}.${singleRelationshipColumn(candidate.from)}->${candidate.to.table.name}.${singleRelationshipColumn(candidate.to)}`;
 }
 
 function statusForScore(
   score: number,
-  settings: KloRelationshipGraphResolverSettings,
+  settings: KtxRelationshipGraphResolverSettings,
   acceptedAllowed: boolean,
-): KloResolvedRelationshipStatus {
+): KtxResolvedRelationshipStatus {
   if (acceptedAllowed && score >= settings.acceptThreshold) {
     return 'accepted';
   }
@@ -119,19 +119,19 @@ function statusForScore(
   return 'rejected';
 }
 
-function candidateHasValidationPassed(candidate: KloValidatedRelationshipDiscoveryCandidate): boolean {
+function candidateHasValidationPassed(candidate: KtxValidatedRelationshipDiscoveryCandidate): boolean {
   return candidate.validation.reasons.includes('validation_passed');
 }
 
-function candidateIsValidationUnavailable(candidate: KloValidatedRelationshipDiscoveryCandidate): boolean {
+function candidateIsValidationUnavailable(candidate: KtxValidatedRelationshipDiscoveryCandidate): boolean {
   return (
     candidate.validation.reasons.includes('validation_unavailable') ||
     candidate.validation.reasons.includes('profile_unavailable')
   );
 }
 
-function declaredPrimaryKeys(schema: KloEnrichedSchema): KloResolvedRelationshipPk[] {
-  const pks: KloResolvedRelationshipPk[] = [];
+function declaredPrimaryKeys(schema: KtxEnrichedSchema): KtxResolvedRelationshipPk[] {
+  const pks: KtxResolvedRelationshipPk[] = [];
   for (const table of schema.tables.filter((candidate) => candidate.enabled)) {
     for (const column of table.columns.filter((candidate) => candidate.primaryKey)) {
       pks.push({
@@ -153,27 +153,27 @@ function declaredPrimaryKeys(schema: KloEnrichedSchema): KloResolvedRelationship
   return pks;
 }
 
-function schemaTargetColumns(schema: KloEnrichedSchema): Array<{ table: KloEnrichedTable; column: KloEnrichedColumn }> {
+function schemaTargetColumns(schema: KtxEnrichedSchema): Array<{ table: KtxEnrichedTable; column: KtxEnrichedColumn }> {
   return schema.tables
     .filter((table) => table.enabled)
     .flatMap((table) => table.columns.map((column) => ({ table, column })));
 }
 
-function profileUniqueness(profiles: KloRelationshipProfileArtifact, tableName: string, columnName: string): number {
+function profileUniqueness(profiles: KtxRelationshipProfileArtifact, tableName: string, columnName: string): number {
   return profiles.columns[`${tableName}.${columnName}`]?.uniquenessRatio ?? 0;
 }
 
-function profileNullRate(profiles: KloRelationshipProfileArtifact, tableName: string, columnName: string): number {
+function profileNullRate(profiles: KtxRelationshipProfileArtifact, tableName: string, columnName: string): number {
   return profiles.columns[`${tableName}.${columnName}`]?.nullRate ?? 1;
 }
 
-function profileColumnExists(profiles: KloRelationshipProfileArtifact, tableName: string, columnName: string): boolean {
+function profileColumnExists(profiles: KtxRelationshipProfileArtifact, tableName: string, columnName: string): boolean {
   return Boolean(profiles.columns[`${tableName}.${columnName}`]);
 }
 
 function profileOnlyPkNameScore(tableName: string, columnName: string): number {
-  const table = normalizeKloRelationshipName(tableName).singular;
-  const column = normalizeKloRelationshipName(columnName).normalized;
+  const table = normalizeKtxRelationshipName(tableName).singular;
+  const column = normalizeKtxRelationshipName(columnName).normalized;
   if (column === 'id') {
     return 1;
   }
@@ -190,12 +190,12 @@ function profileOnlyPkNameScore(tableName: string, columnName: string): number {
 }
 
 function profileOnlyPkTypeCompatibility(columnName: string): number {
-  const tokens = normalizeKloRelationshipName(columnName).normalized.split('_').filter(Boolean);
+  const tokens = normalizeKtxRelationshipName(columnName).normalized.split('_').filter(Boolean);
   return tokens.some((token) => PROFILE_ONLY_PK_MEASURE_NAME_TOKENS.has(token)) ? 0 : 1;
 }
 
 function profileOnlyPkEvidence(input: {
-  profiles: KloRelationshipProfileArtifact;
+  profiles: KtxRelationshipProfileArtifact;
   tableName: string;
   columnName: string;
 }): { nameScore: number; nullRate: number; uniqueness: number; pkScore: number; weakName: boolean } | null {
@@ -209,7 +209,7 @@ function profileOnlyPkEvidence(input: {
     return null;
   }
   const typeCompatibility = profileOnlyPkTypeCompatibility(input.columnName);
-  const scoreBreakdown = scoreKloRelationshipCandidate(
+  const scoreBreakdown = scoreKtxRelationshipCandidate(
     {
       nameSimilarity: nameScore,
       typeCompatibility,
@@ -240,12 +240,12 @@ function profileOnlyPkEvidence(input: {
 function resolveTargetPk(input: {
   table: string;
   column: string;
-  declared: KloResolvedRelationshipPk | undefined;
-  profiles: KloRelationshipProfileArtifact;
-  incoming: readonly KloValidatedRelationshipDiscoveryCandidate[];
-  settings: KloRelationshipGraphResolverSettings;
+  declared: KtxResolvedRelationshipPk | undefined;
+  profiles: KtxRelationshipProfileArtifact;
+  incoming: readonly KtxValidatedRelationshipDiscoveryCandidate[];
+  settings: KtxRelationshipGraphResolverSettings;
   profileOnly?: { nameScore: number; nullRate: number; uniqueness: number; pkScore: number; weakName: boolean } | null;
-}): KloResolvedRelationshipPk {
+}): KtxResolvedRelationshipPk {
   if (input.declared) {
     return input.declared;
   }
@@ -322,10 +322,10 @@ function resolveTargetPk(input: {
 }
 
 function baseRelationshipResolution(input: {
-  candidate: KloValidatedRelationshipDiscoveryCandidate;
-  pk: KloResolvedRelationshipPk;
-  settings: KloRelationshipGraphResolverSettings;
-}): KloResolvedRelationshipDiscoveryCandidate {
+  candidate: KtxValidatedRelationshipDiscoveryCandidate;
+  pk: KtxResolvedRelationshipPk;
+  settings: KtxRelationshipGraphResolverSettings;
+}): KtxResolvedRelationshipDiscoveryCandidate {
   const reasons: string[] = [];
   if (input.candidate.status === 'rejected') {
     reasons.push('candidate_validation_rejected');
@@ -349,7 +349,7 @@ function baseRelationshipResolution(input: {
       0.14 * input.candidate.confidence +
       0.08 * validationPassBonus,
   );
-  let status: KloResolvedRelationshipStatus;
+  let status: KtxResolvedRelationshipStatus;
 
   if (input.candidate.status === 'rejected') {
     status = 'rejected';
@@ -387,8 +387,8 @@ function baseRelationshipResolution(input: {
 }
 
 function relationshipRank(
-  left: KloResolvedRelationshipDiscoveryCandidate,
-  right: KloResolvedRelationshipDiscoveryCandidate,
+  left: KtxResolvedRelationshipDiscoveryCandidate,
+  right: KtxResolvedRelationshipDiscoveryCandidate,
 ): number {
   return (
     right.fkScore - left.fkScore ||
@@ -399,15 +399,15 @@ function relationshipRank(
 }
 
 function applySourceConflicts(
-  relationships: readonly KloResolvedRelationshipDiscoveryCandidate[],
-): KloResolvedRelationshipDiscoveryCandidate[] {
-  const bySource = new Map<string, KloResolvedRelationshipDiscoveryCandidate[]>();
+  relationships: readonly KtxResolvedRelationshipDiscoveryCandidate[],
+): KtxResolvedRelationshipDiscoveryCandidate[] {
+  const bySource = new Map<string, KtxResolvedRelationshipDiscoveryCandidate[]>();
   for (const relationship of relationships) {
     const key = sourceKey(relationship.from);
     bySource.set(key, [...(bySource.get(key) ?? []), relationship]);
   }
 
-  const resolved: KloResolvedRelationshipDiscoveryCandidate[] = [];
+  const resolved: KtxResolvedRelationshipDiscoveryCandidate[] = [];
   for (const group of bySource.values()) {
     const ranked = [...group].sort(relationshipRank);
     let acceptedSeen = false;
@@ -441,20 +441,20 @@ function applySourceConflicts(
   return resolved.sort(relationshipRank);
 }
 
-export function resolveKloRelationshipGraph(
-  input: ResolveKloRelationshipGraphInput,
-): KloRelationshipGraphResolutionResult {
+export function resolveKtxRelationshipGraph(
+  input: ResolveKtxRelationshipGraphInput,
+): KtxRelationshipGraphResolutionResult {
   const settings = mergeSettings(input.settings);
   const declared = declaredPrimaryKeys(input.schema);
   const declaredByKey = new Map(declared.map((pk) => [pkKey(pk), pk]));
-  const incomingByTarget = new Map<string, KloValidatedRelationshipDiscoveryCandidate[]>();
+  const incomingByTarget = new Map<string, KtxValidatedRelationshipDiscoveryCandidate[]>();
 
   for (const candidate of input.candidates) {
     const key = endpointKey(candidate.to);
     incomingByTarget.set(key, [...(incomingByTarget.get(key) ?? []), candidate]);
   }
 
-  const pkCandidates = new Map<string, KloResolvedRelationshipPk>();
+  const pkCandidates = new Map<string, KtxResolvedRelationshipPk>();
   for (const item of schemaTargetColumns(input.schema)) {
     const key = `${item.table.ref.name}.(${item.column.name})`;
     const incoming = incomingByTarget.get(`${item.table.ref.name}.${item.column.name}`) ?? [];

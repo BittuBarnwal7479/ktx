@@ -30,29 +30,29 @@ async function writeJson(path, value) {
 }
 
 const CONNECTOR_PACKAGE_NAMES = [
-  '@klo/connector-bigquery',
-  '@klo/connector-clickhouse',
-  '@klo/connector-mysql',
-  '@klo/connector-postgres',
-  '@klo/connector-posthog',
-  '@klo/connector-snowflake',
-  '@klo/connector-sqlite',
-  '@klo/connector-sqlserver',
+  '@ktx/connector-bigquery',
+  '@ktx/connector-clickhouse',
+  '@ktx/connector-mysql',
+  '@ktx/connector-postgres',
+  '@ktx/connector-posthog',
+  '@ktx/connector-snowflake',
+  '@ktx/connector-sqlite',
+  '@ktx/connector-sqlserver',
 ];
 
 function packageRootForName(packageName) {
-  return `packages/${packageName.replace('@klo/', '')}`;
+  return `packages/${packageName.replace('@ktx/', '')}`;
 }
 
 function expectedNpmArtifactPath(packageName) {
-  return `npm/${packageName.replace('@klo/', 'klo-')}-0.0.0-private.tgz`;
+  return `npm/${packageName.replace('@ktx/', 'ktx-')}-0.0.0-private.tgz`;
 }
 
 async function writeReleaseMetadataInputs(root) {
-  const npmPackages = ['@klo/context', '@klo/llm', ...CONNECTOR_PACKAGE_NAMES, '@klo/cli'];
+  const npmPackages = ['@ktx/context', '@ktx/llm', ...CONNECTOR_PACKAGE_NAMES, '@ktx/cli'];
 
   for (const packageName of npmPackages) {
-    const packageRoot = packageName === '@klo/context' ? 'packages/context' : packageRootForName(packageName);
+    const packageRoot = packageName === '@ktx/context' ? 'packages/context' : packageRootForName(packageName);
     await mkdir(join(root, packageRoot), { recursive: true });
     await writeJson(join(root, packageRoot, 'package.json'), {
       name: packageName,
@@ -61,15 +61,15 @@ async function writeReleaseMetadataInputs(root) {
     });
   }
 
-  await mkdir(join(root, 'python', 'klo-sl'), { recursive: true });
-  await mkdir(join(root, 'python', 'klo-daemon'), { recursive: true });
+  await mkdir(join(root, 'python', 'ktx-sl'), { recursive: true });
+  await mkdir(join(root, 'python', 'ktx-daemon'), { recursive: true });
   await writeFile(
-    join(root, 'python', 'klo-sl', 'pyproject.toml'),
-    ['[project]', 'name = "klo-sl"', 'version = "0.1.0"', ''].join('\n'),
+    join(root, 'python', 'ktx-sl', 'pyproject.toml'),
+    ['[project]', 'name = "ktx-sl"', 'version = "0.1.0"', ''].join('\n'),
   );
   await writeFile(
-    join(root, 'python', 'klo-daemon', 'pyproject.toml'),
-    ['[project]', 'name = "klo-daemon"', 'version = "0.1.0"', ''].join('\n'),
+    join(root, 'python', 'ktx-daemon', 'pyproject.toml'),
+    ['[project]', 'name = "ktx-daemon"', 'version = "0.1.0"', ''].join('\n'),
   );
 }
 
@@ -82,10 +82,10 @@ async function writeUploadableArtifactFixtures(layout) {
       layout.npmTarballs[packageInfo.name],
       `${packageInfo.name}-tarball`,
     ]),
-    [join(layout.pythonDir, 'klo_sl-0.1.0-py3-none-any.whl'), 'klo-sl-wheel'],
-    [join(layout.pythonDir, 'klo_sl-0.1.0.tar.gz'), 'klo-sl-sdist'],
-    [join(layout.pythonDir, 'klo_daemon-0.1.0-py3-none-any.whl'), 'klo-daemon-wheel'],
-    [join(layout.pythonDir, 'klo_daemon-0.1.0.tar.gz'), 'klo-daemon-sdist'],
+    [join(layout.pythonDir, 'ktx_sl-0.1.0-py3-none-any.whl'), 'ktx-sl-wheel'],
+    [join(layout.pythonDir, 'ktx_sl-0.1.0.tar.gz'), 'ktx-sl-sdist'],
+    [join(layout.pythonDir, 'ktx_daemon-0.1.0-py3-none-any.whl'), 'ktx-daemon-wheel'],
+    [join(layout.pythonDir, 'ktx_daemon-0.1.0.tar.gz'), 'ktx-daemon-sdist'],
   ]);
 
   for (const [path, contents] of fileContents) {
@@ -94,21 +94,21 @@ async function writeUploadableArtifactFixtures(layout) {
 }
 
 describe('packageArtifactLayout', () => {
-  it('uses stable artifact paths under klo/dist/artifacts', () => {
-    const layout = packageArtifactLayout('/repo/klo');
+  it('uses stable artifact paths under ktx/dist/artifacts', () => {
+    const layout = packageArtifactLayout('/repo/ktx');
 
-    assert.equal(layout.artifactDir, '/repo/klo/dist/artifacts');
-    assert.equal(layout.npmDir, '/repo/klo/dist/artifacts/npm');
-    assert.equal(layout.pythonDir, '/repo/klo/dist/artifacts/python');
-    assert.equal(layout.contextTarball, '/repo/klo/dist/artifacts/npm/klo-context-0.0.0-private.tgz');
-    assert.equal(layout.cliTarball, '/repo/klo/dist/artifacts/npm/klo-cli-0.0.0-private.tgz');
+    assert.equal(layout.artifactDir, '/repo/ktx/dist/artifacts');
+    assert.equal(layout.npmDir, '/repo/ktx/dist/artifacts/npm');
+    assert.equal(layout.pythonDir, '/repo/ktx/dist/artifacts/python');
+    assert.equal(layout.contextTarball, '/repo/ktx/dist/artifacts/npm/ktx-context-0.0.0-private.tgz');
+    assert.equal(layout.cliTarball, '/repo/ktx/dist/artifacts/npm/ktx-cli-0.0.0-private.tgz');
     assert.equal(
-      layout.connectorTarballs['@klo/connector-sqlite'],
-      '/repo/klo/dist/artifacts/npm/klo-connector-sqlite-0.0.0-private.tgz',
+      layout.connectorTarballs['@ktx/connector-sqlite'],
+      '/repo/ktx/dist/artifacts/npm/ktx-connector-sqlite-0.0.0-private.tgz',
     );
     assert.equal(
-      layout.connectorTarballs['@klo/connector-postgres'],
-      '/repo/klo/dist/artifacts/npm/klo-connector-postgres-0.0.0-private.tgz',
+      layout.connectorTarballs['@ktx/connector-postgres'],
+      '/repo/ktx/dist/artifacts/npm/ktx-connector-postgres-0.0.0-private.tgz',
     );
     assert.deepEqual(
       Object.keys(layout.npmTarballs),
@@ -119,7 +119,7 @@ describe('packageArtifactLayout', () => {
 
 describe('buildArtifactCommands', () => {
   it('builds all TypeScript packages before packing npm artifacts and builds both Python packages', () => {
-    const layout = packageArtifactLayout('/repo/klo');
+    const layout = packageArtifactLayout('/repo/ktx');
     const commands = buildArtifactCommands(layout);
 
     assert.deepEqual(
@@ -138,8 +138,8 @@ describe('buildArtifactCommands', () => {
     assert.deepEqual(
       commands.slice(NPM_ARTIFACT_PACKAGES.length * 2).map((command) => [command.command, command.args]),
       [
-        ['uv', ['build', '--package', 'klo-sl', '--out-dir', '/repo/klo/dist/artifacts/python']],
-        ['uv', ['build', '--package', 'klo-daemon', '--out-dir', '/repo/klo/dist/artifacts/python']],
+        ['uv', ['build', '--package', 'ktx-sl', '--out-dir', '/repo/ktx/dist/artifacts/python']],
+        ['uv', ['build', '--package', 'ktx-daemon', '--out-dir', '/repo/ktx/dist/artifacts/python']],
       ],
     );
   });
@@ -147,7 +147,7 @@ describe('buildArtifactCommands', () => {
 
 describe('packageReleaseMetadata', () => {
   it('reads package identities and versions from package manifests', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'klo-release-metadata-test-'));
+    const root = await mkdtemp(join(tmpdir(), 'ktx-release-metadata-test-'));
     try {
       await writeReleaseMetadataInputs(root);
 
@@ -162,16 +162,16 @@ describe('packageReleaseMetadata', () => {
         })),
         {
           ecosystem: 'python',
-          packageName: 'klo-sl',
-          packageRoot: 'python/klo-sl',
+          packageName: 'ktx-sl',
+          packageRoot: 'python/ktx-sl',
           packageVersion: '0.1.0',
           private: false,
           releaseMode: 'ci-artifact-only',
         },
         {
           ecosystem: 'python',
-          packageName: 'klo-daemon',
-          packageRoot: 'python/klo-daemon',
+          packageName: 'ktx-daemon',
+          packageRoot: 'python/ktx-daemon',
           packageVersion: '0.1.0',
           private: false,
           releaseMode: 'ci-artifact-only',
@@ -185,18 +185,18 @@ describe('packageReleaseMetadata', () => {
 
 describe('findPythonArtifacts', () => {
   it('finds one wheel and one source distribution for each Python package', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'klo-artifacts-test-'));
+    const root = await mkdtemp(join(tmpdir(), 'ktx-artifacts-test-'));
     try {
-      await writeFile(join(root, 'klo_sl-0.1.0-py3-none-any.whl'), '');
-      await writeFile(join(root, 'klo_sl-0.1.0.tar.gz'), '');
-      await writeFile(join(root, 'klo_daemon-0.1.0-py3-none-any.whl'), '');
-      await writeFile(join(root, 'klo_daemon-0.1.0.tar.gz'), '');
+      await writeFile(join(root, 'ktx_sl-0.1.0-py3-none-any.whl'), '');
+      await writeFile(join(root, 'ktx_sl-0.1.0.tar.gz'), '');
+      await writeFile(join(root, 'ktx_daemon-0.1.0-py3-none-any.whl'), '');
+      await writeFile(join(root, 'ktx_daemon-0.1.0.tar.gz'), '');
 
       assert.deepEqual(await findPythonArtifacts(root), {
-        kloSlWheel: join(root, 'klo_sl-0.1.0-py3-none-any.whl'),
-        kloSlSdist: join(root, 'klo_sl-0.1.0.tar.gz'),
-        kloDaemonWheel: join(root, 'klo_daemon-0.1.0-py3-none-any.whl'),
-        kloDaemonSdist: join(root, 'klo_daemon-0.1.0.tar.gz'),
+        ktxSlWheel: join(root, 'ktx_sl-0.1.0-py3-none-any.whl'),
+        ktxSlSdist: join(root, 'ktx_sl-0.1.0.tar.gz'),
+        ktxDaemonWheel: join(root, 'ktx_daemon-0.1.0-py3-none-any.whl'),
+        ktxDaemonSdist: join(root, 'ktx_daemon-0.1.0.tar.gz'),
       });
     } finally {
       await rm(root, { recursive: true, force: true });
@@ -204,9 +204,9 @@ describe('findPythonArtifacts', () => {
   });
 
   it('throws when a required Python artifact is missing', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'klo-artifacts-test-'));
+    const root = await mkdtemp(join(tmpdir(), 'ktx-artifacts-test-'));
     try {
-      await assert.rejects(() => findPythonArtifacts(root), /Missing Python artifact: klo-sl wheel/);
+      await assert.rejects(() => findPythonArtifacts(root), /Missing Python artifact: ktx-sl wheel/);
     } finally {
       await rm(root, { recursive: true, force: true });
     }
@@ -215,7 +215,7 @@ describe('findPythonArtifacts', () => {
 
 describe('artifact manifest', () => {
   it('writes release metadata, source revision, checksums, and byte counts for every uploadable artifact', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'klo-artifacts-manifest-test-'));
+    const root = await mkdtemp(join(tmpdir(), 'ktx-artifacts-manifest-test-'));
     const layout = packageArtifactLayout(root);
     try {
       await writeReleaseMetadataInputs(root);
@@ -245,16 +245,16 @@ describe('artifact manifest', () => {
         [
           {
             ecosystem: 'python',
-            packageName: 'klo-sl',
-            packageRoot: 'python/klo-sl',
+            packageName: 'ktx-sl',
+            packageRoot: 'python/ktx-sl',
             packageVersion: '0.1.0',
             private: false,
             releaseMode: 'ci-artifact-only',
           },
           {
             ecosystem: 'python',
-            packageName: 'klo-daemon',
-            packageRoot: 'python/klo-daemon',
+            packageName: 'ktx-daemon',
+            packageRoot: 'python/ktx-daemon',
             packageVersion: '0.1.0',
             private: false,
             releaseMode: 'ci-artifact-only',
@@ -294,38 +294,38 @@ describe('artifact manifest', () => {
           {
             artifactKind: 'wheel',
             ecosystem: 'python',
-            packageName: 'klo-daemon',
+            packageName: 'ktx-daemon',
             packageVersion: '0.1.0',
-            path: 'python/klo_daemon-0.1.0-py3-none-any.whl',
+            path: 'python/ktx_daemon-0.1.0-py3-none-any.whl',
           },
           {
             artifactKind: 'sdist',
             ecosystem: 'python',
-            packageName: 'klo-daemon',
+            packageName: 'ktx-daemon',
             packageVersion: '0.1.0',
-            path: 'python/klo_daemon-0.1.0.tar.gz',
+            path: 'python/ktx_daemon-0.1.0.tar.gz',
           },
           {
             artifactKind: 'wheel',
             ecosystem: 'python',
-            packageName: 'klo-sl',
+            packageName: 'ktx-sl',
             packageVersion: '0.1.0',
-            path: 'python/klo_sl-0.1.0-py3-none-any.whl',
+            path: 'python/ktx_sl-0.1.0-py3-none-any.whl',
           },
           {
             artifactKind: 'sdist',
             ecosystem: 'python',
-            packageName: 'klo-sl',
+            packageName: 'ktx-sl',
             packageVersion: '0.1.0',
-            path: 'python/klo_sl-0.1.0.tar.gz',
+            path: 'python/ktx_sl-0.1.0.tar.gz',
           },
         ],
       );
 
-      const sqliteEntry = manifest.files.find((file) => file.path === 'npm/klo-connector-sqlite-0.0.0-private.tgz');
+      const sqliteEntry = manifest.files.find((file) => file.path === 'npm/ktx-connector-sqlite-0.0.0-private.tgz');
       assert.ok(sqliteEntry);
-      assert.equal(sqliteEntry.bytes, Buffer.byteLength('@klo/connector-sqlite-tarball'));
-      assert.equal(sqliteEntry.sha256, createHash('sha256').update('@klo/connector-sqlite-tarball').digest('hex'));
+      assert.equal(sqliteEntry.bytes, Buffer.byteLength('@ktx/connector-sqlite-tarball'));
+      assert.equal(sqliteEntry.sha256, createHash('sha256').update('@ktx/connector-sqlite-tarball').digest('hex'));
 
       const writtenManifest = JSON.parse(await readFile(artifactManifestPath(layout), 'utf-8'));
       assert.deepEqual(writtenManifest, manifest);
@@ -337,7 +337,7 @@ describe('artifact manifest', () => {
 
 describe('verifyArtifactManifest', () => {
   it('accepts a schema version 2 manifest that matches the artifact directory', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'klo-artifacts-verify-manifest-test-'));
+    const root = await mkdtemp(join(tmpdir(), 'ktx-artifacts-verify-manifest-test-'));
     const layout = packageArtifactLayout(root);
     try {
       await writeReleaseMetadataInputs(root);
@@ -359,7 +359,7 @@ describe('verifyArtifactManifest', () => {
   });
 
   it('rejects a manifest when a file checksum has drifted', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'klo-artifacts-checksum-drift-test-'));
+    const root = await mkdtemp(join(tmpdir(), 'ktx-artifacts-checksum-drift-test-'));
     const layout = packageArtifactLayout(root);
     try {
       await writeReleaseMetadataInputs(root);
@@ -379,7 +379,7 @@ describe('verifyArtifactManifest', () => {
   });
 
   it('rejects a manifest with an unsafe artifact path', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'klo-artifacts-path-test-'));
+    const root = await mkdtemp(join(tmpdir(), 'ktx-artifacts-path-test-'));
     const layout = packageArtifactLayout(root);
     try {
       await writeReleaseMetadataInputs(root);
@@ -397,7 +397,7 @@ describe('verifyArtifactManifest', () => {
   });
 
   it('rejects a manifest from the wrong source revision when one is required', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'klo-artifacts-revision-test-'));
+    const root = await mkdtemp(join(tmpdir(), 'ktx-artifacts-revision-test-'));
     const layout = packageArtifactLayout(root);
     try {
       await writeReleaseMetadataInputs(root);
@@ -422,10 +422,10 @@ describe('verifyArtifactManifest', () => {
 describe('pythonArtifactInstallArgs', () => {
   it('installs the built Python wheels by artifact path', () => {
     const args = pythonArtifactInstallArgs('/tmp/smoke/.venv/bin/python', {
-      kloSlWheel: '/repo/klo/dist/artifacts/python/klo_sl-0.1.0-py3-none-any.whl',
-      kloSlSdist: '/repo/klo/dist/artifacts/python/klo_sl-0.1.0.tar.gz',
-      kloDaemonWheel: '/repo/klo/dist/artifacts/python/klo_daemon-0.1.0-py3-none-any.whl',
-      kloDaemonSdist: '/repo/klo/dist/artifacts/python/klo_daemon-0.1.0.tar.gz',
+      ktxSlWheel: '/repo/ktx/dist/artifacts/python/ktx_sl-0.1.0-py3-none-any.whl',
+      ktxSlSdist: '/repo/ktx/dist/artifacts/python/ktx_sl-0.1.0.tar.gz',
+      ktxDaemonWheel: '/repo/ktx/dist/artifacts/python/ktx_daemon-0.1.0-py3-none-any.whl',
+      ktxDaemonSdist: '/repo/ktx/dist/artifacts/python/ktx_daemon-0.1.0.tar.gz',
     });
 
     assert.deepEqual(args, [
@@ -433,26 +433,26 @@ describe('pythonArtifactInstallArgs', () => {
       'install',
       '--python',
       '/tmp/smoke/.venv/bin/python',
-      '/repo/klo/dist/artifacts/python/klo_sl-0.1.0-py3-none-any.whl',
-      '/repo/klo/dist/artifacts/python/klo_daemon-0.1.0-py3-none-any.whl',
+      '/repo/ktx/dist/artifacts/python/ktx_sl-0.1.0-py3-none-any.whl',
+      '/repo/ktx/dist/artifacts/python/ktx_daemon-0.1.0-py3-none-any.whl',
     ]);
-    assert.equal(args.includes('klo-daemon'), false);
+    assert.equal(args.includes('ktx-daemon'), false);
     assert.equal(args.includes('--find-links'), false);
   });
 });
 
 describe('npmSmokePythonEnv', () => {
   it('prepends the npm smoke virtualenv bin directory to PATH', () => {
-    const env = npmSmokePythonEnv('/tmp/klo-npm-smoke', { PATH: '/usr/bin' });
+    const env = npmSmokePythonEnv('/tmp/ktx-npm-smoke', { PATH: '/usr/bin' });
 
-    assert.match(env.PATH, /^\/tmp\/klo-npm-smoke\/\.venv\/(bin|Scripts)/);
+    assert.match(env.PATH, /^\/tmp\/ktx-npm-smoke\/\.venv\/(bin|Scripts)/);
     assert.match(env.PATH, /\/usr\/bin$/);
   });
 });
 
 describe('verification snippets', () => {
   it('pins smoke dependencies and connector packages to clean-install-safe artifacts', () => {
-    const layout = packageArtifactLayout('/repo/klo');
+    const layout = packageArtifactLayout('/repo/ktx');
     const packageJson = npmSmokePackageJson(layout);
 
     for (const packageInfo of NPM_ARTIFACT_PACKAGES) {
@@ -473,10 +473,10 @@ describe('verification snippets', () => {
     assert.equal(packageJson.scripts['artifacts:verify-manifest'], 'node scripts/package-artifacts.mjs verify-manifest');
   });
 
-  it('verifies installed dbt extraction exports from @klo/context/ingest', () => {
+  it('verifies installed dbt extraction exports from @ktx/context/ingest', () => {
     const source = npmVerifySource();
 
-    assert.match(source, /const ingest = await import\('@klo\/context\/ingest'\);/);
+    assert.match(source, /const ingest = await import\('@ktx\/context\/ingest'\);/);
     assert.match(source, /const dbtExtractionExports = \[/);
     assert.match(source, /throw new Error\('Missing dbt extraction export: ' \+ exportName\);/);
 
@@ -498,26 +498,26 @@ describe('verification snippets', () => {
   it('asserts the public npm and connector entry points that clean installs must expose', () => {
     const source = npmVerifySource();
 
-    assert.match(source, /@klo\/context/);
-    assert.match(source, /@klo\/context\/project/);
-    assert.match(source, /@klo\/context\/mcp/);
-    assert.match(source, /@klo\/context\/memory/);
-    assert.match(source, /@klo\/context\/daemon/);
-    assert.match(source, /@klo\/cli/);
-    assert.match(source, /@klo\/llm/);
-    assert.match(source, /createKloLlmProvider/);
-    assert.match(source, /KloMessageBuilder/);
-    assert.match(source, /createKloEmbeddingProvider/);
+    assert.match(source, /@ktx\/context/);
+    assert.match(source, /@ktx\/context\/project/);
+    assert.match(source, /@ktx\/context\/mcp/);
+    assert.match(source, /@ktx\/context\/memory/);
+    assert.match(source, /@ktx\/context\/daemon/);
+    assert.match(source, /@ktx\/cli/);
+    assert.match(source, /@ktx\/llm/);
+    assert.match(source, /createKtxLlmProvider/);
+    assert.match(source, /KtxMessageBuilder/);
+    assert.match(source, /createKtxEmbeddingProvider/);
     assert.doesNotMatch(source, /createGatewayLlmProvider/);
     assert.match(source, /createLocalProjectMemoryCapture/);
     for (const packageName of CONNECTOR_PACKAGE_NAMES) {
       assert.match(source, new RegExp(packageName.replace('/', '\\/')));
     }
-    assert.match(source, /KloSqliteScanConnector/);
-    assert.match(source, /KloPostgresScanConnector/);
-    assert.match(source, /KloBigQueryScanConnector/);
-    assert.match(source, /KloSnowflakeScanConnector/);
-    assert.match(source, /KloPostHogScanConnector/);
+    assert.match(source, /KtxSqliteScanConnector/);
+    assert.match(source, /KtxPostgresScanConnector/);
+    assert.match(source, /KtxBigQueryScanConnector/);
+    assert.match(source, /KtxSnowflakeScanConnector/);
+    assert.match(source, /KtxPostHogScanConnector/);
   });
 
   it('asserts installed hybrid search exports and CLI smoke coverage', () => {
@@ -525,19 +525,19 @@ describe('verification snippets', () => {
     const runtimeSource = npmRuntimeSmokeSource();
     const demoSource = npmDemoSmokeSource();
 
-    assert.match(verifySource, /const search = await import\('@klo\/context\/search'\);/);
+    assert.match(verifySource, /const search = await import\('@ktx\/context\/search'\);/);
     assert.match(verifySource, /HybridSearchCore/);
     assert.match(verifySource, /assertSearchBackendConformanceCase/);
     assert.match(verifySource, /assertSearchBackendCapabilities/);
 
-    assert.match(runtimeSource, /klo agent wiki search hybrid metadata verified/);
-    assert.match(runtimeSource, /klo agent sl list hybrid metadata verified/);
+    assert.match(runtimeSource, /ktx agent wiki search hybrid metadata verified/);
+    assert.match(runtimeSource, /ktx agent sl list hybrid metadata verified/);
     assert.match(runtimeSource, /agent_sl_search_missing_project/);
     assert.match(runtimeSource, /agent_sl_search_no_connections/);
     assert.match(runtimeSource, /agent_sl_search_no_indexed_sources/);
 
-    assert.match(demoSource, /klo seeded demo agent wiki search verified/);
-    assert.match(demoSource, /klo seeded demo agent sl search verified/);
+    assert.match(demoSource, /ktx seeded demo agent wiki search verified/);
+    assert.match(demoSource, /ktx seeded demo agent sl search verified/);
   });
 
   it('runs installed CLI commands and MCP through an installed daemon HTTP server', () => {
@@ -552,7 +552,7 @@ describe('verification snippets', () => {
     assert.match(source, /startSemanticDaemon/);
     assert.match(source, /waitForHttpHealth/);
     assert.match(source, /stopSemanticDaemon/);
-    assert.match(source, /'klo-daemon'/);
+    assert.match(source, /'ktx-daemon'/);
     assert.match(source, /'serve-http'/);
     assert.match(source, /'--host'/);
     assert.match(source, /'127\.0\.0\.1'/);
@@ -564,12 +564,12 @@ describe('verification snippets', () => {
     assert.match(source, /Looker daemon table identifier parser verified/);
     assert.match(source, /Looker local runtime store verified/);
     assert.match(source, /semanticComputeUrl/);
-    assert.match(source, /run\('pnpm', \[\s*'exec',\s*'klo',\s*'setup'/);
+    assert.match(source, /run\('pnpm', \[\s*'exec',\s*'ktx',\s*'setup'/);
     assert.match(source, /knowledge', 'global', 'revenue\.md'/);
-    assert.match(source, /run\('pnpm', \[\s*'exec',\s*'klo',\s*'agent',\s*'wiki',\s*'search'/);
+    assert.match(source, /run\('pnpm', \[\s*'exec',\s*'ktx',\s*'agent',\s*'wiki',\s*'search'/);
     assert.match(source, /semantic-layer', 'warehouse', 'orders\.yaml'/);
-    assert.match(source, /run\('pnpm', \[\s*'exec',\s*'klo',\s*'agent',\s*'sl',\s*'list'/);
-    assert.match(source, /run\('pnpm', \[\s*'exec',\s*'klo',\s*'agent',\s*'sl',\s*'query'/);
+    assert.match(source, /run\('pnpm', \[\s*'exec',\s*'ktx',\s*'agent',\s*'sl',\s*'list'/);
+    assert.match(source, /run\('pnpm', \[\s*'exec',\s*'ktx',\s*'agent',\s*'sl',\s*'query'/);
     assert.match(source, /orders\.order_count/);
     assert.match(source, /sqlite3/);
     assert.match(source, /driver: sqlite/);
@@ -582,12 +582,12 @@ describe('verification snippets', () => {
     assert.match(source, /slQueryResult\.plan\.execution\.driver, 'sqlite'/);
     assert.match(source, /"mode": "compile_only"/);
     assert.match(source, /"mode": "executed"/);
-    assert.match(source, /klo agent sl query sqlite execute/);
-    assert.match(source, /run\('pnpm', \[\s*'exec',\s*'klo',\s*'dev',\s*'scan',\s*'warehouse'/);
+    assert.match(source, /ktx agent sl query sqlite execute/);
+    assert.match(source, /run\('pnpm', \[\s*'exec',\s*'ktx',\s*'dev',\s*'scan',\s*'warehouse'/);
     assert.match(source, /'--mode',\s*'enriched'/);
     assert.doesNotMatch(source, /'--enrich'/);
-    assert.match(source, /klo scan structural verified/);
-    assert.match(source, /klo scan enriched verified/);
+    assert.match(source, /ktx scan structural verified/);
+    assert.match(source, /ktx scan enriched verified/);
     assert.match(source, /scanReportJson\.artifactPaths\.manifestShards/);
     assert.match(source, /scanReportJson\.artifactPaths\.enrichmentArtifacts/);
     assert.match(source, /enrichment:/);
@@ -596,12 +596,12 @@ describe('verification snippets', () => {
     assert.match(source, /models:/);
     assert.match(source, /default: smoke\/provider/);
     assert.match(source, /api_key: env:AI_GATEWAY_API_KEY/);
-    assert.match(source, /run\('pnpm', \['exec', 'klo', 'dev', 'ingest', 'run'/);
+    assert.match(source, /run\('pnpm', \['exec', 'ktx', 'dev', 'ingest', 'run'/);
     assert.match(source, /'serve', '--mcp', 'stdio'/);
     assert.doesNotMatch(source, /'--semantic-compute',\n\s*'--execute-queries'/);
     assert.match(source, /'--memory-capture', '--memory-model', 'smoke\/provider'/);
     assert.match(source, /mcpServerStderr/);
-    assert.match(source, /klo serve stderr/);
+    assert.match(source, /ktx serve stderr/);
     assert.match(source, /sl_validate/);
     assert.match(source, /sl_query/);
     assert.match(source, /memory_capture/);
@@ -614,26 +614,26 @@ describe('verification snippets', () => {
     assert.match(source, /scan_read_artifact/);
     assert.match(source, /mcpScanArtifacts\.artifacts\.find/);
     assert.match(source, /AI_GATEWAY_API_KEY/);
-    assert.match(source, /access\(join\(projectDir, '\.klo', 'db\.sqlite'\)\)/);
+    assert.match(source, /access\(join\(projectDir, '\.ktx', 'db\.sqlite'\)\)/);
     assert.match(source, /SQLite knowledge index/);
-    assert.match(source, /klo dev ingest run requires llm\\.provider\\.backend: anthropic, vertex, or gateway/);
-    assert.match(source, /klo dev ingest provider guard verified/);
+    assert.match(source, /ktx dev ingest run requires llm\\.provider\\.backend: anthropic, vertex, or gateway/);
+    assert.match(source, /ktx dev ingest provider guard verified/);
   });
 
   describe('npmDemoSmokeSource', () => {
     it('exercises the public packed-demo first-run contract', () => {
       const source = npmDemoSmokeSource();
 
-      assert.match(source, /pnpm', \['exec', 'klo', '--help'\]/);
+      assert.match(source, /pnpm', \['exec', 'ktx', '--help'\]/);
       assert.match(source, /'demo', '--project-dir', projectDir, '--no-input', '--plain'/);
       assert.match(source, /Mode: seeded/);
       assert.match(source, /Source: packaged demo project/);
       assert.match(source, /LLM calls: none/);
-      assert.match(source, /klo serve --mcp stdio/);
+      assert.match(source, /ktx serve --mcp stdio/);
       assert.doesNotMatch(source, new RegExp(["'demo'", "'--mode'", "'deterministic'"].join(', ')));
       assert.match(source, /'dev', 'doctor', 'setup', '--no-input'/);
       assert.match(source, /'--plain'/);
-      assert.match(source, /klo setup demo seeded wrote unexpected stderr/);
+      assert.match(source, /ktx setup demo seeded wrote unexpected stderr/);
     });
   });
 
@@ -649,7 +649,7 @@ describe('verification snippets', () => {
     const source = pythonVerifySource();
 
     assert.match(source, /semantic_layer/);
-    assert.match(source, /klo_daemon/);
+    assert.match(source, /ktx_daemon/);
     assert.match(source, /importlib.metadata/);
   });
 });

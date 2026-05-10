@@ -1,13 +1,13 @@
-export { KloSqliteDialect } from './dialect.js';
+export { KtxSqliteDialect } from './dialect.js';
 export {
-  isKloSqliteConnectionConfig,
-  KloSqliteScanConnector,
+  isKtxSqliteConnectionConfig,
+  KtxSqliteScanConnector,
   sqliteDatabasePathFromConfig,
-  type KloSqliteColumnDistinctValuesOptions,
-  type KloSqliteColumnDistinctValuesResult,
-  type KloSqliteConnectionConfig,
-  type KloSqliteReadOnlyQueryInput,
-  type KloSqliteScanConnectorOptions,
+  type KtxSqliteColumnDistinctValuesOptions,
+  type KtxSqliteColumnDistinctValuesResult,
+  type KtxSqliteConnectionConfig,
+  type KtxSqliteReadOnlyQueryInput,
+  type KtxSqliteScanConnectorOptions,
   type SqliteDatabasePathInput,
 } from './connector.js';
 export {

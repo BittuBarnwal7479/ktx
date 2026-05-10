@@ -2,18 +2,18 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { KloSemanticLayerComputePort } from '../daemon/index.js';
-import { initKloProject, type KloLocalProject } from '../project/index.js';
+import type { KtxSemanticLayerComputePort } from '../daemon/index.js';
+import { initKtxProject, type KtxLocalProject } from '../project/index.js';
 import { compileLocalSlQuery } from './local-query.js';
 
 describe('compileLocalSlQuery', () => {
   let tempDir: string;
-  let project: KloLocalProject;
-  let compute: KloSemanticLayerComputePort;
+  let project: KtxLocalProject;
+  let compute: KtxSemanticLayerComputePort;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-local-query-'));
-    project = await initKloProject({ projectDir: join(tempDir, 'project'), projectName: 'warehouse' });
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-local-query-'));
+    project = await initKtxProject({ projectDir: join(tempDir, 'project'), projectName: 'warehouse' });
     project.config.connections.warehouse = { driver: 'postgres', readonly: true };
     await project.fileStore.writeFile(
       'semantic-layer/warehouse/orders.yaml',
@@ -31,8 +31,8 @@ measures:
     expr: count(*)
 joins: []
 `,
-      'klo',
-      'klo@example.com',
+      'ktx',
+      'ktx@example.com',
       'Add orders source',
     );
     await project.fileStore.writeFile(
@@ -46,8 +46,8 @@ joins: []
 measures: []
 grain: []
 `,
-      'klo',
-      'klo@example.com',
+      'ktx',
+      'ktx@example.com',
       'Add overlay source',
     );
 
@@ -130,8 +130,8 @@ grain: []
       - name: amount
         type: number
 `,
-      'klo',
-      'klo@example.com',
+      'ktx',
+      'ktx@example.com',
       'Add manifest shard',
     );
 

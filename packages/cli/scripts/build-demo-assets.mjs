@@ -7,7 +7,7 @@ import Database from 'better-sqlite3';
 const packageRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const repoRoot = resolve(packageRoot, '../..');
 const defaultDemoSource = resolve(repoRoot, '../../../orbit-demo-source');
-const sourceRoot = resolve(process.env.KLO_DEMO_SOURCE_DIR ?? defaultDemoSource);
+const sourceRoot = resolve(process.env.KTX_DEMO_SOURCE_DIR ?? defaultDemoSource);
 const assetDir = join(packageRoot, 'assets/demo/orbit');
 const dbPath = join(assetDir, 'demo.db');
 const exampleDbtProjectDir = ['dbt', `${'kae'}lio_demo`].join('/');
@@ -330,7 +330,7 @@ async function pathExists(path) {
 async function assertReadable(path, label) {
   if (!(await pathExists(path))) {
     throw new Error(
-      `${label} not found at ${path}. Set KLO_DEMO_SOURCE_DIR to the Orbit demo source directory.`,
+      `${label} not found at ${path}. Set KTX_DEMO_SOURCE_DIR to the Orbit demo source directory.`,
     );
   }
 }

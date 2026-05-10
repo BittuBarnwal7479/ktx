@@ -1,22 +1,22 @@
 import { resolve } from 'node:path';
 import { type Command, Option } from '@commander-js/extra-typings';
-import { type KloCliCommandContext, type OutputModeOptions, resolveCommandProjectDir } from '../cli-program.js';
-import type { KloCliDeps, KloCliIo } from '../index.js';
-import type { KloIngestArgs, KloIngestOutputMode } from '../ingest.js';
+import { type KtxCliCommandContext, type OutputModeOptions, resolveCommandProjectDir } from '../cli-program.js';
+import type { KtxCliDeps, KtxCliIo } from '../index.js';
+import type { KtxIngestArgs, KtxIngestOutputMode } from '../ingest.js';
 import { profileMark } from '../startup-profile.js';
 
 profileMark('module:commands/ingest-commands');
 
 interface IngestCommandOptions {
   runIngestWithProgress: (
-    args: KloIngestArgs,
-    io: KloCliIo,
-    deps: KloCliDeps,
-    defaultRunIngest: (args: KloIngestArgs, io: KloCliIo) => Promise<number>,
+    args: KtxIngestArgs,
+    io: KtxCliIo,
+    deps: KtxCliDeps,
+    defaultRunIngest: (args: KtxIngestArgs, io: KtxCliIo) => Promise<number>,
   ) => Promise<number>;
 }
 
-function outputMode(options: OutputModeOptions): KloIngestOutputMode {
+function outputMode(options: OutputModeOptions): KtxIngestOutputMode {
   if (options.json === true) {
     return 'json';
   }
@@ -26,7 +26,7 @@ function outputMode(options: OutputModeOptions): KloIngestOutputMode {
   return 'plain';
 }
 
-function watchOutputMode(options: OutputModeOptions): KloIngestOutputMode {
+function watchOutputMode(options: OutputModeOptions): KtxIngestOutputMode {
   if (options.json === true) {
     return 'json';
   }
@@ -36,22 +36,22 @@ function watchOutputMode(options: OutputModeOptions): KloIngestOutputMode {
   return 'viz';
 }
 
-function inputMode(options: OutputModeOptions): Pick<KloIngestArgs, 'inputMode'> {
+function inputMode(options: OutputModeOptions): Pick<KtxIngestArgs, 'inputMode'> {
   return options.input === false ? { inputMode: 'disabled' } : {};
 }
 
 async function runIngestArgs(
-  context: KloCliCommandContext,
-  args: KloIngestArgs,
+  context: KtxCliCommandContext,
+  args: KtxIngestArgs,
   options: IngestCommandOptions,
 ): Promise<void> {
-  const { runKloIngest } = await import('../ingest.js');
-  context.setExitCode(await options.runIngestWithProgress(args, context.io, context.deps, runKloIngest));
+  const { runKtxIngest } = await import('../ingest.js');
+  context.setExitCode(await options.runIngestWithProgress(args, context.io, context.deps, runKtxIngest));
 }
 
 export function registerIngestCommands(
   program: Command,
-  context: KloCliCommandContext,
+  context: KtxCliCommandContext,
   commandOptions: IngestCommandOptions,
 ): void {
   const ingest = program
@@ -66,7 +66,7 @@ export function registerIngestCommands(
   ingest
     .command('run')
     .description('Run local ingest for one configured connection and source adapter')
-    .requiredOption('--connection-id <connectionId>', 'KLO connection id')
+    .requiredOption('--connection-id <connectionId>', 'KTX connection id')
     .requiredOption('--adapter <adapter>', 'Ingest source adapter name')
     .option('--source-dir <path>', 'Directory containing source files')
     .option('--database-introspection-url <url>', 'Daemon URL for live-database introspection')

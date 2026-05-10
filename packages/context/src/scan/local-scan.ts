@@ -1,4 +1,4 @@
-import type { createKloEmbeddingProvider, createKloLlmProvider } from '@klo/llm';
+import type { createKtxEmbeddingProvider, createKtxLlmProvider } from '@ktx/llm';
 import {
   createDefaultLocalIngestAdapters,
   getLocalStageOnlyIngestStatus,
@@ -7,50 +7,50 @@ import {
   type SourceAdapter,
 } from '../ingest/index.js';
 import {
-  createLocalKloEmbeddingProviderFromConfig,
-  createLocalKloLlmProviderFromConfig,
-  KloScanEmbeddingPortAdapter,
+  createLocalKtxEmbeddingProviderFromConfig,
+  createLocalKtxLlmProviderFromConfig,
+  KtxScanEmbeddingPortAdapter,
 } from '../llm/index.js';
-import type { KloProjectLlmConfig, KloScanEnrichmentConfig, KloScanRelationshipConfig } from '../project/config.js';
-import type { KloLocalProject } from '../project/index.js';
-import { kloLocalStateDbPath } from '../project/local-state-db.js';
-import { redactKloScanReport } from './credentials.js';
-import { completedKloScanEnrichmentStateSummary } from './enrichment-state.js';
-import { failedKloScanEnrichmentSummary, kloScanErrorMessage } from './enrichment-summary.js';
+import type { KtxProjectLlmConfig, KtxScanEnrichmentConfig, KtxScanRelationshipConfig } from '../project/config.js';
+import type { KtxLocalProject } from '../project/index.js';
+import { ktxLocalStateDbPath } from '../project/local-state-db.js';
+import { redactKtxScanReport } from './credentials.js';
+import { completedKtxScanEnrichmentStateSummary } from './enrichment-state.js';
+import { failedKtxScanEnrichmentSummary, ktxScanErrorMessage } from './enrichment-summary.js';
 import {
   createDeterministicLocalScanEnrichmentProviders,
-  type KloLocalScanEnrichmentProviders,
+  type KtxLocalScanEnrichmentProviders,
   runLocalScanEnrichment,
 } from './local-enrichment.js';
 import { writeLocalScanEnrichmentArtifacts, writeLocalScanManifestShards } from './local-enrichment-artifacts.js';
 import { readLocalScanStructuralSnapshot } from './local-structural-artifacts.js';
 import { SqliteLocalScanEnrichmentStateStore } from './sqlite-local-enrichment-state-store.js';
 import type {
-  KloConnectionDriver,
-  KloProgressPort,
-  KloScanConnector,
-  KloScanEnrichmentStateSummary,
-  KloScanMode,
-  KloScanReport,
-  KloScanTrigger,
+  KtxConnectionDriver,
+  KtxProgressPort,
+  KtxScanConnector,
+  KtxScanEnrichmentStateSummary,
+  KtxScanMode,
+  KtxScanReport,
+  KtxScanTrigger,
 } from './types.js';
 
 export interface RunLocalScanOptions {
-  project: KloLocalProject;
+  project: KtxLocalProject;
   connectionId: string;
-  mode?: KloScanMode;
+  mode?: KtxScanMode;
   detectRelationships?: boolean;
   dryRun?: boolean;
-  trigger?: KloScanTrigger;
+  trigger?: KtxScanTrigger;
   databaseIntrospectionUrl?: string;
   adapters?: SourceAdapter[];
   jobId?: string;
   now?: () => Date;
-  connector?: KloScanConnector;
-  createConnector?: (connectionId: string) => KloScanConnector | Promise<KloScanConnector>;
-  enrichmentProviders?: KloLocalScanEnrichmentProviders | null;
+  connector?: KtxScanConnector;
+  createConnector?: (connectionId: string) => KtxScanConnector | Promise<KtxScanConnector>;
+  enrichmentProviders?: KtxLocalScanEnrichmentProviders | null;
   enrichmentStateStore?: SqliteLocalScanEnrichmentStateStore | null;
-  progress?: KloProgressPort;
+  progress?: KtxProgressPort;
 }
 
 export interface LocalScanRunResult {
@@ -58,10 +58,10 @@ export interface LocalScanRunResult {
   status: 'done';
   done: true;
   connectionId: string;
-  mode: KloScanMode;
+  mode: KtxScanMode;
   dryRun: boolean;
   syncId: string;
-  report: KloScanReport;
+  report: KtxScanReport;
 }
 
 export interface LocalScanStatusResponse {
@@ -69,14 +69,14 @@ export interface LocalScanStatusResponse {
   status: LocalIngestRunRecord['status'];
   done: boolean;
   connectionId: string;
-  mode: KloScanMode;
+  mode: KtxScanMode;
   dryRun: boolean;
   syncId: string;
   progress: number;
   startedAt: string;
   completedAt: string;
   reportPath: string | null;
-  warnings: KloScanReport['warnings'];
+  warnings: KtxScanReport['warnings'];
 }
 
 export interface LocalScanMcpOptions {
@@ -84,15 +84,15 @@ export interface LocalScanMcpOptions {
   databaseIntrospectionUrl?: string;
   jobIdFactory?: () => string;
   now?: () => Date;
-  createConnector?: (connectionId: string) => KloScanConnector | Promise<KloScanConnector>;
+  createConnector?: (connectionId: string) => KtxScanConnector | Promise<KtxScanConnector>;
 }
 
 const LIVE_DATABASE_ADAPTER = 'live-database';
 const SCAN_REPORT_FILE = 'scan-report.json';
-const LOCAL_AUTHOR = 'klo';
-const LOCAL_AUTHOR_EMAIL = 'klo@example.com';
+const LOCAL_AUTHOR = 'ktx';
+const LOCAL_AUTHOR_EMAIL = 'ktx@example.com';
 
-function normalizeDriver(driver: string | undefined): KloConnectionDriver {
+function normalizeDriver(driver: string | undefined): KtxConnectionDriver {
   const normalized = (driver ?? '').toLowerCase();
   if (
     normalized === 'postgres' ||
@@ -109,7 +109,7 @@ function normalizeDriver(driver: string | undefined): KloConnectionDriver {
     return normalized === 'sqlite3' ? 'sqlite' : normalized;
   }
   throw new Error(
-    `Standalone klo scan supports postgres/postgresql/sqlite/mysql/clickhouse/sqlserver/bigquery/snowflake/posthog in this phase, received "${driver ?? 'unknown'}"`,
+    `Standalone ktx scan supports postgres/postgresql/sqlite/mysql/clickhouse/sqlserver/bigquery/snowflake/posthog in this phase, received "${driver ?? 'unknown'}"`,
   );
 }
 
@@ -125,13 +125,13 @@ function scanReportPath(connectionId: string, syncId: string): string {
   return `${rawSourcesDir(connectionId, syncId)}/${SCAN_REPORT_FILE}`;
 }
 
-function assertSupportedMode(mode: KloScanMode): void {
+function assertSupportedMode(mode: KtxScanMode): void {
   if (mode !== 'structural' && mode !== 'relationships' && mode !== 'enriched') {
-    throw new Error(`Unsupported KLO scan mode: ${mode}`);
+    throw new Error(`Unsupported KTX scan mode: ${mode}`);
   }
 }
 
-async function resolveScanConnector(options: RunLocalScanOptions, mode: KloScanMode): Promise<KloScanConnector | null> {
+async function resolveScanConnector(options: RunLocalScanOptions, mode: KtxScanMode): Promise<KtxScanConnector | null> {
   if (mode === 'structural' && !options.detectRelationships) {
     return null;
   }
@@ -141,20 +141,20 @@ async function resolveScanConnector(options: RunLocalScanOptions, mode: KloScanM
   if (options.createConnector) {
     return options.createConnector(options.connectionId);
   }
-  throw new Error('klo scan --enrich and --detect-relationships require a native standalone scan connector');
+  throw new Error('ktx scan --enrich and --detect-relationships require a native standalone scan connector');
 }
 
 interface LocalScanEnrichmentProviderDeps {
-  createKloLlmProvider?: typeof createKloLlmProvider;
-  createKloEmbeddingProvider?: typeof createKloEmbeddingProvider;
+  createKtxLlmProvider?: typeof createKtxLlmProvider;
+  createKtxEmbeddingProvider?: typeof createKtxEmbeddingProvider;
   env?: NodeJS.ProcessEnv;
 }
 
 export function createLocalScanEnrichmentProvidersFromConfig(
-  config: KloScanEnrichmentConfig,
-  llmConfig: KloProjectLlmConfig,
+  config: KtxScanEnrichmentConfig,
+  llmConfig: KtxProjectLlmConfig,
   deps: LocalScanEnrichmentProviderDeps = {},
-): KloLocalScanEnrichmentProviders | null {
+): KtxLocalScanEnrichmentProviders | null {
   if (config.mode === 'deterministic') {
     return createDeterministicLocalScanEnrichmentProviders();
   }
@@ -163,15 +163,15 @@ export function createLocalScanEnrichmentProvidersFromConfig(
     return null;
   }
 
-  const llm = createLocalKloLlmProviderFromConfig(llmConfig, deps);
-  const embeddingProvider = createLocalKloEmbeddingProviderFromConfig(config.embeddings, deps);
+  const llm = createLocalKtxLlmProviderFromConfig(llmConfig, deps);
+  const embeddingProvider = createLocalKtxEmbeddingProviderFromConfig(config.embeddings, deps);
   if (!llm || !embeddingProvider) {
     return null;
   }
 
   return {
     llm,
-    embedding: new KloScanEmbeddingPortAdapter(embeddingProvider),
+    embedding: new KtxScanEmbeddingPortAdapter(embeddingProvider),
   };
 }
 
@@ -182,13 +182,13 @@ function createLocalScanEnrichmentStateStore(options: RunLocalScanOptions): Sqli
   if (options.enrichmentStateStore !== undefined) {
     return options.enrichmentStateStore;
   }
-  return new SqliteLocalScanEnrichmentStateStore({ dbPath: kloLocalStateDbPath(options.project) });
+  return new SqliteLocalScanEnrichmentStateStore({ dbPath: ktxLocalStateDbPath(options.project) });
 }
 
 function localScanProviderIdentity(
-  config: KloScanEnrichmentConfig,
-  llmConfig: KloProjectLlmConfig,
-  relationships: KloScanRelationshipConfig,
+  config: KtxScanEnrichmentConfig,
+  llmConfig: KtxProjectLlmConfig,
+  relationships: KtxScanRelationshipConfig,
 ): Record<string, unknown> {
   return {
     mode: config.mode,
@@ -203,12 +203,12 @@ function localScanProviderIdentity(
 
 function reportFromIngest(input: {
   record: LocalIngestRunRecord;
-  driver: KloConnectionDriver;
-  mode: KloScanMode;
+  driver: KtxConnectionDriver;
+  mode: KtxScanMode;
   dryRun: boolean;
-  trigger: KloScanTrigger;
+  trigger: KtxScanTrigger;
   createdAt: string;
-}): KloScanReport {
+}): KtxScanReport {
   const reportPath = input.dryRun ? null : scanReportPath(input.record.connectionId, input.record.syncId);
   return {
     connectionId: input.record.connectionId,
@@ -254,12 +254,12 @@ function reportFromIngest(input: {
     capabilityGaps: [],
     warnings: [],
     relationships: { accepted: 0, review: 0, rejected: 0, skipped: 0 },
-    enrichmentState: completedKloScanEnrichmentStateSummary(),
+    enrichmentState: completedKtxScanEnrichmentStateSummary(),
     createdAt: input.createdAt,
   };
 }
 
-async function writeScanReport(project: KloLocalProject, report: KloScanReport): Promise<void> {
+async function writeScanReport(project: KtxLocalProject, report: KtxScanReport): Promise<void> {
   if (!report.artifactPaths.reportPath) {
     return;
   }
@@ -272,7 +272,7 @@ async function writeScanReport(project: KloLocalProject, report: KloScanReport):
   );
 }
 
-function scanDiffSummaryFromRecord(record: LocalIngestRunRecord): KloScanReport['diffSummary'] {
+function scanDiffSummaryFromRecord(record: LocalIngestRunRecord): KtxScanReport['diffSummary'] {
   return {
     tablesAdded: tablePathCount(record.diffPaths.added),
     tablesModified: tablePathCount(record.diffPaths.modified),
@@ -293,7 +293,7 @@ function hasNoContentChanges(record: LocalIngestRunRecord): boolean {
   );
 }
 
-function scanChangeSummary(diffSummary: KloScanReport['diffSummary']): string {
+function scanChangeSummary(diffSummary: KtxScanReport['diffSummary']): string {
   const changedTables = diffSummary.tablesAdded + diffSummary.tablesModified + diffSummary.tablesDeleted;
   const totalTables = changedTables + diffSummary.tablesUnchanged;
   const changeNoun = changedTables === 1 ? 'change' : 'changes';
@@ -302,13 +302,13 @@ function scanChangeSummary(diffSummary: KloScanReport['diffSummary']): string {
 }
 
 async function readScanReport(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   connectionId: string,
   syncId: string,
-): Promise<KloScanReport | null> {
+): Promise<KtxScanReport | null> {
   try {
     const raw = await project.fileStore.readFile(scanReportPath(connectionId, syncId));
-    return JSON.parse(raw.content) as KloScanReport;
+    return JSON.parse(raw.content) as KtxScanReport;
   } catch {
     return null;
   }
@@ -322,7 +322,7 @@ export async function runLocalScan(options: RunLocalScanOptions): Promise<LocalS
 
   const connection = options.project.config.connections[options.connectionId];
   if (!connection) {
-    throw new Error(`Connection "${options.connectionId}" is not configured in klo.yaml`);
+    throw new Error(`Connection "${options.connectionId}" is not configured in ktx.yaml`);
   }
   const driver = normalizeDriver(connection.driver);
   const adapters =
@@ -370,7 +370,7 @@ export async function runLocalScan(options: RunLocalScanOptions): Promise<LocalS
     reusedExistingScanArtifacts = true;
   }
   const enrichmentStateStore = connector ? createLocalScanEnrichmentStateStore(options) : null;
-  let enrichmentState: KloScanEnrichmentStateSummary = completedKloScanEnrichmentStateSummary();
+  let enrichmentState: KtxScanEnrichmentStateSummary = completedKtxScanEnrichmentStateSummary();
   if (!reusedExistingScanArtifacts && !report.dryRun && report.artifactPaths.rawSourcesDir) {
     await options.progress?.update(0.7, 'Writing schema artifacts');
     const structuralSnapshot = await readLocalScanStructuralSnapshot({
@@ -434,11 +434,11 @@ export async function runLocalScan(options: RunLocalScanOptions): Promise<LocalS
       report.artifactPaths.manifestShards = artifacts.manifestShards;
       report.manifestShardsWritten = artifacts.manifestShardsWritten;
     } catch (error) {
-      const message = kloScanErrorMessage(error);
-      report.enrichment = failedKloScanEnrichmentSummary(mode, options.detectRelationships ?? false);
+      const message = ktxScanErrorMessage(error);
+      report.enrichment = failedKtxScanEnrichmentSummary(mode, options.detectRelationships ?? false);
       const stages = await enrichmentStateStore?.listRunStages(record.runId);
       if (stages) {
-        enrichmentState = completedKloScanEnrichmentStateSummary();
+        enrichmentState = completedKtxScanEnrichmentStateSummary();
         for (const stage of stages) {
           if (stage.status === 'completed') {
             enrichmentState.completedStages.push(stage.stage);
@@ -450,13 +450,13 @@ export async function runLocalScan(options: RunLocalScanOptions): Promise<LocalS
       }
       report.warnings.push({
         code: 'enrichment_failed',
-        message: `KLO scan enrichment failed after structural scan completed: ${message}`,
+        message: `KTX scan enrichment failed after structural scan completed: ${message}`,
         recoverable: true,
         metadata: { mode, detectRelationships: options.detectRelationships ?? false },
       });
     }
   }
-  report = redactKloScanReport(report);
+  report = redactKtxScanReport(report);
   if (!reusedExistingScanArtifacts) {
     await writeScanReport(options.project, report);
   }
@@ -473,7 +473,7 @@ export async function runLocalScan(options: RunLocalScanOptions): Promise<LocalS
   };
 }
 
-export async function getLocalScanReport(project: KloLocalProject, runId: string): Promise<KloScanReport | null> {
+export async function getLocalScanReport(project: KtxLocalProject, runId: string): Promise<KtxScanReport | null> {
   const status = await getLocalStageOnlyIngestStatus(project, runId);
   if (!status || status.adapter !== LIVE_DATABASE_ADAPTER) {
     return null;
@@ -491,7 +491,7 @@ export async function getLocalScanReport(project: KloLocalProject, runId: string
 }
 
 export async function getLocalScanStatus(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   runId: string,
 ): Promise<LocalScanStatusResponse | null> {
   const status = await getLocalStageOnlyIngestStatus(project, runId);

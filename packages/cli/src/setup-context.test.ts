@@ -5,10 +5,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   contextBuildCommands,
-  readKloSetupContextState,
-  runKloSetupContextCommand,
-  runKloSetupContextStep,
-  writeKloSetupContextState,
+  readKtxSetupContextState,
+  runKtxSetupContextCommand,
+  runKtxSetupContextStep,
+  writeKtxSetupContextState,
 } from './setup-context.js';
 
 function makeIo() {
@@ -34,7 +34,7 @@ function makeIo() {
 
 async function writeReadyProject(projectDir: string) {
   await writeFile(
-    join(projectDir, 'klo.yaml'),
+    join(projectDir, 'ktx.yaml'),
     [
       'project: revenue',
       'setup:',
@@ -124,7 +124,7 @@ describe('setup context build state', () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-setup-context-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-setup-context-'));
   });
 
   afterEach(async () => {
@@ -132,9 +132,9 @@ describe('setup context build state', () => {
   });
 
   it('reads missing state as not started and writes durable command metadata without secrets', async () => {
-    await expect(readKloSetupContextState(tempDir)).resolves.toMatchObject({ status: 'not_started' });
+    await expect(readKtxSetupContextState(tempDir)).resolves.toMatchObject({ status: 'not_started' });
 
-    await writeKloSetupContextState(tempDir, {
+    await writeKtxSetupContextState(tempDir, {
       runId: 'setup-context-local-abc123',
       status: 'running',
       startedAt: '2026-05-09T10:00:00.000Z',
@@ -147,16 +147,16 @@ describe('setup context build state', () => {
       commands: contextBuildCommands(tempDir, 'setup-context-local-abc123'),
     });
 
-    const state = await readKloSetupContextState(tempDir);
+    const state = await readKtxSetupContextState(tempDir);
     expect(state).toMatchObject({
       runId: 'setup-context-local-abc123',
       status: 'running',
       primarySourceConnectionIds: ['warehouse'],
       contextSourceConnectionIds: ['docs'],
       commands: {
-        watch: `klo setup context watch setup-context-local-abc123 --project-dir ${tempDir}`,
-        status: `klo setup context status setup-context-local-abc123 --project-dir ${tempDir}`,
-        resume: `klo setup --project-dir ${tempDir}`,
+        watch: `ktx setup context watch setup-context-local-abc123 --project-dir ${tempDir}`,
+        status: `ktx setup context status setup-context-local-abc123 --project-dir ${tempDir}`,
+        resume: `ktx setup --project-dir ${tempDir}`,
       },
     });
     expect(JSON.stringify(state)).not.toContain('DATABASE_URL');
@@ -175,7 +175,7 @@ describe('setup context build state', () => {
     }));
 
     await expect(
-      runKloSetupContextStep(
+      runKtxSetupContextStep(
         { projectDir: tempDir, inputMode: 'disabled' },
         io.io,
         {
@@ -199,13 +199,13 @@ describe('setup context build state', () => {
       expect.objectContaining({ onDetach: expect.any(Function) }),
     );
     expect(verifyContextReady).toHaveBeenCalledWith(tempDir);
-    expect(await readFile(join(tempDir, 'klo.yaml'), 'utf-8')).toContain('    - context');
-    await expect(readKloSetupContextState(tempDir)).resolves.toMatchObject({
+    expect(await readFile(join(tempDir, 'ktx.yaml'), 'utf-8')).toContain('    - context');
+    await expect(readKtxSetupContextState(tempDir)).resolves.toMatchObject({
       runId: 'setup-context-local-abc123',
       status: 'completed',
       completedAt: '2026-05-09T10:00:00.000Z',
     });
-    expect(io.stdout()).toContain('KLO context is ready for agents.');
+    expect(io.stdout()).toContain('KTX context is ready for agents.');
   });
 
   it('marks context complete without prompting when initial source ingest already made agent context', async () => {
@@ -219,7 +219,7 @@ describe('setup context build state', () => {
     const runContextBuildMock = vi.fn(async () => ({ exitCode: 0, detached: false }));
 
     await expect(
-      runKloSetupContextStep(
+      runKtxSetupContextStep(
         { projectDir: tempDir, inputMode: 'auto' },
         io.io,
         {
@@ -237,14 +237,14 @@ describe('setup context build state', () => {
     ).resolves.toEqual({ status: 'ready', projectDir: tempDir, runId: 'setup-context-local-existing' });
 
     expect(runContextBuildMock).not.toHaveBeenCalled();
-    expect(await readFile(join(tempDir, 'klo.yaml'), 'utf-8')).toContain('    - context');
-    await expect(readKloSetupContextState(tempDir)).resolves.toMatchObject({
+    expect(await readFile(join(tempDir, 'ktx.yaml'), 'utf-8')).toContain('    - context');
+    await expect(readKtxSetupContextState(tempDir)).resolves.toMatchObject({
       runId: 'setup-context-local-existing',
       status: 'completed',
       completedAt: '2026-05-09T10:00:00.000Z',
       contextSourceConnectionIds: ['docs'],
     });
-    expect(io.stdout()).toContain('KLO context is ready for agents.');
+    expect(io.stdout()).toContain('KTX context is ready for agents.');
   });
 
   it('does not mark context ready until primary scans have completed description enrichment', async () => {
@@ -264,7 +264,7 @@ describe('setup context build state', () => {
     });
 
     await expect(
-      runKloSetupContextStep(
+      runKtxSetupContextStep(
         { projectDir: tempDir, inputMode: 'disabled' },
         io.io,
         {
@@ -292,7 +292,7 @@ describe('setup context build state', () => {
     });
 
     await expect(
-      runKloSetupContextStep(
+      runKtxSetupContextStep(
         { projectDir: tempDir, inputMode: 'disabled' },
         io.io,
         {
@@ -309,7 +309,7 @@ describe('setup context build state', () => {
 
   it('refuses empty setup context builds', async () => {
     await writeFile(
-      join(tempDir, 'klo.yaml'),
+      join(tempDir, 'ktx.yaml'),
       [
         'project: revenue',
         'connections: {}',
@@ -330,19 +330,19 @@ describe('setup context build state', () => {
     const io = makeIo();
 
     await expect(
-      runKloSetupContextStep(
+      runKtxSetupContextStep(
         { projectDir: tempDir, inputMode: 'disabled' },
         io.io,
         { runIdFactory: () => 'setup-context-local-empty' },
       ),
     ).resolves.toEqual({ status: 'failed', projectDir: tempDir });
 
-    expect(io.stderr()).toContain('No primary or context sources are configured for a KLO context build.');
+    expect(io.stderr()).toContain('No primary or context sources are configured for a KTX context build.');
   });
 
   it('prints JSON setup context command status with watch and resume commands', async () => {
-    await mkdir(join(tempDir, '.klo', 'setup'), { recursive: true });
-    await writeKloSetupContextState(tempDir, {
+    await mkdir(join(tempDir, '.ktx', 'setup'), { recursive: true });
+    await writeKtxSetupContextState(tempDir, {
       runId: 'setup-context-local-abc123',
       status: 'detached',
       startedAt: '2026-05-09T10:00:00.000Z',
@@ -357,7 +357,7 @@ describe('setup context build state', () => {
     const io = makeIo();
 
     await expect(
-      runKloSetupContextCommand(
+      runKtxSetupContextCommand(
         { command: 'status', projectDir: tempDir, runId: 'setup-context-local-abc123', json: true },
         io.io,
       ),
@@ -367,8 +367,8 @@ describe('setup context build state', () => {
       ready: false,
       status: 'detached',
       runId: 'setup-context-local-abc123',
-      watchCommand: `klo setup context watch setup-context-local-abc123 --project-dir ${tempDir}`,
-      statusCommand: `klo setup context status setup-context-local-abc123 --project-dir ${tempDir}`,
+      watchCommand: `ktx setup context watch setup-context-local-abc123 --project-dir ${tempDir}`,
+      statusCommand: `ktx setup context status setup-context-local-abc123 --project-dir ${tempDir}`,
     });
   });
 
@@ -378,7 +378,7 @@ describe('setup context build state', () => {
     const runContextBuildMock = vi.fn(async () => ({ exitCode: 0, detached: false }));
 
     await expect(
-      runKloSetupContextCommand(
+      runKtxSetupContextCommand(
         { command: 'build', projectDir: tempDir, inputMode: 'auto' },
         io.io,
         {

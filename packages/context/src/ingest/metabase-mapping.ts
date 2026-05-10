@@ -12,7 +12,7 @@ export type {
   AutoMatchCandidate,
   AutoMatchResult as MetabaseAutoMatchResult,
   DiscoveredMetabaseDatabase,
-  KloConnectionPhysicalInfo,
+  KtxConnectionPhysicalInfo,
   MappingPhysicalInfo,
   MappingRefreshReport,
   MetabaseMappedConnectionType,

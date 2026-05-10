@@ -1,35 +1,35 @@
 import { type Command, InvalidArgumentError, Option } from '@commander-js/extra-typings';
-import { type KloCliCommandContext, parsePositiveIntegerOption, resolveCommandProjectDir } from '../cli-program.js';
-import type { KloScanArgs } from '../scan.js';
+import { type KtxCliCommandContext, parsePositiveIntegerOption, resolveCommandProjectDir } from '../cli-program.js';
+import type { KtxScanArgs } from '../scan.js';
 import { profileMark } from '../startup-profile.js';
 
 profileMark('module:commands/scan-commands');
 
-async function runScanArgs(context: KloCliCommandContext, args: KloScanArgs): Promise<void> {
-  const runner = context.deps.scan ?? (await import('../scan.js')).runKloScan;
+async function runScanArgs(context: KtxCliCommandContext, args: KtxScanArgs): Promise<void> {
+  const runner = context.deps.scan ?? (await import('../scan.js')).runKtxScan;
   context.setExitCode(await runner(args, context.io));
 }
 
-type KloScanModeOption = Extract<KloScanArgs, { command: 'run' }>['mode'];
+type KtxScanModeOption = Extract<KtxScanArgs, { command: 'run' }>['mode'];
 
-function parseScanModeOption(value: string): KloScanModeOption {
+function parseScanModeOption(value: string): KtxScanModeOption {
   if (value === 'structural' || value === 'enriched' || value === 'relationships') {
     return value;
   }
   throw new InvalidArgumentError('Allowed choices are structural, enriched, relationships');
 }
 
-type KloRelationshipStatusOption = Extract<KloScanArgs, { command: 'relationships' }>['status'];
-type KloRelationshipFeedbackDecisionOption = Extract<KloScanArgs, { command: 'relationshipFeedback' }>['decision'];
+type KtxRelationshipStatusOption = Extract<KtxScanArgs, { command: 'relationships' }>['status'];
+type KtxRelationshipFeedbackDecisionOption = Extract<KtxScanArgs, { command: 'relationshipFeedback' }>['decision'];
 
-function parseRelationshipStatusOption(value: string): KloRelationshipStatusOption {
+function parseRelationshipStatusOption(value: string): KtxRelationshipStatusOption {
   if (value === 'accepted' || value === 'review' || value === 'rejected' || value === 'skipped' || value === 'all') {
     return value;
   }
   throw new InvalidArgumentError('Allowed choices are accepted, review, rejected, skipped, all');
 }
 
-function parseRelationshipFeedbackDecisionOption(value: string): KloRelationshipFeedbackDecisionOption {
+function parseRelationshipFeedbackDecisionOption(value: string): KtxRelationshipFeedbackDecisionOption {
   if (value === 'accepted' || value === 'rejected' || value === 'all') {
     return value;
   }
@@ -58,7 +58,7 @@ function relationshipDecisionArgs(options: {
   note?: string;
   json?: boolean;
 }): Pick<
-  Extract<KloScanArgs, { command: 'relationshipDecision' }>,
+  Extract<KtxScanArgs, { command: 'relationshipDecision' }>,
   'candidateId' | 'decision' | 'reviewer' | 'note' | 'json'
 > | null {
   const decisionCount = [options.accept !== undefined, options.reject !== undefined].filter(Boolean).length;
@@ -69,7 +69,7 @@ function relationshipDecisionArgs(options: {
     return {
       candidateId: options.accept,
       decision: 'accepted',
-      reviewer: options.reviewer ?? 'klo',
+      reviewer: options.reviewer ?? 'ktx',
       note: options.note ?? null,
       json: options.json === true,
     };
@@ -78,7 +78,7 @@ function relationshipDecisionArgs(options: {
     return {
       candidateId: options.reject,
       decision: 'rejected',
-      reviewer: options.reviewer ?? 'klo',
+      reviewer: options.reviewer ?? 'ktx',
       note: options.note ?? null,
       json: options.json === true,
     };
@@ -90,11 +90,11 @@ function collectRelationshipCandidateOption(value: string, previous: string[]): 
   return [...previous, parseNonEmptyOption(value)];
 }
 
-export function registerScanCommands(program: Command, context: KloCliCommandContext): void {
+export function registerScanCommands(program: Command, context: KtxCliCommandContext): void {
   const scan = program
     .command('scan')
     .description('Run or inspect standalone connection scans')
-    .argument('[connectionId]', 'KLO connection id to scan')
+    .argument('[connectionId]', 'KTX connection id to scan')
     .option(
       '--mode <mode>',
       'Scan mode: structural, enriched, relationships (default: structural)',
@@ -105,7 +105,7 @@ export function registerScanCommands(program: Command, context: KloCliCommandCon
     .showHelpAfterError()
     .addHelpText(
       'after',
-      '\nProject directory defaults to KLO_PROJECT_DIR when set, otherwise the current working directory.\n',
+      '\nProject directory defaults to KTX_PROJECT_DIR when set, otherwise the current working directory.\n',
     )
     .hook('preAction', (_thisCommand, actionCommand) => {
       context.writeDebug?.('scan', actionCommand);
@@ -113,7 +113,7 @@ export function registerScanCommands(program: Command, context: KloCliCommandCon
     .action(async (connectionId: string | undefined, options, command) => {
       if (!connectionId) {
         scan.outputHelp();
-        context.io.stderr.write('klo dev scan requires <connectionId> or a subcommand\n');
+        context.io.stderr.write('ktx dev scan requires <connectionId> or a subcommand\n');
         context.setExitCode(1);
         return;
       }
@@ -135,7 +135,7 @@ export function registerScanCommands(program: Command, context: KloCliCommandCon
     .argument('<runId>', 'Local scan run id')
     .addHelpText(
       'after',
-      '\n--project-dir is inherited from `klo dev scan` (default: KLO_PROJECT_DIR or current working directory).\n',
+      '\n--project-dir is inherited from `ktx dev scan` (default: KTX_PROJECT_DIR or current working directory).\n',
     )
     .action(async (runId: string, _options: unknown, command) => {
       await runScanArgs(context, {
@@ -152,7 +152,7 @@ export function registerScanCommands(program: Command, context: KloCliCommandCon
     .option('--json', 'Print the raw scan report JSON', false)
     .addHelpText(
       'after',
-      '\n--project-dir is inherited from `klo dev scan` (default: KLO_PROJECT_DIR or current working directory).\n',
+      '\n--project-dir is inherited from `ktx dev scan` (default: KTX_PROJECT_DIR or current working directory).\n',
     )
     .action(async (runId: string, options, command) => {
       await runScanArgs(context, {
@@ -189,7 +189,7 @@ export function registerScanCommands(program: Command, context: KloCliCommandCon
     .option('--json', 'Print relationship artifacts as JSON', false)
     .addHelpText(
       'after',
-      '\n--project-dir is inherited from `klo dev scan` (default: KLO_PROJECT_DIR or current working directory).\n',
+      '\n--project-dir is inherited from `ktx dev scan` (default: KTX_PROJECT_DIR or current working directory).\n',
     )
     .action(async (runId: string, options, command) => {
       const decision = relationshipDecisionArgs(options);
@@ -231,7 +231,7 @@ export function registerScanCommands(program: Command, context: KloCliCommandCon
     .option('--json', 'Print the apply result as JSON', false)
     .addHelpText(
       'after',
-      '\n--project-dir is inherited from `klo dev scan` (default: KLO_PROJECT_DIR or current working directory).\n',
+      '\n--project-dir is inherited from `ktx dev scan` (default: KTX_PROJECT_DIR or current working directory).\n',
     )
     .action(async (runId: string, options, command) => {
       const parentOptions = command.parent?.opts() as { dryRun?: boolean } | undefined;
@@ -249,7 +249,7 @@ export function registerScanCommands(program: Command, context: KloCliCommandCon
   scan
     .command('relationship-feedback')
     .description('Export persisted relationship review decisions as calibration labels')
-    .option('--connection <connectionId>', 'Only export labels for one KLO connection')
+    .option('--connection <connectionId>', 'Only export labels for one KTX connection')
     .option(
       '--decision <decision>',
       'Relationship feedback decision: accepted, rejected, all',
@@ -260,7 +260,7 @@ export function registerScanCommands(program: Command, context: KloCliCommandCon
     .addOption(new Option('--jsonl', 'Print labels as newline-delimited JSON').default(false).conflicts('json'))
     .addHelpText(
       'after',
-      '\n--project-dir is inherited from `klo dev scan` (default: KLO_PROJECT_DIR or current working directory).\n',
+      '\n--project-dir is inherited from `ktx dev scan` (default: KTX_PROJECT_DIR or current working directory).\n',
     )
     .action(async (options, command) => {
       await runScanArgs(context, {
@@ -276,7 +276,7 @@ export function registerScanCommands(program: Command, context: KloCliCommandCon
   scan
     .command('relationship-calibration')
     .description('Summarize relationship feedback labels against current score thresholds')
-    .option('--connection <connectionId>', 'Only calibrate labels for one KLO connection')
+    .option('--connection <connectionId>', 'Only calibrate labels for one KTX connection')
     .option(
       '--decision <decision>',
       'Relationship feedback decision: accepted, rejected, all',
@@ -298,7 +298,7 @@ export function registerScanCommands(program: Command, context: KloCliCommandCon
     .option('--json', 'Print the calibration report as JSON', false)
     .addHelpText(
       'after',
-      '\n--project-dir is inherited from `klo dev scan` (default: KLO_PROJECT_DIR or current working directory).\n',
+      '\n--project-dir is inherited from `ktx dev scan` (default: KTX_PROJECT_DIR or current working directory).\n',
     )
     .action(async (options, command) => {
       await runScanArgs(context, {
@@ -315,7 +315,7 @@ export function registerScanCommands(program: Command, context: KloCliCommandCon
   scan
     .command('relationship-thresholds')
     .description('Evaluate relationship feedback labels for offline threshold advice')
-    .option('--connection <connectionId>', 'Only evaluate labels for one KLO connection')
+    .option('--connection <connectionId>', 'Only evaluate labels for one KTX connection')
     .option(
       '--min-total-labels <count>',
       'Minimum scored labels before advice can be ready',
@@ -337,7 +337,7 @@ export function registerScanCommands(program: Command, context: KloCliCommandCon
     .option('--json', 'Print the threshold advice report as JSON', false)
     .addHelpText(
       'after',
-      '\n--project-dir is inherited from `klo dev scan` (default: KLO_PROJECT_DIR or current working directory).\n',
+      '\n--project-dir is inherited from `ktx dev scan` (default: KTX_PROJECT_DIR or current working directory).\n',
     )
     .action(async (options, command) => {
       await runScanArgs(context, {

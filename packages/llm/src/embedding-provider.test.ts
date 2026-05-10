@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createKloEmbeddingProvider } from './embedding-provider.js';
-import type { KloEmbeddingConfig } from './types.js';
+import { createKtxEmbeddingProvider } from './embedding-provider.js';
+import type { KtxEmbeddingConfig } from './types.js';
 
-describe('createKloEmbeddingProvider', () => {
+describe('createKtxEmbeddingProvider', () => {
   it('creates deterministic embeddings with stable dimensions', async () => {
-    const provider = createKloEmbeddingProvider({
+    const provider = createKtxEmbeddingProvider({
       backend: 'deterministic',
       model: 'sha256',
       dimensions: 6,
@@ -26,9 +26,9 @@ describe('createKloEmbeddingProvider', () => {
         dimensions: 2,
         gateway: { apiKey: 'gateway-key' }, // pragma: allowlist secret
       }),
-    ) as KloEmbeddingConfig;
+    ) as KtxEmbeddingConfig;
 
-    expect(() => createKloEmbeddingProvider(config)).toThrow('Unsupported KLO embedding backend: gateway');
+    expect(() => createKtxEmbeddingProvider(config)).toThrow('Unsupported KTX embedding backend: gateway');
   });
 
   it('uses OpenAI embeddings with configured dimensions', async () => {
@@ -41,7 +41,7 @@ describe('createKloEmbeddingProvider', () => {
       },
     }));
 
-    const provider = createKloEmbeddingProvider(
+    const provider = createKtxEmbeddingProvider(
       {
         backend: 'openai',
         model: 'text-embedding-3-small',
@@ -64,7 +64,7 @@ describe('createKloEmbeddingProvider', () => {
       .mockResolvedValueOnce(new Response(JSON.stringify({ embedding: [0.1, 0.2] }), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ embedding: [0.3, 0.4] }), { status: 200 }));
 
-    const provider = createKloEmbeddingProvider(
+    const provider = createKtxEmbeddingProvider(
       {
         backend: 'sentence-transformers',
         model: 'all-MiniLM-L6-v2',
@@ -91,7 +91,7 @@ describe('createKloEmbeddingProvider', () => {
       .mockResolvedValueOnce(new Response(JSON.stringify({ embedding: [0.1, 0.2] }), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ embeddings: [[0.5, 0.6]] }), { status: 200 }));
 
-    const daemonProvider = createKloEmbeddingProvider(
+    const daemonProvider = createKtxEmbeddingProvider(
       {
         backend: 'sentence-transformers',
         model: 'all-MiniLM-L6-v2',
@@ -114,14 +114,14 @@ describe('createKloEmbeddingProvider', () => {
     );
   });
 
-  it('falls back to one-shot klo-daemon inference when the local HTTP daemon is unavailable', async () => {
+  it('falls back to one-shot ktx-daemon inference when the local HTTP daemon is unavailable', async () => {
     const fetch = vi.fn().mockRejectedValue(new TypeError('fetch failed'));
     const runSentenceTransformersJson = vi
       .fn()
       .mockResolvedValueOnce({ embedding: [0.1, 0.2] })
       .mockResolvedValueOnce({ embeddings: [[0.3, 0.4], [0.5, 0.6]] });
 
-    const provider = createKloEmbeddingProvider(
+    const provider = createKtxEmbeddingProvider(
       {
         backend: 'sentence-transformers',
         model: 'all-MiniLM-L6-v2',
@@ -137,7 +137,7 @@ describe('createKloEmbeddingProvider', () => {
     ]);
     expect(fetch).toHaveBeenCalledTimes(1);
     expect(runSentenceTransformersJson).toHaveBeenNthCalledWith(1, 'embedding-compute', {
-      text: '__klo_embedding_probe__',
+      text: '__ktx_embedding_probe__',
     });
     expect(runSentenceTransformersJson).toHaveBeenNthCalledWith(2, 'embedding-compute-bulk', {
       texts: ['hello', 'world'],

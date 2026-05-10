@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { join } from 'node:path';
 import OpenAI from 'openai';
-import type { KloEmbeddingConfig, KloEmbeddingProvider } from './types.js';
+import type { KtxEmbeddingConfig, KtxEmbeddingProvider } from './types.js';
 
 type FetchFn = typeof fetch;
 type SentenceTransformersCommand = 'embedding-compute' | 'embedding-compute-bulk';
@@ -12,7 +12,7 @@ type SentenceTransformersJsonRunner = (
 ) => Promise<Record<string, unknown>>;
 type SentenceTransformersProcessCommand = { command: string; args: string[] };
 
-export interface KloEmbeddingProviderDeps {
+export interface KtxEmbeddingProviderDeps {
   createOpenAIClient?: (options: { apiKey?: string; baseURL?: string }) => {
     embeddings: {
       create(input: {
@@ -90,7 +90,7 @@ function errorText(error: unknown): string {
 function parseJsonObject(raw: string, subcommand: string): Record<string, unknown> {
   const parsed = JSON.parse(raw) as unknown;
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    throw new Error(`klo-daemon ${subcommand} returned non-object JSON`);
+    throw new Error(`ktx-daemon ${subcommand} returned non-object JSON`);
   }
   return parsed as Record<string, unknown>;
 }
@@ -105,13 +105,13 @@ function isCommandNotFound(error: unknown): boolean {
 
 function defaultSentenceTransformersProcessCommands(): SentenceTransformersProcessCommand[] {
   const venvBin =
-    process.platform === 'win32' ? join('.venv', 'Scripts', 'klo-daemon.exe') : join('.venv', 'bin', 'klo-daemon');
+    process.platform === 'win32' ? join('.venv', 'Scripts', 'ktx-daemon.exe') : join('.venv', 'bin', 'ktx-daemon');
   const repoVenvBin =
     process.platform === 'win32'
-      ? join('klo', '.venv', 'Scripts', 'klo-daemon.exe')
-      : join('klo', '.venv', 'bin', 'klo-daemon');
+      ? join('ktx', '.venv', 'Scripts', 'ktx-daemon.exe')
+      : join('ktx', '.venv', 'bin', 'ktx-daemon');
   return [
-    { command: 'klo-daemon', args: [] },
+    { command: 'ktx-daemon', args: [] },
     { command: venvBin, args: [] },
     { command: repoVenvBin, args: [] },
   ];
@@ -143,7 +143,7 @@ function runSentenceTransformersProcessCommand(
         const stdoutText = Buffer.concat(stdout).toString('utf8').trim();
         const stderrText = Buffer.concat(stderr).toString('utf8').trim();
         if (code !== 0) {
-          reject(new Error(`klo-daemon ${subcommand} failed: ${stderrText || `exit code ${code}`}`));
+          reject(new Error(`ktx-daemon ${subcommand} failed: ${stderrText || `exit code ${code}`}`));
           return;
         }
         try {
@@ -180,11 +180,11 @@ function runSentenceTransformersProcessJson(options: {
         }
       }
     }
-    throw new Error(`klo-daemon ${subcommand} failed: ${errors.join('; ')}`);
+    throw new Error(`ktx-daemon ${subcommand} failed: ${errors.join('; ')}`);
   };
 }
 
-class DeterministicEmbeddingProvider implements KloEmbeddingProvider {
+class DeterministicEmbeddingProvider implements KtxEmbeddingProvider {
   readonly maxBatchSize: number;
 
   constructor(readonly dimensions: number, batchSize = DEFAULT_BATCH_SIZE) {
@@ -202,19 +202,19 @@ class DeterministicEmbeddingProvider implements KloEmbeddingProvider {
   }
 }
 
-class OpenAIEmbeddingProvider implements KloEmbeddingProvider {
+class OpenAIEmbeddingProvider implements KtxEmbeddingProvider {
   readonly dimensions: number;
   readonly maxBatchSize: number;
-  private readonly client: ReturnType<NonNullable<KloEmbeddingProviderDeps['createOpenAIClient']>>;
+  private readonly client: ReturnType<NonNullable<KtxEmbeddingProviderDeps['createOpenAIClient']>>;
 
   constructor(
-    private readonly config: KloEmbeddingConfig,
-    deps: KloEmbeddingProviderDeps,
+    private readonly config: KtxEmbeddingConfig,
+    deps: KtxEmbeddingProviderDeps,
   ) {
     this.dimensions = config.dimensions;
     this.maxBatchSize = config.batchSize ?? DEFAULT_BATCH_SIZE;
     if (!config.openai?.apiKey) {
-      throw new Error('openai.apiKey is required when KLO embedding backend is openai');
+      throw new Error('openai.apiKey is required when KTX embedding backend is openai');
     }
     this.client = deps.createOpenAIClient
       ? deps.createOpenAIClient({ apiKey: config.openai.apiKey, baseURL: config.openai.baseURL })
@@ -249,7 +249,7 @@ class OpenAIEmbeddingProvider implements KloEmbeddingProvider {
   }
 }
 
-class SentenceTransformersEmbeddingProvider implements KloEmbeddingProvider {
+class SentenceTransformersEmbeddingProvider implements KtxEmbeddingProvider {
   readonly dimensions: number;
   readonly maxBatchSize: number;
   private readonly fetch: FetchFn;
@@ -259,9 +259,9 @@ class SentenceTransformersEmbeddingProvider implements KloEmbeddingProvider {
   private readonly startupProbe: Promise<void>;
   private useProcessRunner = false;
 
-  constructor(config: KloEmbeddingConfig, deps: KloEmbeddingProviderDeps) {
+  constructor(config: KtxEmbeddingConfig, deps: KtxEmbeddingProviderDeps) {
     if (!config.sentenceTransformers?.baseURL) {
-      throw new Error('sentenceTransformers.baseURL is required when KLO embedding backend is sentence-transformers');
+      throw new Error('sentenceTransformers.baseURL is required when KTX embedding backend is sentence-transformers');
     }
     this.dimensions = config.dimensions;
     this.maxBatchSize = config.batchSize ?? DEFAULT_BATCH_SIZE;
@@ -277,7 +277,7 @@ class SentenceTransformersEmbeddingProvider implements KloEmbeddingProvider {
         cwd: deps.sentenceTransformersCwd,
         env: deps.sentenceTransformersEnv,
       });
-    this.startupProbe = this.requestSingle('__klo_embedding_probe__').then((embedding) => {
+    this.startupProbe = this.requestSingle('__ktx_embedding_probe__').then((embedding) => {
       assertVectorDimensions(embedding, this.dimensions, 'sentence-transformers');
     });
   }
@@ -339,7 +339,7 @@ class SentenceTransformersEmbeddingProvider implements KloEmbeddingProvider {
         throw new Error(
           `Embedding provider sentence-transformers local HTTP request failed (${errorText(
             httpError,
-          )}) and klo-daemon fallback failed (${errorText(processError)})`,
+          )}) and ktx-daemon fallback failed (${errorText(processError)})`,
         );
       }
     }
@@ -362,10 +362,10 @@ class SentenceTransformersEmbeddingProvider implements KloEmbeddingProvider {
   }
 }
 
-export function createKloEmbeddingProvider(
-  config: KloEmbeddingConfig,
-  deps: KloEmbeddingProviderDeps = {},
-): KloEmbeddingProvider {
+export function createKtxEmbeddingProvider(
+  config: KtxEmbeddingConfig,
+  deps: KtxEmbeddingProviderDeps = {},
+): KtxEmbeddingProvider {
   switch (config.backend) {
     case 'deterministic':
       return new DeterministicEmbeddingProvider(config.dimensions, config.batchSize);
@@ -374,6 +374,6 @@ export function createKloEmbeddingProvider(
     case 'sentence-transformers':
       return new SentenceTransformersEmbeddingProvider(config, deps);
     default:
-      throw new Error(`Unsupported KLO embedding backend: ${String((config as { backend?: string }).backend)}`);
+      throw new Error(`Unsupported KTX embedding backend: ${String((config as { backend?: string }).backend)}`);
   }
 }

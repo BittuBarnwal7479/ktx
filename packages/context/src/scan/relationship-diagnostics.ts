@@ -1,18 +1,18 @@
 import type {
-  KloEnrichedRelationship,
-  KloRelationshipEndpoint,
-  KloRelationshipType,
-  KloRelationshipUpdate,
+  KtxEnrichedRelationship,
+  KtxRelationshipEndpoint,
+  KtxRelationshipType,
+  KtxRelationshipUpdate,
 } from './enrichment-types.js';
 import type {
-  KloResolvedRelationshipDiscoveryCandidate,
-  KloResolvedRelationshipStatus,
+  KtxResolvedRelationshipDiscoveryCandidate,
+  KtxResolvedRelationshipStatus,
 } from './relationship-graph-resolver.js';
-import type { KloCompositeRelationshipCandidate } from './relationship-composite-candidates.js';
-import type { KloRelationshipProfileArtifact } from './relationship-profiling.js';
-import type { KloConnectionDriver, KloScanWarning } from './types.js';
+import type { KtxCompositeRelationshipCandidate } from './relationship-composite-candidates.js';
+import type { KtxRelationshipProfileArtifact } from './relationship-profiling.js';
+import type { KtxConnectionDriver, KtxScanWarning } from './types.js';
 
-export interface KloRelationshipArtifactEndpoint {
+export interface KtxRelationshipArtifactEndpoint {
   tableId: string;
   columnIds: string[];
   table: {
@@ -23,13 +23,13 @@ export interface KloRelationshipArtifactEndpoint {
   columns: string[];
 }
 
-export interface KloRelationshipArtifactEdge {
+export interface KtxRelationshipArtifactEdge {
   id: string;
-  status: KloResolvedRelationshipStatus;
+  status: KtxResolvedRelationshipStatus;
   source: string;
-  from: KloRelationshipArtifactEndpoint;
-  to: KloRelationshipArtifactEndpoint;
-  relationshipType: KloRelationshipType;
+  from: KtxRelationshipArtifactEndpoint;
+  to: KtxRelationshipArtifactEndpoint;
+  relationshipType: KtxRelationshipType;
   confidence: number;
   pkScore: number | null;
   fkScore: number | null;
@@ -40,88 +40,88 @@ export interface KloRelationshipArtifactEdge {
   reasons: string[];
 }
 
-export interface KloRelationshipArtifact {
+export interface KtxRelationshipArtifact {
   connectionId: string;
-  accepted: KloRelationshipArtifactEdge[];
-  review: KloRelationshipArtifactEdge[];
-  rejected: KloRelationshipArtifactEdge[];
-  skipped: KloRelationshipUpdate['skipped'];
+  accepted: KtxRelationshipArtifactEdge[];
+  review: KtxRelationshipArtifactEdge[];
+  rejected: KtxRelationshipArtifactEdge[];
+  skipped: KtxRelationshipUpdate['skipped'];
 }
 
-export interface KloRelationshipDiagnosticsSummary {
+export interface KtxRelationshipDiagnosticsSummary {
   accepted: number;
   review: number;
   rejected: number;
   skipped: number;
 }
 
-export interface KloRelationshipDiagnosticsValidation {
+export interface KtxRelationshipDiagnosticsValidation {
   available: boolean;
   sqlAvailable: boolean;
   queryCount: number;
 }
 
-export interface KloRelationshipDiagnosticsThresholds {
+export interface KtxRelationshipDiagnosticsThresholds {
   acceptThreshold: number;
   reviewThreshold: number;
 }
 
-export interface KloRelationshipDiagnosticsPolicy {
+export interface KtxRelationshipDiagnosticsPolicy {
   validationRequiredForManifest: boolean;
   maxCandidatesPerColumn: number;
   profileSampleRows: number;
   validationConcurrency: number;
 }
 
-export interface KloRelationshipDiagnosticsArtifact {
+export interface KtxRelationshipDiagnosticsArtifact {
   connectionId: string;
   generatedAt: string;
-  summary: KloRelationshipDiagnosticsSummary;
+  summary: KtxRelationshipDiagnosticsSummary;
   noAcceptedReason: string | null;
   candidateCountsBySource: Record<string, number>;
-  validation: KloRelationshipDiagnosticsValidation;
-  thresholds: KloRelationshipDiagnosticsThresholds;
-  policy: KloRelationshipDiagnosticsPolicy;
-  warnings: KloScanWarning[];
+  validation: KtxRelationshipDiagnosticsValidation;
+  thresholds: KtxRelationshipDiagnosticsThresholds;
+  policy: KtxRelationshipDiagnosticsPolicy;
+  warnings: KtxScanWarning[];
   profileWarnings: string[];
 }
 
-export interface BuildKloRelationshipArtifactsInput {
+export interface BuildKtxRelationshipArtifactsInput {
   connectionId: string;
-  relationshipUpdate?: KloRelationshipUpdate | null;
-  resolvedRelationships?: readonly KloResolvedRelationshipDiscoveryCandidate[];
-  compositeRelationships?: readonly KloCompositeRelationshipCandidate[];
+  relationshipUpdate?: KtxRelationshipUpdate | null;
+  resolvedRelationships?: readonly KtxResolvedRelationshipDiscoveryCandidate[];
+  compositeRelationships?: readonly KtxCompositeRelationshipCandidate[];
 }
 
-export interface BuildKloRelationshipDiagnosticsInput {
+export interface BuildKtxRelationshipDiagnosticsInput {
   connectionId: string;
-  artifacts: KloRelationshipArtifact;
-  profile: KloRelationshipProfileArtifact;
-  warnings?: readonly KloScanWarning[];
-  thresholds?: Partial<KloRelationshipDiagnosticsThresholds>;
-  policy?: Partial<KloRelationshipDiagnosticsPolicy>;
+  artifacts: KtxRelationshipArtifact;
+  profile: KtxRelationshipProfileArtifact;
+  warnings?: readonly KtxScanWarning[];
+  thresholds?: Partial<KtxRelationshipDiagnosticsThresholds>;
+  policy?: Partial<KtxRelationshipDiagnosticsPolicy>;
   generatedAt?: string;
 }
 
-export interface EmptyKloRelationshipProfileArtifactInput {
+export interface EmptyKtxRelationshipProfileArtifactInput {
   connectionId: string;
-  driver: KloConnectionDriver;
+  driver: KtxConnectionDriver;
   reason: string;
 }
 
-const DEFAULT_THRESHOLDS: KloRelationshipDiagnosticsThresholds = {
+const DEFAULT_THRESHOLDS: KtxRelationshipDiagnosticsThresholds = {
   acceptThreshold: 0.85,
   reviewThreshold: 0.55,
 };
 
-const DEFAULT_POLICY: KloRelationshipDiagnosticsPolicy = {
+const DEFAULT_POLICY: KtxRelationshipDiagnosticsPolicy = {
   validationRequiredForManifest: true,
   maxCandidatesPerColumn: 25,
   profileSampleRows: 10000,
   validationConcurrency: 4,
 };
 
-function endpointArtifact(endpoint: KloRelationshipEndpoint): KloRelationshipArtifactEndpoint {
+function endpointArtifact(endpoint: KtxRelationshipEndpoint): KtxRelationshipArtifactEndpoint {
   return {
     tableId: endpoint.tableId,
     columnIds: endpoint.columnIds,
@@ -139,9 +139,9 @@ function uniqueReasons(values: readonly string[]): string[] {
 }
 
 function relationshipUpdateEdge(
-  relationship: KloEnrichedRelationship,
+  relationship: KtxEnrichedRelationship,
   status: 'accepted' | 'rejected',
-): KloRelationshipArtifactEdge {
+): KtxRelationshipArtifactEdge {
   const acceptedReason = relationship.source === 'formal' ? 'formal_metadata_accepted' : 'accepted_relationship_update';
   return {
     id: relationship.id,
@@ -161,7 +161,7 @@ function relationshipUpdateEdge(
   };
 }
 
-function resolvedEdge(candidate: KloResolvedRelationshipDiscoveryCandidate): KloRelationshipArtifactEdge {
+function resolvedEdge(candidate: KtxResolvedRelationshipDiscoveryCandidate): KtxRelationshipArtifactEdge {
   return {
     id: candidate.id,
     status: candidate.status,
@@ -184,7 +184,7 @@ function resolvedEdge(candidate: KloResolvedRelationshipDiscoveryCandidate): Klo
   };
 }
 
-function compositeEndpointArtifact(endpoint: KloCompositeRelationshipCandidate['from']): KloRelationshipArtifactEndpoint {
+function compositeEndpointArtifact(endpoint: KtxCompositeRelationshipCandidate['from']): KtxRelationshipArtifactEndpoint {
   return {
     tableId: endpoint.tableId,
     columnIds: endpoint.columnIds,
@@ -197,7 +197,7 @@ function compositeEndpointArtifact(endpoint: KloCompositeRelationshipCandidate['
   };
 }
 
-function compositeEdge(candidate: KloCompositeRelationshipCandidate): KloRelationshipArtifactEdge {
+function compositeEdge(candidate: KtxCompositeRelationshipCandidate): KtxRelationshipArtifactEdge {
   return {
     id: candidate.id,
     status: candidate.status,
@@ -216,7 +216,7 @@ function compositeEdge(candidate: KloCompositeRelationshipCandidate): KloRelatio
   };
 }
 
-function emptyArtifacts(connectionId: string): KloRelationshipArtifact {
+function emptyArtifacts(connectionId: string): KtxRelationshipArtifact {
   return {
     connectionId,
     accepted: [],
@@ -226,13 +226,13 @@ function emptyArtifacts(connectionId: string): KloRelationshipArtifact {
   };
 }
 
-function pushUniqueEdge(edges: KloRelationshipArtifactEdge[], edge: KloRelationshipArtifactEdge): void {
+function pushUniqueEdge(edges: KtxRelationshipArtifactEdge[], edge: KtxRelationshipArtifactEdge): void {
   if (!edges.some((item) => item.id === edge.id)) {
     edges.push(edge);
   }
 }
 
-export function buildKloRelationshipArtifacts(input: BuildKloRelationshipArtifactsInput): KloRelationshipArtifact {
+export function buildKtxRelationshipArtifacts(input: BuildKtxRelationshipArtifactsInput): KtxRelationshipArtifact {
   const artifacts = emptyArtifacts(input.connectionId);
 
   if (input.resolvedRelationships) {
@@ -279,11 +279,11 @@ export function buildKloRelationshipArtifacts(input: BuildKloRelationshipArtifac
   };
 }
 
-function allEdges(artifacts: KloRelationshipArtifact): KloRelationshipArtifactEdge[] {
+function allEdges(artifacts: KtxRelationshipArtifact): KtxRelationshipArtifactEdge[] {
   return [...artifacts.accepted, ...artifacts.review, ...artifacts.rejected];
 }
 
-function candidateCountsBySource(artifacts: KloRelationshipArtifact): Record<string, number> {
+function candidateCountsBySource(artifacts: KtxRelationshipArtifact): Record<string, number> {
   const counts: Record<string, number> = {};
   for (const edge of allEdges(artifacts)) {
     counts[edge.source] = (counts[edge.source] ?? 0) + 1;
@@ -291,13 +291,13 @@ function candidateCountsBySource(artifacts: KloRelationshipArtifact): Record<str
   return Object.fromEntries(Object.entries(counts).sort(([left], [right]) => left.localeCompare(right)));
 }
 
-function hasReason(artifacts: KloRelationshipArtifact, reason: string): boolean {
+function hasReason(artifacts: KtxRelationshipArtifact, reason: string): boolean {
   return allEdges(artifacts).some((edge) => edge.reasons.includes(reason));
 }
 
 function noAcceptedReason(input: {
-  artifacts: KloRelationshipArtifact;
-  profile: KloRelationshipProfileArtifact;
+  artifacts: KtxRelationshipArtifact;
+  profile: KtxRelationshipProfileArtifact;
 }): string | null {
   if (input.artifacts.accepted.length > 0) {
     return null;
@@ -319,9 +319,9 @@ function noAcceptedReason(input: {
   return 'no candidate pairs passed type compatibility';
 }
 
-export function emptyKloRelationshipProfileArtifact(
-  input: EmptyKloRelationshipProfileArtifactInput,
-): KloRelationshipProfileArtifact {
+export function emptyKtxRelationshipProfileArtifact(
+  input: EmptyKtxRelationshipProfileArtifactInput,
+): KtxRelationshipProfileArtifact {
   return {
     connectionId: input.connectionId,
     driver: input.driver,
@@ -333,12 +333,12 @@ export function emptyKloRelationshipProfileArtifact(
   };
 }
 
-export function buildKloRelationshipDiagnostics(
-  input: BuildKloRelationshipDiagnosticsInput,
-): KloRelationshipDiagnosticsArtifact {
+export function buildKtxRelationshipDiagnostics(
+  input: BuildKtxRelationshipDiagnosticsInput,
+): KtxRelationshipDiagnosticsArtifact {
   const thresholds = { ...DEFAULT_THRESHOLDS, ...input.thresholds };
   const policy = { ...DEFAULT_POLICY, ...input.policy };
-  const summary: KloRelationshipDiagnosticsSummary = {
+  const summary: KtxRelationshipDiagnosticsSummary = {
     accepted: input.artifacts.accepted.length,
     review: input.artifacts.review.length,
     rejected: input.artifacts.rejected.length,

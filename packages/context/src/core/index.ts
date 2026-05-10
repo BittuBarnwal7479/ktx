@@ -1,19 +1,19 @@
-export type { KloCoreConfig, KloGitConfig, KloLogger, KloStorageConfig } from './config.js';
+export type { KtxCoreConfig, KtxGitConfig, KtxLogger, KtxStorageConfig } from './config.js';
 export { noopLogger, resolveConfigDir, resolveWorktreesDir } from './config.js';
-export { resolveKloConfigReference, resolveKloHomePath } from './config-reference.js';
-export type { KloEmbeddingPort } from './embedding.js';
+export { resolveKtxConfigReference, resolveKtxHomePath } from './config-reference.js';
+export type { KtxEmbeddingPort } from './embedding.js';
 export {
-  REDACTED_KLO_CREDENTIAL_VALUE,
-  redactKloSensitiveMetadata,
-  redactKloSensitiveText,
-  redactKloSensitiveValue,
+  REDACTED_KTX_CREDENTIAL_VALUE,
+  redactKtxSensitiveMetadata,
+  redactKtxSensitiveText,
+  redactKtxSensitiveValue,
 } from './redaction.js';
 export type {
-  KloFileHistoryEntry,
-  KloFileListResult,
-  KloFileReadResult,
-  KloFileStorePort,
-  KloFileWriteResult,
+  KtxFileHistoryEntry,
+  KtxFileListResult,
+  KtxFileReadResult,
+  KtxFileStorePort,
+  KtxFileWriteResult,
 } from './file-store.js';
 export type { GitCommitInfo, SquashMergeResult, WorktreeEntry } from './git.service.js';
 export { GitService } from './git.service.js';

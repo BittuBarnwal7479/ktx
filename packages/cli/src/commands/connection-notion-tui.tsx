@@ -10,7 +10,7 @@ import {
   type PickerCommand,
   type PickerState,
 } from './connection-notion-tree.js';
-import type { KloCliIo } from '../index.js';
+import type { KtxCliIo } from '../index.js';
 
 const COLOR_THEME = {
   text: 'white',
@@ -28,9 +28,9 @@ const NO_COLOR_THEME = {
 
 type NotionPickerTheme = Record<keyof typeof COLOR_THEME, string>;
 
-export interface NotionPickerTuiIo extends KloCliIo {
+export interface NotionPickerTuiIo extends KtxCliIo {
   stdin?: { isTTY?: boolean; setRawMode?(value: boolean): void };
-  stdout: KloCliIo['stdout'] & { isTTY?: boolean; columns?: number; rows?: number };
+  stdout: KtxCliIo['stdout'] & { isTTY?: boolean; columns?: number; rows?: number };
 }
 
 interface InkKey {

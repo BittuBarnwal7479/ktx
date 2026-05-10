@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 import { localConnectionToWarehouseDescriptor, notionConnectionToPullConfig, parseNotionConnectionConfig } from '../connections/index.js';
-import { resolveKloConfigReference } from '../core/config-reference.js';
-import type { KloLocalProject } from '../project/index.js';
+import { resolveKtxConfigReference } from '../core/config-reference.js';
+import type { KtxLocalProject } from '../project/index.js';
 import type { SqlAnalysisPort } from '../sql-analysis/index.js';
 import { DbtSourceAdapter } from './adapters/dbt/dbt.adapter.js';
 import { FakeSourceAdapter } from './adapters/fake/fake.adapter.js';
@@ -11,7 +11,7 @@ import { SnowflakeHistoricSqlQueryHistoryReader } from './adapters/historic-sql/
 import {
   HISTORIC_SQL_SOURCE_KEY,
   historicSqlPullConfigSchema,
-  type KloPostgresQueryClient,
+  type KtxPostgresQueryClient,
 } from './adapters/historic-sql/types.js';
 import {
   createDaemonLiveDatabaseIntrospection,
@@ -35,7 +35,7 @@ import { createLocalMetabaseSourceAdapter } from './adapters/metabase/local-meta
 import { MetricflowSourceAdapter } from './adapters/metricflow/metricflow.adapter.js';
 import { pullConfigFromMetricflowIntegration } from './adapters/metricflow/pull-config.js';
 import { NotionSourceAdapter } from './adapters/notion/notion.adapter.js';
-import { seedLocalMappingStateFromKloYaml } from './local-mapping-reconcile.js';
+import { seedLocalMappingStateFromKtxYaml } from './local-mapping-reconcile.js';
 import type { SourceAdapter } from './types.js';
 
 export interface DefaultLocalIngestAdaptersOptions {
@@ -43,7 +43,7 @@ export interface DefaultLocalIngestAdaptersOptions {
   databaseIntrospection?: Omit<DaemonLiveDatabaseIntrospectionOptions, 'connections' | 'baseUrl'>;
   historicSql?: {
     sqlAnalysis: SqlAnalysisPort;
-    postgresQueryClient: KloPostgresQueryClient;
+    postgresQueryClient: KtxPostgresQueryClient;
     postgresBaselineRootDir?: string;
     now?: () => Date;
   };
@@ -57,7 +57,7 @@ export interface DefaultLocalIngestAdaptersOptions {
 }
 
 export function createDefaultLocalIngestAdapters(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   options: DefaultLocalIngestAdaptersOptions = {},
 ): SourceAdapter[] {
   const lookerConnectionFactory = new DefaultLookerConnectionClientFactory(
@@ -73,8 +73,8 @@ export function createDefaultLocalIngestAdapters(
         ...(options.databaseIntrospectionUrl ? { baseUrl: options.databaseIntrospectionUrl } : {}),
       }),
     }),
-    new LookmlSourceAdapter({ homeDir: join(project.projectDir, '.klo/cache') }),
-    new DbtSourceAdapter({ homeDir: join(project.projectDir, '.klo/cache') }),
+    new LookmlSourceAdapter({ homeDir: join(project.projectDir, '.ktx/cache') }),
+    new DbtSourceAdapter({ homeDir: join(project.projectDir, '.ktx/cache') }),
     createLocalMetabaseSourceAdapter(project),
     new LookerSourceAdapter({
       clientFactory: {
@@ -86,7 +86,7 @@ export function createDefaultLocalIngestAdapters(
         },
       },
     }),
-    new MetricflowSourceAdapter({ homeDir: join(project.projectDir, '.klo/cache') }),
+    new MetricflowSourceAdapter({ homeDir: join(project.projectDir, '.ktx/cache') }),
     new NotionSourceAdapter(),
   ];
 
@@ -128,7 +128,7 @@ function localLookmlPullConfigFromConnection(connection: Record<string, unknown>
     repoUrl: stringField(connection?.repoUrl) ?? stringField(connection?.repo_url) ?? null,
     branch: stringField(connection?.branch),
     path: stringField(connection?.path),
-    authToken: literalAuthToken ?? resolveKloConfigReference(authTokenRef ?? undefined, env) ?? null,
+    authToken: literalAuthToken ?? resolveKtxConfigReference(authTokenRef ?? undefined, env) ?? null,
     expectedLookerConnectionName: stringField(mappings.expectedLookerConnectionName),
   });
 }
@@ -151,7 +151,7 @@ function localDbtPullConfigFromConnection(connection: Record<string, unknown> | 
   }
   const authToken =
     stringField(connection?.authToken) ??
-    resolveKloConfigReference(
+    resolveKtxConfigReference(
       stringField(connection?.auth_token_ref) ?? stringField(connection?.authTokenRef) ?? undefined,
       env,
     );
@@ -164,14 +164,14 @@ function localDbtPullConfigFromConnection(connection: Record<string, unknown> | 
 }
 
 export async function localPullConfigForAdapter(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   adapter: SourceAdapter,
   connectionId: string,
   options: DefaultLocalIngestAdaptersOptions = {},
 ): Promise<unknown> {
   if (adapter.source === 'metabase') {
     throw new Error(
-      'Metabase scheduled pulls fan out by mapping. Call runLocalMetabaseIngest() or use `klo ingest run --adapter metabase --connection-id <metabase-source-id>` from the CLI.',
+      'Metabase scheduled pulls fan out by mapping. Call runLocalMetabaseIngest() or use `ktx ingest run --adapter metabase --connection-id <metabase-source-id>` from the CLI.',
     );
   }
   const connection = project.config.connections[connectionId];
@@ -186,8 +186,8 @@ export async function localPullConfigForAdapter(
     });
   }
   if (adapter.source === 'looker') {
-    await seedLocalMappingStateFromKloYaml(project, connectionId);
-    const store = new LocalLookerRuntimeStore({ dbPath: join(project.projectDir, '.klo', 'db.sqlite') });
+    await seedLocalMappingStateFromKtxYaml(project, connectionId);
+    const store = new LocalLookerRuntimeStore({ dbPath: join(project.projectDir, '.ktx', 'db.sqlite') });
     const targetConnections = new Map(
       Object.entries(project.config.connections).flatMap(([id, config]) => {
         const descriptor = localConnectionToWarehouseDescriptor(id, config);
@@ -197,7 +197,7 @@ export async function localPullConfigForAdapter(
     const parser =
       options.looker?.parser ??
       createDaemonLookerTableIdentifierParser({
-        baseUrl: options.looker?.daemonBaseUrl ?? process.env.KLO_DAEMON_URL ?? 'http://127.0.0.1:8765',
+        baseUrl: options.looker?.daemonBaseUrl ?? process.env.KTX_DAEMON_URL ?? 'http://127.0.0.1:8765',
       });
     let cleanupClient: Pick<LookerRuntimeClient, 'cleanup'> | null = null;
     let client: Pick<LookerMappingClient, 'listLookmlModels' | 'getExplore'>;
@@ -241,7 +241,7 @@ export async function localPullConfigForAdapter(
     const authToken =
       typeof metricflowConfig?.authToken === 'string'
         ? metricflowConfig.authToken
-        : resolveKloConfigReference(
+        : resolveKtxConfigReference(
             typeof metricflowConfig?.auth_token_ref === 'string' ? metricflowConfig.auth_token_ref : undefined,
             options.looker?.env ?? process.env,
           );

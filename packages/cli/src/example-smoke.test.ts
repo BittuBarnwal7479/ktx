@@ -70,7 +70,7 @@ describe('standalone local warehouse example', () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-example-smoke-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-example-smoke-'));
   });
 
   afterEach(async () => {
@@ -128,14 +128,14 @@ describe('standalone local warehouse example', () => {
     ]);
     expect(ingest).toMatchObject({ code: 1, stdout: '' });
     expect(ingest.stderr).toContain(
-      'klo dev ingest run requires llm.provider.backend: anthropic, vertex, or gateway, or an injected agentRunner',
+      'ktx dev ingest run requires llm.provider.backend: anthropic, vertex, or gateway, or an injected agentRunner',
     );
   }, 30_000);
 
   it('serves local wiki and semantic-layer MCP tools against the copied example project', async () => {
     const projectDir = await copyExampleProject(tempDir);
 
-    const client = new Client({ name: 'klo-example-client', version: '0.0.0' });
+    const client = new Client({ name: 'ktx-example-client', version: '0.0.0' });
     const transport = new StdioClientTransport({
       command: process.execPath,
       args: [CLI_BIN, 'serve', '--mcp', 'stdio', '--project-dir', projectDir, '--user-id', 'example-user'],

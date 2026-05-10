@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { findLatestDemoScanReport, runDemoScan } from './demo-scan.js';
 
 describe('demo scan helpers', () => {
-  const projectDir = join(tmpdir(), `klo-demo-scan-${process.pid}`);
+  const projectDir = join(tmpdir(), `ktx-demo-scan-${process.pid}`);
 
   afterEach(async () => {
     await rm(projectDir, { recursive: true, force: true });

@@ -1,27 +1,27 @@
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { KloLlmProvider } from '@klo/llm';
+import type { KtxLlmProvider } from '@ktx/llm';
 import YAML from 'yaml';
 import type { AgentRunnerService } from '../agent/index.js';
 import { AgentRunnerService as DefaultAgentRunnerService } from '../agent/index.js';
 import { localConnectionInfoFromConfig } from '../connections/index.js';
-import type { KloEmbeddingPort, KloLogger } from '../core/index.js';
+import type { KtxEmbeddingPort, KtxLogger } from '../core/index.js';
 import { noopLogger, SessionWorktreeService } from '../core/index.js';
-import type { KloSemanticLayerComputePort } from '../daemon/index.js';
+import type { KtxSemanticLayerComputePort } from '../daemon/index.js';
 import {
-  createJsonlKloLlmDebugRequestRecorder,
-  createLocalKloEmbeddingProviderFromConfig,
-  createLocalKloLlmProviderFromConfig,
-  KloIngestEmbeddingPortAdapter,
+  createJsonlKtxLlmDebugRequestRecorder,
+  createLocalKtxEmbeddingProviderFromConfig,
+  createLocalKtxLlmProviderFromConfig,
+  KtxIngestEmbeddingPortAdapter,
 } from '../llm/index.js';
-import type { KloLocalProject } from '../project/index.js';
-import { kloLocalStateDbPath } from '../project/index.js';
+import type { KtxLocalProject } from '../project/index.js';
+import { ktxLocalStateDbPath } from '../project/index.js';
 import { PromptService } from '../prompts/index.js';
 import { SkillsRegistryService } from '../skills/index.js';
 import {
-  type KloConnectionInfo,
-  type KloQueryResult,
+  type KtxConnectionInfo,
+  type KtxQueryResult,
   SemanticLayerService,
   type SemanticLayerSource,
   type SlConnectionCatalogPort,
@@ -86,20 +86,20 @@ import type { SourceAdapter } from './types.js';
 
 const promptsDir = fileURLToPath(new URL('../../prompts', import.meta.url));
 const skillsDir = fileURLToPath(new URL('../../skills', import.meta.url));
-const LOCAL_AUTHOR = { name: 'KLO Local', email: 'local@klo.local' };
+const LOCAL_AUTHOR = { name: 'KTX Local', email: 'local@ktx.local' };
 const LOCAL_SHAPE_WARNING = 'Local ingest validates semantic-layer YAML shape only.';
 
 export interface CreateLocalBundleIngestRuntimeOptions {
-  project: KloLocalProject;
+  project: KtxLocalProject;
   adapters: SourceAdapter[];
   agentRunner?: AgentRunnerService;
-  llmProvider?: KloLlmProvider;
+  llmProvider?: KtxLlmProvider;
   llmDebugRequestFile?: string;
   memoryModel?: string;
-  semanticLayerCompute?: KloSemanticLayerComputePort;
-  queryExecutor?: { execute(input: { connectionId: string; sql: string; maxRows?: number }): Promise<KloQueryResult> };
+  semanticLayerCompute?: KtxSemanticLayerComputePort;
+  queryExecutor?: { execute(input: { connectionId: string; sql: string; maxRows?: number }): Promise<KtxQueryResult> };
   jobIdFactory?: () => string;
-  logger?: KloLogger;
+  logger?: KtxLogger;
 }
 
 export interface LocalBundleIngestRuntime {
@@ -111,7 +111,7 @@ export interface LocalBundleIngestRuntime {
   nextJobId(): string;
 }
 
-class NoopEmbeddingPort implements KloEmbeddingPort {
+class NoopEmbeddingPort implements KtxEmbeddingPort {
   readonly maxBatchSize = 64;
 
   async computeEmbedding(): Promise<number[]> {
@@ -127,20 +127,20 @@ class LocalIngestStorage implements IngestStoragePort {
   readonly homeDir: string;
   readonly systemGitAuthor = LOCAL_AUTHOR;
 
-  constructor(private readonly project: KloLocalProject) {
-    this.homeDir = join(project.projectDir, '.klo');
+  constructor(private readonly project: KtxLocalProject) {
+    this.homeDir = join(project.projectDir, '.ktx');
   }
 
   resolveUploadDir(uploadId: string): string {
-    return join(this.project.projectDir, '.klo/cache/local-ingest', uploadId, 'upload');
+    return join(this.project.projectDir, '.ktx/cache/local-ingest', uploadId, 'upload');
   }
 
   resolvePullDir(jobId: string): string {
-    return join(this.project.projectDir, '.klo/cache/local-ingest', jobId, 'pull');
+    return join(this.project.projectDir, '.ktx/cache/local-ingest', jobId, 'pull');
   }
 
   resolveTranscriptDir(jobId: string): string {
-    return join(this.project.projectDir, '.klo/ingest-transcripts', jobId);
+    return join(this.project.projectDir, '.ktx/ingest-transcripts', jobId);
   }
 }
 
@@ -162,19 +162,19 @@ class LocalAuthorResolver implements GitAuthorResolverPort {
 
 class LocalConnectionCatalog implements SlConnectionCatalogPort {
   constructor(
-    private readonly project: KloLocalProject,
+    private readonly project: KtxLocalProject,
     private readonly queryExecutor?: {
-      execute(input: { connectionId: string; sql: string; maxRows?: number }): Promise<KloQueryResult>;
+      execute(input: { connectionId: string; sql: string; maxRows?: number }): Promise<KtxQueryResult>;
     },
   ) {}
 
-  async listEnabledConnections(ids: string[]): Promise<KloConnectionInfo[]> {
+  async listEnabledConnections(ids: string[]): Promise<KtxConnectionInfo[]> {
     return ids
       .map((id) => localConnectionInfoFromConfig(id, this.project.config.connections[id]))
-      .filter((connection): connection is KloConnectionInfo => connection !== null);
+      .filter((connection): connection is KtxConnectionInfo => connection !== null);
   }
 
-  async getConnectionById(connectionId: string): Promise<KloConnectionInfo> {
+  async getConnectionById(connectionId: string): Promise<KtxConnectionInfo> {
     const connection = localConnectionInfoFromConfig(connectionId, this.project.config.connections[connectionId]);
     if (!connection) {
       throw new Error(`Connection not found: ${connectionId}`);
@@ -182,7 +182,7 @@ class LocalConnectionCatalog implements SlConnectionCatalogPort {
     return connection;
   }
 
-  async executeQuery(connectionId: string, sql: string): Promise<KloQueryResult> {
+  async executeQuery(connectionId: string, sql: string): Promise<KtxQueryResult> {
     if (!this.queryExecutor) {
       throw new Error('Local ingest has no query executor configured');
     }
@@ -191,7 +191,7 @@ class LocalConnectionCatalog implements SlConnectionCatalogPort {
 }
 
 class LocalSlPythonPort implements SlPythonPort {
-  constructor(private readonly compute?: KloSemanticLayerComputePort) {}
+  constructor(private readonly compute?: KtxSemanticLayerComputePort) {}
 
   async validateSources(input: Parameters<SlPythonPort['validateSources']>[0]) {
     if (!this.compute) {
@@ -271,7 +271,7 @@ function scoreText(text: string, query: string): number {
 }
 
 class LocalKnowledgeIndex implements KnowledgeIndexPort {
-  constructor(private readonly project: KloLocalProject) {}
+  constructor(private readonly project: KtxLocalProject) {}
 
   async upsertPage(): Promise<void> {}
 
@@ -363,7 +363,7 @@ class LocalIngestToolsetFactory implements IngestToolsetFactoryPort {
   private readonly contextTools: BaseTool[];
 
   constructor(deps: {
-    project: KloLocalProject;
+    project: KtxLocalProject;
     wikiService: KnowledgeWikiService;
     knowledgeIndex: KnowledgeIndexPort;
     knowledgeEvents: KnowledgeEventPort;
@@ -373,7 +373,7 @@ class LocalIngestToolsetFactory implements IngestToolsetFactoryPort {
     slSourcesRepository: SlSourcesIndexPort;
     connections: SlConnectionCatalogPort;
     contextStore: SqliteContextEvidenceStore;
-    embedding: KloEmbeddingPort;
+    embedding: KtxEmbeddingPort;
   }) {
     const slDeps = {
       semanticLayerService: deps.semanticLayerService,
@@ -443,10 +443,10 @@ function nextLocalJobId(): string {
 
 function resolveAgentRunner(options: CreateLocalBundleIngestRuntimeOptions): {
   agentRunner: AgentRunnerService;
-  llmProvider?: KloLlmProvider;
+  llmProvider?: KtxLlmProvider;
 } {
   const llmProvider =
-    options.llmProvider ?? createLocalKloLlmProviderFromConfig(options.project.config.llm) ?? undefined;
+    options.llmProvider ?? createLocalKtxLlmProviderFromConfig(options.project.config.llm) ?? undefined;
 
   if (options.agentRunner) {
     return { agentRunner: options.agentRunner, ...(llmProvider ? { llmProvider } : {}) };
@@ -454,7 +454,7 @@ function resolveAgentRunner(options: CreateLocalBundleIngestRuntimeOptions): {
 
   if (!llmProvider) {
     throw new Error(
-      'klo dev ingest run requires llm.provider.backend: anthropic, vertex, or gateway, or an injected agentRunner',
+      'ktx dev ingest run requires llm.provider.backend: anthropic, vertex, or gateway, or an injected agentRunner',
     );
   }
 
@@ -463,7 +463,7 @@ function resolveAgentRunner(options: CreateLocalBundleIngestRuntimeOptions): {
       llmProvider,
       logger: options.logger ?? noopLogger,
       ...(options.llmDebugRequestFile
-        ? { debugRequestRecorder: createJsonlKloLlmDebugRequestRecorder(options.llmDebugRequestFile) }
+        ? { debugRequestRecorder: createJsonlKtxLlmDebugRequestRecorder(options.llmDebugRequestFile) }
         : {}),
     }),
     llmProvider,
@@ -474,12 +474,12 @@ export function createLocalBundleIngestRuntime(
   options: CreateLocalBundleIngestRuntimeOptions,
 ): LocalBundleIngestRuntime {
   const logger = options.logger ?? noopLogger;
-  const dbPath = kloLocalStateDbPath(options.project);
-  mkdirSync(join(options.project.projectDir, '.klo/cache/local-ingest'), { recursive: true });
+  const dbPath = ktxLocalStateDbPath(options.project);
+  mkdirSync(join(options.project.projectDir, '.ktx/cache/local-ingest'), { recursive: true });
   const store = new SqliteBundleIngestStore({ dbPath });
   const contextStore = new SqliteContextEvidenceStore({ dbPath });
-  const embeddingProvider = createLocalKloEmbeddingProviderFromConfig(options.project.config.ingest.embeddings);
-  const embedding = embeddingProvider ? new KloIngestEmbeddingPortAdapter(embeddingProvider) : new NoopEmbeddingPort();
+  const embeddingProvider = createLocalKtxEmbeddingProviderFromConfig(options.project.config.ingest.embeddings);
+  const embedding = embeddingProvider ? new KtxIngestEmbeddingPortAdapter(embeddingProvider) : new NoopEmbeddingPort();
   const connections = new LocalConnectionCatalog(options.project, options.queryExecutor);
   const rootFileStore = options.project.fileStore;
   const semanticLayerService = new SemanticLayerService(

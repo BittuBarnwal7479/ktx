@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
-import type { KloEmbeddingPort } from '../core/index.js';
+import type { KtxEmbeddingPort } from '../core/index.js';
 import { buildContextCandidateEmbeddingText } from '../ingest/context-candidates/index.js';
 import { BaseTool, type ToolContext, type ToolOutput } from './base-tool.js';
 import { chunkIdSchema } from './context-evidence-ids.js';
@@ -40,7 +40,7 @@ export class ContextCandidateWriteTool extends BaseTool<typeof contextCandidateW
 
   constructor(
     private readonly store: ContextEvidenceToolStorePort,
-    private readonly embeddingService: Pick<KloEmbeddingPort, 'computeEmbedding'>,
+    private readonly embeddingService: Pick<KtxEmbeddingPort, 'computeEmbedding'>,
   ) {
     super();
   }

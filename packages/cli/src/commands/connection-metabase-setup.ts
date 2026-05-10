@@ -12,7 +12,7 @@ import {
   select,
   text,
 } from '@clack/prompts';
-import { localConnectionToWarehouseDescriptor } from '@klo/context/connections';
+import { localConnectionToWarehouseDescriptor } from '@ktx/context/connections';
 import {
   DEFAULT_METABASE_CLIENT_CONFIG,
   DefaultMetabaseConnectionClientFactory,
@@ -23,21 +23,21 @@ import {
   type MetabaseSyncMode,
   metabaseRuntimeConfigFromLocalConnection,
   validateMappingPhysicalMatch,
-} from '@klo/context/ingest';
+} from '@ktx/context/ingest';
 import {
-  type KloLocalProject,
-  type KloProjectConnectionConfig,
-  kloLocalStateDbPath,
-  loadKloProject,
-  serializeKloProjectConfig,
-} from '@klo/context/project';
+  type KtxLocalProject,
+  type KtxProjectConnectionConfig,
+  ktxLocalStateDbPath,
+  loadKtxProject,
+  serializeKtxProjectConfig,
+} from '@ktx/context/project';
 
-import { createClackSpinner, type KloCliSpinner } from '../clack.js';
-import type { KloCliIo } from '../cli-runtime.js';
+import { createClackSpinner, type KtxCliSpinner } from '../clack.js';
+import type { KtxCliIo } from '../cli-runtime.js';
 import { withMenuOptionsSpacing, withMultiselectNavigation } from '../prompt-navigation.js';
-import { type KloPublicIngestArgs, runKloPublicIngest } from '../public-ingest.js';
+import { type KtxPublicIngestArgs, runKtxPublicIngest } from '../public-ingest.js';
 
-export type KloMetabaseSetupInputMode = 'auto' | 'disabled';
+export type KtxMetabaseSetupInputMode = 'auto' | 'disabled';
 
 export type MetabaseSetupSyncMode = MetabaseSyncMode;
 
@@ -56,7 +56,7 @@ export interface MetabaseSetupPromptAdapter {
   outro(message?: string): void;
   note(message: string, title: string): void;
   log: MetabaseSetupLogger;
-  spinner(): KloCliSpinner;
+  spinner(): KtxCliSpinner;
   select<T extends string>(options: { message: string; options: Array<MetabaseSetupPromptOption<T>> }): Promise<T>;
   multiselect<Value extends number | string>(options: {
     message: string;
@@ -71,7 +71,7 @@ export interface MetabaseSetupPromptAdapter {
   cancel(message: string): void;
 }
 
-type KloMetabaseSetupInteractiveIo = KloCliIo & {
+type KtxMetabaseSetupInteractiveIo = KtxCliIo & {
   stdin?: { isTTY?: boolean };
 };
 
@@ -86,9 +86,9 @@ export interface MintMetabaseApiKeyArgs {
   password: string;
 }
 
-export type MintMetabaseApiKey = (args: MintMetabaseApiKeyArgs, io: KloCliIo) => Promise<string>;
+export type MintMetabaseApiKey = (args: MintMetabaseApiKeyArgs, io: KtxCliIo) => Promise<string>;
 
-export interface KloConnectionMetabaseSetupArgs {
+export interface KtxConnectionMetabaseSetupArgs {
   command: 'setup';
   projectDir: string;
   connectionId?: string;
@@ -102,20 +102,20 @@ export interface KloConnectionMetabaseSetupArgs {
   syncMode: MetabaseSetupSyncMode;
   runIngest: boolean;
   yes: boolean;
-  inputMode: KloMetabaseSetupInputMode;
+  inputMode: KtxMetabaseSetupInputMode;
 }
 
-export interface KloConnectionMetabaseSetupDeps {
+export interface KtxConnectionMetabaseSetupDeps {
   createMetabaseClient?: (
-    project: KloLocalProject,
+    project: KtxLocalProject,
     connectionId: string,
   ) => Promise<Pick<MetabaseRuntimeClient, 'testConnection' | 'getDatabases' | 'cleanup'>>;
   mintMetabaseApiKey?: MintMetabaseApiKey;
   prompts?: MetabaseSetupPromptAdapter;
-  runPublicIngest?: (args: Extract<KloPublicIngestArgs, { command: 'run' }>, io: KloCliIo) => Promise<number>;
+  runPublicIngest?: (args: Extract<KtxPublicIngestArgs, { command: 'run' }>, io: KtxCliIo) => Promise<number>;
 }
 
-function isMetabaseConnection(connection: KloProjectConnectionConfig | undefined): boolean {
+function isMetabaseConnection(connection: KtxProjectConnectionConfig | undefined): boolean {
   return (
     String(connection?.driver ?? '')
       .trim()
@@ -131,22 +131,22 @@ function uniqueSorted(values: number[]): number[] {
   return [...new Set(values)].sort((a, b) => a - b);
 }
 
-function resolveMetabaseUrl(connection: KloProjectConnectionConfig | undefined): string | undefined {
+function resolveMetabaseUrl(connection: KtxProjectConnectionConfig | undefined): string | undefined {
   return stringField(connection?.api_url) ?? stringField(connection?.apiUrl) ?? stringField(connection?.url);
 }
 
-function resolveLiteralMetabaseApiKey(connection: KloProjectConnectionConfig | undefined): string | undefined {
+function resolveLiteralMetabaseApiKey(connection: KtxProjectConnectionConfig | undefined): string | undefined {
   return stringField(connection?.api_key) ?? stringField(connection?.apiKey);
 }
 
-function listMetabaseConnectionIds(project: KloLocalProject): string[] {
+function listMetabaseConnectionIds(project: KtxLocalProject): string[] {
   return Object.entries(project.config.connections)
     .filter(([_connectionId, connection]) => isMetabaseConnection(connection))
     .map(([connectionId]) => connectionId)
     .sort();
 }
 
-function listWarehouseConnectionIds(project: KloLocalProject): string[] {
+function listWarehouseConnectionIds(project: KtxLocalProject): string[] {
   return Object.entries(project.config.connections)
     .filter(([connectionId, connection]) => localConnectionToWarehouseDescriptor(connectionId, connection) != null)
     .map(([connectionId]) => connectionId)
@@ -165,7 +165,7 @@ function redactSecrets(message: string, secrets: string[]): string {
 }
 
 async function createDefaultMetabaseClient(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   connectionId: string,
 ): Promise<Pick<MetabaseRuntimeClient, 'testConnection' | 'getDatabases' | 'cleanup'>> {
   const factory = new DefaultMetabaseConnectionClientFactory(
@@ -192,7 +192,7 @@ async function defaultMintMetabaseApiKey(args: MintMetabaseApiKeyArgs): Promise<
 
   const mintedKey = await sessionClient.createApiKey({
     groupId: adminGroup.id,
-    name: `KLO CLI ${new Date().toISOString()}`,
+    name: `KTX CLI ${new Date().toISOString()}`,
   });
   const trimmedKey = stringField(mintedKey);
   if (!trimmedKey) {
@@ -237,7 +237,7 @@ export function createClackMetabaseSetupPromptAdapter(): MetabaseSetupPromptAdap
         log.error(message);
       },
     },
-    spinner(): KloCliSpinner {
+    spinner(): KtxCliSpinner {
       return createClackSpinner();
     },
     async select<T extends string>(options: {
@@ -271,8 +271,8 @@ export function createClackMetabaseSetupPromptAdapter(): MetabaseSetupPromptAdap
 }
 
 function isInteractiveMetabaseSetupIo(
-  args: Pick<KloConnectionMetabaseSetupArgs, 'inputMode'>,
-  io: KloMetabaseSetupInteractiveIo,
+  args: Pick<KtxConnectionMetabaseSetupArgs, 'inputMode'>,
+  io: KtxMetabaseSetupInteractiveIo,
 ): boolean {
   return args.inputMode !== 'disabled' && io.stdin?.isTTY === true && io.stdout.isTTY === true;
 }
@@ -295,7 +295,7 @@ function normalizeDiscoveredDatabases(databases: MetabaseDatabase[]): Array<{
     }));
 }
 
-function targetPhysicalInfo(project: KloLocalProject, connectionId: string) {
+function targetPhysicalInfo(project: KtxLocalProject, connectionId: string) {
   const descriptor = localConnectionToWarehouseDescriptor(connectionId, project.config.connections[connectionId]);
   if (!descriptor) {
     return { connection_type: 'UNKNOWN' };
@@ -338,23 +338,23 @@ function noteMetabaseSetupSummary(options: {
   );
 }
 
-export async function runKloConnectionMetabaseSetup(
-  args: KloConnectionMetabaseSetupArgs,
-  io: KloCliIo,
-  deps: KloConnectionMetabaseSetupDeps = {},
+export async function runKtxConnectionMetabaseSetup(
+  args: KtxConnectionMetabaseSetupArgs,
+  io: KtxCliIo,
+  deps: KtxConnectionMetabaseSetupDeps = {},
 ): Promise<number> {
   let apiKeyForRedaction = args.apiKey;
   let passwordForRedaction = args.metabasePassword;
-  const interactiveIo = io as KloMetabaseSetupInteractiveIo;
+  const interactiveIo = io as KtxMetabaseSetupInteractiveIo;
   const isInteractive = isInteractiveMetabaseSetupIo(args, interactiveIo);
   const prompts = deps.prompts ?? (isInteractive ? createClackMetabaseSetupPromptAdapter() : undefined);
 
   try {
     if (isInteractive && prompts) {
-      prompts.intro('KLO Metabase setup');
+      prompts.intro('KTX Metabase setup');
     }
 
-    const project = await loadKloProject({ projectDir: args.projectDir });
+    const project = await loadKtxProject({ projectDir: args.projectDir });
     const existingMetabaseConnectionIds = listMetabaseConnectionIds(project);
     let connectionId: string;
 
@@ -491,7 +491,7 @@ export async function runKloConnectionMetabaseSetup(
       throw new Error('Metabase API key is required (use --api-key)');
     }
 
-    const transientConnectionConfig: KloProjectConnectionConfig = {
+    const transientConnectionConfig: KtxProjectConnectionConfig = {
       ...(existingConnection ?? {}),
       driver: 'metabase',
       api_url: url,
@@ -504,7 +504,7 @@ export async function runKloConnectionMetabaseSetup(
         [connectionId]: transientConnectionConfig,
       },
     };
-    const discoveryProject: KloLocalProject = { ...project, config: configWithTransient };
+    const discoveryProject: KtxLocalProject = { ...project, config: configWithTransient };
 
     for (const mapping of args.mappings) {
       if (!configWithTransient.connections[mapping.targetConnectionId]) {
@@ -618,7 +618,7 @@ export async function runKloConnectionMetabaseSetup(
             }
 
             const targetConnectionId = await prompts.select({
-              message: `Map Metabase database ${database.id} ("${database.name}") to which KLO connection?`,
+              message: `Map Metabase database ${database.id} ("${database.name}") to which KTX connection?`,
               options: warehouseConnectionIds.map((warehouseId) => ({ value: warehouseId, label: warehouseId })),
             });
             resolvedMappings.push({ metabaseDatabaseId: databaseId, targetConnectionId });
@@ -641,7 +641,7 @@ export async function runKloConnectionMetabaseSetup(
               syncEnabledDatabaseIds: resolvedSyncEnabledDatabaseIds,
             });
             const confirmed = await prompts.confirm({
-              message: 'Write changes to klo.yaml and enable sync?',
+              message: 'Write changes to ktx.yaml and enable sync?',
               initialValue: true,
             });
             if (!confirmed) {
@@ -675,15 +675,15 @@ export async function runKloConnectionMetabaseSetup(
       }
 
       await project.fileStore.writeFile(
-        'klo.yaml',
-        serializeKloProjectConfig(configWithTransient),
-        'klo',
-        'klo@example.com',
+        'ktx.yaml',
+        serializeKtxProjectConfig(configWithTransient),
+        'ktx',
+        'ktx@example.com',
         `Setup Metabase connection ${connectionId}`,
       );
 
-      const updatedProject = await loadKloProject({ projectDir: args.projectDir });
-      const store = new LocalMetabaseSourceStateReader({ dbPath: kloLocalStateDbPath(updatedProject) });
+      const updatedProject = await loadKtxProject({ projectDir: args.projectDir });
+      const store = new LocalMetabaseSourceStateReader({ dbPath: ktxLocalStateDbPath(updatedProject) });
 
       await store.refreshDiscoveredDatabases({ connectionId, discovered });
 
@@ -716,7 +716,7 @@ export async function runKloConnectionMetabaseSetup(
       const unhydrated = await store.getUnhydratedSyncEnabledMappingIds(connectionId);
       if (unhydrated.length > 0) {
         io.stderr.write(
-          `Sync-enabled mappings are missing discovery metadata; run klo connection mapping refresh ${connectionId} --auto-accept\n`,
+          `Sync-enabled mappings are missing discovery metadata; run ktx connection mapping refresh ${connectionId} --auto-accept\n`,
         );
         return 1;
       }
@@ -743,10 +743,10 @@ export async function runKloConnectionMetabaseSetup(
 
       io.stdout.write(`Connection: ${connectionId}\n`);
       io.stdout.write(`Discovered ${discovered.length} ${discovered.length === 1 ? 'database' : 'databases'}\n`);
-      io.stdout.write(`Next: klo ingest ${connectionId} --project-dir ${args.projectDir}\n`);
+      io.stdout.write(`Next: ktx ingest ${connectionId} --project-dir ${args.projectDir}\n`);
 
       if (args.runIngest) {
-        const ingestRunner = deps.runPublicIngest ?? runKloPublicIngest;
+        const ingestRunner = deps.runPublicIngest ?? runKtxPublicIngest;
         const exitCode = await ingestRunner(
           {
             command: 'run',
@@ -759,7 +759,7 @@ export async function runKloConnectionMetabaseSetup(
           io,
         );
         if (exitCode !== 0) {
-          io.stderr.write(`Ingest failed; re-run: klo ingest ${connectionId} --project-dir ${args.projectDir}\n`);
+          io.stderr.write(`Ingest failed; re-run: ktx ingest ${connectionId} --project-dir ${args.projectDir}\n`);
           return 1;
         }
       }

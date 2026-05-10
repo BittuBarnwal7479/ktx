@@ -1,15 +1,15 @@
-import type { KloPostgresQueryClient } from '@klo/context/ingest';
-import { KloPostgresScanConnector, type KloPostgresScanConnectorOptions } from './connector.js';
+import type { KtxPostgresQueryClient } from '@ktx/context/ingest';
+import { KtxPostgresScanConnector, type KtxPostgresScanConnectorOptions } from './connector.js';
 
-export type KloPostgresHistoricSqlQueryClientOptions = KloPostgresScanConnectorOptions;
+export type KtxPostgresHistoricSqlQueryClientOptions = KtxPostgresScanConnectorOptions;
 
-export class KloPostgresHistoricSqlQueryClient implements KloPostgresQueryClient {
+export class KtxPostgresHistoricSqlQueryClient implements KtxPostgresQueryClient {
   private readonly connectionId: string;
-  private readonly connector: KloPostgresScanConnector;
+  private readonly connector: KtxPostgresScanConnector;
 
-  constructor(options: KloPostgresHistoricSqlQueryClientOptions) {
+  constructor(options: KtxPostgresHistoricSqlQueryClientOptions) {
     this.connectionId = options.connectionId;
-    this.connector = new KloPostgresScanConnector(options);
+    this.connector = new KtxPostgresScanConnector(options);
   }
 
   async executeQuery(

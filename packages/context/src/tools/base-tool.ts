@@ -1,6 +1,6 @@
 import { tool } from 'ai';
 import { z, type ZodType } from 'zod';
-import { noopLogger, type KloLogger } from '../core/index.js';
+import { noopLogger, type KtxLogger } from '../core/index.js';
 import type { IngestToolMetadata, ToolSession } from './tool-session.js';
 
 export interface ToolOutput<T = unknown> {
@@ -72,11 +72,11 @@ export interface MethodologyEntry {
  * SECURITY: All tools require authentication. userId must always be provided in ToolContext.
  */
 export abstract class BaseTool<TInput extends ZodType = ZodType> {
-  protected readonly logger: KloLogger;
+  protected readonly logger: KtxLogger;
 
   abstract readonly name: string;
 
-  constructor(logger: KloLogger = noopLogger) {
+  constructor(logger: KtxLogger = noopLogger) {
     this.logger = logger;
   }
 

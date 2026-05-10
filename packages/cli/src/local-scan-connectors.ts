@@ -1,10 +1,10 @@
-import type { KloLocalProject } from '@klo/context/project';
-import type { KloScanConnector } from '@klo/context/scan';
+import type { KtxLocalProject } from '@ktx/context/project';
+import type { KtxScanConnector } from '@ktx/context/scan';
 
 const SUPPORTED_DRIVERS = 'sqlite, postgres, mysql, clickhouse, sqlserver, bigquery, snowflake';
 
 function bigQueryMaxBytesBilled(
-  connection: KloLocalProject['config']['connections'][string],
+  connection: KtxLocalProject['config']['connections'][string],
 ): number | string | undefined {
   const raw = connection.maxBytesBilled ?? connection.max_bytes_billed;
   if (typeof raw === 'number') {
@@ -17,55 +17,55 @@ function bigQueryMaxBytesBilled(
   return undefined;
 }
 
-export async function createKloCliScanConnector(
-  project: KloLocalProject,
+export async function createKtxCliScanConnector(
+  project: KtxLocalProject,
   connectionId: string,
-): Promise<KloScanConnector> {
+): Promise<KtxScanConnector> {
   const connection = project.config.connections[connectionId];
   if (!connection) {
-    throw new Error(`Connection "${connectionId}" is not configured in klo.yaml`);
+    throw new Error(`Connection "${connectionId}" is not configured in ktx.yaml`);
   }
   const driver = String(connection.driver ?? '').toLowerCase();
   if (!driver) {
     throw new Error(
-      `Connection "${connectionId}" has no \`driver\` field in klo.yaml. Supported drivers: ${SUPPORTED_DRIVERS}.`,
+      `Connection "${connectionId}" has no \`driver\` field in ktx.yaml. Supported drivers: ${SUPPORTED_DRIVERS}.`,
     );
   }
   if (driver === 'sqlite' || driver === 'sqlite3') {
-    const { KloSqliteScanConnector, isKloSqliteConnectionConfig } = await import('@klo/connector-sqlite');
-    if (isKloSqliteConnectionConfig(connection)) {
-      return new KloSqliteScanConnector({ connectionId, connection, projectDir: project.projectDir });
+    const { KtxSqliteScanConnector, isKtxSqliteConnectionConfig } = await import('@ktx/connector-sqlite');
+    if (isKtxSqliteConnectionConfig(connection)) {
+      return new KtxSqliteScanConnector({ connectionId, connection, projectDir: project.projectDir });
     }
   }
   if (driver === 'postgres' || driver === 'postgresql') {
-    const { KloPostgresScanConnector, isKloPostgresConnectionConfig } = await import('@klo/connector-postgres');
-    if (isKloPostgresConnectionConfig(connection)) {
-      return new KloPostgresScanConnector({ connectionId, connection });
+    const { KtxPostgresScanConnector, isKtxPostgresConnectionConfig } = await import('@ktx/connector-postgres');
+    if (isKtxPostgresConnectionConfig(connection)) {
+      return new KtxPostgresScanConnector({ connectionId, connection });
     }
   }
   if (driver === 'mysql') {
-    const { KloMysqlScanConnector, isKloMysqlConnectionConfig } = await import('@klo/connector-mysql');
-    if (isKloMysqlConnectionConfig(connection)) {
-      return new KloMysqlScanConnector({ connectionId, connection });
+    const { KtxMysqlScanConnector, isKtxMysqlConnectionConfig } = await import('@ktx/connector-mysql');
+    if (isKtxMysqlConnectionConfig(connection)) {
+      return new KtxMysqlScanConnector({ connectionId, connection });
     }
   }
   if (driver === 'clickhouse') {
-    const { KloClickHouseScanConnector, isKloClickHouseConnectionConfig } = await import('@klo/connector-clickhouse');
-    if (isKloClickHouseConnectionConfig(connection)) {
-      return new KloClickHouseScanConnector({ connectionId, connection });
+    const { KtxClickHouseScanConnector, isKtxClickHouseConnectionConfig } = await import('@ktx/connector-clickhouse');
+    if (isKtxClickHouseConnectionConfig(connection)) {
+      return new KtxClickHouseScanConnector({ connectionId, connection });
     }
   }
   if (driver === 'sqlserver') {
-    const { KloSqlServerScanConnector, isKloSqlServerConnectionConfig } = await import('@klo/connector-sqlserver');
-    if (isKloSqlServerConnectionConfig(connection)) {
-      return new KloSqlServerScanConnector({ connectionId, connection });
+    const { KtxSqlServerScanConnector, isKtxSqlServerConnectionConfig } = await import('@ktx/connector-sqlserver');
+    if (isKtxSqlServerConnectionConfig(connection)) {
+      return new KtxSqlServerScanConnector({ connectionId, connection });
     }
   }
   if (driver === 'bigquery') {
-    const { KloBigQueryScanConnector, isKloBigQueryConnectionConfig } = await import('@klo/connector-bigquery');
-    if (isKloBigQueryConnectionConfig(connection)) {
+    const { KtxBigQueryScanConnector, isKtxBigQueryConnectionConfig } = await import('@ktx/connector-bigquery');
+    if (isKtxBigQueryConnectionConfig(connection)) {
       const maxBytesBilled = bigQueryMaxBytesBilled(connection);
-      return new KloBigQueryScanConnector({
+      return new KtxBigQueryScanConnector({
         connectionId,
         connection,
         ...(maxBytesBilled !== undefined ? { maxBytesBilled } : {}),
@@ -73,12 +73,12 @@ export async function createKloCliScanConnector(
     }
   }
   if (driver === 'snowflake') {
-    const { KloSnowflakeScanConnector, isKloSnowflakeConnectionConfig } = await import('@klo/connector-snowflake');
-    if (isKloSnowflakeConnectionConfig(connection)) {
-      return new KloSnowflakeScanConnector({ connectionId, connection });
+    const { KtxSnowflakeScanConnector, isKtxSnowflakeConnectionConfig } = await import('@ktx/connector-snowflake');
+    if (isKtxSnowflakeConnectionConfig(connection)) {
+      return new KtxSnowflakeScanConnector({ connectionId, connection });
     }
   }
   throw new Error(
-    `Connection "${connectionId}" uses driver "${driver}", which has no native standalone KLO scan connector. Supported drivers: ${SUPPORTED_DRIVERS}.`,
+    `Connection "${connectionId}" uses driver "${driver}", which has no native standalone KTX scan connector. Supported drivers: ${SUPPORTED_DRIVERS}.`,
   );
 }

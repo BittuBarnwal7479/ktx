@@ -2,11 +2,11 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
-  initKloProject,
-  loadKloProject,
-  serializeKloProjectConfig,
-  type KloProjectConfig,
-} from '@klo/context/project';
+  initKtxProject,
+  loadKtxProject,
+  serializeKtxProjectConfig,
+  type KtxProjectConfig,
+} from '@ktx/context/project';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   applyNotionPickerWriteback,
@@ -14,7 +14,7 @@ import {
   notionPickerPageFromSearchResult,
   normalizeNotionPageId,
   resolveNotionWorkspaceLabel,
-  runKloConnectionNotion,
+  runKtxConnectionNotion,
   type NotionPickerApi,
   type PickerRenderInput,
   type PickerRenderResult,
@@ -91,24 +91,24 @@ describe('normalizeNotionPageId', () => {
   });
 });
 
-describe('runKloConnectionNotion', () => {
+describe('runKtxConnectionNotion', () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-cli-notion-pick-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-cli-notion-pick-'));
   });
 
   afterEach(async () => {
     await rm(tempDir, { recursive: true, force: true });
   });
 
-  async function writeProjectConfig(projectDir: string, config: KloProjectConfig): Promise<void> {
-    const project = await loadKloProject({ projectDir });
+  async function writeProjectConfig(projectDir: string, config: KtxProjectConfig): Promise<void> {
+    const project = await loadKtxProject({ projectDir });
     await project.fileStore.writeFile(
-      'klo.yaml',
-      serializeKloProjectConfig(config),
-      'klo',
-      'klo@example.com',
+      'ktx.yaml',
+      serializeKtxProjectConfig(config),
+      'ktx',
+      'ktx@example.com',
       'seed test config',
     );
   }
@@ -120,7 +120,7 @@ describe('runKloConnectionNotion', () => {
     });
 
     await expect(
-      runKloConnectionNotion(
+      runKtxConnectionNotion(
         {
           command: 'pick',
           projectDir: '/tmp/project',
@@ -138,7 +138,7 @@ describe('runKloConnectionNotion', () => {
 
   it('writes selected root_page_ids while preserving every other Notion connection field', async () => {
     const projectDir = join(tempDir, 'project');
-    const initialized = await initKloProject({ projectDir, projectName: 'warehouse' });
+    const initialized = await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeProjectConfig(projectDir, {
       ...initialized.config,
       connections: {
@@ -160,7 +160,7 @@ describe('runKloConnectionNotion', () => {
     const io = makeIo();
 
     await expect(
-      runKloConnectionNotion(
+      runKtxConnectionNotion(
         {
           command: 'pick',
           projectDir,
@@ -175,7 +175,7 @@ describe('runKloConnectionNotion', () => {
       ),
     ).resolves.toBe(0);
 
-    const yaml = await readFile(join(projectDir, 'klo.yaml'), 'utf-8');
+    const yaml = await readFile(join(projectDir, 'ktx.yaml'), 'utf-8');
     expect(yaml).toContain('crawl_mode: selected_roots');
     expect(yaml).toContain('root_page_ids:');
     expect(yaml).toContain('11111111-2222-3333-4444-555555555555');
@@ -193,7 +193,7 @@ describe('runKloConnectionNotion', () => {
 
   it('rejects empty writeback, missing connections, and non-Notion connections', async () => {
     const projectDir = join(tempDir, 'project');
-    const initialized = await initKloProject({ projectDir, projectName: 'warehouse' });
+    const initialized = await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeProjectConfig(projectDir, {
       ...initialized.config,
       connections: {
@@ -204,7 +204,7 @@ describe('runKloConnectionNotion', () => {
         },
       },
     });
-    const project = await loadKloProject({ projectDir });
+    const project = await loadKtxProject({ projectDir });
 
     await expect(applyNotionPickerWriteback(project, 'warehouse', [])).rejects.toThrow(
       'connection notion pick requires at least one root page id',
@@ -297,7 +297,7 @@ describe('runKloConnectionNotion', () => {
 
   it('runs interactive discovery, warns about stale roots, renders the TUI, and saves selected roots', async () => {
     const projectDir = join(tempDir, 'project');
-    const initialized = await initKloProject({ projectDir, projectName: 'warehouse' });
+    const initialized = await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeProjectConfig(projectDir, {
       ...initialized.config,
       connections: {
@@ -330,7 +330,7 @@ describe('runKloConnectionNotion', () => {
     const io = makeIo();
 
     await expect(
-      runKloConnectionNotion(
+      runKtxConnectionNotion(
         {
           command: 'pick',
           projectDir,
@@ -346,7 +346,7 @@ describe('runKloConnectionNotion', () => {
       ),
     ).resolves.toBe(0);
 
-    const yaml = await readFile(join(projectDir, 'klo.yaml'), 'utf-8');
+    const yaml = await readFile(join(projectDir, 'ktx.yaml'), 'utf-8');
     expect(yaml).toContain('crawl_mode: selected_roots');
     expect(yaml).toContain(PAGE_IDS.engineering);
     expect(yaml).not.toContain(PAGE_IDS.stale);
@@ -357,7 +357,7 @@ describe('runKloConnectionNotion', () => {
 
   it('passes partial-discovery warnings into the TUI banner state', async () => {
     const projectDir = join(tempDir, 'project');
-    const initialized = await initKloProject({ projectDir, projectName: 'warehouse' });
+    const initialized = await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeProjectConfig(projectDir, {
       ...initialized.config,
       connections: {
@@ -394,7 +394,7 @@ describe('runKloConnectionNotion', () => {
     const io = makeIo();
 
     await expect(
-      runKloConnectionNotion(
+      runKtxConnectionNotion(
         {
           command: 'pick',
           projectDir,
@@ -422,7 +422,7 @@ describe('runKloConnectionNotion', () => {
 
   it('quits interactive mode without writing when the TUI returns quit', async () => {
     const projectDir = join(tempDir, 'project');
-    const initialized = await initKloProject({ projectDir, projectName: 'warehouse' });
+    const initialized = await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeProjectConfig(projectDir, {
       ...initialized.config,
       connections: {
@@ -440,11 +440,11 @@ describe('runKloConnectionNotion', () => {
         },
       },
     });
-    const before = await readFile(join(projectDir, 'klo.yaml'), 'utf-8');
+    const before = await readFile(join(projectDir, 'ktx.yaml'), 'utf-8');
     const io = makeIo();
 
     await expect(
-      runKloConnectionNotion(
+      runKtxConnectionNotion(
         {
           command: 'pick',
           projectDir,
@@ -460,7 +460,7 @@ describe('runKloConnectionNotion', () => {
       ),
     ).resolves.toBe(0);
 
-    await expect(readFile(join(projectDir, 'klo.yaml'), 'utf-8')).resolves.toBe(before);
+    await expect(readFile(join(projectDir, 'ktx.yaml'), 'utf-8')).resolves.toBe(before);
     expect(io.stdout()).toContain('No changes saved.');
   });
 });

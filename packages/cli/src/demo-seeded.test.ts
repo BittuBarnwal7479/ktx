@@ -6,7 +6,7 @@ import { ensureSeededDemoProject } from './demo-assets.js';
 import { runDemoSeeded } from './demo-seeded.js';
 
 describe('demo seeded mode', () => {
-  const projectDir = join(tmpdir(), `klo-demo-seeded-${process.pid}`);
+  const projectDir = join(tmpdir(), `ktx-demo-seeded-${process.pid}`);
 
   afterEach(async () => {
     await rm(projectDir, { recursive: true, force: true });
@@ -17,7 +17,7 @@ describe('demo seeded mode', () => {
 
     expect(result.projectDir).toBe(projectDir);
     await expect(access(join(projectDir, 'demo.db'))).resolves.toBeUndefined();
-    await expect(access(join(projectDir, 'klo.yaml'))).resolves.toBeUndefined();
+    await expect(access(join(projectDir, 'ktx.yaml'))).resolves.toBeUndefined();
     await expect(access(join(projectDir, 'manifest.json'))).resolves.toBeUndefined();
     await expect(access(join(projectDir, 'semantic-layer/orbit_demo/accounts.yaml'))).resolves.toBeUndefined();
     await expect(access(join(projectDir, 'knowledge/global/arr-contract-first.md'))).resolves.toBeUndefined();
@@ -35,7 +35,7 @@ describe('demo seeded mode', () => {
     expect(result.replay.metadata?.timing).toBe('prebuilt');
     expect(result.inspect.mode).toBe('seeded');
 
-    const config = await readFile(join(projectDir, 'klo.yaml'), 'utf-8');
+    const config = await readFile(join(projectDir, 'ktx.yaml'), 'utf-8');
     expect(config).toContain('api_key: env:ANTHROPIC_API_KEY');
     expect(config).not.toContain('sk-ant-');
   });

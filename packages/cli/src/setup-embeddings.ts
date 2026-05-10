@@ -1,25 +1,25 @@
 import { writeFile } from 'node:fs/promises';
 import { cancel, isCancel, password, select } from '@clack/prompts';
-import { resolveKloConfigReference } from '@klo/context/core';
+import { resolveKtxConfigReference } from '@ktx/context/core';
 import {
-  type KloProjectConfig,
-  type KloProjectEmbeddingConfig,
-  loadKloProject,
-  markKloSetupStepComplete,
-  serializeKloProjectConfig,
-} from '@klo/context/project';
-import { type KloEmbeddingConfig, type KloEmbeddingHealthCheckResult, runKloEmbeddingHealthCheck } from '@klo/llm';
-import type { KloCliIo } from './cli-runtime.js';
+  type KtxProjectConfig,
+  type KtxProjectEmbeddingConfig,
+  loadKtxProject,
+  markKtxSetupStepComplete,
+  serializeKtxProjectConfig,
+} from '@ktx/context/project';
+import { type KtxEmbeddingConfig, type KtxEmbeddingHealthCheckResult, runKtxEmbeddingHealthCheck } from '@ktx/llm';
+import type { KtxCliIo } from './cli-runtime.js';
 import { withMenuOptionsSpacing, withTextInputNavigation } from './prompt-navigation.js';
 import { withSetupInterruptConfirmation } from './setup-interrupt.js';
 import { envCredentialReference, writeProjectLocalSecretReference } from './setup-secrets.js';
 
-export type KloSetupEmbeddingBackend = 'openai' | 'sentence-transformers';
+export type KtxSetupEmbeddingBackend = 'openai' | 'sentence-transformers';
 
-export interface KloSetupEmbeddingsArgs {
+export interface KtxSetupEmbeddingsArgs {
   projectDir: string;
   inputMode: 'auto' | 'disabled';
-  embeddingBackend?: KloSetupEmbeddingBackend;
+  embeddingBackend?: KtxSetupEmbeddingBackend;
   embeddingApiKeyEnv?: string;
   embeddingApiKeyFile?: string;
   forcePrompt?: boolean;
@@ -27,29 +27,29 @@ export interface KloSetupEmbeddingsArgs {
   skipEmbeddings: boolean;
 }
 
-export type KloSetupEmbeddingsResult =
+export type KtxSetupEmbeddingsResult =
   | { status: 'ready'; projectDir: string }
   | { status: 'skipped'; projectDir: string }
   | { status: 'back'; projectDir: string }
   | { status: 'missing-input'; projectDir: string }
   | { status: 'failed'; projectDir: string };
 
-export interface KloSetupEmbeddingsPromptAdapter {
+export interface KtxSetupEmbeddingsPromptAdapter {
   select(options: { message: string; options: Array<{ value: string; label: string }> }): Promise<string>;
   password(options: { message: string }): Promise<string | undefined>;
   cancel(message: string): void;
 }
 
-export interface KloSetupEmbeddingsDeps {
+export interface KtxSetupEmbeddingsDeps {
   env?: NodeJS.ProcessEnv;
-  prompts?: KloSetupEmbeddingsPromptAdapter;
-  healthCheck?: (config: KloEmbeddingConfig) => Promise<KloEmbeddingHealthCheckResult>;
+  prompts?: KtxSetupEmbeddingsPromptAdapter;
+  healthCheck?: (config: KtxEmbeddingConfig) => Promise<KtxEmbeddingHealthCheckResult>;
 }
 
-type BackendChoice = KloSetupEmbeddingBackend | 'back';
+type BackendChoice = KtxSetupEmbeddingBackend | 'back';
 
 const DEFAULTS: Record<
-  KloSetupEmbeddingBackend,
+  KtxSetupEmbeddingBackend,
   { model: string; dimensions: number; envName?: string; baseUrl?: string; pathPrefix?: string }
 > = {
   openai: { model: 'text-embedding-3-small', dimensions: 1536, envName: 'OPENAI_API_KEY' },
@@ -61,12 +61,12 @@ const DEFAULTS: Record<
   },
 };
 
-const LOCAL_EMBEDDING_BACKEND: KloSetupEmbeddingBackend = 'sentence-transformers';
-const LOCAL_EMBEDDING_DAEMON_COMMAND = 'klo-daemon serve-http --host 127.0.0.1 --port 8765';
+const LOCAL_EMBEDDING_BACKEND: KtxSetupEmbeddingBackend = 'sentence-transformers';
+const LOCAL_EMBEDDING_DAEMON_COMMAND = 'ktx-daemon serve-http --host 127.0.0.1 --port 8765';
 const LOCAL_EMBEDDING_DAEMON_DEV_COMMAND =
-  'cd klo && source .venv/bin/activate && uv run klo-daemon serve-http --host 127.0.0.1 --port 8765';
+  'cd ktx && source .venv/bin/activate && uv run ktx-daemon serve-http --host 127.0.0.1 --port 8765';
 const EMBEDDING_OPTION_PROMPT_CONTEXT =
-  'KLO uses embeddings for semantic search over semantic-layer sources, wiki context, schema metadata, ' +
+  'KTX uses embeddings for semantic search over semantic-layer sources, wiki context, schema metadata, ' +
   'and relationship evidence.';
 const LOCAL_EMBEDDING_HEALTH_TIMEOUT_MS = 120_000;
 const HEALTH_CHECK_SPINNER_FRAMES = ['-', '\\', '|', '/'] as const;
@@ -78,7 +78,7 @@ interface HealthCheckProgress {
   fail(message: string): void;
 }
 
-function createPromptAdapter(): KloSetupEmbeddingsPromptAdapter {
+function createPromptAdapter(): KtxSetupEmbeddingsPromptAdapter {
   return {
     async select(options) {
       const value = await withSetupInterruptConfirmation(() => select(withMenuOptionsSpacing(options)));
@@ -100,7 +100,7 @@ function createPromptAdapter(): KloSetupEmbeddingsPromptAdapter {
   };
 }
 
-function hasCompletedEmbeddings(config: KloProjectConfig): boolean {
+function hasCompletedEmbeddings(config: KtxProjectConfig): boolean {
   return (
     config.setup?.completed_steps.includes('embeddings') === true &&
     config.ingest.embeddings.backend !== 'none' &&
@@ -112,11 +112,11 @@ function hasCompletedEmbeddings(config: KloProjectConfig): boolean {
 }
 
 function buildProjectEmbeddingConfig(input: {
-  backend: KloSetupEmbeddingBackend;
+  backend: KtxSetupEmbeddingBackend;
   model: string;
   dimensions: number;
   credentialRef?: string;
-}): KloProjectEmbeddingConfig {
+}): KtxProjectEmbeddingConfig {
   if (input.backend === 'openai') {
     return {
       backend: 'openai',
@@ -140,11 +140,11 @@ function buildProjectEmbeddingConfig(input: {
 }
 
 function buildHealthConfig(input: {
-  backend: KloSetupEmbeddingBackend;
+  backend: KtxSetupEmbeddingBackend;
   model: string;
   dimensions: number;
   credentialValue?: string;
-}): KloEmbeddingConfig {
+}): KtxEmbeddingConfig {
   if (input.backend === 'openai') {
     return {
       backend: 'openai',
@@ -167,16 +167,16 @@ function buildHealthConfig(input: {
   };
 }
 
-function embeddingBackendDisplayName(backend: KloSetupEmbeddingBackend): string {
+function embeddingBackendDisplayName(backend: KtxSetupEmbeddingBackend): string {
   if (backend === 'openai') {
     return 'OpenAI';
   }
   return 'sentence-transformers';
 }
 
-async function persistEmbeddingConfig(projectDir: string, embeddings: KloProjectEmbeddingConfig): Promise<void> {
-  const project = await loadKloProject({ projectDir });
-  const config = markKloSetupStepComplete(
+async function persistEmbeddingConfig(projectDir: string, embeddings: KtxProjectEmbeddingConfig): Promise<void> {
+  const project = await loadKtxProject({ projectDir });
+  const config = markKtxSetupStepComplete(
     {
       ...project.config,
       ingest: {
@@ -193,19 +193,19 @@ async function persistEmbeddingConfig(projectDir: string, embeddings: KloProject
     },
     'embeddings',
   );
-  await writeFile(project.configPath, serializeKloProjectConfig(config), 'utf-8');
+  await writeFile(project.configPath, serializeKtxProjectConfig(config), 'utf-8');
 }
 
 async function chooseCredentialRef(
-  backend: Extract<KloSetupEmbeddingBackend, 'openai'>,
-  args: KloSetupEmbeddingsArgs,
-  io: KloCliIo,
-  deps: KloSetupEmbeddingsDeps,
+  backend: Extract<KtxSetupEmbeddingBackend, 'openai'>,
+  args: KtxSetupEmbeddingsArgs,
+  io: KtxCliIo,
+  deps: KtxSetupEmbeddingsDeps,
 ): Promise<{ status: 'ready'; ref: string; value: string } | { status: 'back' | 'missing-input' }> {
   const env = deps.env ?? process.env;
   if (args.embeddingApiKeyEnv) {
     const ref = envCredentialReference(args.embeddingApiKeyEnv);
-    const value = resolveKloConfigReference(ref, env);
+    const value = resolveKtxConfigReference(ref, env);
     if (!value) {
       io.stderr.write(`Missing embedding API key: ${args.embeddingApiKeyEnv} is not set.\n`);
       return { status: 'missing-input' };
@@ -216,7 +216,7 @@ async function chooseCredentialRef(
     const ref = `file:${args.embeddingApiKeyFile}`;
     let value: string | undefined;
     try {
-      value = resolveKloConfigReference(ref, env);
+      value = resolveKtxConfigReference(ref, env);
     } catch {
       value = undefined;
     }
@@ -234,7 +234,7 @@ async function chooseCredentialRef(
   const defaultEnv = DEFAULTS[backend].envName ?? 'EMBEDDING_API_KEY';
   const prompts = deps.prompts ?? createPromptAdapter();
   const choice = await prompts.select({
-    message: `How should KLO find your ${embeddingBackendDisplayName(backend)} embedding API key?`,
+    message: `How should KTX find your ${embeddingBackendDisplayName(backend)} embedding API key?`,
     options: [
       { value: 'env', label: `Use ${defaultEnv} from the environment` },
       { value: 'paste', label: 'Paste a key and save it as a local secret file' },
@@ -247,8 +247,8 @@ async function chooseCredentialRef(
   if (choice === 'paste') {
     io.stdout.write(
       `${[
-        `KLO will save the key in .klo/secrets/${backend}-api-key with local file permissions,`,
-        'then write a file: reference in klo.yaml.',
+        `KTX will save the key in .ktx/secrets/${backend}-api-key with local file permissions,`,
+        'then write a file: reference in ktx.yaml.',
       ].join(' ')}\n`,
     );
     const value = await prompts.password({ message: withTextInputNavigation(`${backend} embedding API key`) });
@@ -267,7 +267,7 @@ async function chooseCredentialRef(
   }
 
   const ref = envCredentialReference(defaultEnv);
-  const value = resolveKloConfigReference(ref, env);
+  const value = resolveKtxConfigReference(ref, env);
   if (!value) {
     io.stderr.write(`Missing embedding API key: ${defaultEnv} is not set.\n`);
     return { status: 'missing-input' };
@@ -276,8 +276,8 @@ async function chooseCredentialRef(
 }
 
 async function chooseEmbeddingBackend(
-  args: KloSetupEmbeddingsArgs,
-  deps: KloSetupEmbeddingsDeps,
+  args: KtxSetupEmbeddingsArgs,
+  deps: KtxSetupEmbeddingsDeps,
 ): Promise<BackendChoice> {
   if (args.embeddingBackend) {
     return args.embeddingBackend;
@@ -286,7 +286,7 @@ async function chooseEmbeddingBackend(
     return LOCAL_EMBEDDING_BACKEND;
   }
   const choice = await (deps.prompts ?? createPromptAdapter()).select({
-    message: `Which embedding option should KLO use?\n\n${EMBEDDING_OPTION_PROMPT_CONTEXT}`,
+    message: `Which embedding option should KTX use?\n\n${EMBEDDING_OPTION_PROMPT_CONTEXT}`,
     options: [
       { value: 'sentence-transformers', label: 'Local sentence-transformers embeddings' },
       { value: 'openai', label: 'OpenAI embeddings (recommended)' },
@@ -302,18 +302,18 @@ async function chooseEmbeddingBackend(
 function localEmbeddingSetupMessage(message: string): string {
   return [
     `Local embedding health check failed: ${message}`,
-    'Local embeddings use the KLO Python daemon. KLO can call klo-daemon automatically when it is on PATH.',
+    'Local embeddings use the KTX Python daemon. KTX can call ktx-daemon automatically when it is on PATH.',
     `For repeated inference, start the HTTP daemon in another terminal with: ${LOCAL_EMBEDDING_DAEMON_COMMAND}`,
-    `From the KLO repo, use: ${LOCAL_EMBEDDING_DAEMON_DEV_COMMAND}`,
+    `From the KTX repo, use: ${LOCAL_EMBEDDING_DAEMON_DEV_COMMAND}`,
     'The first run may download the all-MiniLM-L6-v2 model, so it can take a minute.',
   ].join('\n');
 }
 
 async function promptAfterLocalEmbeddingFailure(
-  deps: KloSetupEmbeddingsDeps,
-): Promise<'retry' | Extract<KloSetupEmbeddingBackend, 'openai'> | 'back'> {
+  deps: KtxSetupEmbeddingsDeps,
+): Promise<'retry' | Extract<KtxSetupEmbeddingBackend, 'openai'> | 'back'> {
   const choice = await (deps.prompts ?? createPromptAdapter()).select({
-    message: 'Local embeddings are not reachable. Start the local KLO daemon, then retry.',
+    message: 'Local embeddings are not reachable. Start the local KTX daemon, then retry.',
     options: [
       { value: 'retry', label: 'Retry' },
       { value: 'openai', label: 'Use OpenAI embeddings' },
@@ -326,7 +326,7 @@ async function promptAfterLocalEmbeddingFailure(
   return 'retry';
 }
 
-function healthCheckStartText(backend: KloSetupEmbeddingBackend, model: string, dimensions: number): string {
+function healthCheckStartText(backend: KtxSetupEmbeddingBackend, model: string, dimensions: number): string {
   if (backend === LOCAL_EMBEDDING_BACKEND) {
     return [
       `Testing local sentence-transformers embeddings (${model}, ${dimensions} dimensions).`,
@@ -336,7 +336,7 @@ function healthCheckStartText(backend: KloSetupEmbeddingBackend, model: string, 
   return `Checking ${backend} embeddings (${model}, ${dimensions} dimensions).`;
 }
 
-function startHealthCheckProgress(io: KloCliIo, message: string): HealthCheckProgress {
+function startHealthCheckProgress(io: KtxCliIo, message: string): HealthCheckProgress {
   if (io.stdout.isTTY !== true) {
     io.stdout.write(`${message}\n`);
     const noop = () => undefined;
@@ -376,17 +376,17 @@ function startHealthCheckProgress(io: KloCliIo, message: string): HealthCheckPro
   };
 }
 
-export async function runKloSetupEmbeddingsStep(
-  args: KloSetupEmbeddingsArgs,
-  io: KloCliIo,
-  deps: KloSetupEmbeddingsDeps = {},
-): Promise<KloSetupEmbeddingsResult> {
+export async function runKtxSetupEmbeddingsStep(
+  args: KtxSetupEmbeddingsArgs,
+  io: KtxCliIo,
+  deps: KtxSetupEmbeddingsDeps = {},
+): Promise<KtxSetupEmbeddingsResult> {
   if (args.skipEmbeddings) {
     io.stdout.write('Embeddings setup skipped.\n');
     return { status: 'skipped', projectDir: args.projectDir };
   }
 
-  const project = await loadKloProject({ projectDir: args.projectDir });
+  const project = await loadKtxProject({ projectDir: args.projectDir });
   if (
     args.forcePrompt !== true &&
     hasCompletedEmbeddings(project.config) &&
@@ -400,9 +400,9 @@ export async function runKloSetupEmbeddingsStep(
 
   const healthCheck =
     deps.healthCheck ??
-    ((config: KloEmbeddingConfig) =>
-      runKloEmbeddingHealthCheck(config, { timeoutMs: LOCAL_EMBEDDING_HEALTH_TIMEOUT_MS }));
-  let selectedBackend: KloSetupEmbeddingBackend | undefined;
+    ((config: KtxEmbeddingConfig) =>
+      runKtxEmbeddingHealthCheck(config, { timeoutMs: LOCAL_EMBEDDING_HEALTH_TIMEOUT_MS }));
+  let selectedBackend: KtxSetupEmbeddingBackend | undefined;
 
   while (true) {
     if (!selectedBackend) {
@@ -439,7 +439,7 @@ export async function runKloSetupEmbeddingsStep(
       credentialValue,
     });
     const progress = startHealthCheckProgress(io, healthCheckStartText(selectedBackend, model, dimensions));
-    let health: KloEmbeddingHealthCheckResult;
+    let health: KtxEmbeddingHealthCheckResult;
     try {
       health = await healthCheck(healthConfig);
     } catch (error) {

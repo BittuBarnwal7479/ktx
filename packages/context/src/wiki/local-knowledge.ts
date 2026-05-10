@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 import YAML from 'yaml';
-import type { KloEmbeddingPort, KloFileWriteResult } from '../core/index.js';
-import type { KloLocalProject } from '../project/index.js';
+import type { KtxEmbeddingPort, KtxFileWriteResult } from '../core/index.js';
+import type { KtxLocalProject } from '../project/index.js';
 import { HybridSearchCore, type SearchCandidateGenerator } from '../search/index.js';
 import { buildKnowledgeSearchText } from './knowledge-search-text.js';
 import { SqliteKnowledgeIndex, type SqliteKnowledgeIndexPage } from './sqlite-knowledge-index.js';
@@ -50,8 +50,8 @@ export interface WriteLocalKnowledgePageInput {
   fingerprints?: string[];
 }
 
-const LOCAL_AUTHOR = 'klo';
-const LOCAL_AUTHOR_EMAIL = 'klo@example.com';
+const LOCAL_AUTHOR = 'ktx';
+const LOCAL_AUTHOR_EMAIL = 'ktx@example.com';
 
 function assertSafePathToken(kind: string, value: string): string {
   if (
@@ -137,7 +137,7 @@ function serializeKnowledgePage(input: WriteLocalKnowledgePageInput): string {
 }
 
 async function readPageAtPath(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   key: string,
   path: string,
   scope: LocalKnowledgeScope,
@@ -151,9 +151,9 @@ async function readPageAtPath(
 }
 
 export async function writeLocalKnowledgePage(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   input: WriteLocalKnowledgePageInput,
-): Promise<KloFileWriteResult> {
+): Promise<KtxFileWriteResult> {
   const path = knowledgePath(input.scope, input.userId, input.key);
   return project.fileStore.writeFile(
     path,
@@ -165,7 +165,7 @@ export async function writeLocalKnowledgePage(
 }
 
 export async function readLocalKnowledgePage(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   input: { key: string; userId?: string },
 ): Promise<LocalKnowledgePage | null> {
   const userPath = knowledgePath('USER', input.userId, input.key);
@@ -177,7 +177,7 @@ export async function readLocalKnowledgePage(
 }
 
 export async function listLocalKnowledgePages(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   input: { userId?: string } = {},
 ): Promise<LocalKnowledgeSummary[]> {
   const userId = input.userId ?? 'local';
@@ -201,8 +201,8 @@ function scorePage(page: LocalKnowledgePage, terms: string[]): number {
   return terms.some((term) => haystack.includes(term)) ? 3 : 0;
 }
 
-function sqliteKnowledgeDbPath(project: KloLocalProject): string {
-  return join(project.projectDir, '.klo', 'db.sqlite');
+function sqliteKnowledgeDbPath(project: KtxLocalProject): string {
+  return join(project.projectDir, '.ktx', 'db.sqlite');
 }
 
 function pageSearchText(page: LocalKnowledgePage): string {
@@ -211,7 +211,7 @@ function pageSearchText(page: LocalKnowledgePage): string {
 
 async function embeddingForPageSearchText(
   searchText: string,
-  embeddingService: KloEmbeddingPort | null,
+  embeddingService: KtxEmbeddingPort | null,
 ): Promise<number[] | null> {
   if (!embeddingService) {
     return null;
@@ -234,7 +234,7 @@ function tokenLaneCandidates(pages: LocalKnowledgePage[], terms: string[]) {
 }
 
 async function loadAllKnowledgePages(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   input: { userId?: string } = {},
 ): Promise<LocalKnowledgePage[]> {
   const summaries = await listLocalKnowledgePages(project, { userId: input.userId });
@@ -249,8 +249,8 @@ async function loadAllKnowledgePages(
 }
 
 async function searchLocalKnowledgePagesWithSqlite(
-  project: KloLocalProject,
-  input: { query: string; userId?: string; embeddingService?: KloEmbeddingPort | null; limit?: number },
+  project: KtxLocalProject,
+  input: { query: string; userId?: string; embeddingService?: KtxEmbeddingPort | null; limit?: number },
 ): Promise<LocalKnowledgeSearchResult[]> {
   const pages = await loadAllKnowledgePages(project, { userId: input.userId });
   const byPath = new Map(pages.map((page) => [page.path, page]));
@@ -352,7 +352,7 @@ async function searchLocalKnowledgePagesWithSqlite(
 }
 
 async function searchLocalKnowledgePagesWithScan(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   input: { query: string; userId?: string; limit?: number },
 ): Promise<LocalKnowledgeSearchResult[]> {
   const terms = input.query
@@ -381,8 +381,8 @@ async function searchLocalKnowledgePagesWithScan(
 }
 
 export async function searchLocalKnowledgePages(
-  project: KloLocalProject,
-  input: { query: string; userId?: string; embeddingService?: KloEmbeddingPort | null; limit?: number },
+  project: KtxLocalProject,
+  input: { query: string; userId?: string; embeddingService?: KtxEmbeddingPort | null; limit?: number },
 ): Promise<LocalKnowledgeSearchResult[]> {
   if (project.config.storage.search === 'sqlite-fts5') {
     return searchLocalKnowledgePagesWithSqlite(project, input);

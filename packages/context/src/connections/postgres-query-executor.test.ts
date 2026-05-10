@@ -45,7 +45,7 @@ describe('createPostgresQueryExecutor', () => {
     expect(client.connect).toHaveBeenCalledTimes(1);
     expect(calls[0]).toBe('BEGIN READ ONLY');
     expect(calls[1]).toEqual({
-      text: 'select * from (select status, count(*) as order_count from public.orders group by status) as klo_query_result limit 50',
+      text: 'select * from (select status, count(*) as order_count from public.orders group by status) as ktx_query_result limit 50',
       rowMode: 'array',
     });
     expect(calls[2]).toBe('COMMIT');

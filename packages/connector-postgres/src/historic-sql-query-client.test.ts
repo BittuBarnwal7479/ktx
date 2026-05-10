@@ -1,14 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
-import { KloPostgresHistoricSqlQueryClient } from './historic-sql-query-client.js';
-import type { KloPostgresPoolConfig, KloPostgresPoolFactory } from './connector.js';
+import { KtxPostgresHistoricSqlQueryClient } from './historic-sql-query-client.js';
+import type { KtxPostgresPoolConfig, KtxPostgresPoolFactory } from './connector.js';
 
-describe('KloPostgresHistoricSqlQueryClient', () => {
+describe('KtxPostgresHistoricSqlQueryClient', () => {
   it('executes parameterized read-only SQL through the native Postgres connector pool', async () => {
     const queryCalls: Array<{ sql: string; params?: unknown[] }> = [];
     const release = vi.fn();
     const end = vi.fn(async () => {});
-    const poolFactory: KloPostgresPoolFactory = {
-      createPool(_config: KloPostgresPoolConfig) {
+    const poolFactory: KtxPostgresPoolFactory = {
+      createPool(_config: KtxPostgresPoolConfig) {
         return {
           async connect() {
             return {
@@ -26,7 +26,7 @@ describe('KloPostgresHistoricSqlQueryClient', () => {
         };
       },
     };
-    const client = new KloPostgresHistoricSqlQueryClient({
+    const client = new KtxPostgresHistoricSqlQueryClient({
       connectionId: 'warehouse',
       connection: {
         driver: 'postgres',

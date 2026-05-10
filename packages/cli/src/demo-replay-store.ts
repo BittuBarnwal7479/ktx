@@ -1,7 +1,7 @@
 import { constants as fsConstants } from 'node:fs';
 import { access, copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
-import { parseMemoryFlowReplayInput, type MemoryFlowReplayInput } from '@klo/context/ingest/memory-flow';
+import { parseMemoryFlowReplayInput, type MemoryFlowReplayInput } from '@ktx/context/ingest/memory-flow';
 
 interface StoredMemoryFlowReplayFile {
   memoryFlowReplaySchemaVersion: 1;

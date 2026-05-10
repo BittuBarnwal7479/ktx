@@ -1,17 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import {
-  failedKloScanEnrichmentSummary,
-  kloScanErrorMessage,
-  skippedKloScanEnrichmentSummary,
+  failedKtxScanEnrichmentSummary,
+  ktxScanErrorMessage,
+  skippedKtxScanEnrichmentSummary,
 } from './enrichment-summary.js';
 
-describe('KLO scan enrichment summaries', () => {
+describe('KTX scan enrichment summaries', () => {
   it('keeps structural scans skipped when no enrichment was requested', () => {
-    expect(failedKloScanEnrichmentSummary('structural', false)).toEqual(skippedKloScanEnrichmentSummary);
+    expect(failedKtxScanEnrichmentSummary('structural', false)).toEqual(skippedKtxScanEnrichmentSummary);
   });
 
   it('marks relationship stages failed when relationship detection fails', () => {
-    expect(failedKloScanEnrichmentSummary('relationships', true)).toEqual({
+    expect(failedKtxScanEnrichmentSummary('relationships', true)).toEqual({
       dataDictionary: 'skipped',
       tableDescriptions: 'skipped',
       columnDescriptions: 'skipped',
@@ -23,7 +23,7 @@ describe('KLO scan enrichment summaries', () => {
   });
 
   it('marks every enriched-only stage failed when full enrichment fails', () => {
-    expect(failedKloScanEnrichmentSummary('enriched', true)).toEqual({
+    expect(failedKtxScanEnrichmentSummary('enriched', true)).toEqual({
       dataDictionary: 'failed',
       tableDescriptions: 'failed',
       columnDescriptions: 'failed',
@@ -35,8 +35,8 @@ describe('KLO scan enrichment summaries', () => {
   });
 
   it('formats unknown thrown values for scan warnings', () => {
-    expect(kloScanErrorMessage(new Error('gateway timeout'))).toBe('gateway timeout');
-    expect(kloScanErrorMessage('plain failure')).toBe('plain failure');
-    expect(kloScanErrorMessage({ code: 'E_SCAN' })).toBe('{"code":"E_SCAN"}');
+    expect(ktxScanErrorMessage(new Error('gateway timeout'))).toBe('gateway timeout');
+    expect(ktxScanErrorMessage('plain failure')).toBe('plain failure');
+    expect(ktxScanErrorMessage({ code: 'E_SCAN' })).toBe('{"code":"E_SCAN"}');
   });
 });

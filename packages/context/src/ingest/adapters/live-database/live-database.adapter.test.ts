@@ -39,7 +39,7 @@ describe('LiveDatabaseSourceAdapter', () => {
       introspection: { extractSchema },
       now: () => new Date('2026-04-27T00:00:00.000Z'),
     });
-    const dir = await mkdtemp(join(tmpdir(), 'klo-live-db-adapter-'));
+    const dir = await mkdtemp(join(tmpdir(), 'ktx-live-db-adapter-'));
 
     await adapter.fetch(undefined, dir, { connectionId: 'conn-1', sourceKey: 'live-database' });
 

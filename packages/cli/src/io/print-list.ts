@@ -1,5 +1,5 @@
-import type { KloCliIo } from '../cli-runtime.js';
-import type { KloOutputMode } from './mode.js';
+import type { KtxCliIo } from '../cli-runtime.js';
+import type { KtxOutputMode } from './mode.js';
 import { bold, dim, SYMBOLS } from './symbols.js';
 
 export interface PrintListColumn<Row> {
@@ -24,8 +24,8 @@ export interface PrintListArgs<Row> {
   groupBy?: keyof Row & string;
   emptyMessage: string;
   command: string;
-  mode: KloOutputMode;
-  io: KloCliIo;
+  mode: KtxOutputMode;
+  io: KtxCliIo;
 }
 
 export function printList<Row extends object>(args: PrintListArgs<Row>): void {

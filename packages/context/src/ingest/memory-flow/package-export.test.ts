@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-describe('@klo/context/ingest/memory-flow lightweight export', () => {
+describe('@ktx/context/ingest/memory-flow lightweight export', () => {
   it('exports replay parsing and text rendering without the full ingest entry point', async () => {
     const memoryFlow = await import('./index.js');
 

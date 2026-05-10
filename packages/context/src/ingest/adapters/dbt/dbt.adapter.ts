@@ -31,7 +31,7 @@ export class DbtSourceAdapter implements SourceAdapter {
     }
     await fetchDbtRepo({
       config,
-      cacheDir: join(this.options.homeDir ?? '.klo/cache', 'dbt', ctx.connectionId),
+      cacheDir: join(this.options.homeDir ?? '.ktx/cache', 'dbt', ctx.connectionId),
       stagedDir,
     });
   }

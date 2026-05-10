@@ -1,16 +1,16 @@
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import type { KloLocalProject } from '../project/index.js';
-import { initKloProject } from '../project/index.js';
+import type { KtxLocalProject } from '../project/index.js';
+import { initKtxProject } from '../project/index.js';
 import { describe, expect, it, vi } from 'vitest';
 import { applyLocalScanRelationshipReviewDecisions } from './relationship-review-apply.js';
-import type { KloRelationshipReviewDecisionArtifact } from './relationship-review-decisions.js';
+import type { KtxRelationshipReviewDecisionArtifact } from './relationship-review-decisions.js';
 import type { ReadLocalScanRelationshipArtifactsResult } from './relationship-artifacts.js';
 import type { WriteLocalScanManifestShardsResult } from './local-enrichment-artifacts.js';
-import type { KloSchemaSnapshot } from './types.js';
+import type { KtxSchemaSnapshot } from './types.js';
 
-const acceptedDecisionArtifact: KloRelationshipReviewDecisionArtifact = {
+const acceptedDecisionArtifact: KtxRelationshipReviewDecisionArtifact = {
   connectionId: 'warehouse',
   runId: 'scan-run-a',
   syncId: 'sync-a',
@@ -146,7 +146,7 @@ const artifacts: ReadLocalScanRelationshipArtifactsResult = {
   },
 };
 
-const snapshot: KloSchemaSnapshot = {
+const snapshot: KtxSchemaSnapshot = {
   connectionId: 'warehouse',
   driver: 'postgres',
   extractedAt: '2026-05-07T12:00:00.000Z',
@@ -198,17 +198,17 @@ const snapshot: KloSchemaSnapshot = {
 
 async function projectWithDecisions(
   decisions = acceptedDecisionArtifact,
-): Promise<{ project: KloLocalProject; tempDir: string }> {
-  const tempDir = await mkdtemp(join(tmpdir(), 'klo-relationship-review-apply-'));
-  const project = await initKloProject({
+): Promise<{ project: KtxLocalProject; tempDir: string }> {
+  const tempDir = await mkdtemp(join(tmpdir(), 'ktx-relationship-review-apply-'));
+  const project = await initKtxProject({
     projectDir: join(tempDir, 'project'),
     projectName: 'warehouse',
   });
   await project.fileStore.writeFile(
     'raw-sources/warehouse/live-database/sync-a/enrichment/relationship-review-decisions.json',
     `${JSON.stringify(decisions)}\n`,
-    'klo',
-    'klo@example.com',
+    'ktx',
+    'ktx@example.com',
     'Seed relationship review decisions',
   );
   return { project, tempDir };

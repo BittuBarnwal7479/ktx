@@ -1,5 +1,5 @@
-import type { KloLocalProject, KloProjectConnectionConfig } from '../../../project/index.js';
-import { kloLocalStateDbPath } from '../../../project/index.js';
+import type { KtxLocalProject, KtxProjectConnectionConfig } from '../../../project/index.js';
+import { ktxLocalStateDbPath } from '../../../project/index.js';
 import { DEFAULT_METABASE_CLIENT_CONFIG, DefaultMetabaseConnectionClientFactory } from './client.js';
 import {
   IngestMetabaseClientFactory,
@@ -21,13 +21,13 @@ function resolveEnvReference(ref: string, env: NodeJS.ProcessEnv): string | null
   return stringField(env[name]);
 }
 
-function hasNetworkProxy(connection: KloProjectConnectionConfig): boolean {
+function hasNetworkProxy(connection: KtxProjectConnectionConfig): boolean {
   return connection.networkProxy != null || connection.network_proxy != null;
 }
 
 export function metabaseRuntimeConfigFromLocalConnection(
   connectionId: string,
-  connection: KloProjectConnectionConfig | undefined,
+  connection: KtxProjectConnectionConfig | undefined,
   env: NodeJS.ProcessEnv = process.env,
 ): MetabaseClientRuntimeConfig {
   if (!connection || String(connection.driver).toLowerCase() !== 'metabase') {
@@ -35,7 +35,7 @@ export function metabaseRuntimeConfigFromLocalConnection(
   }
   if (hasNetworkProxy(connection)) {
     throw new Error(
-      `Standalone KLO does not support proxy-bearing Metabase connections yet. Use hosted Metabase ingest for "${connectionId}" until the KLO Metabase proxy support spec lands.`,
+      `Standalone KTX does not support proxy-bearing Metabase connections yet. Use hosted Metabase ingest for "${connectionId}" until the KTX Metabase proxy support spec lands.`,
     );
   }
 
@@ -60,10 +60,10 @@ interface CreateLocalMetabaseSourceAdapterOptions {
 }
 
 export function createLocalMetabaseSourceAdapter(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   options: CreateLocalMetabaseSourceAdapterOptions = {},
 ): MetabaseSourceAdapter {
-  const sourceStateReader = new LocalMetabaseSourceStateReader({ dbPath: kloLocalStateDbPath(project) });
+  const sourceStateReader = new LocalMetabaseSourceStateReader({ dbPath: ktxLocalStateDbPath(project) });
   const connectionFactory = new DefaultMetabaseConnectionClientFactory(
     (metabaseConnectionId) =>
       metabaseRuntimeConfigFromLocalConnection(

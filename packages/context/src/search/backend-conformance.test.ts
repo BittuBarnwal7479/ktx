@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, it } from 'vitest';
 import { SqliteContextEvidenceStore } from '../ingest/context-evidence/index.js';
 import type { JsonValue } from '../ingest/ports.js';
-import { initKloProject, type KloLocalProject } from '../project/index.js';
+import { initKtxProject, type KtxLocalProject } from '../project/index.js';
 import { type LocalSlSourceSearchResult, searchLocalSlSources, writeLocalSlSource } from '../sl/local-sl.js';
 import type { ContextEvidenceSearchResult } from '../tools/context-evidence-tool-store.js';
 import {
@@ -97,7 +97,7 @@ function toContextConformanceResult(result: ContextEvidenceSearchResult): Search
   };
 }
 
-async function seedSemanticLayerProject(project: KloLocalProject): Promise<void> {
+async function seedSemanticLayerProject(project: KtxLocalProject): Promise<void> {
   await writeLocalSlSource(project, {
     connectionId: 'warehouse',
     sourceName: 'orders',
@@ -138,13 +138,13 @@ async function seedSemanticLayerProject(project: KloLocalProject): Promise<void>
       null,
       2,
     )}\n`,
-    'klo',
-    'klo@example.com',
+    'ktx',
+    'ktx@example.com',
     'Seed dictionary profile',
   );
 }
 
-async function seedWikiProject(project: KloLocalProject): Promise<void> {
+async function seedWikiProject(project: KtxLocalProject): Promise<void> {
   await writeLocalKnowledgePage(project, {
     key: 'metrics/revenue',
     scope: 'GLOBAL',
@@ -235,13 +235,13 @@ async function seedContextDocument(
 
 describe('SQLite hybrid search backend conformance', () => {
   let tempDir: string;
-  let project: KloLocalProject;
+  let project: KtxLocalProject;
   let dbPath: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-search-conformance-'));
-    project = await initKloProject({ projectDir: join(tempDir, 'project'), projectName: 'warehouse' });
-    dbPath = join(tempDir, '.klo', 'db.sqlite');
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-search-conformance-'));
+    project = await initKtxProject({ projectDir: join(tempDir, 'project'), projectName: 'warehouse' });
+    dbPath = join(tempDir, '.ktx', 'db.sqlite');
   });
 
   afterEach(async () => {

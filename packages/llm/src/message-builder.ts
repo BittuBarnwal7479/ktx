@@ -1,42 +1,42 @@
 import type { LanguageModel, ModelMessage, ToolSet } from 'ai';
 import { isAnthropicProtocolModel } from './model-provider.js';
-import type { KloLlmProvider, KloPromptCacheTtl, KloPromptParts } from './types.js';
+import type { KtxLlmProvider, KtxPromptCacheTtl, KtxPromptParts } from './types.js';
 
 type ToolMap = ToolSet | Record<string, Record<string, unknown>>;
 
-interface KloMessageBuilderOptions {
+interface KtxMessageBuilderOptions {
   cacheSystem?: boolean;
   cacheTools?: boolean;
   cacheLastHistory?: boolean;
 }
 
-interface KloBuildInput {
-  parts: KloPromptParts;
+interface KtxBuildInput {
+  parts: KtxPromptParts;
   history: ModelMessage[];
   currentMessage: ModelMessage;
   tools: ToolMap;
   model: LanguageModel | string;
 }
 
-interface KloWrapSimpleInput {
+interface KtxWrapSimpleInput {
   system?: string;
   messages?: ModelMessage[];
   tools?: ToolMap;
   model: LanguageModel | string;
 }
 
-interface KloBuildOutput {
+interface KtxBuildOutput {
   messages: ModelMessage[];
   tools: ToolMap;
 }
 
-export class KloMessageBuilder {
+export class KtxMessageBuilder {
   constructor(
-    private readonly provider: KloLlmProvider,
-    private readonly options: KloMessageBuilderOptions = {},
+    private readonly provider: KtxLlmProvider,
+    private readonly options: KtxMessageBuilderOptions = {},
   ) {}
 
-  build(input: KloBuildInput): KloBuildOutput {
+  build(input: KtxBuildInput): KtxBuildOutput {
     const cfg = this.provider.promptCachingConfig();
     const cachingActive = cfg.enabled && isAnthropicProtocolModel(input.model);
     const ttls = this.resolveTtls(input.model);
@@ -68,7 +68,7 @@ export class KloMessageBuilder {
     };
   }
 
-  wrapSimple(input: KloWrapSimpleInput): KloBuildOutput {
+  wrapSimple(input: KtxWrapSimpleInput): KtxBuildOutput {
     const cfg = this.provider.promptCachingConfig();
     const cachingActive = cfg.enabled && isAnthropicProtocolModel(input.model);
     const ttls = this.resolveTtls(input.model);
@@ -112,9 +112,9 @@ export class KloMessageBuilder {
   }
 
   private resolveTtls(model: LanguageModel | string): {
-    systemTtl: KloPromptCacheTtl;
-    toolsTtl: KloPromptCacheTtl;
-    historyTtl: KloPromptCacheTtl;
+    systemTtl: KtxPromptCacheTtl;
+    toolsTtl: KtxPromptCacheTtl;
+    historyTtl: KtxPromptCacheTtl;
   } {
     const cfg = this.provider.promptCachingConfig();
     if (cfg.vertexFallbackTo5m && this.provider.activeBackend() === 'vertex' && isAnthropicProtocolModel(model)) {
@@ -145,7 +145,7 @@ export class KloMessageBuilder {
 
   private markLastHistoryMessage(
     history: ModelMessage[],
-    ttl: KloPromptCacheTtl,
+    ttl: KtxPromptCacheTtl,
     model: LanguageModel | string,
   ): ModelMessage[] {
     if (history.length === 0) {
@@ -177,7 +177,7 @@ export class KloMessageBuilder {
     tools: ToolMap,
     cachingActive: boolean,
     cacheTools: boolean,
-    ttl: KloPromptCacheTtl,
+    ttl: KtxPromptCacheTtl,
     model: LanguageModel | string,
   ): ToolMap {
     const keys = Object.keys(tools).sort();

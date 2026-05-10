@@ -2,11 +2,11 @@ import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import type { KloSchemaSnapshot } from '../../../scan/types.js';
+import type { KtxSchemaSnapshot } from '../../../scan/types.js';
 import { chunkLiveDatabaseStagedDir } from './chunk.js';
 import { liveDatabaseTablePath, writeLiveDatabaseSnapshot } from './stage.js';
 
-function snapshot(): KloSchemaSnapshot {
+function snapshot(): KtxSchemaSnapshot {
   return {
     connectionId: 'conn-1',
     driver: 'postgres',
@@ -60,7 +60,7 @@ function snapshot(): KloSchemaSnapshot {
 
 describe('chunkLiveDatabaseStagedDir', () => {
   it('emits one work unit per table on the first run', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'klo-live-db-chunk-'));
+    const dir = await mkdtemp(join(tmpdir(), 'ktx-live-db-chunk-'));
     await writeLiveDatabaseSnapshot(dir, snapshot());
 
     const result = await chunkLiveDatabaseStagedDir(dir);
@@ -75,7 +75,7 @@ describe('chunkLiveDatabaseStagedDir', () => {
   });
 
   it('keeps only changed tables during incremental syncs and records table evictions', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'klo-live-db-diff-'));
+    const dir = await mkdtemp(join(tmpdir(), 'ktx-live-db-diff-'));
     await writeLiveDatabaseSnapshot(dir, snapshot());
     const ordersPath = liveDatabaseTablePath({ catalog: null, db: 'public', name: 'orders' });
     const customersPath = liveDatabaseTablePath({ catalog: null, db: 'public', name: 'customers' });
@@ -92,7 +92,7 @@ describe('chunkLiveDatabaseStagedDir', () => {
   });
 
   it('fans out all table work units when the foreign-key index changes', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'klo-live-db-fk-'));
+    const dir = await mkdtemp(join(tmpdir(), 'ktx-live-db-fk-'));
     await writeLiveDatabaseSnapshot(dir, snapshot());
 
     const result = await chunkLiveDatabaseStagedDir(dir, {

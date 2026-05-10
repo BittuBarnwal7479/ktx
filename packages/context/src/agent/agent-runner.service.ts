@@ -1,7 +1,7 @@
-import { KloMessageBuilder, type KloLlmProvider, type KloModelRole } from '@klo/llm';
+import { KtxMessageBuilder, type KtxLlmProvider, type KtxModelRole } from '@ktx/llm';
 import { generateText, stepCountIs, type TelemetrySettings, type Tool } from 'ai';
-import { noopLogger, type KloLogger } from '../core/index.js';
-import { summarizeKloLlmDebugRequest, type KloLlmDebugRequestRecorder } from '../llm/index.js';
+import { noopLogger, type KtxLogger } from '../core/index.js';
+import { summarizeKtxLlmDebugRequest, type KtxLlmDebugRequestRecorder } from '../llm/index.js';
 
 export type RunLoopStopReason = 'budget' | 'natural' | 'error';
 
@@ -11,7 +11,7 @@ export interface RunLoopStepInfo {
 }
 
 export interface RunLoopParams {
-  modelRole: KloModelRole;
+  modelRole: KtxModelRole;
   systemPrompt: string;
   userPrompt: string;
   toolSet: Record<string, Tool>;
@@ -30,14 +30,14 @@ export interface AgentTelemetryPort {
 }
 
 export interface AgentRunnerServiceDeps {
-  llmProvider: KloLlmProvider;
+  llmProvider: KtxLlmProvider;
   telemetry?: AgentTelemetryPort;
-  debugRequestRecorder?: KloLlmDebugRequestRecorder;
-  logger?: KloLogger;
+  debugRequestRecorder?: KtxLlmDebugRequestRecorder;
+  logger?: KtxLogger;
 }
 
 export class AgentRunnerService {
-  private readonly logger: KloLogger;
+  private readonly logger: KtxLogger;
 
   constructor(private readonly deps: AgentRunnerServiceDeps) {
     this.logger = deps.logger ?? noopLogger;
@@ -47,7 +47,7 @@ export class AgentRunnerService {
     let stepIndex = 0;
     try {
       const model = this.deps.llmProvider.getModel(params.modelRole);
-      const builder = new KloMessageBuilder(this.deps.llmProvider);
+      const builder = new KtxMessageBuilder(this.deps.llmProvider);
       const built = builder.wrapSimple({
         system: params.systemPrompt,
         messages: [{ role: 'user', content: params.userPrompt }],
@@ -56,8 +56,8 @@ export class AgentRunnerService {
       });
 
       await this.deps.debugRequestRecorder?.record(
-        summarizeKloLlmDebugRequest({
-          operationName: params.telemetryTags.operationName ?? 'klo-agent-runner',
+        summarizeKtxLlmDebugRequest({
+          operationName: params.telemetryTags.operationName ?? 'ktx-agent-runner',
           source: params.telemetryTags.source,
           jobId: params.telemetryTags.jobId,
           unitKey: params.telemetryTags.unitKey,

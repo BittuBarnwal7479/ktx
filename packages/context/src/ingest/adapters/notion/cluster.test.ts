@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, test } from 'vitest';
-import type { KloEmbeddingPort } from '../../../core/embedding.js';
+import type { KtxEmbeddingPort } from '../../../core/embedding.js';
 import type { WorkUnit } from '../../types.js';
 import { clusterNotionWorkUnits, MIN_PAGES_TO_CLUSTER } from './cluster.js';
 
@@ -14,7 +14,7 @@ function fakeEmbedding(text: string): number[] {
   return v;
 }
 
-const mockEmbed: KloEmbeddingPort = {
+const mockEmbed: KtxEmbeddingPort = {
   maxBatchSize: 100,
   computeEmbedding: async (t: string) => fakeEmbedding(t),
   computeEmbeddingsBulk: async (texts: string[]) => texts.map(fakeEmbedding),
@@ -104,7 +104,7 @@ describe('clusterNotionWorkUnits', () => {
     }));
     const stagedDir = await makeStaged(pages);
     const wus = makeWorkUnits(pages);
-    const failingEmbed: KloEmbeddingPort = {
+    const failingEmbed: KtxEmbeddingPort = {
       maxBatchSize: 100,
       computeEmbedding: async () => {
         throw new Error('embedding down');

@@ -1,13 +1,13 @@
 import { readFile } from 'node:fs/promises';
-import type { KloCliIo } from './cli-runtime.js';
+import type { KtxCliIo } from './cli-runtime.js';
 import {
-  createKloAgentRuntime,
+  createKtxAgentRuntime,
   parseAgentMaxRows,
   readAgentJsonFile,
   writeAgentJson,
   writeAgentJsonError,
-  type KloAgentRuntime,
-  type KloAgentRuntimeDeps,
+  type KtxAgentRuntime,
+  type KtxAgentRuntimeDeps,
 } from './agent-runtime.js';
 import {
   isMissingProjectConfigError,
@@ -15,11 +15,11 @@ import {
   missingProjectSlSearchReadiness,
   noConnectionsSlSearchReadiness,
   noIndexedSourcesSlSearchReadiness,
-  type KloAgentSlSearchReadinessDetail,
+  type KtxAgentSlSearchReadinessDetail,
 } from './agent-search-readiness.js';
-import { readKloSetupStatus, type KloSetupStatus } from './setup.js';
+import { readKtxSetupStatus, type KtxSetupStatus } from './setup.js';
 
-export type KloAgentArgs =
+export type KtxAgentArgs =
   | { command: 'tools'; projectDir: string; json: true }
   | { command: 'context'; projectDir: string; json: true }
   | { command: 'sl-list'; projectDir: string; json: true; connectionId?: string; query?: string }
@@ -37,38 +37,38 @@ export type KloAgentArgs =
   | { command: 'wiki-read'; projectDir: string; json: true; pageId: string }
   | { command: 'sql-execute'; projectDir: string; json: true; connectionId: string; sqlFile: string; maxRows?: number };
 
-export interface KloAgentDeps extends KloAgentRuntimeDeps {
+export interface KtxAgentDeps extends KtxAgentRuntimeDeps {
   createRuntime?: (options: {
     projectDir: string;
     enableSemanticCompute: boolean;
     enableQueryExecution: boolean;
-  }) => Promise<KloAgentRuntime>;
+  }) => Promise<KtxAgentRuntime>;
   readSetupStatus?: (
     projectDir: string,
-  ) => Promise<KloSetupStatus | { project: { path?: string; ready: boolean }; agents: unknown[] }>;
+  ) => Promise<KtxSetupStatus | { project: { path?: string; ready: boolean }; agents: unknown[] }>;
 }
 
 const AGENT_TOOLS = [
-  { name: 'context', command: 'klo agent context --json' },
-  { name: 'sl.list', command: 'klo agent sl list --json [--connection-id <id>] [--query <text>]' },
-  { name: 'sl.read', command: 'klo agent sl read <sourceName> --json [--connection-id <id>]' },
+  { name: 'context', command: 'ktx agent context --json' },
+  { name: 'sl.list', command: 'ktx agent sl list --json [--connection-id <id>] [--query <text>]' },
+  { name: 'sl.read', command: 'ktx agent sl read <sourceName> --json [--connection-id <id>]' },
   {
     name: 'sl.query',
-    command: 'klo agent sl query --json --connection-id <id> --query-file <path> --execute --max-rows 100',
+    command: 'ktx agent sl query --json --connection-id <id> --query-file <path> --execute --max-rows 100',
   },
-  { name: 'wiki.search', command: 'klo agent wiki search <query> --json [--limit 10]' },
-  { name: 'wiki.read', command: 'klo agent wiki read <pageId> --json' },
+  { name: 'wiki.search', command: 'ktx agent wiki search <query> --json [--limit 10]' },
+  { name: 'wiki.read', command: 'ktx agent wiki read <pageId> --json' },
   {
     name: 'sql.execute',
-    command: 'klo agent sql execute --json --connection-id <id> --sql-file <path> --max-rows 100',
+    command: 'ktx agent sql execute --json --connection-id <id> --sql-file <path> --max-rows 100',
   },
 ] as const;
 
-function writeAgentSlSearchReadinessError(io: KloCliIo, detail: KloAgentSlSearchReadinessDetail): void {
+function writeAgentSlSearchReadinessError(io: KtxCliIo, detail: KtxAgentSlSearchReadinessDetail): void {
   writeAgentJsonError(io, detail.message, { code: detail.code, nextSteps: detail.nextSteps });
 }
 
-async function runtimeFor(args: KloAgentArgs, deps: KloAgentDeps): Promise<KloAgentRuntime> {
+async function runtimeFor(args: KtxAgentArgs, deps: KtxAgentDeps): Promise<KtxAgentRuntime> {
   const needsSemanticCompute = args.command === 'sl-query';
   const needsQueryExecution = args.command === 'sql-execute' || (args.command === 'sl-query' && args.execute);
   return deps.createRuntime
@@ -77,7 +77,7 @@ async function runtimeFor(args: KloAgentArgs, deps: KloAgentDeps): Promise<KloAg
         enableSemanticCompute: needsSemanticCompute,
         enableQueryExecution: needsQueryExecution,
       })
-    : createKloAgentRuntime(
+    : createKtxAgentRuntime(
         {
           projectDir: args.projectDir,
           enableSemanticCompute: needsSemanticCompute,
@@ -87,14 +87,14 @@ async function runtimeFor(args: KloAgentArgs, deps: KloAgentDeps): Promise<KloAg
       );
 }
 
-function connectionIdForSource(runtime: KloAgentRuntime, requested: string | undefined): string {
+function connectionIdForSource(runtime: KtxAgentRuntime, requested: string | undefined): string {
   if (requested) return requested;
   const ids = Object.keys(runtime.project.config.connections ?? {});
   if (ids.length === 1) return ids[0] as string;
   throw new Error('Use --connection-id when the project has zero or multiple connections.');
 }
 
-export async function runKloAgent(args: KloAgentArgs, io: KloCliIo, deps: KloAgentDeps = {}): Promise<number> {
+export async function runKtxAgent(args: KtxAgentArgs, io: KtxCliIo, deps: KtxAgentDeps = {}): Promise<number> {
   try {
     if (args.command === 'tools') {
       writeAgentJson(io, { projectDir: args.projectDir, tools: AGENT_TOOLS });
@@ -105,7 +105,7 @@ export async function runKloAgent(args: KloAgentArgs, io: KloCliIo, deps: KloAge
 
     if (args.command === 'context') {
       const [status, connections, semanticLayer] = await Promise.all([
-        (deps.readSetupStatus ?? readKloSetupStatus)(args.projectDir),
+        (deps.readSetupStatus ?? readKtxSetupStatus)(args.projectDir),
         runtime.ports.connections?.list() ?? [],
         runtime.ports.semanticLayer?.listSources({}) ?? { sources: [], totalSources: 0 },
       ]);

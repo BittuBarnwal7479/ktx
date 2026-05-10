@@ -1,14 +1,14 @@
-import type { KloLlmProvider } from '@klo/llm';
+import type { KtxLlmProvider } from '@ktx/llm';
 import type { generateText } from 'ai';
 import { z } from 'zod';
-import { generateKloObject } from '../llm/index.js';
-import type { KloEnrichedColumn, KloEnrichedSchema, KloEnrichedTable } from './enrichment-types.js';
+import { generateKtxObject } from '../llm/index.js';
+import type { KtxEnrichedColumn, KtxEnrichedSchema, KtxEnrichedTable } from './enrichment-types.js';
 import {
-  normalizeKloRelationshipName,
-  type KloRelationshipDiscoveryCandidate,
+  normalizeKtxRelationshipName,
+  type KtxRelationshipDiscoveryCandidate,
 } from './relationship-candidates.js';
-import type { KloRelationshipColumnProfile, KloRelationshipProfileArtifact } from './relationship-profiling.js';
-import type { KloScanEnrichmentSummary, KloScanWarning, KloTableRef } from './types.js';
+import type { KtxRelationshipColumnProfile, KtxRelationshipProfileArtifact } from './relationship-profiling.js';
+import type { KtxScanEnrichmentSummary, KtxScanWarning, KtxTableRef } from './types.js';
 
 const relationshipLlmProposalSchema = z.object({
   pkCandidates: z.array(
@@ -31,36 +31,36 @@ const relationshipLlmProposalSchema = z.object({
   ),
 });
 
-type KloRelationshipLlmProposalOutput = z.infer<typeof relationshipLlmProposalSchema>;
+type KtxRelationshipLlmProposalOutput = z.infer<typeof relationshipLlmProposalSchema>;
 type GenerateTextInput = Parameters<typeof generateText>[0];
-export type KloRelationshipLlmProposalGenerateText = (
+export type KtxRelationshipLlmProposalGenerateText = (
   input: GenerateTextInput,
 ) => Promise<{ text?: string; output?: unknown }>;
 
-export interface KloRelationshipLlmProposalSettings {
+export interface KtxRelationshipLlmProposalSettings {
   maxTablesPerBatch: number;
   maxColumnsPerTable: number;
   maxSampleValuesPerColumn: number;
   minConfidence: number;
 }
 
-export interface ProposeKloRelationshipCandidatesWithLlmInput {
+export interface ProposeKtxRelationshipCandidatesWithLlmInput {
   connectionId: string;
-  schema: KloEnrichedSchema;
-  profile: KloRelationshipProfileArtifact;
-  llmProvider: KloLlmProvider | null;
-  settings?: Partial<KloRelationshipLlmProposalSettings>;
-  generateText?: KloRelationshipLlmProposalGenerateText;
+  schema: KtxEnrichedSchema;
+  profile: KtxRelationshipProfileArtifact;
+  llmProvider: KtxLlmProvider | null;
+  settings?: Partial<KtxRelationshipLlmProposalSettings>;
+  generateText?: KtxRelationshipLlmProposalGenerateText;
 }
 
-export interface KloRelationshipLlmProposalResult {
-  candidates: KloRelationshipDiscoveryCandidate[];
-  warnings: KloScanWarning[];
+export interface KtxRelationshipLlmProposalResult {
+  candidates: KtxRelationshipDiscoveryCandidate[];
+  warnings: KtxScanWarning[];
   llmCalls: number;
-  summary: KloScanEnrichmentSummary['llmRelationshipValidation'];
+  summary: KtxScanEnrichmentSummary['llmRelationshipValidation'];
 }
 
-const DEFAULT_SETTINGS: KloRelationshipLlmProposalSettings = {
+const DEFAULT_SETTINGS: KtxRelationshipLlmProposalSettings = {
   maxTablesPerBatch: 40,
   maxColumnsPerTable: 80,
   maxSampleValuesPerColumn: 5,
@@ -68,8 +68,8 @@ const DEFAULT_SETTINGS: KloRelationshipLlmProposalSettings = {
 };
 
 function mergeSettings(
-  settings: Partial<KloRelationshipLlmProposalSettings> | undefined,
-): KloRelationshipLlmProposalSettings {
+  settings: Partial<KtxRelationshipLlmProposalSettings> | undefined,
+): KtxRelationshipLlmProposalSettings {
   return { ...DEFAULT_SETTINGS, ...settings };
 }
 
@@ -77,41 +77,41 @@ function clampConfidence(value: number): number {
   return Number(Math.max(0, Math.min(1, value)).toFixed(3));
 }
 
-function modelIsDeterministic(llmProvider: KloLlmProvider): boolean {
+function modelIsDeterministic(llmProvider: KtxLlmProvider): boolean {
   const model = llmProvider.getModel('candidateExtraction');
   return (model as { provider?: string }).provider === 'deterministic';
 }
 
-function findTable(schema: KloEnrichedSchema, name: string): KloEnrichedTable | null {
+function findTable(schema: KtxEnrichedSchema, name: string): KtxEnrichedTable | null {
   const normalized = name.toLowerCase();
   return schema.tables.find((table) => table.ref.name.toLowerCase() === normalized) ?? null;
 }
 
-function findColumn(table: KloEnrichedTable, name: string): KloEnrichedColumn | null {
+function findColumn(table: KtxEnrichedTable, name: string): KtxEnrichedColumn | null {
   const normalized = name.toLowerCase();
   return table.columns.find((column) => column.name.toLowerCase() === normalized) ?? null;
 }
 
-function profileKey(table: KloTableRef, column: KloEnrichedColumn): string {
+function profileKey(table: KtxTableRef, column: KtxEnrichedColumn): string {
   return `${table.name}.${column.name}`;
 }
 
 function profileForColumn(
-  profile: KloRelationshipProfileArtifact,
-  table: KloEnrichedTable,
-  column: KloEnrichedColumn,
-): KloRelationshipColumnProfile | null {
+  profile: KtxRelationshipProfileArtifact,
+  table: KtxEnrichedTable,
+  column: KtxEnrichedColumn,
+): KtxRelationshipColumnProfile | null {
   return profile.columns[profileKey(table.ref, column)] ?? null;
 }
 
-function rowCountForTable(profile: KloRelationshipProfileArtifact, table: KloEnrichedTable): number | null {
+function rowCountForTable(profile: KtxRelationshipProfileArtifact, table: KtxEnrichedTable): number | null {
   return profile.tables.find((item) => item.table.name.toLowerCase() === table.ref.name.toLowerCase())?.rowCount ?? null;
 }
 
 function buildEvidencePacket(
-  schema: KloEnrichedSchema,
-  profile: KloRelationshipProfileArtifact,
-  settings: KloRelationshipLlmProposalSettings,
+  schema: KtxEnrichedSchema,
+  profile: KtxRelationshipProfileArtifact,
+  settings: KtxRelationshipLlmProposalSettings,
 ): Record<string, unknown> {
   return {
     connectionId: schema.connectionId,
@@ -153,7 +153,7 @@ function pkProposalKey(table: string, column: string): string {
   return `${table.toLowerCase()}.${column.toLowerCase()}`;
 }
 
-function endpoint(table: KloEnrichedTable, column: KloEnrichedColumn) {
+function endpoint(table: KtxEnrichedTable, column: KtxEnrichedColumn) {
   return {
     tableId: table.id,
     columnIds: [column.id],
@@ -162,11 +162,11 @@ function endpoint(table: KloEnrichedTable, column: KloEnrichedColumn) {
   };
 }
 
-function relationshipId(fromTable: KloEnrichedTable, fromColumn: KloEnrichedColumn, toTable: KloEnrichedTable, toColumn: KloEnrichedColumn): string {
+function relationshipId(fromTable: KtxEnrichedTable, fromColumn: KtxEnrichedColumn, toTable: KtxEnrichedTable, toColumn: KtxEnrichedColumn): string {
   return `${fromTable.id}:(${fromColumn.id})->${toTable.id}:(${toColumn.id})`;
 }
 
-function invalidReferenceWarning(message: string, metadata: Record<string, unknown>): KloScanWarning {
+function invalidReferenceWarning(message: string, metadata: Record<string, unknown>): KtxScanWarning {
   return {
     code: 'relationship_llm_invalid_reference',
     message,
@@ -176,13 +176,13 @@ function invalidReferenceWarning(message: string, metadata: Record<string, unkno
 }
 
 function mapValidProposals(
-  schema: KloEnrichedSchema,
-  output: KloRelationshipLlmProposalOutput,
-  settings: KloRelationshipLlmProposalSettings,
-): { candidates: KloRelationshipDiscoveryCandidate[]; warnings: KloScanWarning[] } {
-  const warnings: KloScanWarning[] = [];
+  schema: KtxEnrichedSchema,
+  output: KtxRelationshipLlmProposalOutput,
+  settings: KtxRelationshipLlmProposalSettings,
+): { candidates: KtxRelationshipDiscoveryCandidate[]; warnings: KtxScanWarning[] } {
+  const warnings: KtxScanWarning[] = [];
   const pkProposals = new Set(output.pkCandidates.map((item) => pkProposalKey(item.table, item.column)));
-  const candidates: KloRelationshipDiscoveryCandidate[] = [];
+  const candidates: KtxRelationshipDiscoveryCandidate[] = [];
 
   for (const item of output.fkCandidates) {
     if (item.confidence < settings.minConfidence) {
@@ -194,7 +194,7 @@ function mapValidProposals(
     const toColumn = toTable ? findColumn(toTable, item.toColumn) : null;
     if (!fromTable || !toTable || !fromColumn || !toColumn) {
       warnings.push(
-        invalidReferenceWarning('KLO relationship LLM proposal referenced a table or column that is not in the schema.', {
+        invalidReferenceWarning('KTX relationship LLM proposal referenced a table or column that is not in the schema.', {
           proposal: item,
         }),
       );
@@ -211,9 +211,9 @@ function mapValidProposals(
       relationshipType: 'many_to_one',
       confidence: clampConfidence(item.confidence),
       evidence: {
-        sourceColumnBase: normalizeKloRelationshipName(fromColumn.name).singular,
-        targetTableBase: normalizeKloRelationshipName(toTable.ref.name).singular,
-        targetColumnBase: normalizeKloRelationshipName(toColumn.name).singular,
+        sourceColumnBase: normalizeKtxRelationshipName(fromColumn.name).singular,
+        targetTableBase: normalizeKtxRelationshipName(toTable.ref.name).singular,
+        targetColumnBase: normalizeKtxRelationshipName(toColumn.name).singular,
         targetKeyScore: pkProposalExists ? 0.88 : 0.68,
         nameScore: 0.45,
         reasons: pkProposalExists ? ['llm_proposal', 'llm_pk_proposal'] : ['llm_proposal'],
@@ -226,18 +226,18 @@ function mapValidProposals(
   return { candidates, warnings };
 }
 
-function generationFailureWarning(error: unknown): KloScanWarning {
+function generationFailureWarning(error: unknown): KtxScanWarning {
   const message = error instanceof Error ? error.message : String(error);
   return {
     code: 'relationship_llm_proposal_failed',
-    message: `KLO relationship LLM proposal failed: ${message}`,
+    message: `KTX relationship LLM proposal failed: ${message}`,
     recoverable: true,
   };
 }
 
-export async function proposeKloRelationshipCandidatesWithLlm(
-  input: ProposeKloRelationshipCandidatesWithLlmInput,
-): Promise<KloRelationshipLlmProposalResult> {
+export async function proposeKtxRelationshipCandidatesWithLlm(
+  input: ProposeKtxRelationshipCandidatesWithLlmInput,
+): Promise<KtxRelationshipLlmProposalResult> {
   if (!input.llmProvider || modelIsDeterministic(input.llmProvider)) {
     return { candidates: [], warnings: [], llmCalls: 0, summary: 'skipped' };
   }
@@ -245,15 +245,15 @@ export async function proposeKloRelationshipCandidatesWithLlm(
   const settings = mergeSettings(input.settings);
   const evidence = buildEvidencePacket(input.schema, input.profile, settings);
   const prompt = [
-    'You are helping KLO review possible SQL relationships before validation.',
+    'You are helping KTX review possible SQL relationships before validation.',
     'Use only the compact schema evidence. Propose likely primary keys and foreign keys for later SQL validation.',
     'Return structured output only; never assume a join is accepted.',
     JSON.stringify(evidence),
   ].join('\n\n');
 
   try {
-    const generated = await generateKloObject<
-      KloRelationshipLlmProposalOutput,
+    const generated = await generateKtxObject<
+      KtxRelationshipLlmProposalOutput,
       typeof relationshipLlmProposalSchema
     >({
       llmProvider: input.llmProvider,

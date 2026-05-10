@@ -18,5 +18,5 @@ export function limitSqlForExecution(sql: string, maxRows: number | undefined): 
   if (!Number.isInteger(maxRows) || maxRows <= 0) {
     throw new Error('maxRows must be a positive integer.');
   }
-  return `select * from (${trimmed}) as klo_query_result limit ${maxRows}`;
+  return `select * from (${trimmed}) as ktx_query_result limit ${maxRows}`;
 }

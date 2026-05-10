@@ -1,15 +1,15 @@
-export { KloMysqlDialect } from './dialect.js';
+export { KtxMysqlDialect } from './dialect.js';
 export {
-  isKloMysqlConnectionConfig,
-  KloMysqlScanConnector,
+  isKtxMysqlConnectionConfig,
+  KtxMysqlScanConnector,
   mysqlConnectionPoolConfigFromConfig,
-  type KloMysqlColumnDistinctValuesOptions,
-  type KloMysqlColumnDistinctValuesResult,
-  type KloMysqlConnectionConfig,
-  type KloMysqlEndpointResolver,
-  type KloMysqlPoolConfig,
-  type KloMysqlPoolFactory,
-  type KloMysqlReadOnlyQueryInput,
-  type KloMysqlScanConnectorOptions,
+  type KtxMysqlColumnDistinctValuesOptions,
+  type KtxMysqlColumnDistinctValuesResult,
+  type KtxMysqlConnectionConfig,
+  type KtxMysqlEndpointResolver,
+  type KtxMysqlPoolConfig,
+  type KtxMysqlPoolFactory,
+  type KtxMysqlReadOnlyQueryInput,
+  type KtxMysqlScanConnectorOptions,
 } from './connector.js';
 export { createMysqlLiveDatabaseIntrospection } from './live-database-introspection.js';

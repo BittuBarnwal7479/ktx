@@ -1,19 +1,19 @@
 import type { ModelMessage } from 'ai';
 import { describe, expect, it } from 'vitest';
-import { KloMessageBuilder } from './message-builder.js';
-import { createKloLlmProvider } from './model-provider.js';
+import { KtxMessageBuilder } from './message-builder.js';
+import { createKtxLlmProvider } from './model-provider.js';
 
-function makeBuilder(overrides: Parameters<typeof createKloLlmProvider>[0]['promptCaching'] = {}) {
-  const provider = createKloLlmProvider({
+function makeBuilder(overrides: Parameters<typeof createKtxLlmProvider>[0]['promptCaching'] = {}) {
+  const provider = createKtxLlmProvider({
     backend: 'gateway',
     gateway: { baseURL: 'https://gateway.test' },
     modelSlots: { default: 'anthropic/claude-sonnet-4-6' },
     promptCaching: { enabled: true, ...overrides },
   });
-  return new KloMessageBuilder(provider);
+  return new KtxMessageBuilder(provider);
 }
 
-describe('KloMessageBuilder.build', () => {
+describe('KtxMessageBuilder.build', () => {
   it('caches static system, last sorted tool, and last history message', () => {
     const builder = makeBuilder();
 
@@ -82,9 +82,9 @@ describe('KloMessageBuilder.build', () => {
   });
 
   it('clamps every TTL to 5m for Vertex when vertexFallbackTo5m is enabled', () => {
-    const provider = createKloLlmProvider({
+    const provider = createKtxLlmProvider({
       backend: 'vertex',
-      vertex: { project: 'klo-test', location: 'us-east5' },
+      vertex: { project: 'ktx-test', location: 'us-east5' },
       modelSlots: { default: 'claude-sonnet-4-6' },
       promptCaching: {
         enabled: true,
@@ -94,7 +94,7 @@ describe('KloMessageBuilder.build', () => {
         vertexFallbackTo5m: true,
       },
     });
-    const builder = new KloMessageBuilder(provider);
+    const builder = new KtxMessageBuilder(provider);
 
     const out = builder.build({
       parts: { staticSystem: 'STATIC' },

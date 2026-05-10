@@ -1,9 +1,9 @@
 import { existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 
-export interface KloProjectResolverOptions {
+export interface KtxProjectResolverOptions {
   explicitProjectDir?: string;
-  env?: Partial<Pick<NodeJS.ProcessEnv, 'KLO_PROJECT_DIR'>>;
+  env?: Partial<Pick<NodeJS.ProcessEnv, 'KTX_PROJECT_DIR'>>;
   cwd?: string;
 }
 
@@ -15,11 +15,11 @@ function nonEmptyValue(value: string | undefined): string | undefined {
   return trimmed.length > 0 ? value : undefined;
 }
 
-export function findNearestKloProjectDir(startDir = process.cwd()): string | undefined {
+export function findNearestKtxProjectDir(startDir = process.cwd()): string | undefined {
   let current = resolve(startDir);
 
   while (true) {
-    if (existsSync(join(current, 'klo.yaml'))) {
+    if (existsSync(join(current, 'ktx.yaml'))) {
       return current;
     }
 
@@ -31,7 +31,7 @@ export function findNearestKloProjectDir(startDir = process.cwd()): string | und
   }
 }
 
-export function resolveKloProjectDir(options: KloProjectResolverOptions = {}): string {
+export function resolveKtxProjectDir(options: KtxProjectResolverOptions = {}): string {
   const cwd = options.cwd ?? process.cwd();
 
   if (options.explicitProjectDir !== undefined) {
@@ -42,15 +42,15 @@ export function resolveKloProjectDir(options: KloProjectResolverOptions = {}): s
     return resolve(cwd, explicit);
   }
 
-  const rawEnvProjectDir = options.env ? options.env.KLO_PROJECT_DIR : process.env.KLO_PROJECT_DIR;
+  const rawEnvProjectDir = options.env ? options.env.KTX_PROJECT_DIR : process.env.KTX_PROJECT_DIR;
   const envProjectDir = nonEmptyValue(rawEnvProjectDir);
   if (rawEnvProjectDir !== undefined && envProjectDir === undefined) {
-    throw new Error('KLO_PROJECT_DIR must not be empty');
+    throw new Error('KTX_PROJECT_DIR must not be empty');
   }
   if (envProjectDir !== undefined) {
     return resolve(cwd, envProjectDir);
   }
 
   const resolvedCwd = resolve(cwd);
-  return findNearestKloProjectDir(resolvedCwd) ?? resolvedCwd;
+  return findNearestKtxProjectDir(resolvedCwd) ?? resolvedCwd;
 }

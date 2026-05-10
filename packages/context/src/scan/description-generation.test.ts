@@ -7,15 +7,15 @@ vi.mock('ai', async (importOriginal) => {
 
 import { generateText } from 'ai';
 import {
-  buildKloColumnDescriptionPrompt,
-  buildKloDataSourceDescriptionPrompt,
-  buildKloTableDescriptionPrompt,
-  type KloDescriptionCachePort,
-  KloDescriptionGenerator,
+  buildKtxColumnDescriptionPrompt,
+  buildKtxDataSourceDescriptionPrompt,
+  buildKtxTableDescriptionPrompt,
+  type KtxDescriptionCachePort,
+  KtxDescriptionGenerator,
 } from './description-generation.js';
-import { createKloConnectorCapabilities, type KloScanConnector } from './types.js';
+import { createKtxConnectorCapabilities, type KtxScanConnector } from './types.js';
 
-function createCache(initial: Record<string, string> = {}): KloDescriptionCachePort {
+function createCache(initial: Record<string, string> = {}): KtxDescriptionCachePort {
   const data = new Map(Object.entries(initial));
   return {
     buildTableKey: (table) => [table.catalog, table.db, table.name].filter(Boolean).join('.'),
@@ -51,11 +51,11 @@ function createLlmProvider(text = 'generated description') {
   } as any;
 }
 
-function createConnector(): KloScanConnector {
+function createConnector(): KtxScanConnector {
   return {
     id: 'test-connector',
     driver: 'postgres',
-    capabilities: createKloConnectorCapabilities({
+    capabilities: createKtxConnectorCapabilities({
       tableSampling: true,
       columnSampling: true,
       nestedAnalysis: true,
@@ -79,9 +79,9 @@ function createConnector(): KloScanConnector {
   };
 }
 
-describe('KLO description prompt builders', () => {
+describe('KTX description prompt builders', () => {
   it('builds column prompts with sample values, source descriptions, and nested BigQuery guidance', () => {
-    const prompt = buildKloColumnDescriptionPrompt({
+    const prompt = buildKtxColumnDescriptionPrompt({
       columnName: 'payload',
       columnValues: [{ nested: true }, '[1,2]'],
       tableContext: 'Table: events | Columns: payload | Data source: BIGQUERY',
@@ -112,7 +112,7 @@ describe('KLO description prompt builders', () => {
     };
 
     expect(
-      buildKloTableDescriptionPrompt({
+      buildKtxTableDescriptionPrompt({
         tableName: 'orders',
         sampleData: sample,
         dataSourceType: 'POSTGRESQL',
@@ -121,7 +121,7 @@ describe('KLO description prompt builders', () => {
     ).toContain('status: paid, refunded');
 
     expect(
-      buildKloDataSourceDescriptionPrompt({
+      buildKtxDataSourceDescriptionPrompt({
         tableSamples: [['orders', sample]],
         dataSourceType: 'POSTGRESQL',
       }),
@@ -129,12 +129,12 @@ describe('KLO description prompt builders', () => {
   });
 });
 
-describe('KloDescriptionGenerator', () => {
+describe('KtxDescriptionGenerator', () => {
   it('generates column descriptions with pre-fetched values, cache hits, and word-limit metadata', async () => {
     const cache = createCache({ 'warehouse.public.orders.cached_status': 'Cached status description' });
     const llmProvider = createLlmProvider('Payment state');
     const connector = createConnector();
-    const generator = new KloDescriptionGenerator({
+    const generator = new KtxDescriptionGenerator({
       llmProvider,
       cache,
       settings: {
@@ -189,7 +189,7 @@ describe('KloDescriptionGenerator', () => {
 
   it('samples through the connector when column values are not pre-fetched', async () => {
     const connector = createConnector();
-    const generator = new KloDescriptionGenerator({
+    const generator = new KtxDescriptionGenerator({
       llmProvider: createLlmProvider('Current order state'),
       settings: {
         columnMaxWords: 12,
@@ -238,7 +238,7 @@ describe('KloDescriptionGenerator', () => {
         totalRows: 1,
       })),
     };
-    const generator = new KloDescriptionGenerator({
+    const generator = new KtxDescriptionGenerator({
       llmProvider: createLlmProvider('Generated through sampler'),
       settings: {
         columnMaxWords: 12,
@@ -277,7 +277,7 @@ describe('KloDescriptionGenerator', () => {
   it('generates and caches table and data-source descriptions', async () => {
     const cache = createCache();
     const connector = createConnector();
-    const generator = new KloDescriptionGenerator({
+    const generator = new KtxDescriptionGenerator({
       llmProvider: createLlmProvider('Commerce orders'),
       cache,
       settings: {

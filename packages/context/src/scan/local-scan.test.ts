@@ -1,18 +1,18 @@
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import type { KloLlmProvider } from '@klo/llm';
+import type { KtxLlmProvider } from '@ktx/llm';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import YAML from 'yaml';
 import type { SourceAdapter } from '../ingest/index.js';
-import { initKloProject, type KloLocalProject, loadKloProject } from '../project/index.js';
+import { initKtxProject, type KtxLocalProject, loadKtxProject } from '../project/index.js';
 import { getLocalScanReport, getLocalScanStatus, runLocalScan } from './local-scan.js';
-import type { KloQueryResult, KloReadOnlyQueryInput } from './types.js';
+import type { KtxQueryResult, KtxReadOnlyQueryInput } from './types.js';
 
 function relationshipSqlResult(
-  input: KloReadOnlyQueryInput,
+  input: KtxReadOnlyQueryInput,
   options: { throwOnCoverage?: boolean } = {},
-): KloQueryResult {
+): KtxQueryResult {
   if (input.sql.includes('child_values')) {
     if (options.throwOnCoverage) {
       throw new Error('validation failed for postgres://reader:secret@example.test/db'); // pragma: allowlist secret
@@ -79,7 +79,7 @@ function relationshipSqlResult(
   throw new Error(`Unexpected relationship SQL: ${input.sql}`);
 }
 
-function deterministicLlmProvider(): KloLlmProvider {
+function deterministicLlmProvider(): KtxLlmProvider {
   return {
     getModel: () => ({ provider: 'deterministic', modelId: 'deterministic' }) as never,
     getModelByName: () => ({ provider: 'deterministic', modelId: 'deterministic' }) as never,
@@ -103,7 +103,7 @@ function deterministicLlmProvider(): KloLlmProvider {
 
 async function writeLiveDatabaseConfig(projectDir: string): Promise<void> {
   await writeFile(
-    join(projectDir, 'klo.yaml'),
+    join(projectDir, 'ktx.yaml'),
     [
       'project: warehouse',
       'connections:',
@@ -164,14 +164,14 @@ function fetchOnlyAdapter(options: { extractedAt?: () => string } = {}): SourceA
 
 describe('local scan', () => {
   let tempDir: string;
-  let project: KloLocalProject;
+  let project: KtxLocalProject;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-local-scan-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-local-scan-'));
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeLiveDatabaseConfig(projectDir);
-    project = await loadKloProject({ projectDir });
+    project = await loadKtxProject({ projectDir });
   });
 
   afterEach(async () => {
@@ -509,7 +509,7 @@ describe('local scan', () => {
           ],
         };
       },
-      async executeReadOnly(input: KloReadOnlyQueryInput) {
+      async executeReadOnly(input: KtxReadOnlyQueryInput) {
         return relationshipSqlResult(input);
       },
     };
@@ -603,7 +603,7 @@ describe('local scan', () => {
           ],
         };
       },
-      async executeReadOnly(input: KloReadOnlyQueryInput) {
+      async executeReadOnly(input: KtxReadOnlyQueryInput) {
         return relationshipSqlResult(input);
       },
     };
@@ -712,7 +712,7 @@ describe('local scan', () => {
           ],
         };
       },
-      async executeReadOnly(input: KloReadOnlyQueryInput) {
+      async executeReadOnly(input: KtxReadOnlyQueryInput) {
         return relationshipSqlResult(input);
       },
     };
@@ -838,7 +838,7 @@ describe('local scan', () => {
           ],
         };
       },
-      async executeReadOnly(input: KloReadOnlyQueryInput) {
+      async executeReadOnly(input: KtxReadOnlyQueryInput) {
         return relationshipSqlResult(input);
       },
     };
@@ -968,7 +968,7 @@ describe('local scan', () => {
           ],
         };
       },
-      async executeReadOnly(input: KloReadOnlyQueryInput) {
+      async executeReadOnly(input: KtxReadOnlyQueryInput) {
         return relationshipSqlResult(input, { throwOnCoverage: true });
       },
     };
@@ -999,7 +999,7 @@ describe('local scan', () => {
 
   it('runs enriched scans when deterministic standalone enrichment is configured', async () => {
     await writeFile(
-      join(project.projectDir, 'klo.yaml'),
+      join(project.projectDir, 'ktx.yaml'),
       [
         'project: warehouse',
         'connections:',
@@ -1017,7 +1017,7 @@ describe('local scan', () => {
       ].join('\n'),
       'utf-8',
     );
-    project = await loadKloProject({ projectDir: project.projectDir });
+    project = await loadKtxProject({ projectDir: project.projectDir });
 
     const connector = {
       id: 'test:warehouse',
@@ -1200,7 +1200,7 @@ describe('local scan', () => {
     expect(result.report.warnings).toEqual([
       {
         code: 'enrichment_failed',
-        message: 'KLO scan enrichment failed after structural scan completed: embedding service timed out',
+        message: 'KTX scan enrichment failed after structural scan completed: embedding service timed out',
         recoverable: true,
         metadata: {
           mode: 'enriched',
@@ -1356,7 +1356,7 @@ describe('local scan', () => {
 
   it('accepts sqlite as a native standalone scan driver when the host supplies a live-database adapter', async () => {
     await writeFile(
-      join(project.projectDir, 'klo.yaml'),
+      join(project.projectDir, 'ktx.yaml'),
       [
         'project: warehouse',
         'connections:',
@@ -1371,7 +1371,7 @@ describe('local scan', () => {
       ].join('\n'),
       'utf-8',
     );
-    project = await loadKloProject({ projectDir: project.projectDir });
+    project = await loadKtxProject({ projectDir: project.projectDir });
 
     const result = await runLocalScan({
       project,
@@ -1389,7 +1389,7 @@ describe('local scan', () => {
 
   it('accepts mysql as a native standalone scan driver when the host supplies a live-database adapter', async () => {
     await writeFile(
-      join(project.projectDir, 'klo.yaml'),
+      join(project.projectDir, 'ktx.yaml'),
       [
         'project: warehouse',
         'connections:',
@@ -1404,7 +1404,7 @@ describe('local scan', () => {
       ].join('\n'),
       'utf-8',
     );
-    project = await loadKloProject({ projectDir: project.projectDir });
+    project = await loadKtxProject({ projectDir: project.projectDir });
 
     const result = await runLocalScan({
       project,
@@ -1422,7 +1422,7 @@ describe('local scan', () => {
 
   it('accepts clickhouse as a native standalone scan driver when the host supplies a live-database adapter', async () => {
     await writeFile(
-      join(project.projectDir, 'klo.yaml'),
+      join(project.projectDir, 'ktx.yaml'),
       [
         'project: warehouse',
         'connections:',
@@ -1440,7 +1440,7 @@ describe('local scan', () => {
       ].join('\n'),
       'utf-8',
     );
-    project = await loadKloProject({ projectDir: project.projectDir });
+    project = await loadKtxProject({ projectDir: project.projectDir });
 
     const result = await runLocalScan({
       project,
@@ -1458,7 +1458,7 @@ describe('local scan', () => {
 
   it('accepts sqlserver as a native standalone scan driver when the host supplies a live-database adapter', async () => {
     await writeFile(
-      join(project.projectDir, 'klo.yaml'),
+      join(project.projectDir, 'ktx.yaml'),
       [
         'project: warehouse',
         'connections:',
@@ -1476,7 +1476,7 @@ describe('local scan', () => {
       ].join('\n'),
       'utf-8',
     );
-    project = await loadKloProject({ projectDir: project.projectDir });
+    project = await loadKtxProject({ projectDir: project.projectDir });
 
     const result = await runLocalScan({
       project,

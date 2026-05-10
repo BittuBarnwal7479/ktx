@@ -1,12 +1,12 @@
-import { parseNotionConnectionConfig, resolveNotionAuthToken } from '@klo/context/connections';
-import { type NotionApi, type NotionBotInfo, NotionClient } from '@klo/context/ingest';
+import { parseNotionConnectionConfig, resolveNotionAuthToken } from '@ktx/context/connections';
+import { type NotionApi, type NotionBotInfo, NotionClient } from '@ktx/context/ingest';
 import {
-  type KloLocalProject,
-  type KloProjectConnectionConfig,
-  loadKloProject,
-  serializeKloProjectConfig,
-} from '@klo/context/project';
-import type { KloCliIo } from '../index.js';
+  type KtxLocalProject,
+  type KtxProjectConnectionConfig,
+  loadKtxProject,
+  serializeKtxProjectConfig,
+} from '@ktx/context/project';
+import type { KtxCliIo } from '../index.js';
 import { profileMark } from '../startup-profile.js';
 import { buildInitialState, buildPickerTree, type NotionPickerPageInput } from './connection-notion-tree.js';
 import {
@@ -18,7 +18,7 @@ import {
 
 profileMark('module:commands/connection-notion');
 
-export type KloConnectionNotionArgs =
+export type KtxConnectionNotionArgs =
   | {
       command: 'pick';
       projectDir: string;
@@ -36,9 +36,9 @@ export type KloConnectionNotionArgs =
 export type NotionPickerApi = Pick<NotionApi, 'search' | 'retrieveBotUser'>;
 export type { PickerRenderInput, PickerRenderResult };
 
-interface KloConnectionNotionDeps {
+interface KtxConnectionNotionDeps {
   env?: Record<string, string | undefined>;
-  loadProject?: typeof loadKloProject;
+  loadProject?: typeof loadKtxProject;
   createNotionApi?: (authToken: string) => NotionPickerApi;
   renderPicker?: (input: PickerRenderInput, io: NotionPickerTuiIo) => Promise<PickerRenderResult>;
 }
@@ -168,7 +168,7 @@ export async function resolveNotionWorkspaceLabel(api: NotionPickerApi, connecti
   }
 }
 
-function notionConnection(project: KloLocalProject, connectionId: string): KloProjectConnectionConfig {
+function notionConnection(project: KtxLocalProject, connectionId: string): KtxProjectConnectionConfig {
   const connection = project.config.connections[connectionId];
   if (!connection) {
     throw new Error(`Connection "${connectionId}" not found`);
@@ -180,7 +180,7 @@ function notionConnection(project: KloLocalProject, connectionId: string): KloPr
 }
 
 export async function applyNotionPickerWriteback(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   connectionId: string,
   rootPageIds: string[],
 ): Promise<void> {
@@ -202,22 +202,22 @@ export async function applyNotionPickerWriteback(
   };
 
   await project.fileStore.writeFile(
-    'klo.yaml',
-    serializeKloProjectConfig(nextConfig),
-    'klo',
-    'klo@example.com',
+    'ktx.yaml',
+    serializeKtxProjectConfig(nextConfig),
+    'ktx',
+    'ktx@example.com',
     `Pick Notion roots: ${connectionId} (${rootPageIds.length} pages)`,
   );
 }
 
-export async function runKloConnectionNotion(
-  args: KloConnectionNotionArgs,
-  io: KloCliIo = process,
-  deps: KloConnectionNotionDeps = {},
+export async function runKtxConnectionNotion(
+  args: KtxConnectionNotionArgs,
+  io: KtxCliIo = process,
+  deps: KtxConnectionNotionDeps = {},
 ): Promise<number> {
   try {
     assertSafeConnectionId(args.connectionId);
-    const loadProject = deps.loadProject ?? loadKloProject;
+    const loadProject = deps.loadProject ?? loadKtxProject;
 
     if (args.mode === 'interactive') {
       const project = await loadProject({ projectDir: args.projectDir });

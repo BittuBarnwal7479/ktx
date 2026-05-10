@@ -1,32 +1,32 @@
-export type KloRelationshipValidationBudget = number | 'all' | undefined;
+export type KtxRelationshipValidationBudget = number | 'all' | undefined;
 
-export interface KloRelationshipBudgetedCandidate<TCandidate> {
+export interface KtxRelationshipBudgetedCandidate<TCandidate> {
   candidate: TCandidate;
   originalIndex: number;
   score: number;
 }
 
-export interface KloRelationshipValidationBudgetResult<TCandidate> {
+export interface KtxRelationshipValidationBudgetResult<TCandidate> {
   effectiveBudget: number | 'all';
-  toValidate: KloRelationshipBudgetedCandidate<TCandidate>[];
-  deferred: KloRelationshipBudgetedCandidate<TCandidate>[];
+  toValidate: KtxRelationshipBudgetedCandidate<TCandidate>[];
+  deferred: KtxRelationshipBudgetedCandidate<TCandidate>[];
 }
 
-export interface ApplyKloRelationshipValidationBudgetInput<TCandidate> {
+export interface ApplyKtxRelationshipValidationBudgetInput<TCandidate> {
   candidates: readonly TCandidate[];
   tableCount: number;
-  budget?: KloRelationshipValidationBudget;
+  budget?: KtxRelationshipValidationBudget;
   score: (candidate: TCandidate) => number;
 }
 
-export function defaultKloRelationshipValidationBudget(tableCount: number): number {
+export function defaultKtxRelationshipValidationBudget(tableCount: number): number {
   const safeTableCount = Number.isFinite(tableCount) ? Math.max(0, Math.floor(tableCount)) : 0;
   return Math.min(2 * safeTableCount, 1000);
 }
 
-export function applyKloRelationshipValidationBudget<TCandidate>(
-  input: ApplyKloRelationshipValidationBudgetInput<TCandidate>,
-): KloRelationshipValidationBudgetResult<TCandidate> {
+export function applyKtxRelationshipValidationBudget<TCandidate>(
+  input: ApplyKtxRelationshipValidationBudgetInput<TCandidate>,
+): KtxRelationshipValidationBudgetResult<TCandidate> {
   const ranked = input.candidates
     .map((candidate, originalIndex) => ({
       candidate,
@@ -50,7 +50,7 @@ export function applyKloRelationshipValidationBudget<TCandidate>(
     };
   }
 
-  const effectiveBudget = input.budget ?? defaultKloRelationshipValidationBudget(input.tableCount);
+  const effectiveBudget = input.budget ?? defaultKtxRelationshipValidationBudget(input.tableCount);
   const safeBudget = Math.max(0, Math.floor(effectiveBudget));
   return {
     effectiveBudget: safeBudget,

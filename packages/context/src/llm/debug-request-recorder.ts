@@ -1,12 +1,12 @@
 import { appendFile, mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import type { ModelMessage } from 'ai';
-import type { KloModelRole } from '@klo/llm';
+import type { KtxModelRole } from '@ktx/llm';
 
 type ProviderOptionsCarrier = { providerOptions?: unknown; [key: string]: unknown };
 type ToolMap = Record<string, ProviderOptionsCarrier>;
 
-export interface KloLlmDebugProviderOptionsEntry {
+export interface KtxLlmDebugProviderOptionsEntry {
   target: 'message' | 'message-part' | 'tool';
   index?: number;
   role?: string;
@@ -15,29 +15,29 @@ export interface KloLlmDebugProviderOptionsEntry {
   providerOptions: unknown;
 }
 
-export interface KloLlmDebugRequest {
+export interface KtxLlmDebugRequest {
   timestamp: string;
   operationName: string;
   source?: string;
   jobId?: string;
   unitKey?: string;
-  modelRole: KloModelRole;
+  modelRole: KtxModelRole;
   modelId: string;
   messageCount: number;
   toolNames: string[];
-  providerOptions: KloLlmDebugProviderOptionsEntry[];
+  providerOptions: KtxLlmDebugProviderOptionsEntry[];
 }
 
-export interface KloLlmDebugRequestRecorder {
-  record(request: KloLlmDebugRequest): Promise<void> | void;
+export interface KtxLlmDebugRequestRecorder {
+  record(request: KtxLlmDebugRequest): Promise<void> | void;
 }
 
-export interface SummarizeKloLlmDebugRequestInput {
+export interface SummarizeKtxLlmDebugRequestInput {
   operationName: string;
   source?: string;
   jobId?: string;
   unitKey?: string;
-  modelRole: KloModelRole;
+  modelRole: KtxModelRole;
   modelId: string;
   messages: ModelMessage[];
   tools: ToolMap;
@@ -52,7 +52,7 @@ function isProviderOptionsCarrier(value: unknown): value is ProviderOptionsCarri
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function contentPartProviderOptions(message: ModelMessage, index: number): KloLlmDebugProviderOptionsEntry[] {
+function contentPartProviderOptions(message: ModelMessage, index: number): KtxLlmDebugProviderOptionsEntry[] {
   if (!Array.isArray(message.content)) {
     return [];
   }
@@ -74,9 +74,9 @@ function contentPartProviderOptions(message: ModelMessage, index: number): KloLl
   });
 }
 
-function messageProviderOptions(messages: ModelMessage[]): KloLlmDebugProviderOptionsEntry[] {
+function messageProviderOptions(messages: ModelMessage[]): KtxLlmDebugProviderOptionsEntry[] {
   return messages.flatMap((message, index) => {
-    const entries: KloLlmDebugProviderOptionsEntry[] = [];
+    const entries: KtxLlmDebugProviderOptionsEntry[] = [];
     const providerOptions = (message as ProviderOptionsCarrier).providerOptions;
     if (providerOptions) {
       entries.push({
@@ -91,7 +91,7 @@ function messageProviderOptions(messages: ModelMessage[]): KloLlmDebugProviderOp
   });
 }
 
-function toolProviderOptions(tools: ToolMap): KloLlmDebugProviderOptionsEntry[] {
+function toolProviderOptions(tools: ToolMap): KtxLlmDebugProviderOptionsEntry[] {
   return Object.entries(tools).flatMap(([name, tool]) => {
     return tool.providerOptions
       ? [
@@ -105,7 +105,7 @@ function toolProviderOptions(tools: ToolMap): KloLlmDebugProviderOptionsEntry[] 
   });
 }
 
-export function summarizeKloLlmDebugRequest(input: SummarizeKloLlmDebugRequestInput): KloLlmDebugRequest {
+export function summarizeKtxLlmDebugRequest(input: SummarizeKtxLlmDebugRequestInput): KtxLlmDebugRequest {
   const toolNames = Object.keys(input.tools).sort();
   return {
     timestamp: input.timestamp ?? new Date().toISOString(),
@@ -121,7 +121,7 @@ export function summarizeKloLlmDebugRequest(input: SummarizeKloLlmDebugRequestIn
   };
 }
 
-export function createJsonlKloLlmDebugRequestRecorder(filePath: string): KloLlmDebugRequestRecorder {
+export function createJsonlKtxLlmDebugRequestRecorder(filePath: string): KtxLlmDebugRequestRecorder {
   return {
     async record(request) {
       await mkdir(dirname(filePath), { recursive: true });

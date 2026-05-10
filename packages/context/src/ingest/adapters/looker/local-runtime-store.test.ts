@@ -6,7 +6,7 @@ import { LocalLookerRuntimeStore } from './local-runtime-store.js';
 
 describe('LocalLookerRuntimeStore', () => {
   async function store() {
-    const dir = await mkdtemp(join(tmpdir(), 'klo-looker-store-'));
+    const dir = await mkdtemp(join(tmpdir(), 'ktx-looker-store-'));
     return new LocalLookerRuntimeStore({
       dbPath: join(dir, 'db.sqlite'),
       now: () => new Date('2026-05-05T12:00:00.000Z'),
@@ -23,7 +23,7 @@ describe('LocalLookerRuntimeStore', () => {
     await local.upsertConnectionMapping({
       lookerConnectionId: 'prod-looker',
       lookerConnectionName: 'bq_reporting',
-      kloConnectionId: 'prod-warehouse',
+      ktxConnectionId: 'prod-warehouse',
       source: 'cli',
     });
 
@@ -34,7 +34,7 @@ describe('LocalLookerRuntimeStore', () => {
     await expect(local.readMappings('prod-looker')).resolves.toEqual([
       {
         lookerConnectionName: 'bq_reporting',
-        kloConnectionId: 'prod-warehouse',
+        ktxConnectionId: 'prod-warehouse',
         lookerHost: null,
         lookerDatabase: null,
         lookerDialect: null,
@@ -47,7 +47,7 @@ describe('LocalLookerRuntimeStore', () => {
     await local.upsertConnectionMapping({
       lookerConnectionId: 'prod-looker',
       lookerConnectionName: 'bq_reporting',
-      kloConnectionId: 'prod-warehouse',
+      ktxConnectionId: 'prod-warehouse',
       source: 'cli',
     });
 
@@ -67,7 +67,7 @@ describe('LocalLookerRuntimeStore', () => {
     await expect(local.listConnectionMappings('prod-looker')).resolves.toEqual([
       {
         lookerConnectionName: 'bq_reporting',
-        kloConnectionId: 'prod-warehouse',
+        ktxConnectionId: 'prod-warehouse',
         lookerHost: 'bigquery.googleapis.com',
         lookerDatabase: 'analytics',
         lookerDialect: 'bigquery_standard_sql',
@@ -85,30 +85,30 @@ describe('LocalLookerRuntimeStore', () => {
     await local.upsertConnectionMapping({
       lookerConnectionId: 'prod-looker',
       lookerConnectionName: 'manual',
-      kloConnectionId: 'cli-warehouse',
+      ktxConnectionId: 'cli-warehouse',
       source: 'cli',
     });
 
     await local.applyYamlBootstrap({
       lookerConnectionId: 'prod-looker',
       mappings: [
-        { lookerConnectionName: 'analytics', kloConnectionId: 'yaml-warehouse' },
-        { lookerConnectionName: 'manual', kloConnectionId: 'yaml-warehouse' },
+        { lookerConnectionName: 'analytics', ktxConnectionId: 'yaml-warehouse' },
+        { lookerConnectionName: 'manual', ktxConnectionId: 'yaml-warehouse' },
       ],
     });
 
     await expect(local.listConnectionMappings('prod-looker')).resolves.toMatchObject([
       {
         lookerConnectionName: 'analytics',
-        kloConnectionId: 'yaml-warehouse',
+        ktxConnectionId: 'yaml-warehouse',
         lookerHost: 'looker-db.test',
         lookerDatabase: 'warehouse',
         lookerDialect: 'postgres',
-        source: 'klo.yaml',
+        source: 'ktx.yaml',
       },
       {
         lookerConnectionName: 'manual',
-        kloConnectionId: 'cli-warehouse',
+        ktxConnectionId: 'cli-warehouse',
         source: 'cli',
       },
     ]);

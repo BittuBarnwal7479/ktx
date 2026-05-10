@@ -1,69 +1,69 @@
-import type { KloSchemaDimensionType, KloTableRef } from './types.js';
+import type { KtxSchemaDimensionType, KtxTableRef } from './types.js';
 
-export type KloDescriptionSource = 'ai' | 'db' | 'dbt' | 'user' | (string & {});
+export type KtxDescriptionSource = 'ai' | 'db' | 'dbt' | 'user' | (string & {});
 
-export type KloRelationshipSource = 'formal' | 'inferred' | 'manual';
+export type KtxRelationshipSource = 'formal' | 'inferred' | 'manual';
 
-export type KloRelationshipType = 'many_to_one' | 'one_to_many' | 'one_to_one';
+export type KtxRelationshipType = 'many_to_one' | 'one_to_many' | 'one_to_one';
 
-export interface KloEnrichedColumn {
+export interface KtxEnrichedColumn {
   id: string;
   tableId: string;
-  tableRef: KloTableRef;
+  tableRef: KtxTableRef;
   name: string;
   nativeType: string;
   normalizedType: string;
-  dimensionType: KloSchemaDimensionType;
+  dimensionType: KtxSchemaDimensionType;
   nullable: boolean;
   primaryKey: boolean;
   parentColumnId: string | null;
-  descriptions: Partial<Record<KloDescriptionSource, string>>;
+  descriptions: Partial<Record<KtxDescriptionSource, string>>;
   embedding: number[] | null;
   sampleValues: string[] | null;
   cardinality: number | null;
 }
 
-export interface KloEnrichedTable {
+export interface KtxEnrichedTable {
   id: string;
-  ref: KloTableRef;
+  ref: KtxTableRef;
   enabled: boolean;
-  descriptions: Partial<Record<KloDescriptionSource, string>>;
-  columns: KloEnrichedColumn[];
+  descriptions: Partial<Record<KtxDescriptionSource, string>>;
+  columns: KtxEnrichedColumn[];
 }
 
-export interface KloRelationshipEndpoint {
+export interface KtxRelationshipEndpoint {
   tableId: string;
   columnIds: string[];
-  table: KloTableRef;
+  table: KtxTableRef;
   columns: string[];
 }
 
-export interface KloEnrichedRelationship {
+export interface KtxEnrichedRelationship {
   id: string;
-  source: KloRelationshipSource;
-  from: KloRelationshipEndpoint;
-  to: KloRelationshipEndpoint;
-  relationshipType: KloRelationshipType;
+  source: KtxRelationshipSource;
+  from: KtxRelationshipEndpoint;
+  to: KtxRelationshipEndpoint;
+  relationshipType: KtxRelationshipType;
   confidence: number;
   isPrimaryKeyReference: boolean;
 }
 
-export interface KloEnrichedSchema {
+export interface KtxEnrichedSchema {
   connectionId: string;
-  tables: KloEnrichedTable[];
-  relationships: KloEnrichedRelationship[];
+  tables: KtxEnrichedTable[];
+  relationships: KtxEnrichedRelationship[];
 }
 
-export interface KloStructuralSyncPlan {
+export interface KtxStructuralSyncPlan {
   connectionId: string;
   snapshotId: string;
   operations: Array<Record<string, unknown>>;
 }
 
-export interface KloDescriptionUpdate {
+export interface KtxDescriptionUpdate {
   connectionId: string;
-  table: KloTableRef;
-  source: KloDescriptionSource;
+  table: KtxTableRef;
+  source: KtxDescriptionSource;
   tableDescription?: string;
   columnDescriptions?: Record<string, string | null>;
 }
@@ -77,54 +77,54 @@ const PREFERRED_METADATA_FIELD_NAMES = [
   'lineage',
 ] as const;
 
-export interface KloMetadataUpdate {
+export interface KtxMetadataUpdate {
   connectionId: string;
-  table: KloTableRef;
-  source: KloDescriptionSource;
+  table: KtxTableRef;
+  source: KtxDescriptionSource;
   tableFields?: Record<string, unknown>;
   columnFields?: Record<string, Record<string, unknown>>;
 }
 
-export interface KloJoinUpdate {
+export interface KtxJoinUpdate {
   connectionId: string;
   fromTable: string;
   fromColumns: string[];
   toTable: string;
   toColumns: string[];
-  relationship: KloRelationshipType;
+  relationship: KtxRelationshipType;
   author: string;
   authorEmail: string;
 }
 
-export interface KloColumnSampleUpdate {
+export interface KtxColumnSampleUpdate {
   columnId: string;
   sampleValues: string[] | null;
   cardinality: number | null;
 }
 
-export interface KloEmbeddingUpdate {
+export interface KtxEmbeddingUpdate {
   columnId: string;
   text: string;
   embedding: number[];
 }
 
-export interface KloSkippedRelationship {
+export interface KtxSkippedRelationship {
   relationshipId: string;
   reason: string;
 }
 
-export interface KloRelationshipUpdate {
+export interface KtxRelationshipUpdate {
   connectionId: string;
-  accepted: KloEnrichedRelationship[];
-  rejected: KloEnrichedRelationship[];
-  skipped: KloSkippedRelationship[];
+  accepted: KtxEnrichedRelationship[];
+  rejected: KtxEnrichedRelationship[];
+  skipped: KtxSkippedRelationship[];
 }
 
-export interface KloScanMetadataStore {
-  loadSchema(connectionId: string): Promise<KloEnrichedSchema | null>;
-  applyStructuralPlan(plan: KloStructuralSyncPlan): Promise<KloEnrichedSchema>;
-  updateDescriptions(input: KloDescriptionUpdate): Promise<void>;
-  updateColumnSamples(input: KloColumnSampleUpdate[]): Promise<void>;
-  updateColumnEmbeddings(input: KloEmbeddingUpdate[]): Promise<void>;
-  updateInferredRelationships(input: KloRelationshipUpdate): Promise<void>;
+export interface KtxScanMetadataStore {
+  loadSchema(connectionId: string): Promise<KtxEnrichedSchema | null>;
+  applyStructuralPlan(plan: KtxStructuralSyncPlan): Promise<KtxEnrichedSchema>;
+  updateDescriptions(input: KtxDescriptionUpdate): Promise<void>;
+  updateColumnSamples(input: KtxColumnSampleUpdate[]): Promise<void>;
+  updateColumnEmbeddings(input: KtxEmbeddingUpdate[]): Promise<void>;
+  updateInferredRelationships(input: KtxRelationshipUpdate): Promise<void>;
 }

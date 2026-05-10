@@ -13,13 +13,13 @@ import {
   renderMemoryFlowReplay,
   runLocalIngest,
   runLocalMetabaseIngest,
-} from '@klo/context/ingest';
-import { loadKloProject } from '@klo/context/project';
+} from '@ktx/context/ingest';
+import { loadKtxProject } from '@ktx/context/project';
 import { readIngestReportSnapshotFile } from './ingest-report-file.js';
-import { createKloCliLocalIngestAdapters } from './local-adapters.js';
-import { type KloMemoryFlowStdin, renderMemoryFlowInteractively } from './memory-flow-interactive.js';
+import { createKtxCliLocalIngestAdapters } from './local-adapters.js';
+import { type KtxMemoryFlowStdin, renderMemoryFlowInteractively } from './memory-flow-interactive.js';
 import {
-  type KloMemoryFlowTuiIo,
+  type KtxMemoryFlowTuiIo,
   type MemoryFlowTuiLiveSession,
   renderMemoryFlowTui,
   startLiveMemoryFlowTui,
@@ -29,10 +29,10 @@ import { profileMark } from './startup-profile.js';
 
 profileMark('module:ingest');
 
-export type KloIngestOutputMode = 'plain' | 'json' | 'viz';
-type KloIngestInputMode = 'auto' | 'disabled';
+export type KtxIngestOutputMode = 'plain' | 'json' | 'viz';
+type KtxIngestInputMode = 'auto' | 'disabled';
 
-export type KloIngestArgs =
+export type KtxIngestArgs =
   | {
       command: 'run';
       projectDir: string;
@@ -41,28 +41,28 @@ export type KloIngestArgs =
       sourceDir?: string;
       databaseIntrospectionUrl?: string;
       debugLlmRequestFile?: string;
-      outputMode: KloIngestOutputMode;
-      inputMode?: KloIngestInputMode;
+      outputMode: KtxIngestOutputMode;
+      inputMode?: KtxIngestInputMode;
     }
   | {
       command: 'status' | 'replay' | 'watch';
       projectDir: string;
       runId?: string;
       reportFile?: string;
-      outputMode: KloIngestOutputMode;
-      inputMode?: KloIngestInputMode;
+      outputMode: KtxIngestOutputMode;
+      inputMode?: KtxIngestInputMode;
     };
 
-interface KloIngestIo {
-  stdin?: KloMemoryFlowStdin;
+interface KtxIngestIo {
+  stdin?: KtxMemoryFlowStdin;
   stdout: { isTTY?: boolean; columns?: number; write(chunk: string): void };
   stderr: { write(chunk: string): void };
 }
 
-interface KloIngestDeps {
+interface KtxIngestDeps {
   jobIdFactory?: () => string;
   now?: () => Date;
-  createAdapters?: typeof createKloCliLocalIngestAdapters;
+  createAdapters?: typeof createKtxCliLocalIngestAdapters;
   runLocalIngest?: typeof runLocalIngest;
   runLocalMetabaseIngest?: typeof runLocalMetabaseIngest;
   readReportFile?: typeof readIngestReportSnapshotFile;
@@ -93,7 +93,7 @@ function reportActionCounts(report: IngestReportSnapshot): { wikiCount: number; 
   };
 }
 
-function writeReportStatus(report: IngestReportSnapshot, io: KloIngestIo): void {
+function writeReportStatus(report: IngestReportSnapshot, io: KtxIngestIo): void {
   const counts = reportActionCounts(report);
   io.stdout.write(`Report: ${report.id}\n`);
   io.stdout.write(`Run: ${report.runId}\n`);
@@ -110,7 +110,7 @@ function writeReportStatus(report: IngestReportSnapshot, io: KloIngestIo): void 
   io.stdout.write(`Provenance rows: ${report.body.provenanceRows.length}\n`);
 }
 
-function writeMetabaseFanoutStatus(result: LocalMetabaseFanoutResult, io: KloIngestIo): void {
+function writeMetabaseFanoutStatus(result: LocalMetabaseFanoutResult, io: KtxIngestIo): void {
   io.stdout.write(`Metabase fan-out: ${result.status}\n`);
   io.stdout.write(`Source: ${result.metabaseConnectionId}\n`);
   io.stdout.write(`Children: ${result.children.length}\n`);
@@ -132,7 +132,7 @@ function pluralize(count: number, singular: string, plural = `${singular}s`): st
 
 function createMetabaseFanoutProgress(
   connectionId: string,
-  io: KloIngestIo,
+  io: KtxIngestIo,
 ): LocalMetabaseFanoutProgress {
   io.stdout.write(`Metabase ingest: ${connectionId}\n`);
   io.stdout.write('Checking mappings and scheduled-pull targets...\n');
@@ -156,7 +156,7 @@ function createMetabaseFanoutProgress(
   };
 }
 
-function writeReportJson(report: IngestReportSnapshot, io: KloIngestIo): void {
+function writeReportJson(report: IngestReportSnapshot, io: KtxIngestIo): void {
   io.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
 }
 
@@ -172,21 +172,21 @@ function assertReportMatchesReplayId(report: IngestReportSnapshot, requestedId: 
 }
 
 async function readStoredIngestReport(
-  project: Awaited<ReturnType<typeof loadKloProject>>,
+  project: Awaited<ReturnType<typeof loadKtxProject>>,
   runId: string | undefined,
 ): Promise<IngestReportSnapshot | null> {
   return runId ? await getLocalIngestStatus(project, runId) : await getLatestLocalIngestStatus(project);
 }
 
-function isInteractiveTerminal(io: KloIngestIo): boolean {
+function isInteractiveTerminal(io: KtxIngestIo): boolean {
   return io.stdout.isTTY === true;
 }
 
-function terminalWidth(io: KloIngestIo): number | undefined {
+function terminalWidth(io: KtxIngestIo): number | undefined {
   return io.stdout.columns ?? process.stdout.columns;
 }
 
-function isTuiCapableIo(io: KloIngestIo): io is KloIngestIo & KloMemoryFlowTuiIo {
+function isTuiCapableIo(io: KtxIngestIo): io is KtxIngestIo & KtxMemoryFlowTuiIo {
   return (
     io.stdin?.isTTY === true &&
     io.stdout.isTTY === true &&
@@ -201,11 +201,11 @@ interface EffectiveIngestOutputModeOptions {
 }
 
 function effectiveIngestOutputMode(
-  outputMode: KloIngestOutputMode,
-  io: KloIngestIo,
+  outputMode: KtxIngestOutputMode,
+  io: KtxIngestIo,
   env: NodeJS.ProcessEnv,
   options: EffectiveIngestOutputModeOptions = {},
-): KloIngestOutputMode {
+): KtxIngestOutputMode {
   if (outputMode !== 'viz') {
     return outputMode;
   }
@@ -219,7 +219,7 @@ function effectiveIngestOutputMode(
   return 'plain';
 }
 
-function writeMemoryFlowInput(input: MemoryFlowReplayInput, io: KloIngestIo, options: { clear?: boolean } = {}): void {
+function writeMemoryFlowInput(input: MemoryFlowReplayInput, io: KtxIngestIo, options: { clear?: boolean } = {}): void {
   if (options.clear) {
     io.stdout.write('\u001b[2J\u001b[H');
   }
@@ -228,7 +228,7 @@ function writeMemoryFlowInput(input: MemoryFlowReplayInput, io: KloIngestIo, opt
 }
 
 function initialRunMemoryFlowInput(
-  args: Extract<KloIngestArgs, { command: 'run' }>,
+  args: Extract<KtxIngestArgs, { command: 'run' }>,
   runId: string,
 ): MemoryFlowReplayInput {
   return {
@@ -247,8 +247,8 @@ function initialRunMemoryFlowInput(
 
 async function writeReportRecord(
   report: IngestReportSnapshot,
-  outputMode: KloIngestOutputMode,
-  io: KloIngestIo,
+  outputMode: KtxIngestOutputMode,
+  io: KtxIngestIo,
   options: {
     interactive?: boolean;
     renderStoredMemoryFlow?: typeof renderMemoryFlowTui;
@@ -288,16 +288,16 @@ async function writeReportRecord(
   writeReportStatus(report, io);
 }
 
-export async function runKloIngest(
-  args: KloIngestArgs,
-  io: KloIngestIo = process,
-  deps: KloIngestDeps = {},
+export async function runKtxIngest(
+  args: KtxIngestArgs,
+  io: KtxIngestIo = process,
+  deps: KtxIngestDeps = {},
 ): Promise<number> {
   try {
-    const project = await loadKloProject({ projectDir: args.projectDir });
+    const project = await loadKtxProject({ projectDir: args.projectDir });
     const env = deps.env ?? process.env;
     if (args.command === 'run') {
-      const createAdapters = deps.createAdapters ?? createKloCliLocalIngestAdapters;
+      const createAdapters = deps.createAdapters ?? createKtxCliLocalIngestAdapters;
       const executeLocalIngest = deps.runLocalIngest ?? runLocalIngest;
       const localIngestOptions = deps.localIngestOptions ?? {};
       const adapterOptions = {
@@ -409,7 +409,7 @@ export async function runKloIngest(
       throw new Error(
         args.runId
           ? `Local ingest run or report "${args.runId}" was not found`
-          : 'No local ingest reports were found. Run `klo ingest --all` first.',
+          : 'No local ingest reports were found. Run `ktx ingest --all` first.',
       );
     }
     await writeReportRecord(report, args.outputMode, io, {

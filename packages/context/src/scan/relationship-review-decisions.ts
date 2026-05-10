@@ -1,40 +1,40 @@
-import type { KloLocalProject } from '../project/index.js';
-import type { KloRelationshipType } from './enrichment-types.js';
+import type { KtxLocalProject } from '../project/index.js';
+import type { KtxRelationshipType } from './enrichment-types.js';
 import { readLocalScanRelationshipArtifacts } from './relationship-artifacts.js';
 import type {
-  KloRelationshipArtifactEdge,
-  KloRelationshipArtifactEndpoint,
+  KtxRelationshipArtifactEdge,
+  KtxRelationshipArtifactEndpoint,
 } from './relationship-diagnostics.js';
-import type { KloResolvedRelationshipStatus } from './relationship-graph-resolver.js';
+import type { KtxResolvedRelationshipStatus } from './relationship-graph-resolver.js';
 
-const LOCAL_AUTHOR = 'klo';
-const LOCAL_AUTHOR_EMAIL = 'klo@example.com';
+const LOCAL_AUTHOR = 'ktx';
+const LOCAL_AUTHOR_EMAIL = 'ktx@example.com';
 const DECISIONS_FILE = 'relationship-review-decisions.json';
 
-export type KloRelationshipReviewDecisionValue = 'accepted' | 'rejected';
+export type KtxRelationshipReviewDecisionValue = 'accepted' | 'rejected';
 
 export interface WriteLocalScanRelationshipReviewDecisionInput {
   runId: string;
   candidateId: string;
-  decision: KloRelationshipReviewDecisionValue;
+  decision: KtxRelationshipReviewDecisionValue;
   reviewer: string;
   note: string | null;
   decidedAt?: string;
 }
 
-export interface KloRelationshipReviewDecisionEntry {
+export interface KtxRelationshipReviewDecisionEntry {
   candidateId: string;
-  decision: KloRelationshipReviewDecisionValue;
-  previousStatus: KloResolvedRelationshipStatus;
+  decision: KtxRelationshipReviewDecisionValue;
+  previousStatus: KtxResolvedRelationshipStatus;
   connectionId: string;
   runId: string;
   syncId: string;
   decidedAt: string;
   reviewer: string;
   note: string | null;
-  from: KloRelationshipArtifactEndpoint;
-  to: KloRelationshipArtifactEndpoint;
-  relationshipType: KloRelationshipType;
+  from: KtxRelationshipArtifactEndpoint;
+  to: KtxRelationshipArtifactEndpoint;
+  relationshipType: KtxRelationshipType;
   source: string;
   score: number | null;
   confidence: number;
@@ -43,25 +43,25 @@ export interface KloRelationshipReviewDecisionEntry {
   reasons: string[];
 }
 
-export interface KloRelationshipReviewDecisionArtifact {
+export interface KtxRelationshipReviewDecisionArtifact {
   connectionId: string;
   runId: string;
   syncId: string;
   generatedAt: string;
-  decisions: KloRelationshipReviewDecisionEntry[];
+  decisions: KtxRelationshipReviewDecisionEntry[];
 }
 
 export interface WriteLocalScanRelationshipReviewDecisionResult {
   path: string;
-  decision: KloRelationshipReviewDecisionEntry;
-  artifact: KloRelationshipReviewDecisionArtifact;
+  decision: KtxRelationshipReviewDecisionEntry;
+  artifact: KtxRelationshipReviewDecisionArtifact;
 }
 
 function reviewDecisionPath(relationshipsPath: string): string {
   return relationshipsPath.replace(/relationships\.json$/u, DECISIONS_FILE);
 }
 
-function allCandidateEdges(result: Awaited<ReturnType<typeof readLocalScanRelationshipArtifacts>>): KloRelationshipArtifactEdge[] {
+function allCandidateEdges(result: Awaited<ReturnType<typeof readLocalScanRelationshipArtifacts>>): KtxRelationshipArtifactEdge[] {
   if (!result) {
     return [];
   }
@@ -69,13 +69,13 @@ function allCandidateEdges(result: Awaited<ReturnType<typeof readLocalScanRelati
 }
 
 async function readExistingDecisions(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   path: string,
-  fallback: Omit<KloRelationshipReviewDecisionArtifact, 'decisions'>,
-): Promise<KloRelationshipReviewDecisionArtifact> {
+  fallback: Omit<KtxRelationshipReviewDecisionArtifact, 'decisions'>,
+): Promise<KtxRelationshipReviewDecisionArtifact> {
   try {
     const raw = await project.fileStore.readFile(path);
-    const parsed = JSON.parse(raw.content) as KloRelationshipReviewDecisionArtifact;
+    const parsed = JSON.parse(raw.content) as KtxRelationshipReviewDecisionArtifact;
     return {
       connectionId: parsed.connectionId,
       runId: parsed.runId,
@@ -89,15 +89,15 @@ async function readExistingDecisions(
 }
 
 function decisionEntry(input: {
-  candidate: KloRelationshipArtifactEdge;
+  candidate: KtxRelationshipArtifactEdge;
   connectionId: string;
   runId: string;
   syncId: string;
-  decision: KloRelationshipReviewDecisionValue;
+  decision: KtxRelationshipReviewDecisionValue;
   reviewer: string;
   note: string | null;
   decidedAt: string;
-}): KloRelationshipReviewDecisionEntry {
+}): KtxRelationshipReviewDecisionEntry {
   return {
     candidateId: input.candidate.id,
     decision: input.decision,
@@ -121,16 +121,16 @@ function decisionEntry(input: {
 }
 
 function upsertDecision(
-  existing: readonly KloRelationshipReviewDecisionEntry[],
-  next: KloRelationshipReviewDecisionEntry,
-): KloRelationshipReviewDecisionEntry[] {
+  existing: readonly KtxRelationshipReviewDecisionEntry[],
+  next: KtxRelationshipReviewDecisionEntry,
+): KtxRelationshipReviewDecisionEntry[] {
   return [...existing.filter((item) => item.candidateId !== next.candidateId), next].sort((left, right) =>
     left.candidateId.localeCompare(right.candidateId),
   );
 }
 
 export async function writeLocalScanRelationshipReviewDecision(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   input: WriteLocalScanRelationshipReviewDecisionInput,
 ): Promise<WriteLocalScanRelationshipReviewDecisionResult | null> {
   const artifacts = await readLocalScanRelationshipArtifacts(project, input.runId);
@@ -162,7 +162,7 @@ export async function writeLocalScanRelationshipReviewDecision(
     note: input.note,
     decidedAt,
   });
-  const artifact: KloRelationshipReviewDecisionArtifact = {
+  const artifact: KtxRelationshipReviewDecisionArtifact = {
     connectionId: artifacts.connectionId,
     runId: artifacts.runId,
     syncId: artifacts.syncId,

@@ -1,22 +1,22 @@
 import {
-  redactKloSensitiveMetadata,
-  redactKloSensitiveText,
-  redactKloSensitiveValue,
-  REDACTED_KLO_CREDENTIAL_VALUE,
+  redactKtxSensitiveMetadata,
+  redactKtxSensitiveText,
+  redactKtxSensitiveValue,
+  REDACTED_KTX_CREDENTIAL_VALUE,
 } from '../core/redaction.js';
-import type { KloCredentialEnvelope, KloScanReport, KloScanWarning } from './types.js';
+import type { KtxCredentialEnvelope, KtxScanReport, KtxScanWarning } from './types.js';
 
-export { REDACTED_KLO_CREDENTIAL_VALUE };
+export { REDACTED_KTX_CREDENTIAL_VALUE };
 
-export function redactKloCredentialValue(key: string, value: unknown): unknown {
-  return redactKloSensitiveValue(key, value);
+export function redactKtxCredentialValue(key: string, value: unknown): unknown {
+  return redactKtxSensitiveValue(key, value);
 }
 
-export function redactKloScanMetadata(metadata: Record<string, unknown>): Record<string, unknown> {
-  return redactKloSensitiveMetadata(metadata);
+export function redactKtxScanMetadata(metadata: Record<string, unknown>): Record<string, unknown> {
+  return redactKtxSensitiveMetadata(metadata);
 }
 
-export function redactKloCredentialEnvelope(envelope: KloCredentialEnvelope): KloCredentialEnvelope {
+export function redactKtxCredentialEnvelope(envelope: KtxCredentialEnvelope): KtxCredentialEnvelope {
   if (envelope.kind !== 'resolved') {
     return envelope;
   }
@@ -24,27 +24,27 @@ export function redactKloCredentialEnvelope(envelope: KloCredentialEnvelope): Kl
     kind: 'resolved',
     source: envelope.source,
     redacted: true,
-    values: redactKloScanMetadata(envelope.values),
+    values: redactKtxScanMetadata(envelope.values),
   };
 }
 
-export function redactKloScanWarning(warning: KloScanWarning): KloScanWarning {
+export function redactKtxScanWarning(warning: KtxScanWarning): KtxScanWarning {
   if (!warning.metadata) {
     return {
       ...warning,
-      message: redactKloSensitiveText(warning.message),
+      message: redactKtxSensitiveText(warning.message),
     };
   }
   return {
     ...warning,
-    message: redactKloSensitiveText(warning.message),
-    metadata: redactKloScanMetadata(warning.metadata),
+    message: redactKtxSensitiveText(warning.message),
+    metadata: redactKtxScanMetadata(warning.metadata),
   };
 }
 
-export function redactKloScanReport(report: KloScanReport): KloScanReport {
+export function redactKtxScanReport(report: KtxScanReport): KtxScanReport {
   return {
     ...report,
-    warnings: report.warnings.map((warning) => redactKloScanWarning(warning)),
+    warnings: report.warnings.map((warning) => redactKtxScanWarning(warning)),
   };
 }

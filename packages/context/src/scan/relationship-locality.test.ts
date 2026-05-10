@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import type { KloEnrichedColumn, KloEnrichedTable } from './enrichment-types.js';
+import type { KtxEnrichedColumn, KtxEnrichedTable } from './enrichment-types.js';
 import { localCandidateTables } from './relationship-locality.js';
 
 function column(
   tableId: string,
   id: string,
   name: string,
-  options: Partial<KloEnrichedColumn> = {},
-): KloEnrichedColumn {
+  options: Partial<KtxEnrichedColumn> = {},
+): KtxEnrichedColumn {
   const tableRef = options.tableRef ?? { catalog: null, db: 'public', name: tableId };
   return {
     id,
@@ -27,7 +27,7 @@ function column(
   };
 }
 
-function table(id: string, name: string, columns: KloEnrichedColumn[]): KloEnrichedTable {
+function table(id: string, name: string, columns: KtxEnrichedColumn[]): KtxEnrichedTable {
   const ref = { catalog: null, db: 'public', name };
   return {
     id,

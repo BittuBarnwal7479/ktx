@@ -1,11 +1,11 @@
 import type { Tool } from 'ai';
 import type { AgentRunnerService } from '../agent/index.js';
-import type { GitService, KloFileStorePort, KloLogger, SessionWorktreeService } from '../core/index.js';
+import type { GitService, KtxFileStorePort, KtxLogger, SessionWorktreeService } from '../core/index.js';
 import type { PromptService } from '../prompts/index.js';
 import type { SkillsRegistryService } from '../skills/index.js';
 import type {
-  KloConnectionInfo,
-  KloQueryResult,
+  KtxConnectionInfo,
+  KtxQueryResult,
   SemanticLayerService,
   SemanticLayerSource,
   SlSearchService,
@@ -101,9 +101,9 @@ export interface MemoryKnowledgeSlRefsPort {
 }
 
 export interface MemoryConnectionPort {
-  listEnabledConnections(ids: string[]): Promise<KloConnectionInfo[]>;
-  getConnectionById(connectionId: string): Promise<KloConnectionInfo>;
-  executeQuery(connectionId: string, sql: string): Promise<KloQueryResult>;
+  listEnabledConnections(ids: string[]): Promise<KtxConnectionInfo[]>;
+  getConnectionById(connectionId: string): Promise<KtxConnectionInfo>;
+  executeQuery(connectionId: string, sql: string): Promise<KtxQueryResult>;
 }
 
 export interface MemoryCommitMessagePort {
@@ -114,7 +114,7 @@ export interface MemoryCommitMessagePort {
   ): Promise<void>;
 }
 
-export interface MemoryFileStorePort extends KloFileStorePort<MemoryFileStorePort>, MemoryCommitMessagePort {}
+export interface MemoryFileStorePort extends KtxFileStorePort<MemoryFileStorePort>, MemoryCommitMessagePort {}
 
 export interface MemoryToolSetLike {
   toAiSdkTools(context: ToolContext): Record<string, Tool>;
@@ -153,5 +153,5 @@ export interface MemoryAgentServiceDeps {
   slValidator: SlValidatorPort<SlValidationDeps>;
   toolsetFactory: MemoryToolsetFactoryPort;
   telemetry?: MemoryTelemetryPort;
-  logger?: KloLogger;
+  logger?: KtxLogger;
 }

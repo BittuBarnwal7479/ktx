@@ -11,22 +11,22 @@ const PACKAGE_VERSION = '0.0.0-private';
 const PYTHON_PACKAGE_VERSION = '0.1.0';
 
 export const NPM_ARTIFACT_PACKAGES = [
-  { name: '@klo/context', packageRoot: 'packages/context' },
-  { name: '@klo/llm', packageRoot: 'packages/llm' },
-  { name: '@klo/connector-bigquery', packageRoot: 'packages/connector-bigquery' },
-  { name: '@klo/connector-clickhouse', packageRoot: 'packages/connector-clickhouse' },
-  { name: '@klo/connector-mysql', packageRoot: 'packages/connector-mysql' },
-  { name: '@klo/connector-postgres', packageRoot: 'packages/connector-postgres' },
-  { name: '@klo/connector-posthog', packageRoot: 'packages/connector-posthog' },
-  { name: '@klo/connector-snowflake', packageRoot: 'packages/connector-snowflake' },
-  { name: '@klo/connector-sqlite', packageRoot: 'packages/connector-sqlite' },
-  { name: '@klo/connector-sqlserver', packageRoot: 'packages/connector-sqlserver' },
-  { name: '@klo/cli', packageRoot: 'packages/cli' },
+  { name: '@ktx/context', packageRoot: 'packages/context' },
+  { name: '@ktx/llm', packageRoot: 'packages/llm' },
+  { name: '@ktx/connector-bigquery', packageRoot: 'packages/connector-bigquery' },
+  { name: '@ktx/connector-clickhouse', packageRoot: 'packages/connector-clickhouse' },
+  { name: '@ktx/connector-mysql', packageRoot: 'packages/connector-mysql' },
+  { name: '@ktx/connector-postgres', packageRoot: 'packages/connector-postgres' },
+  { name: '@ktx/connector-posthog', packageRoot: 'packages/connector-posthog' },
+  { name: '@ktx/connector-snowflake', packageRoot: 'packages/connector-snowflake' },
+  { name: '@ktx/connector-sqlite', packageRoot: 'packages/connector-sqlite' },
+  { name: '@ktx/connector-sqlserver', packageRoot: 'packages/connector-sqlserver' },
+  { name: '@ktx/cli', packageRoot: 'packages/cli' },
 ];
 
 const CONNECTOR_PACKAGE_NAMES = NPM_ARTIFACT_PACKAGES
   .map((packageInfo) => packageInfo.name)
-  .filter((packageName) => packageName.startsWith('@klo/connector-'));
+  .filter((packageName) => packageName.startsWith('@ktx/connector-'));
 
 const ordersSource = {
   name: 'orders',
@@ -46,7 +46,7 @@ function scriptRootDir() {
 }
 
 function npmPackageTarballName(packageName) {
-  return `${packageName.replace('@klo/', 'klo-')}-${PACKAGE_VERSION}.tgz`;
+  return `${packageName.replace('@ktx/', 'ktx-')}-${PACKAGE_VERSION}.tgz`;
 }
 
 function npmPackageTarballs(npmDir) {
@@ -67,8 +67,8 @@ export function packageArtifactLayout(rootDir = scriptRootDir()) {
     npmDir,
     pythonDir,
     npmTarballs,
-    contextTarball: npmTarballs['@klo/context'],
-    cliTarball: npmTarballs['@klo/cli'],
+    contextTarball: npmTarballs['@ktx/context'],
+    cliTarball: npmTarballs['@ktx/cli'],
     connectorTarballs: Object.fromEntries(
       CONNECTOR_PACKAGE_NAMES.map((packageName) => [packageName, npmTarballs[packageName]]),
     ),
@@ -93,12 +93,12 @@ export function buildArtifactCommands(layout) {
     ...npmPackCommands,
     {
       command: 'uv',
-      args: ['build', '--package', 'klo-sl', '--out-dir', layout.pythonDir],
+      args: ['build', '--package', 'ktx-sl', '--out-dir', layout.pythonDir],
       cwd: layout.rootDir,
     },
     {
       command: 'uv',
-      args: ['build', '--package', 'klo-daemon', '--out-dir', layout.pythonDir],
+      args: ['build', '--package', 'ktx-daemon', '--out-dir', layout.pythonDir],
       cwd: layout.rootDir,
     },
   ];
@@ -136,10 +136,10 @@ export async function findPythonArtifacts(pythonDir) {
   const files = await readdir(pythonDir);
 
   return {
-    kloSlWheel: findOne(files, 'klo-sl', '.whl', 'klo-sl wheel', pythonDir),
-    kloSlSdist: findOne(files, 'klo-sl', '.tar.gz', 'klo-sl source distribution', pythonDir),
-    kloDaemonWheel: findOne(files, 'klo-daemon', '.whl', 'klo-daemon wheel', pythonDir),
-    kloDaemonSdist: findOne(files, 'klo-daemon', '.tar.gz', 'klo-daemon source distribution', pythonDir),
+    ktxSlWheel: findOne(files, 'ktx-sl', '.whl', 'ktx-sl wheel', pythonDir),
+    ktxSlSdist: findOne(files, 'ktx-sl', '.tar.gz', 'ktx-sl source distribution', pythonDir),
+    ktxDaemonWheel: findOne(files, 'ktx-daemon', '.whl', 'ktx-daemon wheel', pythonDir),
+    ktxDaemonSdist: findOne(files, 'ktx-daemon', '.tar.gz', 'ktx-daemon source distribution', pythonDir),
   };
 }
 
@@ -223,23 +223,23 @@ export async function packageReleaseMetadata(rootDir = scriptRootDir()) {
   const npmPackages = await Promise.all(
     NPM_ARTIFACT_PACKAGES.map((packageInfo) => readNpmPackageMetadata(rootDir, packageInfo)),
   );
-  const kloSlPackage = await readPyprojectMetadata(join(rootDir, 'python', 'klo-sl', 'pyproject.toml'));
-  const kloDaemonPackage = await readPyprojectMetadata(join(rootDir, 'python', 'klo-daemon', 'pyproject.toml'));
+  const ktxSlPackage = await readPyprojectMetadata(join(rootDir, 'python', 'ktx-sl', 'pyproject.toml'));
+  const ktxDaemonPackage = await readPyprojectMetadata(join(rootDir, 'python', 'ktx-daemon', 'pyproject.toml'));
 
   return [
     ...npmPackages,
     releaseMetadataEntry({
       ecosystem: 'python',
-      packageName: kloSlPackage.name,
-      packageRoot: 'python/klo-sl',
-      packageVersion: kloSlPackage.version,
+      packageName: ktxSlPackage.name,
+      packageRoot: 'python/ktx-sl',
+      packageVersion: ktxSlPackage.version,
       privatePackage: false,
     }),
     releaseMetadataEntry({
       ecosystem: 'python',
-      packageName: kloDaemonPackage.name,
-      packageRoot: 'python/klo-daemon',
-      packageVersion: kloDaemonPackage.version,
+      packageName: ktxDaemonPackage.name,
+      packageRoot: 'python/ktx-daemon',
+      packageVersion: ktxDaemonPackage.version,
       privatePackage: false,
     }),
   ];
@@ -269,23 +269,23 @@ function artifactPackageRecords(layout, pythonArtifacts, packages) {
     ...npmRecords,
     {
       artifactKind: 'wheel',
-      artifactPath: pythonArtifacts.kloSlWheel,
-      metadata: requirePackageMetadata(packagesByName, 'klo-sl'),
+      artifactPath: pythonArtifacts.ktxSlWheel,
+      metadata: requirePackageMetadata(packagesByName, 'ktx-sl'),
     },
     {
       artifactKind: 'sdist',
-      artifactPath: pythonArtifacts.kloSlSdist,
-      metadata: requirePackageMetadata(packagesByName, 'klo-sl'),
+      artifactPath: pythonArtifacts.ktxSlSdist,
+      metadata: requirePackageMetadata(packagesByName, 'ktx-sl'),
     },
     {
       artifactKind: 'wheel',
-      artifactPath: pythonArtifacts.kloDaemonWheel,
-      metadata: requirePackageMetadata(packagesByName, 'klo-daemon'),
+      artifactPath: pythonArtifacts.ktxDaemonWheel,
+      metadata: requirePackageMetadata(packagesByName, 'ktx-daemon'),
     },
     {
       artifactKind: 'sdist',
-      artifactPath: pythonArtifacts.kloDaemonSdist,
-      metadata: requirePackageMetadata(packagesByName, 'klo-daemon'),
+      artifactPath: pythonArtifacts.ktxDaemonSdist,
+      metadata: requirePackageMetadata(packagesByName, 'ktx-daemon'),
     },
   ];
 }
@@ -399,7 +399,7 @@ export async function verifyArtifactManifest(layout, options = {}) {
   const manifest = await readJson(artifactManifestPath(layout));
   assertManifestShape(manifest);
 
-  const expectedSourceRevision = options.expectedSourceRevision ?? process.env.KLO_EXPECTED_SOURCE_REVISION;
+  const expectedSourceRevision = options.expectedSourceRevision ?? process.env.KTX_EXPECTED_SOURCE_REVISION;
   if (expectedSourceRevision !== undefined && manifest.sourceRevision !== expectedSourceRevision) {
     throw new Error(
       `Artifact manifest sourceRevision mismatch: expected ${expectedSourceRevision}, got ${manifest.sourceRevision}`,
@@ -435,8 +435,8 @@ export function pythonArtifactInstallArgs(python, pythonArtifacts) {
     'install',
     '--python',
     python,
-    pythonArtifacts.kloSlWheel,
-    pythonArtifacts.kloDaemonWheel,
+    pythonArtifacts.ktxSlWheel,
+    pythonArtifacts.ktxDaemonWheel,
   ];
 }
 
@@ -486,7 +486,7 @@ function npmTarballDependencyEntries(layout) {
 export function npmSmokePackageJson(layout) {
   const npmTarballDependencies = npmTarballDependencyEntries(layout);
   return {
-    name: 'klo-artifact-npm-smoke',
+    name: 'ktx-artifact-npm-smoke',
     version: '0.0.0',
     private: true,
     type: 'module',
@@ -503,53 +503,53 @@ export function npmSmokePackageJson(layout) {
 
 export function npmVerifySource() {
   return `
-const context = await import('@klo/context');
-const project = await import('@klo/context/project');
-const mcp = await import('@klo/context/mcp');
-const memory = await import('@klo/context/memory');
-const daemon = await import('@klo/context/daemon');
-const ingest = await import('@klo/context/ingest');
-const search = await import('@klo/context/search');
-const llm = await import('@klo/llm');
-const cli = await import('@klo/cli');
-const bigqueryConnector = await import('@klo/connector-bigquery');
-const clickhouseConnector = await import('@klo/connector-clickhouse');
-const mysqlConnector = await import('@klo/connector-mysql');
-const postgresConnector = await import('@klo/connector-postgres');
-const posthogConnector = await import('@klo/connector-posthog');
-const snowflakeConnector = await import('@klo/connector-snowflake');
-const sqliteConnector = await import('@klo/connector-sqlite');
-const sqlserverConnector = await import('@klo/connector-sqlserver');
+const context = await import('@ktx/context');
+const project = await import('@ktx/context/project');
+const mcp = await import('@ktx/context/mcp');
+const memory = await import('@ktx/context/memory');
+const daemon = await import('@ktx/context/daemon');
+const ingest = await import('@ktx/context/ingest');
+const search = await import('@ktx/context/search');
+const llm = await import('@ktx/llm');
+const cli = await import('@ktx/cli');
+const bigqueryConnector = await import('@ktx/connector-bigquery');
+const clickhouseConnector = await import('@ktx/connector-clickhouse');
+const mysqlConnector = await import('@ktx/connector-mysql');
+const postgresConnector = await import('@ktx/connector-postgres');
+const posthogConnector = await import('@ktx/connector-posthog');
+const snowflakeConnector = await import('@ktx/connector-snowflake');
+const sqliteConnector = await import('@ktx/connector-sqlite');
+const sqlserverConnector = await import('@ktx/connector-sqlserver');
 
-if (context.kloContextPackageInfo.name !== '@klo/context') {
-  throw new Error('Unexpected @klo/context package info');
+if (context.ktxContextPackageInfo.name !== '@ktx/context') {
+  throw new Error('Unexpected @ktx/context package info');
 }
-if (typeof llm.createKloLlmProvider !== 'function') {
-  throw new Error('Missing createKloLlmProvider export');
+if (typeof llm.createKtxLlmProvider !== 'function') {
+  throw new Error('Missing createKtxLlmProvider export');
 }
-if (typeof llm.KloMessageBuilder !== 'function') {
-  throw new Error('Missing KloMessageBuilder export');
+if (typeof llm.KtxMessageBuilder !== 'function') {
+  throw new Error('Missing KtxMessageBuilder export');
 }
-if (typeof llm.createKloEmbeddingProvider !== 'function') {
-  throw new Error('Missing createKloEmbeddingProvider export');
+if (typeof llm.createKtxEmbeddingProvider !== 'function') {
+  throw new Error('Missing createKtxEmbeddingProvider export');
 }
-if (typeof project.initKloProject !== 'function') {
-  throw new Error('Missing initKloProject export');
+if (typeof project.initKtxProject !== 'function') {
+  throw new Error('Missing initKtxProject export');
 }
-if (typeof mcp.createDefaultKloMcpServer !== 'function') {
-  throw new Error('Missing createDefaultKloMcpServer export');
+if (typeof mcp.createDefaultKtxMcpServer !== 'function') {
+  throw new Error('Missing createDefaultKtxMcpServer export');
 }
 if (typeof memory.createLocalProjectMemoryCapture !== 'function') {
   throw new Error('Missing createLocalProjectMemoryCapture export');
 }
 if (typeof search.HybridSearchCore !== 'function') {
-  throw new Error('Missing HybridSearchCore export from @klo/context/search');
+  throw new Error('Missing HybridSearchCore export from @ktx/context/search');
 }
 if (typeof search.assertSearchBackendConformanceCase !== 'function') {
-  throw new Error('Missing assertSearchBackendConformanceCase export from @klo/context/search');
+  throw new Error('Missing assertSearchBackendConformanceCase export from @ktx/context/search');
 }
 if (typeof search.assertSearchBackendCapabilities !== 'function') {
-  throw new Error('Missing assertSearchBackendCapabilities export from @klo/context/search');
+  throw new Error('Missing assertSearchBackendCapabilities export from @ktx/context/search');
 }
 if (typeof daemon.createPythonSemanticLayerComputePort !== 'function') {
   throw new Error('Missing createPythonSemanticLayerComputePort export');
@@ -576,21 +576,21 @@ const metricflowConfig = ingest.parseMetricflowPullConfig({
   repoUrl: 'https://example.com/acme/analytics.git',
 });
 if (metricflowConfig.branch !== 'main' || metricflowConfig.path !== null) {
-  throw new Error('Unexpected MetricFlow pull-config defaults from installed @klo/context/ingest');
+  throw new Error('Unexpected MetricFlow pull-config defaults from installed @ktx/context/ingest');
 }
-if (cli.getKloCliPackageInfo().name !== '@klo/cli') {
-  throw new Error('Unexpected @klo/cli package info');
+if (cli.getKtxCliPackageInfo().name !== '@ktx/cli') {
+  throw new Error('Unexpected @ktx/cli package info');
 }
 
 const connectorExports = [
-  ['@klo/connector-bigquery', bigqueryConnector.KloBigQueryScanConnector, bigqueryConnector.KloBigQueryDialect],
-  ['@klo/connector-clickhouse', clickhouseConnector.KloClickHouseScanConnector, clickhouseConnector.KloClickHouseDialect],
-  ['@klo/connector-mysql', mysqlConnector.KloMysqlScanConnector, mysqlConnector.KloMysqlDialect],
-  ['@klo/connector-postgres', postgresConnector.KloPostgresScanConnector, postgresConnector.KloPostgresDialect],
-  ['@klo/connector-posthog', posthogConnector.KloPostHogScanConnector, posthogConnector.KloPostHogDialect],
-  ['@klo/connector-snowflake', snowflakeConnector.KloSnowflakeScanConnector, snowflakeConnector.KloSnowflakeDialect],
-  ['@klo/connector-sqlite', sqliteConnector.KloSqliteScanConnector, sqliteConnector.KloSqliteDialect],
-  ['@klo/connector-sqlserver', sqlserverConnector.KloSqlServerScanConnector, sqlserverConnector.KloSqlServerDialect],
+  ['@ktx/connector-bigquery', bigqueryConnector.KtxBigQueryScanConnector, bigqueryConnector.KtxBigQueryDialect],
+  ['@ktx/connector-clickhouse', clickhouseConnector.KtxClickHouseScanConnector, clickhouseConnector.KtxClickHouseDialect],
+  ['@ktx/connector-mysql', mysqlConnector.KtxMysqlScanConnector, mysqlConnector.KtxMysqlDialect],
+  ['@ktx/connector-postgres', postgresConnector.KtxPostgresScanConnector, postgresConnector.KtxPostgresDialect],
+  ['@ktx/connector-posthog', posthogConnector.KtxPostHogScanConnector, posthogConnector.KtxPostHogDialect],
+  ['@ktx/connector-snowflake', snowflakeConnector.KtxSnowflakeScanConnector, snowflakeConnector.KtxSnowflakeDialect],
+  ['@ktx/connector-sqlite', sqliteConnector.KtxSqliteScanConnector, sqliteConnector.KtxSqliteDialect],
+  ['@ktx/connector-sqlserver', sqlserverConnector.KtxSqlServerScanConnector, sqlserverConnector.KtxSqlServerDialect],
 ];
 
 for (const [packageName, ScanConnector, Dialect] of connectorExports) {
@@ -621,11 +621,11 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import {
   createDaemonLookerTableIdentifierParser,
   LocalLookerRuntimeStore,
-} from '@klo/context/ingest';
+} from '@ktx/context/ingest';
 
 const execFileAsync = promisify(execFile);
 const require = createRequire(import.meta.url);
-const contextPackageRoot = dirname(require.resolve('@klo/context/package.json'));
+const contextPackageRoot = dirname(require.resolve('@ktx/context/package.json'));
 
 async function requireContextRuntimeAsset(relativePath) {
   await access(join(contextPackageRoot, relativePath));
@@ -760,7 +760,7 @@ async function waitForHttpHealth(url, daemon) {
     if (daemon.error()) {
       const output = daemon.output();
       throw new Error(
-        'Failed to start klo-daemon serve-http: ' +
+        'Failed to start ktx-daemon serve-http: ' +
           daemon.error().message +
           '\\nstdout:\\n' +
           output.stdout +
@@ -771,7 +771,7 @@ async function waitForHttpHealth(url, daemon) {
     if (daemon.child.exitCode !== null || daemon.child.signalCode !== null) {
       const output = daemon.output();
       throw new Error(
-        'klo-daemon serve-http exited before health check passed\\nstdout:\\n' +
+        'ktx-daemon serve-http exited before health check passed\\nstdout:\\n' +
           output.stdout +
           '\\nstderr:\\n' +
           output.stderr,
@@ -792,7 +792,7 @@ async function waitForHttpHealth(url, daemon) {
 }
 
 async function startSemanticDaemon(port) {
-  const daemon = spawnLogged('klo-daemon', [
+  const daemon = spawnLogged('ktx-daemon', [
     'serve-http',
     '--host',
     '127.0.0.1',
@@ -847,7 +847,7 @@ await requireContextRuntimeAsset('prompts/skills/page_triage_classifier.md');
 await requireContextRuntimeAsset('prompts/skills/light_extraction.md');
 process.stdout.write('packaged ingest runtime assets verified\\n');
 
-const root = await mkdtemp(join(tmpdir(), 'klo-installed-cli-smoke-'));
+const root = await mkdtemp(join(tmpdir(), 'ktx-installed-cli-smoke-'));
 try {
   const projectDir = join(root, 'project');
   const sourceDir = join(root, 'source');
@@ -856,7 +856,7 @@ try {
   await mkdir(missingProjectDir, { recursive: true });
   const missingProjectSearch = await run('pnpm', [
     'exec',
-    'klo',
+    'ktx',
     'agent',
     'sl',
     'list',
@@ -866,19 +866,19 @@ try {
     '--project-dir',
     missingProjectDir,
   ]);
-  const missingProjectError = parseJsonFailure('klo agent sl list missing project', missingProjectSearch);
+  const missingProjectError = parseJsonFailure('ktx agent sl list missing project', missingProjectSearch);
   assert.equal(missingProjectError.error.code, 'agent_sl_search_missing_project');
   assert.deepEqual(missingProjectError.error.nextSteps, [
-    'klo demo',
-    'klo setup --project-dir ' + missingProjectDir,
-    'klo ingest <connection>',
-    'klo agent sl list --json --query "revenue" --project-dir ' + missingProjectDir,
+    'ktx demo',
+    'ktx setup --project-dir ' + missingProjectDir,
+    'ktx ingest <connection>',
+    'ktx agent sl list --json --query "revenue" --project-dir ' + missingProjectDir,
   ]);
-  process.stdout.write('klo agent sl list missing project guidance verified\\n');
+  process.stdout.write('ktx agent sl list missing project guidance verified\\n');
 
   const init = await run('pnpm', [
     'exec',
-    'klo',
+    'ktx',
     'setup',
     '--project-dir',
     projectDir,
@@ -891,13 +891,13 @@ try {
     '--skip-sources',
     '--skip-agents',
   ]);
-  requireSuccess('klo setup', init);
-  requireOutput('klo setup', init, /Project: /);
+  requireSuccess('ktx setup', init);
+  requireOutput('ktx setup', init, /Project: /);
 
   const emptyProjectDir = join(root, 'empty-project');
   const emptyInit = await run('pnpm', [
     'exec',
-    'klo',
+    'ktx',
     'setup',
     '--project-dir',
     emptyProjectDir,
@@ -910,10 +910,10 @@ try {
     '--skip-sources',
     '--skip-agents',
   ]);
-  requireSuccess('klo setup empty project', emptyInit);
+  requireSuccess('ktx setup empty project', emptyInit);
   const emptySearch = await run('pnpm', [
     'exec',
-    'klo',
+    'ktx',
     'agent',
     'sl',
     'list',
@@ -923,18 +923,18 @@ try {
     '--project-dir',
     emptyProjectDir,
   ]);
-  const emptySearchError = parseJsonFailure('klo agent sl list no connections', emptySearch);
+  const emptySearchError = parseJsonFailure('ktx agent sl list no connections', emptySearch);
   assert.equal(emptySearchError.error.code, 'agent_sl_search_no_connections');
   assert.deepEqual(emptySearchError.error.nextSteps, [
-    'klo demo',
-    'klo setup --project-dir ' + emptyProjectDir,
-    'klo ingest <connection>',
-    'klo agent sl list --json --query "revenue" --project-dir ' + emptyProjectDir,
+    'ktx demo',
+    'ktx setup --project-dir ' + emptyProjectDir,
+    'ktx ingest <connection>',
+    'ktx agent sl list --json --query "revenue" --project-dir ' + emptyProjectDir,
   ]);
-  process.stdout.write('klo agent sl list no connections guidance verified\\n');
+  process.stdout.write('ktx agent sl list no connections guidance verified\\n');
 
   await writeFile(
-    join(projectDir, 'klo.yaml'),
+    join(projectDir, 'ktx.yaml'),
     [
       'project: warehouse',
       'connections:',
@@ -958,7 +958,7 @@ try {
   );
   await writeSqliteWarehouse(projectDir);
 
-  const lookerStore = new LocalLookerRuntimeStore({ dbPath: join(projectDir, '.klo', 'db.sqlite') });
+  const lookerStore = new LocalLookerRuntimeStore({ dbPath: join(projectDir, '.ktx', 'db.sqlite') });
   await lookerStore.setCursors('prod-looker', {
     dashboardsLastSyncedAt: null,
     looksLastSyncedAt: null,
@@ -966,12 +966,12 @@ try {
   await lookerStore.upsertConnectionMapping({
     lookerConnectionId: 'prod-looker',
     lookerConnectionName: 'analytics',
-    kloConnectionId: 'warehouse',
+    ktxConnectionId: 'warehouse',
     source: 'cli',
   });
   const lookerMappings = await lookerStore.readMappings('prod-looker');
   assert.equal(lookerMappings.length, 1);
-  assert.equal(lookerMappings[0].kloConnectionId, 'warehouse');
+  assert.equal(lookerMappings[0].ktxConnectionId, 'warehouse');
   process.stdout.write('Looker local runtime store verified\\n');
 
   await mkdir(join(projectDir, 'knowledge', 'global'), { recursive: true });
@@ -995,7 +995,7 @@ try {
 
   const agentWikiSearch = await run('pnpm', [
     'exec',
-    'klo',
+    'ktx',
     'agent',
     'wiki',
     'search',
@@ -1006,19 +1006,19 @@ try {
     '--project-dir',
     projectDir,
   ]);
-  const agentWikiSearchJson = parseJsonResult('klo agent wiki search', agentWikiSearch);
+  const agentWikiSearchJson = parseJsonResult('ktx agent wiki search', agentWikiSearch);
   assert.equal(agentWikiSearchJson.totalFound, 1);
   assert.equal(agentWikiSearchJson.results[0].key, 'revenue');
   assert.equal(agentWikiSearchJson.results[0].path, 'knowledge/global/revenue.md');
   assert.equal(typeof agentWikiSearchJson.results[0].score, 'number');
   requireIncludes(agentWikiSearchJson.results[0].matchReasons, 'lexical', 'agent wiki search match reasons');
-  process.stdout.write('klo agent wiki search hybrid metadata verified\\n');
-  await access(join(projectDir, '.klo', 'db.sqlite'));
-  process.stdout.write('SQLite knowledge index: ' + join(projectDir, '.klo', 'db.sqlite') + '\\n');
+  process.stdout.write('ktx agent wiki search hybrid metadata verified\\n');
+  await access(join(projectDir, '.ktx', 'db.sqlite'));
+  process.stdout.write('SQLite knowledge index: ' + join(projectDir, '.ktx', 'db.sqlite') + '\\n');
 
   const noSourceSearch = await run('pnpm', [
     'exec',
-    'klo',
+    'ktx',
     'agent',
     'sl',
     'list',
@@ -1030,15 +1030,15 @@ try {
     '--project-dir',
     projectDir,
   ]);
-  const noSourceSearchError = parseJsonFailure('klo agent sl list no indexed sources', noSourceSearch);
+  const noSourceSearchError = parseJsonFailure('ktx agent sl list no indexed sources', noSourceSearch);
   assert.equal(noSourceSearchError.error.code, 'agent_sl_search_no_indexed_sources');
   assert.deepEqual(noSourceSearchError.error.nextSteps, [
-    'klo demo',
-    'klo setup --project-dir ' + projectDir,
-    'klo ingest <connection>',
-    'klo agent sl list --json --query "revenue" --project-dir ' + projectDir,
+    'ktx demo',
+    'ktx setup --project-dir ' + projectDir,
+    'ktx ingest <connection>',
+    'ktx agent sl list --json --query "revenue" --project-dir ' + projectDir,
   ]);
-  process.stdout.write('klo agent sl list no indexed sources guidance verified\\n');
+  process.stdout.write('ktx agent sl list no indexed sources guidance verified\\n');
 
   const slYaml = [
     'name: orders',
@@ -1062,7 +1062,7 @@ try {
 
   const agentSlSearch = await run('pnpm', [
     'exec',
-    'klo',
+    'ktx',
     'agent',
     'sl',
     'list',
@@ -1074,18 +1074,18 @@ try {
     '--project-dir',
     projectDir,
   ]);
-  const agentSlSearchJson = parseJsonResult('klo agent sl list', agentSlSearch);
+  const agentSlSearchJson = parseJsonResult('ktx agent sl list', agentSlSearch);
   assert.equal(agentSlSearchJson.totalSources, 1);
   assert.equal(agentSlSearchJson.sources[0].connectionId, 'warehouse');
   assert.equal(agentSlSearchJson.sources[0].name, 'orders');
   assert.equal(typeof agentSlSearchJson.sources[0].score, 'number');
   requireIncludes(agentSlSearchJson.sources[0].matchReasons, 'lexical', 'agent sl search match reasons');
-  process.stdout.write('klo agent sl list hybrid metadata verified\\n');
+  process.stdout.write('ktx agent sl list hybrid metadata verified\\n');
 
   const slQueryFile = join(projectDir, 'sl-query.json');
   await writeFile(slQueryFile, '{"measures":["orders.order_count"],"dimensions":[]}\\n', 'utf-8');
 
-  const slQuery = await run('pnpm', ['exec', 'klo', 'agent', 'sl', 'query',
+  const slQuery = await run('pnpm', ['exec', 'ktx', 'agent', 'sl', 'query',
     '--json',
     '--connection-id',
     'warehouse',
@@ -1094,11 +1094,11 @@ try {
     '--project-dir',
     projectDir,
   ]);
-  requireSuccess('klo agent sl query', slQuery);
-  requireOutput('klo agent sl query', slQuery, /"mode": "compile_only"/);
-  requireOutput('klo agent sl query', slQuery, /orders/);
+  requireSuccess('ktx agent sl query', slQuery);
+  requireOutput('ktx agent sl query', slQuery, /"mode": "compile_only"/);
+  requireOutput('ktx agent sl query', slQuery, /orders/);
 
-  const sqliteSlQuery = await run('pnpm', ['exec', 'klo', 'agent', 'sl', 'query',
+  const sqliteSlQuery = await run('pnpm', ['exec', 'ktx', 'agent', 'sl', 'query',
     '--json',
     '--connection-id',
     'warehouse',
@@ -1110,40 +1110,40 @@ try {
     '--project-dir',
     projectDir,
   ]);
-  requireSuccess('klo agent sl query sqlite execute', sqliteSlQuery);
-  requireOutput('klo agent sl query sqlite execute', sqliteSlQuery, /"dialect": "sqlite"/);
-  requireOutput('klo agent sl query sqlite execute', sqliteSlQuery, /"mode": "executed"/);
-  requireOutput('klo agent sl query sqlite execute', sqliteSlQuery, /"driver": "sqlite"/);
-  requireOutput('klo agent sl query sqlite execute', sqliteSlQuery, /"rows": \\[\\s*\\[\\s*3\\s*\\]\\s*\\]/);
-  process.stdout.write('klo agent sl query sqlite execute verified\\n');
+  requireSuccess('ktx agent sl query sqlite execute', sqliteSlQuery);
+  requireOutput('ktx agent sl query sqlite execute', sqliteSlQuery, /"dialect": "sqlite"/);
+  requireOutput('ktx agent sl query sqlite execute', sqliteSlQuery, /"mode": "executed"/);
+  requireOutput('ktx agent sl query sqlite execute', sqliteSlQuery, /"driver": "sqlite"/);
+  requireOutput('ktx agent sl query sqlite execute', sqliteSlQuery, /"rows": \\[\\s*\\[\\s*3\\s*\\]\\s*\\]/);
+  process.stdout.write('ktx agent sl query sqlite execute verified\\n');
 
-  const structuralScan = await run('pnpm', ['exec', 'klo', 'dev', 'scan', 'warehouse',
+  const structuralScan = await run('pnpm', ['exec', 'ktx', 'dev', 'scan', 'warehouse',
     '--project-dir',
     projectDir,
   ]);
-  requireSuccess('klo scan structural', structuralScan);
-  requireOutput('klo scan structural', structuralScan, /Status: done/);
-  requireOutput('klo scan structural', structuralScan, /Mode: structural/);
-  requireOutput('klo scan structural', structuralScan, /Needs attention\\s+None/);
+  requireSuccess('ktx scan structural', structuralScan);
+  requireOutput('ktx scan structural', structuralScan, /Status: done/);
+  requireOutput('ktx scan structural', structuralScan, /Mode: structural/);
+  requireOutput('ktx scan structural', structuralScan, /Needs attention\\s+None/);
   const structuralScanRunId = getRunId(structuralScan.stdout);
 
-  const scanStatus = await run('pnpm', ['exec', 'klo', 'dev', 'scan', 'status',
+  const scanStatus = await run('pnpm', ['exec', 'ktx', 'dev', 'scan', 'status',
     '--project-dir',
     projectDir,
     structuralScanRunId,
   ]);
-  requireSuccess('klo scan status', scanStatus);
-  requireOutput('klo scan status', scanStatus, new RegExp('Run: ' + structuralScanRunId));
-  requireOutput('klo scan status', scanStatus, /Status: done/);
-  requireOutput('klo scan status', scanStatus, /Mode: structural/);
+  requireSuccess('ktx scan status', scanStatus);
+  requireOutput('ktx scan status', scanStatus, new RegExp('Run: ' + structuralScanRunId));
+  requireOutput('ktx scan status', scanStatus, /Status: done/);
+  requireOutput('ktx scan status', scanStatus, /Mode: structural/);
 
-  const scanReport = await run('pnpm', ['exec', 'klo', 'dev', 'scan', 'report',
+  const scanReport = await run('pnpm', ['exec', 'ktx', 'dev', 'scan', 'report',
     '--project-dir',
     projectDir,
     '--json',
     structuralScanRunId,
   ]);
-  requireSuccess('klo scan report', scanReport);
+  requireSuccess('ktx scan report', scanReport);
   const scanReportJson = JSON.parse(scanReport.stdout);
   assert.equal(scanReportJson.mode, 'structural');
   assert.equal(scanReportJson.connectionId, 'warehouse');
@@ -1151,35 +1151,35 @@ try {
   assert.deepEqual(scanReportJson.artifactPaths.enrichmentArtifacts, []);
   assert.deepEqual(scanReportJson.artifactPaths.manifestShards, ['semantic-layer/warehouse/_schema/public.yaml']);
   await access(join(projectDir, 'semantic-layer', 'warehouse', '_schema', 'public.yaml'));
-  process.stdout.write('klo scan structural verified: ' + structuralScanRunId + '\\n');
+  process.stdout.write('ktx scan structural verified: ' + structuralScanRunId + '\\n');
 
-  const enrichedScan = await run('pnpm', ['exec', 'klo', 'dev', 'scan', 'warehouse',
+  const enrichedScan = await run('pnpm', ['exec', 'ktx', 'dev', 'scan', 'warehouse',
     '--project-dir',
     projectDir,
     '--mode',
     'enriched',
   ]);
-  requireSuccess('klo scan enriched', enrichedScan);
-  requireOutput('klo scan enriched', enrichedScan, /Status: done/);
-  requireOutput('klo scan enriched', enrichedScan, /Mode: enriched/);
+  requireSuccess('ktx scan enriched', enrichedScan);
+  requireOutput('ktx scan enriched', enrichedScan, /Status: done/);
+  requireOutput('ktx scan enriched', enrichedScan, /Mode: enriched/);
   const enrichedScanRunId = getRunId(enrichedScan.stdout);
-  const enrichedScanReport = await run('pnpm', ['exec', 'klo', 'dev', 'scan', 'report',
+  const enrichedScanReport = await run('pnpm', ['exec', 'ktx', 'dev', 'scan', 'report',
     '--project-dir',
     projectDir,
     '--json',
     enrichedScanRunId,
   ]);
-  requireSuccess('klo scan enriched report', enrichedScanReport);
+  requireSuccess('ktx scan enriched report', enrichedScanReport);
   const enrichedScanReportJson = JSON.parse(enrichedScanReport.stdout);
   assert.equal(enrichedScanReportJson.mode, 'enriched');
   assert.ok(enrichedScanReportJson.artifactPaths.enrichmentArtifacts.length > 0);
   assert.deepEqual(enrichedScanReportJson.artifactPaths.manifestShards, ['semantic-layer/warehouse/_schema/public.yaml']);
-  process.stdout.write('klo scan enriched verified: ' + enrichedScanRunId + '\\n');
+  process.stdout.write('ktx scan enriched verified: ' + enrichedScanRunId + '\\n');
 
   await mkdir(join(sourceDir, 'orders'), { recursive: true });
   await writeFile(join(sourceDir, 'orders', 'orders.json'), '{"name":"orders"}\\n', 'utf-8');
 
-  const ingestRun = await run('pnpm', ['exec', 'klo', 'dev', 'ingest', 'run',
+  const ingestRun = await run('pnpm', ['exec', 'ktx', 'dev', 'ingest', 'run',
     '--project-dir',
     projectDir,
     '--connection-id',
@@ -1189,17 +1189,17 @@ try {
     '--source-dir',
     sourceDir,
   ]);
-  assert.equal(ingestRun.code, 1, 'klo dev ingest run without an LLM provider must fail');
+  assert.equal(ingestRun.code, 1, 'ktx dev ingest run without an LLM provider must fail');
   assert.match(
     ingestRun.stderr,
-    /klo dev ingest run requires llm\\.provider\\.backend: anthropic, vertex, or gateway, or an injected agentRunner/,
+    /ktx dev ingest run requires llm\\.provider\\.backend: anthropic, vertex, or gateway, or an injected agentRunner/,
   );
 
-  await access(join(projectDir, '.klo', 'db.sqlite'));
-  process.stdout.write('klo dev ingest provider guard verified\\n');
+  await access(join(projectDir, '.ktx', 'db.sqlite'));
+  process.stdout.write('ktx dev ingest provider guard verified\\n');
 
   await writeFile(
-    join(projectDir, 'klo.yaml'),
+    join(projectDir, 'ktx.yaml'),
     [
       'project: warehouse',
       'connections:',
@@ -1231,7 +1231,7 @@ try {
 
   const daemonPort = await getAvailablePort();
   const semanticComputeUrl = 'http://127.0.0.1:' + daemonPort;
-  process.stdout.write('klo-daemon serve-http --host 127.0.0.1 --port ' + daemonPort + '\\n');
+  process.stdout.write('ktx-daemon serve-http --host 127.0.0.1 --port ' + daemonPort + '\\n');
   const daemon = await startSemanticDaemon(daemonPort);
   const lookerParser = createDaemonLookerTableIdentifierParser({ baseUrl: semanticComputeUrl });
   const parsedLookerTables = await lookerParser.parse([
@@ -1241,13 +1241,13 @@ try {
   assert.equal(parsedLookerTables.orders.name, 'orders');
   assert.equal(parsedLookerTables.orders.canonical_table, 'orders');
   process.stdout.write('Looker daemon table identifier parser verified\\n');
-  const client = new Client({ name: 'klo-artifact-smoke-client', version: '0.0.0' });
-  process.stdout.write('klo serve --mcp stdio --semantic-compute-url ' + semanticComputeUrl + ' --execute-queries\\n');
+  const client = new Client({ name: 'ktx-artifact-smoke-client', version: '0.0.0' });
+  process.stdout.write('ktx serve --mcp stdio --semantic-compute-url ' + semanticComputeUrl + ' --execute-queries\\n');
   const transport = new StdioClientTransport({
     command: 'pnpm',
     args: [
       'exec',
-      'klo',
+      'ktx',
       'serve', '--mcp', 'stdio',
       '--project-dir',
       projectDir,
@@ -1379,7 +1379,7 @@ try {
   } catch (error) {
     const stderr = Buffer.concat(mcpServerStderr).toString('utf8');
     if (stderr) {
-      error.message += '\\nklo serve stderr:\\n' + stderr;
+      error.message += '\\nktx serve stderr:\\n' + stderr;
     }
     throw error;
   } finally {
@@ -1434,31 +1434,31 @@ function requireStdout(label, result, pattern) {
   assert.match(result.stdout, pattern, label + ' stdout did not match ' + pattern);
 }
 
-const root = await mkdtemp(join(tmpdir(), 'klo-packed-demo-smoke-'));
+const root = await mkdtemp(join(tmpdir(), 'ktx-packed-demo-smoke-'));
 try {
   const projectDir = join(root, 'demo-project');
 
-  const help = await run('pnpm', ['exec', 'klo', '--help']);
-  requireSuccess('klo --help', help);
-  requireStdout('klo --help', help, /Usage: klo/);
-  requireStdout('klo --help', help, /setup/);
+  const help = await run('pnpm', ['exec', 'ktx', '--help']);
+  requireSuccess('ktx --help', help);
+  requireStdout('ktx --help', help, /Usage: ktx/);
+  requireStdout('ktx --help', help, /setup/);
 
   const seeded = await run(
     'pnpm',
-    ['exec', 'klo', 'setup', 'demo', '--project-dir', projectDir, '--no-input', '--plain'],
+    ['exec', 'ktx', 'setup', 'demo', '--project-dir', projectDir, '--no-input', '--plain'],
   );
-  requireSuccess('klo setup demo seeded', seeded);
-  requireStdout('klo setup demo seeded', seeded, /Mode: seeded/);
-  requireStdout('klo setup demo seeded', seeded, /Source: packaged demo project/);
-  requireStdout('klo setup demo seeded', seeded, /LLM calls: none/);
-  requireStdout('klo setup demo seeded', seeded, /klo serve --mcp stdio/);
+  requireSuccess('ktx setup demo seeded', seeded);
+  requireStdout('ktx setup demo seeded', seeded, /Mode: seeded/);
+  requireStdout('ktx setup demo seeded', seeded, /Source: packaged demo project/);
+  requireStdout('ktx setup demo seeded', seeded, /LLM calls: none/);
+  requireStdout('ktx setup demo seeded', seeded, /ktx serve --mcp stdio/);
   assert.doesNotMatch(seeded.stdout, new RegExp(['--mode', 'deterministic'].join(' ')));
-  assert.doesNotMatch(seeded.stdout, /KLO memory flow/);
-  assert.equal(seeded.stderr, '', 'klo setup demo seeded wrote unexpected stderr');
+  assert.doesNotMatch(seeded.stdout, /KTX memory flow/);
+  assert.equal(seeded.stderr, '', 'ktx setup demo seeded wrote unexpected stderr');
 
   const demoWikiSearch = await run('pnpm', [
     'exec',
-    'klo',
+    'ktx',
     'agent',
     'wiki',
     'search',
@@ -1469,18 +1469,18 @@ try {
     '--project-dir',
     projectDir,
   ]);
-  requireSuccess('klo seeded demo agent wiki search', demoWikiSearch);
+  requireSuccess('ktx seeded demo agent wiki search', demoWikiSearch);
   const demoWikiSearchJson = JSON.parse(demoWikiSearch.stdout);
   assert.ok(demoWikiSearchJson.totalFound > 0, 'seeded demo wiki search should find results');
   assert.ok(
     demoWikiSearchJson.results.some((result) => Array.isArray(result.matchReasons) && result.matchReasons.length > 0),
     'seeded demo wiki search should expose match reasons',
   );
-  process.stdout.write('klo seeded demo agent wiki search verified\\n');
+  process.stdout.write('ktx seeded demo agent wiki search verified\\n');
 
   const demoSlSearch = await run('pnpm', [
     'exec',
-    'klo',
+    'ktx',
     'agent',
     'sl',
     'list',
@@ -1490,20 +1490,20 @@ try {
     '--project-dir',
     projectDir,
   ]);
-  requireSuccess('klo seeded demo agent sl search', demoSlSearch);
+  requireSuccess('ktx seeded demo agent sl search', demoSlSearch);
   const demoSlSearchJson = JSON.parse(demoSlSearch.stdout);
   assert.ok(demoSlSearchJson.totalSources > 0, 'seeded demo semantic-layer search should find sources');
   assert.ok(
     demoSlSearchJson.sources.some((source) => Array.isArray(source.matchReasons) && source.matchReasons.length > 0),
     'seeded demo semantic-layer search should expose match reasons',
   );
-  process.stdout.write('klo seeded demo agent sl search verified\\n');
+  process.stdout.write('ktx seeded demo agent sl search verified\\n');
 
-  const doctor = await run('pnpm', ['exec', 'klo', 'dev', 'doctor', 'setup', '--no-input']);
-  assert.ok([0, 1].includes(doctor.code), 'klo dev doctor setup exit code must be 0 or 1');
-  requireStdout('klo dev doctor setup', doctor, /KLO setup doctor/);
-  requireStdout('klo dev doctor setup', doctor, /Node 22\\+/);
-  assert.equal(doctor.stderr, '', 'klo dev doctor setup wrote unexpected stderr');
+  const doctor = await run('pnpm', ['exec', 'ktx', 'dev', 'doctor', 'setup', '--no-input']);
+  assert.ok([0, 1].includes(doctor.code), 'ktx dev doctor setup exit code must be 0 or 1');
+  requireStdout('ktx dev doctor setup', doctor, /KTX setup doctor/);
+  requireStdout('ktx dev doctor setup', doctor, /Node 22\\+/);
+  assert.equal(doctor.stderr, '', 'ktx dev doctor setup wrote unexpected stderr');
 } finally {
   await rm(root, { recursive: true, force: true });
 }
@@ -1513,13 +1513,13 @@ try {
 export function pythonVerifySource() {
   return `
 import importlib.metadata
-import klo_daemon
+import ktx_daemon
 import semantic_layer
 
-assert importlib.metadata.version("klo-sl") == "0.1.0"
-assert importlib.metadata.version("klo-daemon") == "0.1.0"
+assert importlib.metadata.version("ktx-sl") == "0.1.0"
+assert importlib.metadata.version("ktx-daemon") == "0.1.0"
 assert semantic_layer is not None
-assert klo_daemon.PACKAGE_NAME == "klo-daemon"
+assert ktx_daemon.PACKAGE_NAME == "ktx-daemon"
 `;
 }
 
@@ -1580,7 +1580,7 @@ async function verifyNpmArtifacts(layout, tmpRoot) {
     cwd: projectDir,
   });
   await runCommand('node', ['verify-npm.mjs'], { cwd: projectDir });
-  await runCommand('pnpm', ['exec', 'klo', '--version'], { cwd: projectDir });
+  await runCommand('pnpm', ['exec', 'ktx', '--version'], { cwd: projectDir });
   await runCommand('node', ['verify-installed-cli.mjs'], {
     cwd: projectDir,
     env: npmSmokePythonEnv(projectDir),
@@ -1618,7 +1618,7 @@ async function verifyPythonArtifacts(layout, tmpRoot) {
     cwd: projectDir,
   });
   await runCommand(python, ['verify_python.py'], { cwd: projectDir });
-  await runCommand(python, ['-m', 'klo_daemon', 'semantic-validate'], {
+  await runCommand(python, ['-m', 'ktx_daemon', 'semantic-validate'], {
     cwd: projectDir,
     input: `${JSON.stringify({ sources: [ordersSource], dialect: 'postgres' })}\n`,
   });
@@ -1627,7 +1627,7 @@ async function verifyPythonArtifacts(layout, tmpRoot) {
 async function verifyArtifacts(layout) {
   await verifyArtifactManifest(layout);
 
-  const tmpRoot = await mkdtemp(join(tmpdir(), 'klo-artifacts-'));
+  const tmpRoot = await mkdtemp(join(tmpdir(), 'ktx-artifacts-'));
   try {
     await verifyNpmArtifacts(layout, tmpRoot);
     await verifyPythonArtifacts(layout, tmpRoot);
@@ -1639,7 +1639,7 @@ async function verifyArtifacts(layout) {
 async function verifyDemoArtifacts(layout) {
   await verifyArtifactManifest(layout);
 
-  const tmpRoot = await mkdtemp(join(tmpdir(), 'klo-demo-artifacts-'));
+  const tmpRoot = await mkdtemp(join(tmpdir(), 'ktx-demo-artifacts-'));
   try {
     await verifyNpmDemoArtifacts(layout, tmpRoot);
   } finally {

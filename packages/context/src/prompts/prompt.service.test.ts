@@ -8,7 +8,7 @@ describe('PromptService', () => {
   let dir: string;
 
   beforeEach(async () => {
-    dir = await mkdtemp(join(tmpdir(), 'klo-prompts-'));
+    dir = await mkdtemp(join(tmpdir(), 'ktx-prompts-'));
   });
 
   afterEach(async () => {
@@ -23,7 +23,7 @@ describe('PromptService', () => {
   });
 
   it('loads prompts from additional directories when the primary directory misses', async () => {
-    const extraDir = await mkdtemp(join(tmpdir(), 'klo-prompts-extra-'));
+    const extraDir = await mkdtemp(join(tmpdir(), 'ktx-prompts-extra-'));
     try {
       await writeFile(join(extraDir, 'memory_agent_research.md'), '<role>Packaged memory prompt</role>', 'utf-8');
       const service = new PromptService({ promptsDir: dir, additionalPromptDirs: [extraDir], partials: [] });

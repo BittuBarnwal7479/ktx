@@ -1,7 +1,7 @@
 [project]
-name = "klo-workspace"
+name = "ktx-workspace"
 version = "0.0.0"
-description = "Workspace root for klo Python packages"
+description = "Workspace root for ktx Python packages"
 requires-python = ">=3.13"
 license = "Apache-2.0"
 dependencies = []
@@ -30,14 +30,14 @@ torch = { index = "pytorch-cpu" }
 
 [tool.uv.workspace]
 members = [
-    "python/klo-sl",
-    "python/klo-daemon",
+    "python/ktx-sl",
+    "python/ktx-daemon",
 ]
 
 [tool.pytest.ini_options]
 addopts = ["--import-mode=importlib"]
-pythonpath = ["python/klo-sl/tests"]
+pythonpath = ["python/ktx-sl/tests"]
 testpaths = [
-    "python/klo-sl/tests",
-    "python/klo-daemon/tests",
+    "python/ktx-sl/tests",
+    "python/ktx-daemon/tests",
 ]

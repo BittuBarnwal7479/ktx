@@ -1,10 +1,10 @@
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { LocalMetabaseSourceStateReader } from '@klo/context/ingest';
-import { initKloProject, loadKloProject, serializeKloProjectConfig } from '@klo/context/project';
+import { LocalMetabaseSourceStateReader } from '@ktx/context/ingest';
+import { initKtxProject, loadKtxProject, serializeKtxProjectConfig } from '@ktx/context/project';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { runKloConnectionMapping } from './connection-mapping.js';
+import { runKtxConnectionMapping } from './connection-mapping.js';
 
 function makeIo() {
   let stdout = '';
@@ -27,18 +27,18 @@ function makeIo() {
   };
 }
 
-describe('runKloConnectionMapping', () => {
+describe('runKtxConnectionMapping', () => {
   let tempDir: string;
   let projectDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-cli-metabase-mapping-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-cli-metabase-mapping-'));
     projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'mapping' });
-    const project = await loadKloProject({ projectDir });
+    await initKtxProject({ projectDir, projectName: 'mapping' });
+    const project = await loadKtxProject({ projectDir });
     await project.fileStore.writeFile(
-      'klo.yaml',
-      serializeKloProjectConfig({
+      'ktx.yaml',
+      serializeKtxProjectConfig({
         ...project.config,
         connections: {
           'prod-metabase': {
@@ -53,22 +53,22 @@ describe('runKloConnectionMapping', () => {
           },
         },
       }),
-      'klo',
-      'klo@example.com',
+      'ktx',
+      'ktx@example.com',
       'Seed Metabase mapping test connections',
     );
   });
 
   async function replaceConnections(connections: Record<string, { driver: string; [key: string]: unknown }>) {
-    const project = await loadKloProject({ projectDir });
+    const project = await loadKtxProject({ projectDir });
     await project.fileStore.writeFile(
-      'klo.yaml',
-      serializeKloProjectConfig({
+      'ktx.yaml',
+      serializeKtxProjectConfig({
         ...project.config,
         connections,
       }),
-      'klo',
-      'klo@example.com',
+      'ktx',
+      'ktx@example.com',
       'Replace mapping test connections',
     );
   }
@@ -80,7 +80,7 @@ describe('runKloConnectionMapping', () => {
   it('sets, lists, disables, and clears local Metabase mappings', async () => {
     const io = makeIo();
     await expect(
-      runKloConnectionMapping(
+      runKtxConnectionMapping(
         {
           command: 'set',
           projectDir,
@@ -95,13 +95,13 @@ describe('runKloConnectionMapping', () => {
 
     const listIo = makeIo();
     await expect(
-      runKloConnectionMapping({ command: 'list', projectDir, connectionId: 'prod-metabase', json: false }, listIo.io),
+      runKtxConnectionMapping({ command: 'list', projectDir, connectionId: 'prod-metabase', json: false }, listIo.io),
     ).resolves.toBe(0);
     expect(listIo.stdout()).toContain('1 -> prod-warehouse');
     expect(listIo.stdout()).toContain('unhydrated');
 
     await expect(
-      runKloConnectionMapping(
+      runKtxConnectionMapping(
         {
           command: 'set-sync-enabled',
           projectDir,
@@ -114,7 +114,7 @@ describe('runKloConnectionMapping', () => {
     ).resolves.toBe(0);
 
     await expect(
-      runKloConnectionMapping(
+      runKtxConnectionMapping(
         {
           command: 'clear',
           projectDir,
@@ -127,12 +127,12 @@ describe('runKloConnectionMapping', () => {
   });
 
   it('lists Metabase yaml mapping bootstrap rows before any SQLite command writes', async () => {
-    const projectDir = await mkdtemp(join(tmpdir(), 'klo-cli-yaml-mapping-'));
-    await initKloProject({ projectDir, projectName: 'yaml-mapping' });
-    const project = await loadKloProject({ projectDir });
+    const projectDir = await mkdtemp(join(tmpdir(), 'ktx-cli-yaml-mapping-'));
+    await initKtxProject({ projectDir, projectName: 'yaml-mapping' });
+    const project = await loadKtxProject({ projectDir });
     await project.fileStore.writeFile(
-      'klo.yaml',
-      serializeKloProjectConfig({
+      'ktx.yaml',
+      serializeKtxProjectConfig({
         ...project.config,
         connections: {
           'prod-metabase': {
@@ -145,21 +145,21 @@ describe('runKloConnectionMapping', () => {
           'prod-warehouse': { driver: 'postgres', url: 'postgresql://readonly@db.test/analytics' },
         },
       }),
-      'klo',
-      'klo@example.com',
+      'ktx',
+      'ktx@example.com',
       'Seed yaml mappings',
     );
     const io = makeIo();
 
     await expect(
-      runKloConnectionMapping(
+      runKtxConnectionMapping(
         { command: 'list', projectDir, connectionId: 'prod-metabase', json: false },
         io.io,
       ),
     ).resolves.toBe(0);
 
     expect(io.stdout()).toContain('1 -> prod-warehouse');
-    expect(io.stdout()).toContain('source: klo.yaml');
+    expect(io.stdout()).toContain('source: ktx.yaml');
   });
 
   it('refreshes Metabase discovery metadata through the injected runtime client', async () => {
@@ -178,7 +178,7 @@ describe('runKloConnectionMapping', () => {
     const io = makeIo();
 
     await expect(
-      runKloConnectionMapping(
+      runKtxConnectionMapping(
         {
           command: 'refresh',
           projectDir,
@@ -194,7 +194,7 @@ describe('runKloConnectionMapping', () => {
 
     expect(io.stdout()).toContain('Discovery: 1 database');
     expect(client.cleanup).toHaveBeenCalledTimes(1);
-    const store = new LocalMetabaseSourceStateReader({ dbPath: join(projectDir, '.klo', 'db.sqlite') });
+    const store = new LocalMetabaseSourceStateReader({ dbPath: join(projectDir, '.ktx', 'db.sqlite') });
     await expect(store.listDatabaseMappings('prod-metabase')).resolves.toMatchObject([
       { metabaseDatabaseId: 1, metabaseDatabaseName: 'Analytics', source: 'refresh' },
     ]);
@@ -215,7 +215,7 @@ describe('runKloConnectionMapping', () => {
     const io = makeIo();
 
     await expect(
-      runKloConnectionMapping(
+      runKtxConnectionMapping(
         {
           command: 'set',
           projectDir,
@@ -228,7 +228,7 @@ describe('runKloConnectionMapping', () => {
       ),
     ).resolves.toBe(0);
     await expect(
-      runKloConnectionMapping({ command: 'list', projectDir, connectionId: 'prod-looker', json: false }, io.io),
+      runKtxConnectionMapping({ command: 'list', projectDir, connectionId: 'prod-looker', json: false }, io.io),
     ).resolves.toBe(0);
 
     expect(io.stdout()).toContain('analytics -> prod-warehouse');
@@ -242,7 +242,7 @@ describe('runKloConnectionMapping', () => {
 
     const io = makeIo();
     await expect(
-      runKloConnectionMapping(
+      runKtxConnectionMapping(
         {
           command: 'set',
           projectDir,
@@ -273,7 +273,7 @@ describe('runKloConnectionMapping', () => {
     const io = makeIo();
 
     await expect(
-      runKloConnectionMapping(
+      runKtxConnectionMapping(
         { command: 'refresh', projectDir, connectionId: 'prod-looker', autoAccept: true },
         io.io,
         {
@@ -298,12 +298,12 @@ describe('runKloConnectionMapping', () => {
   });
 
   it('validates Looker mappings through the canonical local warehouse descriptor', async () => {
-    const projectDir = await mkdtemp(join(tmpdir(), 'klo-cli-descriptor-validation-'));
-    await initKloProject({ projectDir, projectName: 'descriptor-validation' });
-    const project = await loadKloProject({ projectDir });
+    const projectDir = await mkdtemp(join(tmpdir(), 'ktx-cli-descriptor-validation-'));
+    await initKtxProject({ projectDir, projectName: 'descriptor-validation' });
+    const project = await loadKtxProject({ projectDir });
     await project.fileStore.writeFile(
-      'klo.yaml',
-      serializeKloProjectConfig({
+      'ktx.yaml',
+      serializeKtxProjectConfig({
         ...project.config,
         connections: {
           'prod-looker': {
@@ -313,14 +313,14 @@ describe('runKloConnectionMapping', () => {
           'prod-warehouse': { driver: 'postgresql', url: 'postgresql://readonly@db.test/analytics' },
         },
       }),
-      'klo',
-      'klo@example.com',
+      'ktx',
+      'ktx@example.com',
       'Seed descriptor validation',
     );
     const io = makeIo();
 
     await expect(
-      runKloConnectionMapping({ command: 'validate', projectDir, connectionId: 'prod-looker' }, io.io),
+      runKtxConnectionMapping({ command: 'validate', projectDir, connectionId: 'prod-looker' }, io.io),
     ).resolves.toBe(0);
 
     expect(io.stdout()).toContain('Mapping validation passed: prod-looker');

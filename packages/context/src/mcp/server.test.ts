@@ -3,14 +3,14 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { createLocalProjectMemoryCapture } from '../memory/index.js';
-import { initKloProject } from '../project/index.js';
-import { createKloMcpServer } from './server.js';
+import { initKtxProject } from '../project/index.js';
+import { createKtxMcpServer } from './server.js';
 import type {
-  KloIngestMcpPort,
-  KloKnowledgeMcpPort,
-  KloMcpContextPorts,
-  KloScanMcpPort,
-  KloSemanticLayerMcpPort,
+  KtxIngestMcpPort,
+  KtxKnowledgeMcpPort,
+  KtxMcpContextPorts,
+  KtxScanMcpPort,
+  KtxSemanticLayerMcpPort,
   MemoryCapturePort,
 } from './types.js';
 
@@ -40,11 +40,11 @@ function getTool(tools: RegisteredTool[], name: string): RegisteredTool {
   return found;
 }
 
-describe('createKloMcpServer', () => {
+describe('createKtxMcpServer', () => {
   it('registers context tools without memory capture tools when memory capture is omitted', async () => {
     const fake = makeFakeServer();
 
-    createKloMcpServer({
+    createKtxMcpServer({
       server: fake.server,
       userContext: { userId: 'local-user' },
       contextTools: {
@@ -81,7 +81,7 @@ describe('createKloMcpServer', () => {
       }),
     };
 
-    createKloMcpServer({
+    createKtxMcpServer({
       server: fake.server,
       memoryCapture: capture,
       userContext: { userId: 'mcp-user' },
@@ -152,7 +152,7 @@ describe('createKloMcpServer', () => {
       status: vi.fn<MemoryCapturePort['status']>().mockResolvedValue(null),
     };
 
-    createKloMcpServer({
+    createKtxMcpServer({
       server: fake.server,
       memoryCapture: capture,
       userContext: { userId: 'mcp-user' },
@@ -166,9 +166,9 @@ describe('createKloMcpServer', () => {
   });
 
   it('runs MCP memory_capture against a local project memory port', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'klo-mcp-local-memory-'));
+    const tempDir = await mkdtemp(join(tmpdir(), 'ktx-mcp-local-memory-'));
     try {
-      const project = await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+      const project = await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
       const agentRunner = {
         runLoop: async ({
           toolSet,
@@ -193,7 +193,7 @@ describe('createKloMcpServer', () => {
       });
       const fake = makeFakeServer();
 
-      createKloMcpServer({
+      createKtxMcpServer({
         server: fake.server,
         memoryCapture,
         userContext: { userId: 'mcp-user' },
@@ -218,8 +218,8 @@ describe('createKloMcpServer', () => {
           captured: { wiki: ['arr'], sl: [], xrefs: [] },
         },
       });
-      await expect(access(join(project.projectDir, '.klo/db.sqlite'))).resolves.toBeUndefined();
-      await expect(access(join(project.projectDir, '.klo/memory-runs/memory-run-mcp.json'))).rejects.toThrow();
+      await expect(access(join(project.projectDir, '.ktx/db.sqlite'))).resolves.toBeUndefined();
+      await expect(access(join(project.projectDir, '.ktx/memory-runs/memory-run-mcp.json'))).rejects.toThrow();
       await expect(readFile(join(project.projectDir, 'knowledge/global/arr.md'), 'utf-8')).resolves.toContain(
         'ARR means annual recurring revenue.',
       );
@@ -228,13 +228,13 @@ describe('createKloMcpServer', () => {
     }
   });
 
-  it('registers KLO context MCP tools when context ports are supplied', async () => {
+  it('registers KTX context MCP tools when context ports are supplied', async () => {
     const fake = makeFakeServer();
     const capture: MemoryCapturePort = {
       capture: vi.fn<MemoryCapturePort['capture']>().mockResolvedValue({ runId: 'run-1' }),
       status: vi.fn<MemoryCapturePort['status']>().mockResolvedValue(null),
     };
-    const contextTools: KloMcpContextPorts = {
+    const contextTools: KtxMcpContextPorts = {
       connections: {
         list: vi.fn().mockResolvedValue([
           {
@@ -253,7 +253,7 @@ describe('createKloMcpServer', () => {
         }),
       },
       knowledge: {
-        search: vi.fn<KloKnowledgeMcpPort['search']>().mockResolvedValue({
+        search: vi.fn<KtxKnowledgeMcpPort['search']>().mockResolvedValue({
           results: [
             {
               key: 'revenue',
@@ -266,7 +266,7 @@ describe('createKloMcpServer', () => {
           ],
           totalFound: 1,
         }),
-        read: vi.fn<KloKnowledgeMcpPort['read']>().mockResolvedValue({
+        read: vi.fn<KtxKnowledgeMcpPort['read']>().mockResolvedValue({
           key: 'revenue',
           summary: 'Paid order value',
           content: '# Revenue',
@@ -275,14 +275,14 @@ describe('createKloMcpServer', () => {
           refs: [],
           slRefs: ['orders'],
         }),
-        write: vi.fn<KloKnowledgeMcpPort['write']>().mockResolvedValue({
+        write: vi.fn<KtxKnowledgeMcpPort['write']>().mockResolvedValue({
           success: true,
           key: 'revenue',
           action: 'updated',
         }),
       },
       semanticLayer: {
-        listSources: vi.fn<KloSemanticLayerMcpPort['listSources']>().mockResolvedValue({
+        listSources: vi.fn<KtxSemanticLayerMcpPort['listSources']>().mockResolvedValue({
           sources: [
             {
               connectionId: '00000000-0000-4000-8000-000000000001',
@@ -296,22 +296,22 @@ describe('createKloMcpServer', () => {
           ],
           totalSources: 1,
         }),
-        readSource: vi.fn<KloSemanticLayerMcpPort['readSource']>().mockResolvedValue({
+        readSource: vi.fn<KtxSemanticLayerMcpPort['readSource']>().mockResolvedValue({
           sourceName: 'orders',
           yaml: 'name: orders\n',
         }),
-        writeSource: vi.fn<KloSemanticLayerMcpPort['writeSource']>().mockResolvedValue({
+        writeSource: vi.fn<KtxSemanticLayerMcpPort['writeSource']>().mockResolvedValue({
           success: true,
           sourceName: 'orders',
           yaml: 'name: orders\n',
           commitHash: 'abc123',
         }),
-        validate: vi.fn<KloSemanticLayerMcpPort['validate']>().mockResolvedValue({
+        validate: vi.fn<KtxSemanticLayerMcpPort['validate']>().mockResolvedValue({
           success: true,
           errors: [],
           warnings: [],
         }),
-        query: vi.fn<KloSemanticLayerMcpPort['query']>().mockResolvedValue({
+        query: vi.fn<KtxSemanticLayerMcpPort['query']>().mockResolvedValue({
           sql: 'select 1',
           headers: ['count'],
           rows: [[1]],
@@ -320,12 +320,12 @@ describe('createKloMcpServer', () => {
         }),
       },
       ingest: {
-        trigger: vi.fn<KloIngestMcpPort['trigger']>().mockResolvedValue({
+        trigger: vi.fn<KtxIngestMcpPort['trigger']>().mockResolvedValue({
           runId: 'run-42',
           jobId: 'job-42',
           reportId: 'report-42',
         }),
-        status: vi.fn<KloIngestMcpPort['status']>().mockResolvedValue({
+        status: vi.fn<KtxIngestMcpPort['status']>().mockResolvedValue({
           runId: 'run-42',
           jobId: 'job-42',
           reportId: 'report-42',
@@ -359,7 +359,7 @@ describe('createKloMcpServer', () => {
           evictionDeletedRawPaths: [],
           errors: [],
         }),
-        report: vi.fn<NonNullable<KloIngestMcpPort['report']>>().mockResolvedValue({
+        report: vi.fn<NonNullable<KtxIngestMcpPort['report']>>().mockResolvedValue({
           id: 'report-42',
           runId: 'run-42',
           jobId: 'job-42',
@@ -384,7 +384,7 @@ describe('createKloMcpServer', () => {
             toolTranscripts: [],
           },
         }),
-        replay: vi.fn<NonNullable<KloIngestMcpPort['replay']>>().mockResolvedValue({
+        replay: vi.fn<NonNullable<KtxIngestMcpPort['replay']>>().mockResolvedValue({
           runId: 'run-42',
           reportId: 'report-42',
           reportPath: 'report-42',
@@ -400,7 +400,7 @@ describe('createKloMcpServer', () => {
         }),
       },
       scan: {
-        trigger: vi.fn<KloScanMcpPort['trigger']>().mockResolvedValue({
+        trigger: vi.fn<KtxScanMcpPort['trigger']>().mockResolvedValue({
           runId: 'scan-run-1',
           status: 'done',
           done: true,
@@ -460,7 +460,7 @@ describe('createKloMcpServer', () => {
             createdAt: '2026-04-29T09:00:00.000Z',
           },
         }),
-        status: vi.fn<KloScanMcpPort['status']>().mockResolvedValue({
+        status: vi.fn<KtxScanMcpPort['status']>().mockResolvedValue({
           runId: 'scan-run-1',
           status: 'done',
           done: true,
@@ -474,8 +474,8 @@ describe('createKloMcpServer', () => {
           reportPath: 'raw-sources/warehouse/live-database/sync-1/scan-report.json',
           warnings: [],
         }),
-        report: vi.fn<KloScanMcpPort['report']>().mockResolvedValue(null),
-        listArtifacts: vi.fn<NonNullable<KloScanMcpPort['listArtifacts']>>().mockResolvedValue({
+        report: vi.fn<KtxScanMcpPort['report']>().mockResolvedValue(null),
+        listArtifacts: vi.fn<NonNullable<KtxScanMcpPort['listArtifacts']>>().mockResolvedValue({
           runId: 'scan-run-1',
           artifacts: [
             {
@@ -490,7 +490,7 @@ describe('createKloMcpServer', () => {
             },
           ],
         }),
-        readArtifact: vi.fn<NonNullable<KloScanMcpPort['readArtifact']>>().mockImplementation(async (input) => {
+        readArtifact: vi.fn<NonNullable<KtxScanMcpPort['readArtifact']>>().mockImplementation(async (input) => {
           if (input.path !== 'raw-sources/warehouse/live-database/sync-1/tables/orders.json') {
             return null;
           }
@@ -505,7 +505,7 @@ describe('createKloMcpServer', () => {
       },
     };
 
-    createKloMcpServer({
+    createKtxMcpServer({
       server: fake.server,
       memoryCapture: capture,
       userContext: { userId: 'mcp-user' },
@@ -859,10 +859,10 @@ describe('createKloMcpServer', () => {
     await expect(
       getTool(fake.tools, 'scan_read_artifact').handler({
         runId: 'scan-run-1',
-        path: 'klo.yaml',
+        path: 'ktx.yaml',
       }),
     ).resolves.toEqual({
-      content: [{ type: 'text', text: 'Scan artifact "klo.yaml" was not found for run "scan-run-1".' }],
+      content: [{ type: 'text', text: 'Scan artifact "ktx.yaml" was not found for run "scan-run-1".' }],
       isError: true,
     });
   });

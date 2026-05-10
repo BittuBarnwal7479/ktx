@@ -1,7 +1,7 @@
 {
-  "name": "@klo/connector-sqlite",
+  "name": "@ktx/connector-sqlite",
   "version": "0.0.0-private",
-  "description": "SQLite connector package for KLO scan interfaces",
+  "description": "SQLite connector package for KTX scan interfaces",
   "private": true,
   "type": "module",
   "engines": {
@@ -26,7 +26,7 @@
     "type-check": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@klo/context": "workspace:*",
+    "@ktx/context": "workspace:*",
     "better-sqlite3": "^12.6.2"
   },
   "devDependencies": {

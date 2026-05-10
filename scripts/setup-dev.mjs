@@ -7,7 +7,7 @@ import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFileCallback);
 
-function kloRootDir() {
+function ktxRootDir() {
   return resolve(dirname(fileURLToPath(import.meta.url)), '..');
 }
 
@@ -19,7 +19,7 @@ function failureText(error) {
 }
 
 export async function runSetupDev(options = {}) {
-  const rootDir = options.rootDir ?? kloRootDir();
+  const rootDir = options.rootDir ?? ktxRootDir();
   const execFile = options.execFile ?? execFileAsync;
   const log = options.log ?? ((line) => process.stdout.write(`${line}\n`));
   const phases = [
@@ -45,7 +45,7 @@ export async function runSetupDev(options = {}) {
       name: 'doctor setup',
       command: process.execPath,
       args: ['packages/cli/dist/bin.js', 'dev', 'doctor', 'setup', '--no-input'],
-      retry: 'pnpm run klo -- dev doctor setup --no-input',
+      retry: 'pnpm run ktx -- dev doctor setup --no-input',
     },
   ];
 
@@ -61,7 +61,7 @@ export async function runSetupDev(options = {}) {
     }
   }
 
-  log('Workspace CLI: pnpm run klo -- --help');
+  log('Workspace CLI: pnpm run ktx -- --help');
   log('Optional global dev link: pnpm run link:dev');
   return { ok: true };
 }

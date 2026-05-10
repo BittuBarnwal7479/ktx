@@ -96,14 +96,14 @@ function reportSnapshot(): IngestReportSnapshot {
       toolTranscripts: [
         {
           unitKey: 'orders',
-          path: '/tmp/klo/run/wu-transcripts/job-1/orders.jsonl',
+          path: '/tmp/ktx/run/wu-transcripts/job-1/orders.jsonl',
           toolCallCount: 3,
           errorCount: 0,
           toolNames: ['read_raw_span', 'wiki_write', 'sl_write_source'],
         },
         {
           unitKey: 'customers',
-          path: '/tmp/klo/run/wu-transcripts/job-1/customers.jsonl',
+          path: '/tmp/ktx/run/wu-transcripts/job-1/customers.jsonl',
           toolCallCount: 2,
           errorCount: 1,
           toolNames: ['read_raw_span', 'sl_write_source'],
@@ -244,14 +244,14 @@ describe('memory-flow event mapping', () => {
     expect(replay.details.transcripts).toEqual([
       {
         unitKey: 'orders',
-        path: '/tmp/klo/run/wu-transcripts/job-1/orders.jsonl',
+        path: '/tmp/ktx/run/wu-transcripts/job-1/orders.jsonl',
         toolCallCount: 3,
         errorCount: 0,
         toolNames: ['read_raw_span', 'wiki_write', 'sl_write_source'],
       },
       {
         unitKey: 'customers',
-        path: '/tmp/klo/run/wu-transcripts/job-1/customers.jsonl',
+        path: '/tmp/ktx/run/wu-transcripts/job-1/customers.jsonl',
         toolCallCount: 2,
         errorCount: 1,
         toolNames: ['read_raw_span', 'sl_write_source'],

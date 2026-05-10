@@ -1,4 +1,4 @@
-export const KLO_RELATIONSHIP_SCORE_SIGNAL_KEYS = [
+export const KTX_RELATIONSHIP_SCORE_SIGNAL_KEYS = [
   'nameSimilarity',
   'typeCompatibility',
   'valueOverlap',
@@ -8,11 +8,11 @@ export const KLO_RELATIONSHIP_SCORE_SIGNAL_KEYS = [
   'structuralPrior',
 ] as const;
 
-export type KloRelationshipScoreSignal = (typeof KLO_RELATIONSHIP_SCORE_SIGNAL_KEYS)[number];
+export type KtxRelationshipScoreSignal = (typeof KTX_RELATIONSHIP_SCORE_SIGNAL_KEYS)[number];
 
-export type KloRelationshipFixtureOrigin = 'synthetic' | 'public' | 'customer';
+export type KtxRelationshipFixtureOrigin = 'synthetic' | 'public' | 'customer';
 
-export interface KloRelationshipSignalVector {
+export interface KtxRelationshipSignalVector {
   nameSimilarity: number;
   typeCompatibility: number;
   valueOverlap: number;
@@ -22,23 +22,23 @@ export interface KloRelationshipSignalVector {
   structuralPrior: number;
 }
 
-export type KloRelationshipScoreWeights = Record<KloRelationshipScoreSignal, number>;
+export type KtxRelationshipScoreWeights = Record<KtxRelationshipScoreSignal, number>;
 
-export interface KloRelationshipScoreBreakdown {
+export interface KtxRelationshipScoreBreakdown {
   score: number;
-  signals: KloRelationshipSignalVector;
-  weights: KloRelationshipScoreWeights;
-  contributions: KloRelationshipScoreWeights;
+  signals: KtxRelationshipSignalVector;
+  weights: KtxRelationshipScoreWeights;
+  contributions: KtxRelationshipScoreWeights;
 }
 
-export interface KloRelationshipScoringCalibrationObservation {
+export interface KtxRelationshipScoringCalibrationObservation {
   fixtureId: string;
-  origin: KloRelationshipFixtureOrigin;
+  origin: KtxRelationshipFixtureOrigin;
   expectedRelationship: boolean;
-  signals: KloRelationshipSignalVector;
+  signals: KtxRelationshipSignalVector;
 }
 
-const DEFAULT_WEIGHTS: KloRelationshipScoreWeights = {
+const DEFAULT_WEIGHTS: KtxRelationshipScoreWeights = {
   nameSimilarity: 0.24,
   typeCompatibility: 0.1,
   valueOverlap: 0.22,
@@ -59,7 +59,7 @@ function roundScore(value: number): number {
   return Number(clampScore(value).toFixed(3));
 }
 
-function sanitizeSignalVector(signals: KloRelationshipSignalVector): KloRelationshipSignalVector {
+function sanitizeSignalVector(signals: KtxRelationshipSignalVector): KtxRelationshipSignalVector {
   return {
     nameSimilarity: roundScore(signals.nameSimilarity),
     typeCompatibility: roundScore(signals.typeCompatibility),
@@ -71,38 +71,38 @@ function sanitizeSignalVector(signals: KloRelationshipSignalVector): KloRelation
   };
 }
 
-export function defaultKloRelationshipScoreWeights(): KloRelationshipScoreWeights {
+export function defaultKtxRelationshipScoreWeights(): KtxRelationshipScoreWeights {
   return { ...DEFAULT_WEIGHTS };
 }
 
-export function normalizeKloRelationshipScoreWeights(
-  weights: Partial<KloRelationshipScoreWeights> = DEFAULT_WEIGHTS,
-): KloRelationshipScoreWeights {
-  const rawEntries = KLO_RELATIONSHIP_SCORE_SIGNAL_KEYS.map((key) => {
+export function normalizeKtxRelationshipScoreWeights(
+  weights: Partial<KtxRelationshipScoreWeights> = DEFAULT_WEIGHTS,
+): KtxRelationshipScoreWeights {
+  const rawEntries = KTX_RELATIONSHIP_SCORE_SIGNAL_KEYS.map((key) => {
     const value = weights[key] ?? 0;
     return [key, Number.isFinite(value) ? Math.max(0, value) : 0] as const;
   });
   const total = rawEntries.reduce((sum, [, value]) => sum + value, 0);
   if (total <= 0) {
-    return defaultKloRelationshipScoreWeights();
+    return defaultKtxRelationshipScoreWeights();
   }
 
-  return Object.fromEntries(rawEntries.map(([key, value]) => [key, value / total])) as KloRelationshipScoreWeights;
+  return Object.fromEntries(rawEntries.map(([key, value]) => [key, value / total])) as KtxRelationshipScoreWeights;
 }
 
-export function scoreKloRelationshipCandidate(
-  signals: KloRelationshipSignalVector,
-  weights: Partial<KloRelationshipScoreWeights> = DEFAULT_WEIGHTS,
-): KloRelationshipScoreBreakdown {
+export function scoreKtxRelationshipCandidate(
+  signals: KtxRelationshipSignalVector,
+  weights: Partial<KtxRelationshipScoreWeights> = DEFAULT_WEIGHTS,
+): KtxRelationshipScoreBreakdown {
   const sanitizedSignals = sanitizeSignalVector(signals);
-  const normalizedWeights = normalizeKloRelationshipScoreWeights(weights);
+  const normalizedWeights = normalizeKtxRelationshipScoreWeights(weights);
   const contributions = Object.fromEntries(
-    KLO_RELATIONSHIP_SCORE_SIGNAL_KEYS.map((key) => [
+    KTX_RELATIONSHIP_SCORE_SIGNAL_KEYS.map((key) => [
       key,
       Number((sanitizedSignals[key] * normalizedWeights[key]).toFixed(6)),
     ]),
-  ) as KloRelationshipScoreWeights;
-  const rawWeightedScore = KLO_RELATIONSHIP_SCORE_SIGNAL_KEYS.reduce((sum, key) => sum + contributions[key], 0);
+  ) as KtxRelationshipScoreWeights;
+  const rawWeightedScore = KTX_RELATIONSHIP_SCORE_SIGNAL_KEYS.reduce((sum, key) => sum + contributions[key], 0);
   const scoredConfidence = sanitizedSignals.typeCompatibility <= 0 ? 0 : 0.56 + rawWeightedScore * 0.65;
 
   return {
@@ -114,8 +114,8 @@ export function scoreKloRelationshipCandidate(
 }
 
 function averageSignal(
-  observations: readonly KloRelationshipScoringCalibrationObservation[],
-  key: KloRelationshipScoreSignal,
+  observations: readonly KtxRelationshipScoringCalibrationObservation[],
+  key: KtxRelationshipScoreSignal,
 ): number {
   if (observations.length === 0) {
     return 0;
@@ -124,8 +124,8 @@ function averageSignal(
 }
 
 export function calibrateWeightsFromSyntheticFixtures(
-  observations: readonly KloRelationshipScoringCalibrationObservation[],
-): KloRelationshipScoreWeights {
+  observations: readonly KtxRelationshipScoringCalibrationObservation[],
+): KtxRelationshipScoreWeights {
   const nonSynthetic = observations.find((observation) => observation.origin !== 'synthetic');
   if (nonSynthetic) {
     throw new Error(
@@ -133,23 +133,23 @@ export function calibrateWeightsFromSyntheticFixtures(
     );
   }
   if (observations.length === 0) {
-    return defaultKloRelationshipScoreWeights();
+    return defaultKtxRelationshipScoreWeights();
   }
 
   const positives = observations.filter((observation) => observation.expectedRelationship);
   const negatives = observations.filter((observation) => !observation.expectedRelationship);
   if (positives.length === 0 || negatives.length === 0) {
-    return defaultKloRelationshipScoreWeights();
+    return defaultKtxRelationshipScoreWeights();
   }
 
   const calibrated = Object.fromEntries(
-    KLO_RELATIONSHIP_SCORE_SIGNAL_KEYS.map((key) => {
+    KTX_RELATIONSHIP_SCORE_SIGNAL_KEYS.map((key) => {
       const positiveAverage = averageSignal(positives, key);
       const negativeAverage = averageSignal(negatives, key);
       const separation = Math.max(0, positiveAverage - negativeAverage);
       return [key, separation + DEFAULT_WEIGHTS[key] * 0.25];
     }),
-  ) as KloRelationshipScoreWeights;
+  ) as KtxRelationshipScoreWeights;
 
-  return normalizeKloRelationshipScoreWeights(calibrated);
+  return normalizeKtxRelationshipScoreWeights(calibrated);
 }

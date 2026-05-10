@@ -1,4 +1,4 @@
-import type { KloLocalProject, KloProjectConnectionConfig } from '../../../project/index.js';
+import type { KtxLocalProject, KtxProjectConnectionConfig } from '../../../project/index.js';
 import {
   DefaultLookerClientFactory,
   DefaultLookerConnectionClientFactory,
@@ -19,7 +19,7 @@ function resolveEnvReference(ref: string, env: NodeJS.ProcessEnv): string | null
 
 export function lookerCredentialsFromLocalConnection(
   connectionId: string,
-  connection: KloProjectConnectionConfig | undefined,
+  connection: KtxProjectConnectionConfig | undefined,
   env: NodeJS.ProcessEnv = process.env,
 ) {
   if (!connection || String(connection.driver).toLowerCase() !== 'looker') {
@@ -46,7 +46,7 @@ export function lookerCredentialsFromLocalConnection(
 }
 
 export function createLocalLookerCredentialResolver(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   env: NodeJS.ProcessEnv = process.env,
 ): LookerCredentialResolver {
   return {
@@ -57,7 +57,7 @@ export function createLocalLookerCredentialResolver(
 }
 
 export function createLocalLookerSourceAdapter(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   env: NodeJS.ProcessEnv = process.env,
 ): LookerSourceAdapter {
   const connectionFactory = new DefaultLookerConnectionClientFactory(createLocalLookerCredentialResolver(project, env));

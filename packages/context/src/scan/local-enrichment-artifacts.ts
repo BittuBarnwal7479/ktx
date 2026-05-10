@@ -7,31 +7,31 @@ import {
   type LiveDatabaseManifestShard,
   type LiveDatabaseManifestTableData,
 } from '../ingest/index.js';
-import type { KloScanRelationshipConfig } from '../project/config.js';
-import type { KloLocalProject } from '../project/index.js';
-import type { KloLocalScanEnrichmentResult } from './local-enrichment.js';
+import type { KtxScanRelationshipConfig } from '../project/config.js';
+import type { KtxLocalProject } from '../project/index.js';
+import type { KtxLocalScanEnrichmentResult } from './local-enrichment.js';
 import {
-  buildKloRelationshipArtifacts,
-  buildKloRelationshipDiagnostics,
-  emptyKloRelationshipProfileArtifact,
+  buildKtxRelationshipArtifacts,
+  buildKtxRelationshipDiagnostics,
+  emptyKtxRelationshipProfileArtifact,
 } from './relationship-diagnostics.js';
-import type { KloConnectionDriver, KloSchemaColumn, KloSchemaSnapshot, KloSchemaTable } from './types.js';
+import type { KtxConnectionDriver, KtxSchemaColumn, KtxSchemaSnapshot, KtxSchemaTable } from './types.js';
 
 const LIVE_DATABASE_ADAPTER = 'live-database';
-const LOCAL_AUTHOR = 'klo';
-const LOCAL_AUTHOR_EMAIL = 'klo@example.com';
+const LOCAL_AUTHOR = 'ktx';
+const LOCAL_AUTHOR_EMAIL = 'ktx@example.com';
 const SCHEMA_DIR = '_schema';
 const SL_DIR_PREFIX = 'semantic-layer';
 
 export interface WriteLocalScanManifestShardsInput {
-  project: KloLocalProject;
+  project: KtxLocalProject;
   connectionId: string;
   syncId: string;
-  driver: KloConnectionDriver;
-  snapshot: KloSchemaSnapshot;
+  driver: KtxConnectionDriver;
+  snapshot: KtxSchemaSnapshot;
   dryRun: boolean;
-  descriptionUpdates?: KloLocalScanEnrichmentResult['descriptionUpdates'];
-  relationshipUpdate?: KloLocalScanEnrichmentResult['relationshipUpdate'];
+  descriptionUpdates?: KtxLocalScanEnrichmentResult['descriptionUpdates'];
+  relationshipUpdate?: KtxLocalScanEnrichmentResult['relationshipUpdate'];
 }
 
 export interface WriteLocalScanManifestShardsResult {
@@ -40,13 +40,13 @@ export interface WriteLocalScanManifestShardsResult {
 }
 
 export interface WriteLocalScanEnrichmentArtifactsInput {
-  project: KloLocalProject;
+  project: KtxLocalProject;
   connectionId: string;
   syncId: string;
-  driver: KloConnectionDriver;
-  enrichment: KloLocalScanEnrichmentResult;
+  driver: KtxConnectionDriver;
+  enrichment: KtxLocalScanEnrichmentResult;
   dryRun: boolean;
-  relationshipSettings?: KloScanRelationshipConfig;
+  relationshipSettings?: KtxScanRelationshipConfig;
 }
 
 export interface WriteLocalScanEnrichmentArtifactsResult extends WriteLocalScanManifestShardsResult {
@@ -58,7 +58,7 @@ interface ExistingManifestState {
   preservedJoins: Map<string, LiveDatabaseManifestJoinEntry[]>;
 }
 
-type LocalDescriptionUpdates = KloLocalScanEnrichmentResult['descriptionUpdates'];
+type LocalDescriptionUpdates = KtxLocalScanEnrichmentResult['descriptionUpdates'];
 
 function artifactDir(connectionId: string, syncId: string): string {
   return `raw-sources/${connectionId}/${LIVE_DATABASE_ADAPTER}/${syncId}/enrichment`;
@@ -69,7 +69,7 @@ function schemaDir(connectionId: string): string {
 }
 
 function tableDescription(
-  table: KloSchemaTable,
+  table: KtxSchemaTable,
   descriptionUpdates: LocalDescriptionUpdates = [],
 ): Record<string, string> | undefined {
   const update = descriptionUpdates.find((candidate) => candidate.table.name === table.name);
@@ -84,8 +84,8 @@ function tableDescription(
 }
 
 function columnDescription(
-  table: KloSchemaTable,
-  column: KloSchemaColumn,
+  table: KtxSchemaTable,
+  column: KtxSchemaColumn,
   descriptionUpdates: LocalDescriptionUpdates = [],
 ): Record<string, string> | undefined {
   const update = descriptionUpdates.find((candidate) => candidate.table.name === table.name);
@@ -101,7 +101,7 @@ function columnDescription(
 }
 
 function snapshotTablesToManifestData(
-  snapshot: KloSchemaSnapshot,
+  snapshot: KtxSchemaSnapshot,
   descriptionUpdates: LocalDescriptionUpdates = [],
 ): LiveDatabaseManifestTableData[] {
   return snapshot.tables.map((table) => ({
@@ -119,7 +119,7 @@ function snapshotTablesToManifestData(
   }));
 }
 
-function formalJoins(snapshot: KloSchemaSnapshot): LiveDatabaseManifestJoinData[] {
+function formalJoins(snapshot: KtxSchemaSnapshot): LiveDatabaseManifestJoinData[] {
   const joins: LiveDatabaseManifestJoinData[] = [];
   for (const table of snapshot.tables) {
     for (const foreignKey of table.foreignKeys) {
@@ -137,7 +137,7 @@ function formalJoins(snapshot: KloSchemaSnapshot): LiveDatabaseManifestJoinData[
 }
 
 function acceptedRelationshipJoins(
-  relationshipUpdate: KloLocalScanEnrichmentResult['relationshipUpdate'] | undefined,
+  relationshipUpdate: KtxLocalScanEnrichmentResult['relationshipUpdate'] | undefined,
 ): LiveDatabaseManifestJoinData[] {
   return (relationshipUpdate?.accepted ?? []).map((relationship) => ({
     fromTable: relationship.from.table.name,
@@ -150,8 +150,8 @@ function acceptedRelationshipJoins(
 }
 
 function relationshipJoins(
-  snapshot: KloSchemaSnapshot,
-  relationshipUpdate: KloLocalScanEnrichmentResult['relationshipUpdate'] | undefined,
+  snapshot: KtxSchemaSnapshot,
+  relationshipUpdate: KtxLocalScanEnrichmentResult['relationshipUpdate'] | undefined,
 ): LiveDatabaseManifestJoinData[] {
   const accepted = acceptedRelationshipJoins(relationshipUpdate);
   const manual = accepted.filter((relationship) => relationship.source === 'manual');
@@ -159,7 +159,7 @@ function relationshipJoins(
   return [...manual, ...formalJoins(snapshot), ...generated];
 }
 
-function validColumns(snapshot: KloSchemaSnapshot): Map<string, Set<string>> {
+function validColumns(snapshot: KtxSchemaSnapshot): Map<string, Set<string>> {
   return new Map(snapshot.tables.map((table) => [table.name, new Set(table.columns.map((column) => column.name))]));
 }
 
@@ -190,9 +190,9 @@ function joinReferencesExistingColumns(
 }
 
 async function loadExistingManifestState(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   connectionId: string,
-  snapshot: KloSchemaSnapshot,
+  snapshot: KtxSchemaSnapshot,
 ): Promise<ExistingManifestState> {
   const descriptions = new Map<string, LiveDatabaseManifestExistingDescriptions>();
   const preservedJoins = new Map<string, LiveDatabaseManifestJoinEntry[]>();
@@ -245,7 +245,7 @@ async function loadExistingManifestState(
 }
 
 async function writeJsonArtifact(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   path: string,
   value: unknown,
   commitMessage: string,
@@ -340,7 +340,7 @@ export async function writeLocalScanEnrichmentArtifacts(
   }
   enrichmentArtifacts.push(relationshipsArtifact, relationshipProfileArtifact, relationshipDiagnosticsArtifact);
   const hasResolvedRelationships = input.enrichment.resolvedRelationships !== null;
-  const relationshipArtifacts = buildKloRelationshipArtifacts({
+  const relationshipArtifacts = buildKtxRelationshipArtifacts({
     connectionId: input.connectionId,
     resolvedRelationships: hasResolvedRelationships ? (input.enrichment.resolvedRelationships ?? []) : undefined,
     compositeRelationships: input.enrichment.compositeRelationships ?? undefined,
@@ -353,12 +353,12 @@ export async function writeLocalScanEnrichmentArtifacts(
   });
   const relationshipProfile =
     input.enrichment.relationshipProfile ??
-    emptyKloRelationshipProfileArtifact({
+    emptyKtxRelationshipProfileArtifact({
       connectionId: input.connectionId,
       driver: input.driver,
       reason: 'relationship_profiling_not_run',
     });
-  const relationshipDiagnostics = buildKloRelationshipDiagnostics({
+  const relationshipDiagnostics = buildKtxRelationshipDiagnostics({
     connectionId: input.connectionId,
     artifacts: relationshipArtifacts,
     profile: relationshipProfile,

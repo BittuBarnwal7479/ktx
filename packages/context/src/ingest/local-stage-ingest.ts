@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto';
 import { cp, mkdir, readdir, readFile, rm } from 'node:fs/promises';
 import { isAbsolute, join, relative, resolve, sep } from 'node:path';
-import type { KloLocalProject } from '../project/index.js';
-import { kloLocalStateDbPath } from '../project/local-state-db.js';
+import type { KtxLocalProject } from '../project/index.js';
+import { ktxLocalStateDbPath } from '../project/local-state-db.js';
 import { computeDiffSetFromHashes } from './diff-set.service.js';
 import { localPullConfigForAdapter } from './local-adapters.js';
 import { sanitizeMemoryFlowError } from './memory-flow/live-buffer.js';
@@ -52,7 +52,7 @@ export type LocalIngestReport = LocalIngestRunRecord & {
 };
 
 export interface RunLocalStageOnlyIngestOptions {
-  project: KloLocalProject;
+  project: KtxLocalProject;
   adapters: SourceAdapter[];
   adapter: string;
   connectionId: string;
@@ -64,8 +64,8 @@ export interface RunLocalStageOnlyIngestOptions {
   memoryFlow?: MemoryFlowEventSink;
 }
 
-const LOCAL_AUTHOR = 'klo';
-const LOCAL_AUTHOR_EMAIL = 'klo@example.com';
+const LOCAL_AUTHOR = 'ktx';
+const LOCAL_AUTHOR_EMAIL = 'ktx@example.com';
 
 function safeSegment(kind: string, value: string): string {
   if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]*$/.test(value)) {
@@ -143,17 +143,17 @@ function findAdapter(adapters: SourceAdapter[], source: string): SourceAdapter {
   return adapter;
 }
 
-function assertConfigured(project: KloLocalProject, adapter: string, connectionId: string): void {
+function assertConfigured(project: KtxLocalProject, adapter: string, connectionId: string): void {
   if (!project.config.connections[connectionId]) {
-    throw new Error(`Connection "${connectionId}" is not configured in klo.yaml`);
+    throw new Error(`Connection "${connectionId}" is not configured in ktx.yaml`);
   }
   if (!project.config.ingest.adapters.includes(adapter)) {
-    throw new Error(`Adapter "${adapter}" is not enabled in klo.yaml`);
+    throw new Error(`Adapter "${adapter}" is not enabled in ktx.yaml`);
   }
 }
 
-function createLocalIngestStore(project: KloLocalProject): SqliteLocalIngestStore {
-  return new SqliteLocalIngestStore({ dbPath: kloLocalStateDbPath(project) });
+function createLocalIngestStore(project: KtxLocalProject): SqliteLocalIngestStore {
+  return new SqliteLocalIngestStore({ dbPath: ktxLocalStateDbPath(project) });
 }
 
 function buildLocalJobId(now: Date): string {
@@ -189,7 +189,7 @@ function memoryFlowPlannedWorkUnits(
 }
 
 async function pruneStaleRawFiles(input: {
-  project: KloLocalProject;
+  project: KtxLocalProject;
   rawPrefix: string;
   nextRawPaths: string[];
   adapter: string;
@@ -210,7 +210,7 @@ async function pruneStaleRawFiles(input: {
 }
 
 async function prepareLocalStagedDir(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   adapter: SourceAdapter,
   stagedDir: string,
   sourceDir: string | undefined,
@@ -263,7 +263,7 @@ async function runLocalStageOnlyIngestInner(options: RunLocalStageOnlyIngestOpti
   const existingRun = options.dryRun ? null : store.findRunById(runId);
   assertCompatibleExistingRun(existingRun, runId, adapter.source, connectionId);
 
-  const stagedDir = join(options.project.projectDir, '.klo/cache/local-ingest', runId, 'staged');
+  const stagedDir = join(options.project.projectDir, '.ktx/cache/local-ingest', runId, 'staged');
   const sourceDir = await prepareLocalStagedDir(options.project, adapter, stagedDir, options.sourceDir, connectionId);
 
   const detected = await adapter.detect(stagedDir);
@@ -404,7 +404,7 @@ async function runLocalStageOnlyIngestInner(options: RunLocalStageOnlyIngestOpti
 }
 
 export async function getLocalStageOnlyIngestStatus(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   runId: string,
 ): Promise<LocalIngestRunRecord | null> {
   return createLocalIngestStore(project).findRunById(runId);

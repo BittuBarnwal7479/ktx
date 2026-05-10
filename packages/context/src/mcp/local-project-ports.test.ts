@@ -4,8 +4,8 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AgentRunnerService } from '../agent/index.js';
 import { FakeSourceAdapter, type MemoryFlowReplayInput } from '../ingest/index.js';
-import { initKloProject } from '../project/index.js';
-import { createKloConnectorCapabilities, type KloScanConnector, type KloSchemaSnapshot } from '../scan/index.js';
+import { initKtxProject } from '../project/index.js';
+import { createKtxConnectorCapabilities, type KtxScanConnector, type KtxSchemaSnapshot } from '../scan/index.js';
 import { writeLocalSlSource } from '../sl/index.js';
 import { createLocalProjectMcpContextPorts } from './local-project-ports.js';
 
@@ -21,14 +21,14 @@ describe('createLocalProjectMcpContextPorts', () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-mcp-local-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-mcp-local-'));
   });
 
   afterEach(async () => {
     await rm(tempDir, { recursive: true, force: true });
   });
 
-  function testSnapshot(connectionId = 'warehouse'): KloSchemaSnapshot {
+  function testSnapshot(connectionId = 'warehouse'): KtxSchemaSnapshot {
     return {
       connectionId,
       driver: 'postgres',
@@ -60,18 +60,18 @@ describe('createLocalProjectMcpContextPorts', () => {
     };
   }
 
-  function testConnector(snapshot = testSnapshot()): KloScanConnector {
+  function testConnector(snapshot = testSnapshot()): KtxScanConnector {
     return {
       id: `test:${snapshot.connectionId}`,
       driver: snapshot.driver,
-      capabilities: createKloConnectorCapabilities(),
+      capabilities: createKtxConnectorCapabilities(),
       introspect: vi.fn(async () => snapshot),
       cleanup: vi.fn(async () => {}),
     };
   }
 
-  it('lists local project connections from klo.yaml', async () => {
-    const project = await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+  it('lists local project connections from ktx.yaml', async () => {
+    const project = await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
     project.config.connections.warehouse = {
       driver: 'postgres',
       url: 'env:DATABASE_URL',
@@ -85,7 +85,7 @@ describe('createLocalProjectMcpContextPorts', () => {
   });
 
   it('tests a local project connection through the native scan connector factory', async () => {
-    const project = await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+    const project = await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
     project.config.connections.warehouse = {
       driver: 'postgres',
       url: 'env:DATABASE_URL',
@@ -122,7 +122,7 @@ describe('createLocalProjectMcpContextPorts', () => {
   });
 
   it('triggers canonical bundle ingest and reads status, report, and replay through MCP ports', async () => {
-    const project = await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+    const project = await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
     project.config.connections.warehouse = {
       driver: 'postgres',
       readonly: true,
@@ -219,7 +219,7 @@ describe('createLocalProjectMcpContextPorts', () => {
   });
 
   it('returns child run metadata for local Metabase fan-out triggers', async () => {
-    const project = await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+    const project = await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
     project.config.connections = {
       'prod-metabase': {
         driver: 'metabase',
@@ -342,7 +342,7 @@ describe('createLocalProjectMcpContextPorts', () => {
   });
 
   it('writes, reads, and searches global knowledge pages', async () => {
-    const project = await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+    const project = await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
     const ports = createLocalProjectMcpContextPorts(project);
 
     await expect(
@@ -382,11 +382,11 @@ describe('createLocalProjectMcpContextPorts', () => {
       totalFound: 1,
     });
     expect(search?.results[0]?.score).toBeGreaterThan(0);
-    await expect(access(join(project.projectDir, '.klo', 'db.sqlite'))).resolves.toBeUndefined();
+    await expect(access(join(project.projectDir, '.ktx', 'db.sqlite'))).resolves.toBeUndefined();
   });
 
   it('writes, lists, reads, and validates semantic-layer sources', async () => {
-    const project = await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+    const project = await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
     const ports = createLocalProjectMcpContextPorts(project);
 
     await expect(
@@ -435,7 +435,7 @@ describe('createLocalProjectMcpContextPorts', () => {
       ],
       totalSources: 1,
     });
-    await expect(access(join(project.projectDir, '.klo/db.sqlite'))).resolves.toBeUndefined();
+    await expect(access(join(project.projectDir, '.ktx/db.sqlite'))).resolves.toBeUndefined();
 
     await expect(
       ports.semanticLayer?.readSource({ connectionId: 'warehouse', sourceName: 'orders' }),
@@ -452,7 +452,7 @@ describe('createLocalProjectMcpContextPorts', () => {
   });
 
   it('returns semantic-layer hybrid search metadata through local project ports', async () => {
-    const project = await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+    const project = await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
     await writeLocalSlSource(project, {
       connectionId: 'warehouse',
       sourceName: 'orders',
@@ -499,8 +499,8 @@ describe('createLocalProjectMcpContextPorts', () => {
         null,
         2,
       )}\n`,
-      'klo',
-      'klo@example.com',
+      'ktx',
+      'ktx@example.com',
       'Seed dictionary profile',
     );
 
@@ -521,7 +521,7 @@ describe('createLocalProjectMcpContextPorts', () => {
   });
 
   it('uses configured local embeddings for semantic-layer search when available', async () => {
-    const project = await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+    const project = await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
     project.config.ingest.embeddings = { backend: 'none', dimensions: 2 };
     await writeLocalSlSource(project, {
       connectionId: 'warehouse',
@@ -561,7 +561,7 @@ describe('createLocalProjectMcpContextPorts', () => {
   });
 
   it('rejects path traversal keys before touching the project directory', async () => {
-    const project = await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+    const project = await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
     const ports = createLocalProjectMcpContextPorts(project);
 
     await expect(
@@ -580,7 +580,7 @@ describe('createLocalProjectMcpContextPorts', () => {
   });
 
   it('uses semantic compute for validation and compile-only sl_query when supplied', async () => {
-    const project = await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+    const project = await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
     project.config.connections.warehouse = {
       driver: 'postgres',
       url: 'env:DATABASE_URL',
@@ -667,7 +667,7 @@ describe('createLocalProjectMcpContextPorts', () => {
   });
 
   it('executes local MCP sl_query when a query executor is configured', async () => {
-    const project = await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+    const project = await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
     project.config.connections.warehouse = {
       driver: 'postgres',
       url: 'env:DATABASE_URL',
@@ -726,7 +726,7 @@ describe('createLocalProjectMcpContextPorts', () => {
   });
 
   it('exposes detailed local ingest trigger and status ports when local ingest is enabled', async () => {
-    const project = await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+    const project = await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
     project.config.connections.warehouse = { driver: 'postgres' };
     project.config.ingest.adapters = ['fake'];
     project.config.ingest.embeddings = {
@@ -846,7 +846,7 @@ describe('createLocalProjectMcpContextPorts', () => {
   });
 
   it('triggers fetch-capable local ingest without sourceDir config', async () => {
-    const project = await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+    const project = await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
     project.config.connections.warehouse = {
       driver: 'postgres',
       url: 'postgres://localhost:5432/warehouse',
@@ -922,7 +922,7 @@ describe('createLocalProjectMcpContextPorts', () => {
   });
 
   it('lists and reads only artifacts that belong to a local scan report', async () => {
-    const project = await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+    const project = await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
     project.config.connections.warehouse = {
       driver: 'postgres',
       url: 'env:DATABASE_URL',
@@ -1035,10 +1035,10 @@ describe('createLocalProjectMcpContextPorts', () => {
     await expect(
       ports.scan?.readArtifact?.({
         runId: 'local-scan-artifacts',
-        path: 'klo.yaml',
+        path: 'ktx.yaml',
       }),
     ).resolves.toBeNull();
     await expect(ports.scan?.listArtifacts?.({ runId: 'missing' })).resolves.toBeNull();
-    await expect(readFile(join(project.projectDir, 'klo.yaml'), 'utf-8')).resolves.toContain('project: warehouse');
+    await expect(readFile(join(project.projectDir, 'ktx.yaml'), 'utf-8')).resolves.toContain('project: warehouse');
   });
 });

@@ -2,29 +2,29 @@ import { createPrivateKey } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { resolve } from 'node:path';
-import { assertReadOnlySql, limitSqlForExecution } from '@klo/context/connections';
+import { assertReadOnlySql, limitSqlForExecution } from '@ktx/context/connections';
 import {
-  createKloConnectorCapabilities,
-  type KloColumnSampleInput,
-  type KloColumnSampleResult,
-  type KloColumnStatsInput,
-  type KloColumnStatsResult,
-  type KloQueryResult,
-  type KloReadOnlyQueryInput,
-  type KloScanConnector,
-  type KloScanContext,
-  type KloScanInput,
-  type KloSchemaColumn,
-  type KloSchemaSnapshot,
-  type KloSchemaTable,
-  type KloTableRef,
-  type KloTableSampleInput,
-  type KloTableSampleResult,
-} from '@klo/context/scan';
+  createKtxConnectorCapabilities,
+  type KtxColumnSampleInput,
+  type KtxColumnSampleResult,
+  type KtxColumnStatsInput,
+  type KtxColumnStatsResult,
+  type KtxQueryResult,
+  type KtxReadOnlyQueryInput,
+  type KtxScanConnector,
+  type KtxScanContext,
+  type KtxScanInput,
+  type KtxSchemaColumn,
+  type KtxSchemaSnapshot,
+  type KtxSchemaTable,
+  type KtxTableRef,
+  type KtxTableSampleInput,
+  type KtxTableSampleResult,
+} from '@ktx/context/scan';
 import * as snowflake from 'snowflake-sdk';
-import { KloSnowflakeDialect } from './dialect.js';
+import { KtxSnowflakeDialect } from './dialect.js';
 
-export interface KloSnowflakeConnectionConfig {
+export interface KtxSnowflakeConnectionConfig {
   driver?: string;
   authMethod?: 'password' | 'rsa';
   account?: string;
@@ -41,7 +41,7 @@ export interface KloSnowflakeConnectionConfig {
   [key: string]: unknown;
 }
 
-export interface KloSnowflakeResolvedConnectionConfig {
+export interface KtxSnowflakeResolvedConnectionConfig {
   authMethod: 'password' | 'rsa';
   account: string;
   warehouse: string;
@@ -54,64 +54,64 @@ export interface KloSnowflakeResolvedConnectionConfig {
   role?: string;
 }
 
-export interface KloSnowflakeRawColumnMetadata {
+export interface KtxSnowflakeRawColumnMetadata {
   name: string;
   type: string;
   nullable: boolean;
   comment: string | null;
 }
 
-export interface KloSnowflakeRawTableMetadata {
+export interface KtxSnowflakeRawTableMetadata {
   name: string;
   catalog: string;
   db: string;
   rowCount: number | null;
   comment: string | null;
-  columns: KloSnowflakeRawColumnMetadata[];
+  columns: KtxSnowflakeRawColumnMetadata[];
 }
 
-export interface KloSnowflakeDriver {
+export interface KtxSnowflakeDriver {
   test(): Promise<{ success: boolean; error?: string }>;
-  query(sql: string, params?: unknown): Promise<KloQueryResult>;
-  getSchemaMetadata(schemaName?: string): Promise<KloSnowflakeRawTableMetadata[]>;
+  query(sql: string, params?: unknown): Promise<KtxQueryResult>;
+  getSchemaMetadata(schemaName?: string): Promise<KtxSnowflakeRawTableMetadata[]>;
   listSchemas(): Promise<string[]>;
   cleanup(): Promise<void>;
 }
 
-export interface KloSnowflakeDriverFactory {
+export interface KtxSnowflakeDriverFactory {
   createDriver(input: {
-    resolved: KloSnowflakeResolvedConnectionConfig;
-    sdkOptionsProvider?: KloSnowflakeSdkOptionsProvider;
-  }): KloSnowflakeDriver;
+    resolved: KtxSnowflakeResolvedConnectionConfig;
+    sdkOptionsProvider?: KtxSnowflakeSdkOptionsProvider;
+  }): KtxSnowflakeDriver;
 }
 
-export interface KloSnowflakeSdkOptionsProvider {
+export interface KtxSnowflakeSdkOptionsProvider {
   resolve(input: {
     account: string;
-    connection: KloSnowflakeConnectionConfig;
+    connection: KtxSnowflakeConnectionConfig;
   }): Promise<{ sdkOptions: Record<string, unknown>; close?: () => Promise<void> } | undefined>;
 }
 
-export interface KloSnowflakeScanConnectorOptions {
+export interface KtxSnowflakeScanConnectorOptions {
   connectionId: string;
-  connection: KloSnowflakeConnectionConfig | undefined;
-  driverFactory?: KloSnowflakeDriverFactory;
-  sdkOptionsProvider?: KloSnowflakeSdkOptionsProvider;
+  connection: KtxSnowflakeConnectionConfig | undefined;
+  driverFactory?: KtxSnowflakeDriverFactory;
+  sdkOptionsProvider?: KtxSnowflakeSdkOptionsProvider;
   env?: NodeJS.ProcessEnv;
   now?: () => Date;
 }
 
-export interface KloSnowflakeReadOnlyQueryInput extends KloReadOnlyQueryInput {
+export interface KtxSnowflakeReadOnlyQueryInput extends KtxReadOnlyQueryInput {
   params?: Record<string, unknown>;
 }
 
-export interface KloSnowflakeColumnDistinctValuesOptions {
+export interface KtxSnowflakeColumnDistinctValuesOptions {
   maxCardinality: number;
   limit: number;
   sampleSize?: number;
 }
 
-export interface KloSnowflakeColumnDistinctValuesResult {
+export interface KtxSnowflakeColumnDistinctValuesResult {
   values: string[] | null;
   cardinality: number;
 }
@@ -131,15 +131,15 @@ function resolveStringReference(value: string, env: NodeJS.ProcessEnv): string {
 }
 
 function stringConfigValue(
-  connection: KloSnowflakeConnectionConfig | undefined,
-  key: keyof KloSnowflakeConnectionConfig,
+  connection: KtxSnowflakeConnectionConfig | undefined,
+  key: keyof KtxSnowflakeConnectionConfig,
   env: NodeJS.ProcessEnv,
 ): string | undefined {
   const value = connection?.[key];
   return typeof value === 'string' && value.trim().length > 0 ? resolveStringReference(value.trim(), env) : undefined;
 }
 
-function schemaNames(connection: KloSnowflakeConnectionConfig, env: NodeJS.ProcessEnv): string[] {
+function schemaNames(connection: KtxSnowflakeConnectionConfig, env: NodeJS.ProcessEnv): string[] {
   if (Array.isArray(connection.schema_names) && connection.schema_names.length > 0) {
     return connection.schema_names
       .filter((schema) => schema.trim().length > 0)
@@ -189,16 +189,16 @@ function toSnowflakeBinds(params: unknown[] | undefined): snowflake.Binds | unde
   return params?.map((value) => toSnowflakeBind(value));
 }
 
-export function isKloSnowflakeConnectionConfig(connection: KloSnowflakeConnectionConfig | undefined): boolean {
+export function isKtxSnowflakeConnectionConfig(connection: KtxSnowflakeConnectionConfig | undefined): boolean {
   return String(connection?.driver ?? '').toLowerCase() === 'snowflake';
 }
 
 export function snowflakeConnectionConfigFromConfig(input: {
   connectionId: string;
-  connection: KloSnowflakeConnectionConfig | undefined;
+  connection: KtxSnowflakeConnectionConfig | undefined;
   env?: NodeJS.ProcessEnv;
-}): KloSnowflakeResolvedConnectionConfig {
-  if (!isKloSnowflakeConnectionConfig(input.connection)) {
+}): KtxSnowflakeResolvedConnectionConfig {
+  if (!isKtxSnowflakeConnectionConfig(input.connection)) {
     throw new Error(`Native Snowflake connector cannot run driver "${input.connection?.driver ?? 'unknown'}"`);
   }
   if (input.connection?.readonly !== true) {
@@ -222,7 +222,7 @@ export function snowflakeConnectionConfigFromConfig(input: {
   if (!username) {
     throw new Error(`Native Snowflake connector requires connections.${input.connectionId}.username`);
   }
-  const resolved: KloSnowflakeResolvedConnectionConfig = {
+  const resolved: KtxSnowflakeResolvedConnectionConfig = {
     authMethod,
     account,
     warehouse,
@@ -252,21 +252,21 @@ export function snowflakeConnectionConfigFromConfig(input: {
   return resolved;
 }
 
-class DefaultSnowflakeDriverFactory implements KloSnowflakeDriverFactory {
+class DefaultSnowflakeDriverFactory implements KtxSnowflakeDriverFactory {
   createDriver(input: {
-    resolved: KloSnowflakeResolvedConnectionConfig;
-    sdkOptionsProvider?: KloSnowflakeSdkOptionsProvider;
-  }): KloSnowflakeDriver {
+    resolved: KtxSnowflakeResolvedConnectionConfig;
+    sdkOptionsProvider?: KtxSnowflakeSdkOptionsProvider;
+  }): KtxSnowflakeDriver {
     return new SnowflakeSdkDriver(input.resolved, input.sdkOptionsProvider);
   }
 }
 
-class SnowflakeSdkDriver implements KloSnowflakeDriver {
+class SnowflakeSdkDriver implements KtxSnowflakeDriver {
   private closeSdkOptions: Array<() => Promise<void>> = [];
 
   constructor(
-    private readonly resolved: KloSnowflakeResolvedConnectionConfig,
-    private readonly sdkOptionsProvider?: KloSnowflakeSdkOptionsProvider,
+    private readonly resolved: KtxSnowflakeResolvedConnectionConfig,
+    private readonly sdkOptionsProvider?: KtxSnowflakeSdkOptionsProvider,
   ) {}
 
   async test(): Promise<{ success: boolean; error?: string }> {
@@ -282,7 +282,7 @@ class SnowflakeSdkDriver implements KloSnowflakeDriver {
     ]);
   }
 
-  async query(sql: string, params?: unknown): Promise<KloQueryResult> {
+  async query(sql: string, params?: unknown): Promise<KtxQueryResult> {
     let connection: snowflake.Connection | null = null;
     try {
       connection = await this.createConnection();
@@ -298,7 +298,7 @@ class SnowflakeSdkDriver implements KloSnowflakeDriver {
     }
   }
 
-  async getSchemaMetadata(schemaName = this.resolved.schemas[0] ?? 'PUBLIC'): Promise<KloSnowflakeRawTableMetadata[]> {
+  async getSchemaMetadata(schemaName = this.resolved.schemas[0] ?? 'PUBLIC'): Promise<KtxSnowflakeRawTableMetadata[]> {
     const tablesResult = await this.query(
       `
         SELECT TABLE_NAME, TABLE_TYPE, COMMENT, ROW_COUNT
@@ -317,7 +317,7 @@ class SnowflakeSdkDriver implements KloSnowflakeDriver {
       `,
       [schemaName, this.resolved.database],
     );
-    const columnsByTable = new Map<string, KloSnowflakeRawColumnMetadata[]>();
+    const columnsByTable = new Map<string, KtxSnowflakeRawColumnMetadata[]>();
     for (const row of columnsResult.rows) {
       const tableName = String(row[0]);
       const columns = columnsByTable.get(tableName) ?? [];
@@ -465,10 +465,10 @@ class SnowflakeSdkDriver implements KloSnowflakeDriver {
   }
 }
 
-export class KloSnowflakeScanConnector implements KloScanConnector {
+export class KtxSnowflakeScanConnector implements KtxScanConnector {
   readonly id: string;
   readonly driver = 'snowflake' as const;
-  readonly capabilities = createKloConnectorCapabilities({
+  readonly capabilities = createKtxConnectorCapabilities({
     tableSampling: true,
     columnSampling: true,
     columnStats: false,
@@ -478,13 +478,13 @@ export class KloSnowflakeScanConnector implements KloScanConnector {
     estimatedRowCounts: true,
   });
 
-  private readonly resolved: KloSnowflakeResolvedConnectionConfig;
-  private readonly driverFactory: KloSnowflakeDriverFactory;
-  private readonly dialect = new KloSnowflakeDialect();
+  private readonly resolved: KtxSnowflakeResolvedConnectionConfig;
+  private readonly driverFactory: KtxSnowflakeDriverFactory;
+  private readonly dialect = new KtxSnowflakeDialect();
   private readonly now: () => Date;
-  private driverInstance: KloSnowflakeDriver | null = null;
+  private driverInstance: KtxSnowflakeDriver | null = null;
 
-  constructor(private readonly options: KloSnowflakeScanConnectorOptions) {
+  constructor(private readonly options: KtxSnowflakeScanConnectorOptions) {
     this.resolved = snowflakeConnectionConfigFromConfig(options);
     this.driverFactory = options.driverFactory ?? new DefaultSnowflakeDriverFactory();
     this.now = options.now ?? (() => new Date());
@@ -495,9 +495,9 @@ export class KloSnowflakeScanConnector implements KloScanConnector {
     return this.getDriver().test();
   }
 
-  async introspect(input: KloScanInput, _ctx: KloScanContext): Promise<KloSchemaSnapshot> {
+  async introspect(input: KtxScanInput, _ctx: KtxScanContext): Promise<KtxSchemaSnapshot> {
     this.assertConnection(input.connectionId);
-    const tables: KloSchemaTable[] = [];
+    const tables: KtxSchemaTable[] = [];
     for (const schemaName of this.resolved.schemas) {
       const rawTables = await this.getDriver().getSchemaMetadata(schemaName);
       const primaryKeys = await this.primaryKeys(rawTables.map((table) => table.name), schemaName);
@@ -520,7 +520,7 @@ export class KloSnowflakeScanConnector implements KloScanConnector {
     };
   }
 
-  async sampleTable(input: KloTableSampleInput, _ctx: KloScanContext): Promise<KloTableSampleResult> {
+  async sampleTable(input: KtxTableSampleInput, _ctx: KtxScanContext): Promise<KtxTableSampleResult> {
     this.assertConnection(input.connectionId);
     const result = await this.getDriver().query(
       this.dialect.generateSampleQuery(this.qTableName(input.table), input.limit, input.columns),
@@ -528,7 +528,7 @@ export class KloSnowflakeScanConnector implements KloScanConnector {
     return { headers: result.headers, rows: result.rows, totalRows: result.totalRows };
   }
 
-  async sampleColumn(input: KloColumnSampleInput, _ctx: KloScanContext): Promise<KloColumnSampleResult> {
+  async sampleColumn(input: KtxColumnSampleInput, _ctx: KtxScanContext): Promise<KtxColumnSampleResult> {
     this.assertConnection(input.connectionId);
     const result = await this.getDriver().query(
       this.dialect.generateColumnSampleQuery(this.qTableName(input.table), input.column, input.limit),
@@ -540,11 +540,11 @@ export class KloSnowflakeScanConnector implements KloScanConnector {
     };
   }
 
-  async columnStats(_input: KloColumnStatsInput, _ctx: KloScanContext): Promise<KloColumnStatsResult | null> {
+  async columnStats(_input: KtxColumnStatsInput, _ctx: KtxScanContext): Promise<KtxColumnStatsResult | null> {
     return null;
   }
 
-  async executeReadOnly(input: KloSnowflakeReadOnlyQueryInput, _ctx: KloScanContext): Promise<KloQueryResult> {
+  async executeReadOnly(input: KtxSnowflakeReadOnlyQueryInput, _ctx: KtxScanContext): Promise<KtxQueryResult> {
     this.assertConnection(input.connectionId);
     const limitedSql = limitSqlForExecution(assertReadOnlySql(input.sql), input.maxRows);
     const prepared = this.dialect.prepareQuery(limitedSql, input.params);
@@ -552,10 +552,10 @@ export class KloSnowflakeScanConnector implements KloScanConnector {
   }
 
   async getColumnDistinctValues(
-    table: KloTableRef,
+    table: KtxTableRef,
     columnName: string,
-    options: KloSnowflakeColumnDistinctValuesOptions,
-  ): Promise<KloSnowflakeColumnDistinctValuesResult | null> {
+    options: KtxSnowflakeColumnDistinctValuesOptions,
+  ): Promise<KtxSnowflakeColumnDistinctValuesResult | null> {
     const tableName = this.qTableName(table);
     const quotedColumn = this.dialect.quoteIdentifier(columnName);
     const cardinality = await this.singleNumber(
@@ -582,7 +582,7 @@ export class KloSnowflakeScanConnector implements KloScanConnector {
     return tables.find((table) => table.name === tableName)?.rowCount ?? 0;
   }
 
-  qTableName(table: Pick<KloTableRef, 'name'> & Partial<Pick<KloTableRef, 'catalog' | 'db'>>): string {
+  qTableName(table: Pick<KtxTableRef, 'name'> & Partial<Pick<KtxTableRef, 'catalog' | 'db'>>): string {
     return this.dialect.formatTableName(table);
   }
 
@@ -601,7 +601,7 @@ export class KloSnowflakeScanConnector implements KloScanConnector {
     }
   }
 
-  private getDriver(): KloSnowflakeDriver {
+  private getDriver(): KtxSnowflakeDriver {
     if (!this.driverInstance) {
       this.driverInstance = this.driverFactory.createDriver({
         resolved: this.resolved,
@@ -642,7 +642,7 @@ export class KloSnowflakeScanConnector implements KloScanConnector {
     return grouped;
   }
 
-  private toSchemaTable(table: KloSnowflakeRawTableMetadata, primaryKeys: Map<string, Set<string>>): KloSchemaTable {
+  private toSchemaTable(table: KtxSnowflakeRawTableMetadata, primaryKeys: Map<string, Set<string>>): KtxSchemaTable {
     return {
       catalog: table.catalog,
       db: table.db,
@@ -657,9 +657,9 @@ export class KloSnowflakeScanConnector implements KloScanConnector {
 
   private toSchemaColumn(
     tableName: string,
-    column: KloSnowflakeRawColumnMetadata,
+    column: KtxSnowflakeRawColumnMetadata,
     primaryKeys: Map<string, Set<string>>,
-  ): KloSchemaColumn {
+  ): KtxSchemaColumn {
     return {
       name: column.name,
       nativeType: column.type,

@@ -9,7 +9,7 @@ describe('SqliteKnowledgeIndex', () => {
   let dbPath: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-sqlite-knowledge-index-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-sqlite-knowledge-index-'));
     dbPath = join(tempDir, 'db.sqlite');
   });
 

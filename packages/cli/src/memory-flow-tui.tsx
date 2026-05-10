@@ -12,7 +12,7 @@ import {
   reduceMemoryFlowInteractionState,
   selectedMemoryFlowColumn,
   selectedMemoryFlowDetails,
-} from '@klo/context/ingest';
+} from '@ktx/context/ingest';
 import { Box, Text, render as renderInkRuntime, useApp, useInput } from 'ink';
 import React, { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { buildDemoMetrics } from './demo-metrics.js';
@@ -56,7 +56,7 @@ const STAGE_LABELS = {
   saved: 'MEMORY',
 } satisfies Record<MemoryFlowColumnId, string>;
 
-export interface KloMemoryFlowTuiIo {
+export interface KtxMemoryFlowTuiIo {
   stdin?: { isTTY?: boolean; setRawMode?(value: boolean): void };
   stdout: { isTTY?: boolean; columns?: number; write(chunk: string): void };
   stderr: { write(chunk: string): void };
@@ -76,9 +76,9 @@ export interface MemoryFlowInkInstance {
 }
 
 export interface MemoryFlowInkRenderOptions {
-  stdin?: KloMemoryFlowTuiIo['stdin'];
-  stdout: KloMemoryFlowTuiIo['stdout'];
-  stderr: KloMemoryFlowTuiIo['stderr'];
+  stdin?: KtxMemoryFlowTuiIo['stdin'];
+  stdout: KtxMemoryFlowTuiIo['stdout'];
+  stderr: KtxMemoryFlowTuiIo['stderr'];
   exitOnCtrlC: boolean;
   patchConsole: boolean;
   maxFps: number;
@@ -429,7 +429,7 @@ export function MemoryFlowTuiApp(props: MemoryFlowTuiAppProps): ReactNode {
 
 function renderTree(
   input: MemoryFlowReplayInput,
-  io: KloMemoryFlowTuiIo,
+  io: KtxMemoryFlowTuiIo,
   onExit: () => void,
   options: RenderTreeOptions = {},
 ): ReactNode {
@@ -459,7 +459,7 @@ function renderInk(tree: ReactNode, options: MemoryFlowInkRenderOptions): Memory
   }) as MemoryFlowInkInstance;
 }
 
-function renderOptions(io: KloMemoryFlowTuiIo): MemoryFlowInkRenderOptions {
+function renderOptions(io: KtxMemoryFlowTuiIo): MemoryFlowInkRenderOptions {
   return {
     stdin: io.stdin,
     stdout: io.stdout,
@@ -491,7 +491,7 @@ function resolveTiming(options: RenderMemoryFlowTuiOptions): MemoryFlowTuiTiming
 
 export async function renderMemoryFlowTui(
   input: MemoryFlowReplayInput,
-  io: KloMemoryFlowTuiIo,
+  io: KtxMemoryFlowTuiIo,
   options: RenderMemoryFlowTuiOptions = {},
 ): Promise<boolean> {
   let instance: MemoryFlowInkInstance | null = null;
@@ -516,7 +516,7 @@ export async function renderMemoryFlowTui(
 
 export async function startLiveMemoryFlowTui(
   input: MemoryFlowReplayInput,
-  io: KloMemoryFlowTuiIo,
+  io: KtxMemoryFlowTuiIo,
   options: StartLiveMemoryFlowTuiOptions = {},
 ): Promise<MemoryFlowTuiLiveSession | null> {
   let instance: MemoryFlowInkInstance | null = null;

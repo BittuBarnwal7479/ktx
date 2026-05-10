@@ -1,4 +1,4 @@
-export interface KloDataDictionarySettings {
+export interface KtxDataDictionarySettings {
   cardinalityThreshold: number;
   maxValuesToStore: number;
   sampleSize: number;
@@ -6,7 +6,7 @@ export interface KloDataDictionarySettings {
   excludePatterns: string[];
 }
 
-export const defaultKloDataDictionarySettings: KloDataDictionarySettings = {
+export const defaultKtxDataDictionarySettings: KtxDataDictionarySettings = {
   cardinalityThreshold: 200,
   maxValuesToStore: 100,
   sampleSize: 10000,
@@ -36,31 +36,31 @@ export const defaultKloDataDictionarySettings: KloDataDictionarySettings = {
   ],
 };
 
-export type KloDataDictionarySkipReason =
+export type KtxDataDictionarySkipReason =
   | 'not_candidate'
   | 'already_populated'
   | 'empty_column'
   | 'high_cardinality';
 
-export interface KloDataDictionarySampleDecision {
+export interface KtxDataDictionarySampleDecision {
   sample: boolean;
-  reason?: KloDataDictionarySkipReason;
+  reason?: KtxDataDictionarySkipReason;
 }
 
-export interface KloDataDictionaryColumnState {
+export interface KtxDataDictionaryColumnState {
   columnType: string;
   columnName: string;
   sampleValues?: readonly string[] | null;
   cardinality?: number | null;
-  settings: KloDataDictionarySettings;
+  settings: KtxDataDictionarySettings;
 }
 
 const categoricalCandidateTypes = /^(n?varchar|n?char|n?text|string|character|enum|bool(ean)?)/i;
 
-export function isKloDataDictionaryCandidate(
+export function isKtxDataDictionaryCandidate(
   columnType: string,
   columnName: string,
-  excludePatterns: readonly string[] = defaultKloDataDictionarySettings.excludePatterns,
+  excludePatterns: readonly string[] = defaultKtxDataDictionarySettings.excludePatterns,
 ): boolean {
   const typeLower = columnType.toLowerCase();
   const nameLower = columnName.toLowerCase();
@@ -83,9 +83,9 @@ export function isKloDataDictionaryCandidate(
   return true;
 }
 
-export function shouldKloSampleColumnForDictionary(
-  input: KloDataDictionaryColumnState,
-): KloDataDictionarySampleDecision {
+export function shouldKtxSampleColumnForDictionary(
+  input: KtxDataDictionaryColumnState,
+): KtxDataDictionarySampleDecision {
   const sampleValues = input.sampleValues ?? null;
   const cardinality = input.cardinality ?? null;
 
@@ -101,7 +101,7 @@ export function shouldKloSampleColumnForDictionary(
     return { sample: false, reason: 'high_cardinality' };
   }
 
-  if (!isKloDataDictionaryCandidate(input.columnType, input.columnName, input.settings.excludePatterns)) {
+  if (!isKtxDataDictionaryCandidate(input.columnType, input.columnName, input.settings.excludePatterns)) {
     return { sample: false, reason: 'not_candidate' };
   }
 

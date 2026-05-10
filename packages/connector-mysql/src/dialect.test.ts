@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { KloMysqlDialect } from './dialect.js';
+import { KtxMysqlDialect } from './dialect.js';
 
-describe('KloMysqlDialect', () => {
-  const dialect = new KloMysqlDialect();
+describe('KtxMysqlDialect', () => {
+  const dialect = new KtxMysqlDialect();
 
   it('quotes identifiers and formats database-qualified table names', () => {
     expect(dialect.quoteIdentifier('orders')).toBe('`orders`');
@@ -13,7 +13,7 @@ describe('KloMysqlDialect', () => {
     expect(dialect.formatTableName({ catalog: null, db: null, name: 'orders' })).toBe('`orders`');
   });
 
-  it('maps native MySQL types to KLO dimension types', () => {
+  it('maps native MySQL types to KTX dimension types', () => {
     expect(dialect.mapToDimensionType('tinyint(1)')).toBe('boolean');
     expect(dialect.mapToDimensionType('int')).toBe('number');
     expect(dialect.mapToDimensionType('decimal(10,2)')).toBe('number');

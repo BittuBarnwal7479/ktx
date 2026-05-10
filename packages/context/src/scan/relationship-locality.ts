@@ -1,18 +1,18 @@
-import type { KloEnrichedColumn, KloEnrichedTable } from './enrichment-types.js';
-import { normalizeKloRelationshipName, tokenizeKloRelationshipName } from './relationship-name-similarity.js';
+import type { KtxEnrichedColumn, KtxEnrichedTable } from './enrichment-types.js';
+import { normalizeKtxRelationshipName, tokenizeKtxRelationshipName } from './relationship-name-similarity.js';
 
-export interface KloRelationshipLocalityCandidateTable {
-  table: KloEnrichedTable;
+export interface KtxRelationshipLocalityCandidateTable {
+  table: KtxEnrichedTable;
   score: number;
   tokenScore: number;
   embeddingScore: number;
   reasons: string[];
 }
 
-export interface LocalKloRelationshipCandidateTablesInput {
-  childTable: KloEnrichedTable;
-  childColumn: KloEnrichedColumn;
-  parentTables: readonly KloEnrichedTable[];
+export interface LocalKtxRelationshipCandidateTablesInput {
+  childTable: KtxEnrichedTable;
+  childColumn: KtxEnrichedColumn;
+  parentTables: readonly KtxEnrichedTable[];
   maxParentTables?: number;
 }
 
@@ -24,17 +24,17 @@ function roundedScore(value: number): number {
 }
 
 function normalizedTokenVariants(name: string): string[] {
-  const normalized = normalizeKloRelationshipName(name);
+  const normalized = normalizeKtxRelationshipName(name);
   return Array.from(
     new Set([
       ...normalized.tokens,
-      ...tokenizeKloRelationshipName(normalized.singular),
-      ...tokenizeKloRelationshipName(normalized.plural),
+      ...tokenizeKtxRelationshipName(normalized.singular),
+      ...tokenizeKtxRelationshipName(normalized.plural),
     ]),
   ).filter(Boolean);
 }
 
-function childColumnLocalityTokens(column: KloEnrichedColumn): string[] {
+function childColumnLocalityTokens(column: KtxEnrichedColumn): string[] {
   const tokens = normalizedTokenVariants(column.name);
   const withoutSuffix = tokens.filter((token) => !RELATIONSHIP_SUFFIX_TOKENS.has(token));
   return withoutSuffix.length > 0 ? withoutSuffix : tokens;
@@ -78,7 +78,7 @@ function cosineSimilarity(left: readonly number[] | null, right: readonly number
   return dot / (Math.sqrt(leftMagnitude) * Math.sqrt(rightMagnitude));
 }
 
-function parentEmbeddingScore(childColumn: KloEnrichedColumn, parentTable: KloEnrichedTable): number {
+function parentEmbeddingScore(childColumn: KtxEnrichedColumn, parentTable: KtxEnrichedTable): number {
   if (!Array.isArray(childColumn.embedding) || childColumn.embedding.length === 0) {
     return 0;
   }
@@ -91,9 +91,9 @@ function parentEmbeddingScore(childColumn: KloEnrichedColumn, parentTable: KloEn
 }
 
 function tableTokenScore(input: {
-  childTable: KloEnrichedTable;
-  childColumn: KloEnrichedColumn;
-  parentTable: KloEnrichedTable;
+  childTable: KtxEnrichedTable;
+  childColumn: KtxEnrichedColumn;
+  parentTable: KtxEnrichedTable;
 }): number {
   const childTableTokens = normalizedTokenVariants(input.childTable.ref.name);
   const childColumnTokens = childColumnLocalityTokens(input.childColumn);
@@ -107,10 +107,10 @@ function tableTokenScore(input: {
 }
 
 function localityScore(input: {
-  childTable: KloEnrichedTable;
-  childColumn: KloEnrichedColumn;
-  parentTable: KloEnrichedTable;
-}): Omit<KloRelationshipLocalityCandidateTable, 'table'> {
+  childTable: KtxEnrichedTable;
+  childColumn: KtxEnrichedColumn;
+  parentTable: KtxEnrichedTable;
+}): Omit<KtxRelationshipLocalityCandidateTable, 'table'> {
   const tokenScore = roundedScore(tableTokenScore(input));
   const embeddingScore = roundedScore(parentEmbeddingScore(input.childColumn, input.parentTable));
   const score =
@@ -136,8 +136,8 @@ function localityScore(input: {
 }
 
 export function localCandidateTables(
-  input: LocalKloRelationshipCandidateTablesInput,
-): KloRelationshipLocalityCandidateTable[] {
+  input: LocalKtxRelationshipCandidateTablesInput,
+): KtxRelationshipLocalityCandidateTable[] {
   const limit = input.maxParentTables ?? DEFAULT_MAX_PARENT_TABLES;
   if (!Number.isFinite(limit) || limit <= 0) {
     return [];

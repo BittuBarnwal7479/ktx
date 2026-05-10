@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { parse as parseYaml } from 'yaml';
-import { type KloLogger, noopLogger } from '../../../core/index.js';
+import { type KtxLogger, noopLogger } from '../../../core/index.js';
 import { resolveJinjaVariables } from '../../dbt-shared/project-vars.js';
 
 export interface DbtParsedColumn {
@@ -65,7 +65,7 @@ interface ParseDbtSchemaOptions {
   path?: string;
   variables?: Map<string, string>;
   projectName?: string | null;
-  logger?: KloLogger;
+  logger?: KtxLogger;
 }
 
 interface DbtSchemaYaml {
@@ -133,7 +133,7 @@ export function parseDbtSchemaFile(content: string, options: ParseDbtSchemaOptio
 export function parseDbtSchemaFiles(
   files: DbtSchemaFile[],
   variables?: Map<string, string>,
-  options: { projectName?: string | null; logger?: KloLogger } = {},
+  options: { projectName?: string | null; logger?: KtxLogger } = {},
 ): DbtSchemaParseResult {
   return new DbtSchemaParser(options.logger ?? noopLogger).parseFiles(files, variables, options.projectName ?? null);
 }
@@ -147,7 +147,7 @@ export function computeDbtSchemaHash(files: DbtSchemaFile[]): string {
 }
 
 class DbtSchemaParser {
-  constructor(private readonly logger: KloLogger) {}
+  constructor(private readonly logger: KtxLogger) {}
 
   parseFile(yamlContent: string, options: ParseDbtSchemaOptions = {}): DbtSchemaParseResult {
     this.logger.debug(`Parsing schema file: ${options.path ?? 'unknown'}`);

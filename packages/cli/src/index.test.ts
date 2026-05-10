@@ -5,11 +5,11 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
-  getKloCliPackageInfo,
+  getKtxCliPackageInfo,
   rendererUnavailableVizFallback,
   renderMemoryFlowTui,
   resolveVizFallback,
-  runKloCli,
+  runKtxCli,
   sanitizeMemoryFlowTuiError,
   startLiveMemoryFlowTui,
   warnVizFallbackOnce,
@@ -39,20 +39,20 @@ function makeIo(options: { stdoutIsTty?: boolean } = {}) {
   };
 }
 
-describe('getKloCliPackageInfo', () => {
+describe('getKtxCliPackageInfo', () => {
   it('identifies the CLI package and its context dependency', () => {
-    expect(getKloCliPackageInfo()).toEqual({
-      name: '@klo/cli',
+    expect(getKtxCliPackageInfo()).toEqual({
+      name: '@ktx/cli',
       version: '0.0.0-private',
-      contextPackageName: '@klo/context',
+      contextPackageName: '@ktx/context',
     });
   });
 
   it('exports package metadata for package managers and runtime diagnostics', () => {
-    const packageJson = require('@klo/cli/package.json') as { name: string; version: string };
+    const packageJson = require('@ktx/cli/package.json') as { name: string; version: string };
 
     expect(packageJson).toMatchObject({
-      name: '@klo/cli',
+      name: '@ktx/cli',
       version: '0.0.0-private',
     });
   });
@@ -82,11 +82,11 @@ describe('memory-flow renderer exports', () => {
   });
 });
 
-describe('runKloCli', () => {
+describe('runKtxCli', () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-cli-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-cli-'));
   });
 
   afterEach(async () => {
@@ -96,18 +96,18 @@ describe('runKloCli', () => {
   it('prints version information', async () => {
     const testIo = makeIo();
 
-    await expect(runKloCli(['--version'], testIo.io)).resolves.toBe(0);
+    await expect(runKtxCli(['--version'], testIo.io)).resolves.toBe(0);
 
-    expect(testIo.stdout()).toBe('@klo/cli 0.0.0-private\n');
+    expect(testIo.stdout()).toBe('@ktx/cli 0.0.0-private\n');
     expect(testIo.stderr()).toBe('');
   });
 
   it('prints the May 6 public command surface in root help', async () => {
     const testIo = makeIo();
 
-    await expect(runKloCli(['--help'], testIo.io)).resolves.toBe(0);
+    await expect(runKtxCli(['--help'], testIo.io)).resolves.toBe(0);
 
-    expect(testIo.stdout()).toContain('Usage: klo [options] [command]');
+    expect(testIo.stdout()).toContain('Usage: ktx [options] [command]');
     for (const command of ['setup', 'connection', 'ingest', 'wiki', 'sl', 'serve', 'status']) {
       expect(testIo.stdout()).toContain(`${command}`);
     }
@@ -116,22 +116,22 @@ describe('runKloCli', () => {
       expect(testIo.stdout()).not.toContain(`${removed} `);
     }
     expect(testIo.stdout()).toContain('--project-dir <path>');
-    expect(testIo.stdout()).toContain('KLO_PROJECT_DIR');
+    expect(testIo.stdout()).toContain('KTX_PROJECT_DIR');
     expect(testIo.stdout()).toContain('--debug');
     expect(testIo.stdout()).not.toContain('--' + 'verbose');
     expect(testIo.stdout()).toContain('Advanced:');
-    expect(testIo.stdout()).toContain('klo dev');
+    expect(testIo.stdout()).toContain('ktx dev');
     expect(testIo.stderr()).toBe('');
   });
 
   it('exposes demo under setup help instead of root help', async () => {
     const testIo = makeIo();
 
-    await expect(runKloCli(['setup', '--help'], testIo.io)).resolves.toBe(0);
+    await expect(runKtxCli(['setup', '--help'], testIo.io)).resolves.toBe(0);
 
-    expect(testIo.stdout()).toContain('Usage: klo setup [options] [command]');
+    expect(testIo.stdout()).toContain('Usage: ktx setup [options] [command]');
     expect(testIo.stdout()).toContain('demo');
-    expect(testIo.stdout()).toContain('Run the packaged KLO demo from setup');
+    expect(testIo.stdout()).toContain('Run the packaged KTX demo from setup');
     expect(testIo.stdout()).not.toContain('--skip-llm');
     expect(testIo.stdout()).not.toContain('--skip-embeddings');
     expect(testIo.stdout()).not.toContain('--embedding-model');
@@ -140,33 +140,33 @@ describe('runKloCli', () => {
     expect(testIo.stderr()).toBe('');
   });
 
-  it('prints help for bare klo outside a TTY', async () => {
+  it('prints help for bare ktx outside a TTY', async () => {
     const setup = vi.fn(async () => 0);
     const testIo = makeIo({ stdoutIsTty: false });
 
-    await expect(runKloCli([], testIo.io, { setup })).resolves.toBe(0);
+    await expect(runKtxCli([], testIo.io, { setup })).resolves.toBe(0);
 
-    expect(testIo.stdout()).toContain('Usage: klo [options] [command]');
+    expect(testIo.stdout()).toContain('Usage: ktx [options] [command]');
     expect(setup).not.toHaveBeenCalled();
     expect(testIo.stderr()).toBe('');
   });
 
-  it('starts setup for bare klo in a TTY when no project is discoverable', async () => {
+  it('starts setup for bare ktx in a TTY when no project is discoverable', async () => {
     const { mkdtemp, realpath, rm } = await import('node:fs/promises');
     const { tmpdir } = await import('node:os');
     const { join } = await import('node:path');
     const originalCwd = process.cwd();
-    const tempDir = await mkdtemp(join(tmpdir(), 'klo-bare-setup-'));
+    const tempDir = await mkdtemp(join(tmpdir(), 'ktx-bare-setup-'));
     const setup = vi.fn(async () => 0);
     const testIo = makeIo({ stdoutIsTty: true });
-    const previousProjectDir = process.env.KLO_PROJECT_DIR;
+    const previousProjectDir = process.env.KTX_PROJECT_DIR;
     const expectedProjectDir = await realpath(tempDir);
 
     try {
-      delete process.env.KLO_PROJECT_DIR;
+      delete process.env.KTX_PROJECT_DIR;
       process.chdir(tempDir);
 
-      await expect(runKloCli([], testIo.io, { setup })).resolves.toBe(0);
+      await expect(runKtxCli([], testIo.io, { setup })).resolves.toBe(0);
 
       expect(setup).toHaveBeenCalledWith(
         {
@@ -187,71 +187,71 @@ describe('runKloCli', () => {
         },
         testIo.io,
       );
-      expect(testIo.stdout()).not.toContain('Usage: klo [options] [command]');
+      expect(testIo.stdout()).not.toContain('Usage: ktx [options] [command]');
       expect(testIo.stderr()).toBe('');
     } finally {
       process.chdir(originalCwd);
       if (previousProjectDir === undefined) {
-        delete process.env.KLO_PROJECT_DIR;
+        delete process.env.KTX_PROJECT_DIR;
       } else {
-        process.env.KLO_PROJECT_DIR = previousProjectDir;
+        process.env.KTX_PROJECT_DIR = previousProjectDir;
       }
       await rm(tempDir, { recursive: true, force: true });
     }
   });
 
-  it('prints help without project status for bare klo in a TTY when a project is discoverable', async () => {
+  it('prints help without project status for bare ktx in a TTY when a project is discoverable', async () => {
     const { mkdtemp, realpath, rm, writeFile } = await import('node:fs/promises');
     const { tmpdir } = await import('node:os');
     const { join } = await import('node:path');
     const originalCwd = process.cwd();
-    const previousProjectDir = process.env.KLO_PROJECT_DIR;
-    const tempDir = await mkdtemp(join(tmpdir(), 'klo-bare-existing-'));
+    const previousProjectDir = process.env.KTX_PROJECT_DIR;
+    const tempDir = await mkdtemp(join(tmpdir(), 'ktx-bare-existing-'));
     const setup = vi.fn(async () => 0);
     const testIo = makeIo({ stdoutIsTty: true });
     const expectedProjectDir = await realpath(tempDir);
 
     try {
-      delete process.env.KLO_PROJECT_DIR;
-      await writeFile(join(tempDir, 'klo.yaml'), 'project: revenue\nconnections: {}\n', 'utf-8');
+      delete process.env.KTX_PROJECT_DIR;
+      await writeFile(join(tempDir, 'ktx.yaml'), 'project: revenue\nconnections: {}\n', 'utf-8');
       process.chdir(tempDir);
 
-      await expect(runKloCli([], testIo.io, { setup })).resolves.toBe(0);
+      await expect(runKtxCli([], testIo.io, { setup })).resolves.toBe(0);
 
-      expect(testIo.stdout()).toContain('Usage: klo [options] [command]');
+      expect(testIo.stdout()).toContain('Usage: ktx [options] [command]');
       expect(testIo.stdout()).not.toContain(`Project: ${expectedProjectDir}`);
       expect(setup).not.toHaveBeenCalled();
     } finally {
       process.chdir(originalCwd);
       if (previousProjectDir === undefined) {
-        delete process.env.KLO_PROJECT_DIR;
+        delete process.env.KTX_PROJECT_DIR;
       } else {
-        process.env.KLO_PROJECT_DIR = previousProjectDir;
+        process.env.KTX_PROJECT_DIR = previousProjectDir;
       }
       await rm(tempDir, { recursive: true, force: true });
     }
   });
 
-  it('does not invoke status for bare klo in a TTY when status would fail', async () => {
+  it('does not invoke status for bare ktx in a TTY when status would fail', async () => {
     const setup = vi.fn(async () => {
       throw new Error('Unsupported ingest.llm: use top-level llm.provider, llm.models, and ingest.workUnits');
     });
     const testIo = makeIo({ stdoutIsTty: true });
-    const previousProjectDir = process.env.KLO_PROJECT_DIR;
+    const previousProjectDir = process.env.KTX_PROJECT_DIR;
 
     try {
-      process.env.KLO_PROJECT_DIR = tempDir;
+      process.env.KTX_PROJECT_DIR = tempDir;
 
-      await expect(runKloCli([], testIo.io, { setup })).resolves.toBe(0);
+      await expect(runKtxCli([], testIo.io, { setup })).resolves.toBe(0);
 
-      expect(testIo.stdout()).toContain('Usage: klo [options] [command]');
+      expect(testIo.stdout()).toContain('Usage: ktx [options] [command]');
       expect(setup).not.toHaveBeenCalled();
       expect(testIo.stderr()).toBe('');
     } finally {
       if (previousProjectDir === undefined) {
-        delete process.env.KLO_PROJECT_DIR;
+        delete process.env.KTX_PROJECT_DIR;
       } else {
-        process.env.KLO_PROJECT_DIR = previousProjectDir;
+        process.env.KTX_PROJECT_DIR = previousProjectDir;
       }
     }
   });
@@ -260,7 +260,7 @@ describe('runKloCli', () => {
     const testIo = makeIo();
     const removedVerboseOption = '--' + 'verbose';
 
-    await expect(runKloCli([removedVerboseOption, 'connection', 'list'], testIo.io)).resolves.toBe(1);
+    await expect(runKtxCli([removedVerboseOption, 'connection', 'list'], testIo.io)).resolves.toBe(1);
 
     expect(testIo.stderr()).toContain(`unknown option '${removedVerboseOption}'`);
     expect(testIo.stdout()).toBe('');
@@ -270,12 +270,12 @@ describe('runKloCli', () => {
     const testIo = makeIo();
     const zshWords = '$' + '{words[@]}';
 
-    await expect(runKloCli(['dev', 'completion', 'zsh'], testIo.io)).resolves.toBe(0);
+    await expect(runKtxCli(['dev', 'completion', 'zsh'], testIo.io)).resolves.toBe(0);
 
-    expect(testIo.stdout()).toContain('#compdef klo');
-    expect(testIo.stdout()).toContain('KLO_COMPLETION_COMMAND:-klo');
+    expect(testIo.stdout()).toContain('#compdef ktx');
+    expect(testIo.stdout()).toContain('KTX_COMPLETION_COMMAND:-ktx');
     expect(testIo.stdout()).toContain(`dev __complete --shell zsh --position "$CURRENT" -- "${zshWords}"`);
-    expect(testIo.stdout()).toContain('compdef _klo klo');
+    expect(testIo.stdout()).toContain('compdef _ktx ktx');
     expect(testIo.stderr()).toBe('');
   });
 
@@ -283,22 +283,22 @@ describe('runKloCli', () => {
     const testIo = makeIo();
     const previousHome = process.env.HOME;
     const previousZdotdir = process.env.ZDOTDIR;
-    const tempHome = await mkdtemp(join(tmpdir(), 'klo-completion-home-'));
+    const tempHome = await mkdtemp(join(tmpdir(), 'ktx-completion-home-'));
 
     try {
       process.env.HOME = tempHome;
       delete process.env.ZDOTDIR;
 
-      await expect(runKloCli(['dev', 'completion', 'zsh', '--install'], testIo.io)).resolves.toBe(0);
+      await expect(runKtxCli(['dev', 'completion', 'zsh', '--install'], testIo.io)).resolves.toBe(0);
 
-      const completionFile = await readFile(join(tempHome, '.zfunc', '_klo'), 'utf-8');
+      const completionFile = await readFile(join(tempHome, '.zfunc', '_ktx'), 'utf-8');
       const zshrc = await readFile(join(tempHome, '.zshrc'), 'utf-8');
-      expect(completionFile).toContain('#compdef klo');
-      expect(zshrc).toContain('# >>> klo completion >>>');
-      expect(zshrc).toContain('_klo_completion_command()');
-      expect(zshrc).toContain('"name": "klo-workspace"');
-      expect(zshrc).toContain('scripts/run-klo.mjs');
-      expect(zshrc).toContain("export KLO_COMPLETION_COMMAND='$(_klo_completion_command)'");
+      expect(completionFile).toContain('#compdef ktx');
+      expect(zshrc).toContain('# >>> ktx completion >>>');
+      expect(zshrc).toContain('_ktx_completion_command()');
+      expect(zshrc).toContain('"name": "ktx-workspace"');
+      expect(zshrc).toContain('scripts/run-ktx.mjs');
+      expect(zshrc).toContain("export KTX_COMPLETION_COMMAND='$(_ktx_completion_command)'");
       expect(zshrc).toContain('setopt complete_aliases');
       expect(zshrc).toContain('fpath=("$HOME/.zfunc" $fpath)');
       expect(zshrc).toContain('autoload -Uz compinit');
@@ -326,20 +326,20 @@ describe('runKloCli', () => {
     const secondIo = makeIo();
     const previousHome = process.env.HOME;
     const previousZdotdir = process.env.ZDOTDIR;
-    const tempHome = await mkdtemp(join(tmpdir(), 'klo-completion-home-'));
+    const tempHome = await mkdtemp(join(tmpdir(), 'ktx-completion-home-'));
 
     try {
       process.env.HOME = tempHome;
       delete process.env.ZDOTDIR;
       await writeFile(join(tempHome, '.zshrc'), 'export EDITOR=vim\nautoload -Uz compinit\ncompinit\n', 'utf-8');
 
-      await expect(runKloCli(['dev', 'completion', 'zsh', '--install'], firstIo.io)).resolves.toBe(0);
-      await expect(runKloCli(['dev', 'completion', 'zsh', '--install'], secondIo.io)).resolves.toBe(0);
+      await expect(runKtxCli(['dev', 'completion', 'zsh', '--install'], firstIo.io)).resolves.toBe(0);
+      await expect(runKtxCli(['dev', 'completion', 'zsh', '--install'], secondIo.io)).resolves.toBe(0);
 
       const zshrc = await readFile(join(tempHome, '.zshrc'), 'utf-8');
-      expect(zshrc.match(/# >>> klo completion >>>/g)).toHaveLength(1);
+      expect(zshrc.match(/# >>> ktx completion >>>/g)).toHaveLength(1);
       expect(zshrc.indexOf('fpath=("$HOME/.zfunc" $fpath)')).toBeLessThan(zshrc.indexOf('autoload -Uz compinit'));
-      expect(zshrc.match(/_klo_completion_command\(\)/g)).toHaveLength(1);
+      expect(zshrc.match(/_ktx_completion_command\(\)/g)).toHaveLength(1);
       expect(zshrc.match(/^compinit$/gm)).toHaveLength(1);
       expect(secondIo.stdout()).toContain('Updated zsh config:');
       expect(firstIo.stderr()).toBe('');
@@ -364,11 +364,11 @@ describe('runKloCli', () => {
     const connectionIo = makeIo();
 
     await expect(
-      runKloCli(['dev', '__complete', '--shell', 'zsh', '--position', '2', '--', 'klo', 'co'], rootIo.io),
+      runKtxCli(['dev', '__complete', '--shell', 'zsh', '--position', '2', '--', 'ktx', 'co'], rootIo.io),
     ).resolves.toBe(0);
     await expect(
-      runKloCli(
-        ['dev', '__complete', '--shell', 'zsh', '--position', '3', '--', 'klo', 'connection', 'm'],
+      runKtxCli(
+        ['dev', '__complete', '--shell', 'zsh', '--position', '3', '--', 'ktx', 'connection', 'm'],
         connectionIo.io,
       ),
     ).resolves.toBe(0);
@@ -386,13 +386,13 @@ describe('runKloCli', () => {
     const choiceIo = makeIo();
 
     await expect(
-      runKloCli(
-        ['dev', '__complete', '--shell', 'zsh', '--position', '4', '--', 'klo', 'connection', 'add', '--cr'],
+      runKtxCli(
+        ['dev', '__complete', '--shell', 'zsh', '--position', '4', '--', 'ktx', 'connection', 'add', '--cr'],
         optionIo.io,
       ),
     ).resolves.toBe(0);
     await expect(
-      runKloCli(
+      runKtxCli(
         [
           'dev',
           '__complete',
@@ -401,7 +401,7 @@ describe('runKloCli', () => {
           '--position',
           '7',
           '--',
-          'klo',
+          'ktx',
           'connection',
           'add',
           'notion',
@@ -425,7 +425,7 @@ describe('runKloCli', () => {
     const serveStdio = vi.fn().mockResolvedValue(0);
 
     await expect(
-      runKloCli(['--project-dir', tempDir, 'serve', '--mcp', 'stdio', '--user-id', 'agent'], testIo.io, {
+      runKtxCli(['--project-dir', tempDir, 'serve', '--mcp', 'stdio', '--user-id', 'agent'], testIo.io, {
         serveStdio,
       }),
     ).resolves.toBe(0);
@@ -447,7 +447,7 @@ describe('runKloCli', () => {
     const ingest = vi.fn().mockResolvedValue(0);
 
     await expect(
-      runKloCli(['--project-dir', '/tmp/project', 'ingest', 'warehouse'], testIo.io, { publicIngest: ingest }),
+      runKtxCli(['--project-dir', '/tmp/project', 'ingest', 'warehouse'], testIo.io, { publicIngest: ingest }),
     ).resolves.toBe(0);
 
     expect(ingest).toHaveBeenCalledWith(
@@ -469,10 +469,10 @@ describe('runKloCli', () => {
     const lowLevelIngest = vi.fn(async () => 0);
 
     await expect(
-      runKloCli(['ingest', 'watch', '--help'], testIo.io, { publicIngest, ingest: lowLevelIngest }),
+      runKtxCli(['ingest', 'watch', '--help'], testIo.io, { publicIngest, ingest: lowLevelIngest }),
     ).resolves.toBe(0);
 
-    expect(testIo.stdout()).toContain('Usage: klo ingest watch [options] [runId]');
+    expect(testIo.stdout()).toContain('Usage: ktx ingest watch [options] [runId]');
     expect(testIo.stdout()).toContain('[runId]');
     expect(testIo.stdout()).toContain('--project-dir <path>');
     expect(testIo.stdout()).toContain('--json');
@@ -488,12 +488,12 @@ describe('runKloCli', () => {
     const publicIngest = vi.fn(async () => 0);
 
     await expect(
-      runKloCli(['--project-dir', tempDir, 'ingest', 'status', 'run-1', '--json', '--no-input'], statusIo.io, {
+      runKtxCli(['--project-dir', tempDir, 'ingest', 'status', 'run-1', '--json', '--no-input'], statusIo.io, {
         publicIngest,
       }),
     ).resolves.toBe(0);
     await expect(
-      runKloCli(['--project-dir', tempDir, 'ingest', 'watch', '--no-input'], watchIo.io, {
+      runKtxCli(['--project-dir', tempDir, 'ingest', 'watch', '--no-input'], watchIo.io, {
         publicIngest,
       }),
     ).resolves.toBe(0);
@@ -527,7 +527,7 @@ describe('runKloCli', () => {
     const testIo = makeIo();
     const demo = vi.fn().mockResolvedValue(0);
 
-    await expect(runKloCli(['demo', '--mode', 'replay', '--no-input'], testIo.io, { demo })).resolves.toBe(1);
+    await expect(runKtxCli(['demo', '--mode', 'replay', '--no-input'], testIo.io, { demo })).resolves.toBe(1);
 
     expect(testIo.stderr()).toMatch(/unknown command|error:/i);
     expect(demo).not.toHaveBeenCalled();
@@ -538,7 +538,7 @@ describe('runKloCli', () => {
     const demo = vi.fn().mockResolvedValue(0);
 
     await expect(
-      runKloCli(['--project-dir', tempDir, 'setup', 'demo', '--mode', 'replay', '--no-input'], testIo.io, { demo }),
+      runKtxCli(['--project-dir', tempDir, 'setup', 'demo', '--mode', 'replay', '--no-input'], testIo.io, { demo }),
     ).resolves.toBe(0);
 
     expect(demo).toHaveBeenCalledWith(
@@ -553,7 +553,7 @@ describe('runKloCli', () => {
 
     demo.mockClear();
     await expect(
-      runKloCli(['--project-dir', tempDir, 'setup', 'demo', '--mode', 'seeded', '--no-input'], testIo.io, {
+      runKtxCli(['--project-dir', tempDir, 'setup', 'demo', '--mode', 'seeded', '--no-input'], testIo.io, {
         demo,
       }),
     ).resolves.toBe(0);
@@ -569,7 +569,7 @@ describe('runKloCli', () => {
 
     demo.mockClear();
     await expect(
-      runKloCli(['--project-dir', tempDir, 'setup', '--no-input', 'demo', '--mode', 'seeded'], testIo.io, {
+      runKtxCli(['--project-dir', tempDir, 'setup', '--no-input', 'demo', '--mode', 'seeded'], testIo.io, {
         demo,
       }),
     ).resolves.toBe(0);
@@ -585,7 +585,7 @@ describe('runKloCli', () => {
 
     demo.mockClear();
     await expect(
-      runKloCli(['--project-dir', tempDir, 'setup', 'demo', 'inspect', '--no-input'], testIo.io, { demo }),
+      runKtxCli(['--project-dir', tempDir, 'setup', 'demo', 'inspect', '--no-input'], testIo.io, { demo }),
     ).resolves.toBe(0);
     expect(demo).toHaveBeenCalledWith(
       {
@@ -603,7 +603,7 @@ describe('runKloCli', () => {
     const demo = vi.fn().mockResolvedValue(0);
 
     await expect(
-      runKloCli(['--project-dir', tempDir, 'setup', 'demo', 'ingest', '--mode', 'full', '--no-input'], testIo.io, {
+      runKtxCli(['--project-dir', tempDir, 'setup', 'demo', 'ingest', '--mode', 'full', '--no-input'], testIo.io, {
         demo,
       }),
     ).resolves.toBe(0);
@@ -621,7 +621,7 @@ describe('runKloCli', () => {
 
     demo.mockClear();
     await expect(
-      runKloCli(['--project-dir', tempDir, 'setup', '--no-input', 'demo', 'ingest', '--mode', 'seeded'], testIo.io, {
+      runKtxCli(['--project-dir', tempDir, 'setup', '--no-input', 'demo', 'ingest', '--mode', 'seeded'], testIo.io, {
         demo,
       }),
     ).resolves.toBe(0);
@@ -639,7 +639,7 @@ describe('runKloCli', () => {
 
     demo.mockClear();
     await expect(
-      runKloCli(
+      runKtxCli(
         ['--project-dir', tempDir, 'setup', 'demo', 'ingest', '--mode', 'full', '--no-input', '--plain'],
         testIo.io,
         {
@@ -665,16 +665,16 @@ describe('runKloCli', () => {
     const publicIngest = vi.fn();
     const lowLevelIngest = vi.fn();
 
-    await expect(runKloCli(['ingest', '--help'], testIo.io, { publicIngest, ingest: lowLevelIngest })).resolves.toBe(0);
+    await expect(runKtxCli(['ingest', '--help'], testIo.io, { publicIngest, ingest: lowLevelIngest })).resolves.toBe(0);
 
-    expect(testIo.stdout()).toContain('Usage: klo ingest [options] [connectionId]');
-    expect(testIo.stdout()).toContain('Build and refresh KLO context from configured sources');
+    expect(testIo.stdout()).toContain('Usage: ktx ingest [options] [connectionId]');
+    expect(testIo.stdout()).toContain('Build and refresh KTX context from configured sources');
     expect(testIo.stdout()).toContain('status');
     expect(testIo.stdout()).toContain('watch');
-    expect(testIo.stdout()).toContain('klo ingest --all [options]');
-    expect(testIo.stdout()).toContain('klo ingest status [runId] [options]');
-    expect(testIo.stdout()).toContain('klo ingest watch [runId] [options]');
-    expect(testIo.stdout()).not.toContain('klo ingest replay <runId> [options]');
+    expect(testIo.stdout()).toContain('ktx ingest --all [options]');
+    expect(testIo.stdout()).toContain('ktx ingest status [runId] [options]');
+    expect(testIo.stdout()).toContain('ktx ingest watch [runId] [options]');
+    expect(testIo.stdout()).not.toContain('ktx ingest replay <runId> [options]');
     expect(testIo.stdout()).toContain('--no-input');
     expect(testIo.stdout()).not.toContain('--adapter');
     expect(testIo.stderr()).toBe('');
@@ -689,20 +689,20 @@ describe('runKloCli', () => {
     const publicIngest = vi.fn(async () => 0);
     const lowLevelIngest = vi.fn(async () => 0);
 
-    await expect(runKloCli(['ingest', 'run'], publicRunIo.io, { publicIngest, ingest: lowLevelIngest })).resolves.toBe(
+    await expect(runKtxCli(['ingest', 'run'], publicRunIo.io, { publicIngest, ingest: lowLevelIngest })).resolves.toBe(
       1,
     );
     expect(publicRunIo.stderr()).toMatch(/invalid argument|reserved|run/i);
     expect(publicIngest).not.toHaveBeenCalled();
 
     await expect(
-      runKloCli(['ingest', 'run', '--help'], publicHelpIo.io, { publicIngest, ingest: lowLevelIngest }),
+      runKtxCli(['ingest', 'run', '--help'], publicHelpIo.io, { publicIngest, ingest: lowLevelIngest }),
     ).resolves.toBe(0);
-    expect(publicHelpIo.stdout()).toContain('Usage: klo ingest [options] [connectionId]');
-    expect(publicHelpIo.stdout()).not.toContain('Usage: klo ingest ' + 'run');
+    expect(publicHelpIo.stdout()).toContain('Usage: ktx ingest [options] [connectionId]');
+    expect(publicHelpIo.stdout()).not.toContain('Usage: ktx ingest ' + 'run');
 
     await expect(
-      runKloCli(['dev', 'ingest', 'run', '--connection-id', 'warehouse', '--adapter', 'metabase'], devRunIo.io, {
+      runKtxCli(['dev', 'ingest', 'run', '--connection-id', 'warehouse', '--adapter', 'metabase'], devRunIo.io, {
         publicIngest,
         ingest: lowLevelIngest,
       }),
@@ -720,11 +720,11 @@ describe('runKloCli', () => {
     const ingestRunIo = makeIo();
     const ingestReplayHelpIo = makeIo();
 
-    await expect(runKloCli(['dev', 'doctor', 'setup', '--json', '--no-input'], doctorIo.io, { doctor })).resolves.toBe(
+    await expect(runKtxCli(['dev', 'doctor', 'setup', '--json', '--no-input'], doctorIo.io, { doctor })).resolves.toBe(
       0,
     );
     await expect(
-      runKloCli(
+      runKtxCli(
         [
           'dev',
           'ingest',
@@ -746,7 +746,7 @@ describe('runKloCli', () => {
         { ingest },
       ),
     ).resolves.toBe(0);
-    await expect(runKloCli(['dev', 'ingest', 'replay', '--help'], ingestReplayHelpIo.io, { ingest })).resolves.toBe(0);
+    await expect(runKtxCli(['dev', 'ingest', 'replay', '--help'], ingestReplayHelpIo.io, { ingest })).resolves.toBe(0);
 
     expect(doctor).toHaveBeenCalledWith({ command: 'setup', outputMode: 'json', inputMode: 'disabled' }, doctorIo.io);
     expect(ingest).toHaveBeenCalledWith(
@@ -763,7 +763,7 @@ describe('runKloCli', () => {
       },
       ingestRunIo.io,
     );
-    expect(ingestReplayHelpIo.stdout()).toContain('Usage: klo dev ingest replay [options] <runId>');
+    expect(ingestReplayHelpIo.stdout()).toContain('Usage: ktx dev ingest replay [options] <runId>');
     expect(ingestReplayHelpIo.stdout()).toContain('<runId>');
     expect(doctorIo.stderr()).toBe('');
     expect(ingestRunIo.stderr()).toBe('');
@@ -774,7 +774,7 @@ describe('runKloCli', () => {
     const testIo = makeIo();
     const connection = vi.fn(async () => 0);
 
-    await expect(runKloCli(['--project-dir', tempDir, 'connection', 'list'], testIo.io, { connection })).resolves.toBe(
+    await expect(runKtxCli(['--project-dir', tempDir, 'connection', 'list'], testIo.io, { connection })).resolves.toBe(
       0,
     );
 
@@ -788,9 +788,9 @@ describe('runKloCli', () => {
     const statusIo = makeIo();
 
     await expect(
-      runKloCli(['--project-dir', tempDir, 'setup', 'status', '--json'], setupIo.io, { setup }),
+      runKtxCli(['--project-dir', tempDir, 'setup', 'status', '--json'], setupIo.io, { setup }),
     ).resolves.toBe(0);
-    await expect(runKloCli(['--project-dir', tempDir, 'status', '--json'], statusIo.io, { setup })).resolves.toBe(0);
+    await expect(runKtxCli(['--project-dir', tempDir, 'status', '--json'], statusIo.io, { setup })).resolves.toBe(0);
 
     expect(setup).toHaveBeenNthCalledWith(1, { command: 'status', projectDir: tempDir, json: true }, setupIo.io);
     expect(setup).toHaveBeenNthCalledWith(2, { command: 'status', projectDir: tempDir, json: true }, statusIo.io);
@@ -803,21 +803,21 @@ describe('runKloCli', () => {
     const statusIo = makeIo();
     const stopIo = makeIo();
 
-    await expect(runKloCli(['--project-dir', tempDir, 'setup', 'context', 'build'], buildIo.io, { setup })).resolves.toBe(
+    await expect(runKtxCli(['--project-dir', tempDir, 'setup', 'context', 'build'], buildIo.io, { setup })).resolves.toBe(
       0,
     );
     await expect(
-      runKloCli(['--project-dir', tempDir, 'setup', 'context', 'watch', 'setup-context-local-1'], watchIo.io, {
+      runKtxCli(['--project-dir', tempDir, 'setup', 'context', 'watch', 'setup-context-local-1'], watchIo.io, {
         setup,
       }),
     ).resolves.toBe(0);
     await expect(
-      runKloCli(['--project-dir', tempDir, 'setup', 'context', 'status', 'setup-context-local-1', '--json'], statusIo.io, {
+      runKtxCli(['--project-dir', tempDir, 'setup', 'context', 'status', 'setup-context-local-1', '--json'], statusIo.io, {
         setup,
       }),
     ).resolves.toBe(0);
     await expect(
-      runKloCli(['--project-dir', tempDir, 'setup', 'context', 'stop', 'setup-context-local-1'], stopIo.io, {
+      runKtxCli(['--project-dir', tempDir, 'setup', 'context', 'stop', 'setup-context-local-1'], stopIo.io, {
         setup,
       }),
     ).resolves.toBe(0);
@@ -849,7 +849,7 @@ describe('runKloCli', () => {
     const setupIo = makeIo();
 
     await expect(
-      runKloCli(
+      runKtxCli(
         [
           '--project-dir',
           tempDir,
@@ -883,7 +883,7 @@ describe('runKloCli', () => {
     const setupIo = makeIo();
 
     await expect(
-      runKloCli(
+      runKtxCli(
         [
           '--project-dir',
           tempDir,
@@ -907,7 +907,7 @@ describe('runKloCli', () => {
     const setupIo = makeIo();
 
     await expect(
-      runKloCli(
+      runKtxCli(
         [
           '--project-dir',
           tempDir,
@@ -943,7 +943,7 @@ describe('runKloCli', () => {
     const setupIo = makeIo();
 
     await expect(
-      runKloCli(
+      runKtxCli(
         [
           'setup',
           '--project-dir',
@@ -997,7 +997,7 @@ describe('runKloCli', () => {
     const testIo = makeIo();
 
     await expect(
-      runKloCli(
+      runKtxCli(
         [
           '--project-dir',
           tempDir,
@@ -1045,7 +1045,7 @@ describe('runKloCli', () => {
     const removeIo = makeIo();
 
     await expect(
-      runKloCli(
+      runKtxCli(
         [
           '--project-dir',
           tempDir,
@@ -1064,7 +1064,7 @@ describe('runKloCli', () => {
       ),
     ).resolves.toBe(0);
     await expect(
-      runKloCli(['--project-dir', tempDir, 'setup', 'remove', '--agents'], removeIo.io, { setup }),
+      runKtxCli(['--project-dir', tempDir, 'setup', 'remove', '--agents'], removeIo.io, { setup }),
     ).resolves.toBe(0);
 
     expect(setup).toHaveBeenNthCalledWith(
@@ -1088,7 +1088,7 @@ describe('runKloCli', () => {
     const testIo = makeIo();
 
     await expect(
-      runKloCli(
+      runKtxCli(
         [
           '--project-dir',
           tempDir,
@@ -1115,7 +1115,7 @@ describe('runKloCli', () => {
     const setupIo = makeIo();
 
     await expect(
-      runKloCli(['--project-dir', tempDir, 'setup', '--embedding-backend', 'deterministic'], setupIo.io, { setup }),
+      runKtxCli(['--project-dir', tempDir, 'setup', '--embedding-backend', 'deterministic'], setupIo.io, { setup }),
     ).resolves.toBe(1);
 
     expect(setup).not.toHaveBeenCalled();
@@ -1127,7 +1127,7 @@ describe('runKloCli', () => {
     const setupIo = makeIo();
 
     await expect(
-      runKloCli(['--project-dir', tempDir, 'setup', '--embedding-backend', 'gateway'], setupIo.io, { setup }),
+      runKtxCli(['--project-dir', tempDir, 'setup', '--embedding-backend', 'gateway'], setupIo.io, { setup }),
     ).resolves.toBe(1);
 
     expect(setup).not.toHaveBeenCalled();
@@ -1139,7 +1139,7 @@ describe('runKloCli', () => {
     const setupIo = makeIo();
 
     await expect(
-      runKloCli(
+      runKtxCli(
         [
           '--project-dir',
           tempDir,
@@ -1165,7 +1165,7 @@ describe('runKloCli', () => {
     const setupIo = makeIo();
 
     await expect(
-      runKloCli(['--project-dir', tempDir, 'setup', '--enable-historic-sql', '--disable-historic-sql'], setupIo.io, {
+      runKtxCli(['--project-dir', tempDir, 'setup', '--enable-historic-sql', '--disable-historic-sql'], setupIo.io, {
         setup,
       }),
     ).resolves.toBe(1);
@@ -1179,12 +1179,12 @@ describe('runKloCli', () => {
     const toolsIo = makeIo();
     const agent = vi.fn(async () => 0);
 
-    await expect(runKloCli(['agent', '--help'], helpIo.io, { agent })).resolves.toBe(0);
+    await expect(runKtxCli(['agent', '--help'], helpIo.io, { agent })).resolves.toBe(0);
     await expect(
-      runKloCli(['--project-dir', tempDir, 'agent', 'tools', '--json'], toolsIo.io, { agent }),
+      runKtxCli(['--project-dir', tempDir, 'agent', 'tools', '--json'], toolsIo.io, { agent }),
     ).resolves.toBe(0);
 
-    expect(helpIo.stdout()).toContain('Usage: klo agent');
+    expect(helpIo.stdout()).toContain('Usage: ktx agent');
     expect(toolsIo.stderr()).toBe('');
     expect(agent).toHaveBeenCalledWith({ command: 'tools', projectDir: tempDir, json: true }, toolsIo.io);
   });
@@ -1277,13 +1277,13 @@ describe('runKloCli', () => {
 
     for (const entry of cases) {
       const io = makeIo();
-      await expect(runKloCli(entry.argv, io.io, { agent })).resolves.toBe(0);
+      await expect(runKtxCli(entry.argv, io.io, { agent })).resolves.toBe(0);
       expect(agent).toHaveBeenLastCalledWith(entry.args, io.io);
       expect(io.stderr()).toBe('');
     }
 
     const helpIo = makeIo();
-    await expect(runKloCli(['--help'], helpIo.io, { agent })).resolves.toBe(0);
+    await expect(runKtxCli(['--help'], helpIo.io, { agent })).resolves.toBe(0);
     expect(helpIo.stdout()).not.toContain('agent ');
   });
 
@@ -1323,7 +1323,7 @@ describe('runKloCli', () => {
     const io = makeIo();
 
     await expect(
-      runKloCli(
+      runKtxCli(
         ['--project-dir', tempDir, 'agent', 'sl', 'list', '--json', '--connection-id', 'warehouse', '--query', 'paid'],
         io.io,
         { agent },
@@ -1376,7 +1376,7 @@ describe('runKloCli', () => {
     const io = makeIo();
 
     await expect(
-      runKloCli(['--project-dir', tempDir, 'agent', 'wiki', 'search', 'paid order', '--json', '--limit', '5'], io.io, {
+      runKtxCli(['--project-dir', tempDir, 'agent', 'wiki', 'search', 'paid order', '--json', '--limit', '5'], io.io, {
         agent,
       }),
     ).resolves.toBe(0);
@@ -1394,23 +1394,23 @@ describe('runKloCli', () => {
   });
 
   it('dispatches public connection subcommands through the existing connection implementation', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'klo-connection-dispatch-'));
+    const tempDir = await mkdtemp(join(tmpdir(), 'ktx-connection-dispatch-'));
     const connection = vi.fn(async () => 0);
 
     await expect(
-      runKloCli(['--project-dir', tempDir, 'connection', 'list'], makeIo().io, { connection }),
+      runKtxCli(['--project-dir', tempDir, 'connection', 'list'], makeIo().io, { connection }),
     ).resolves.toBe(0);
 
     const removeIo = makeIo();
     await expect(
-      runKloCli(['--project-dir', tempDir, 'connection', 'remove', 'warehouse', '--force', '--no-input'], removeIo.io, {
+      runKtxCli(['--project-dir', tempDir, 'connection', 'remove', 'warehouse', '--force', '--no-input'], removeIo.io, {
         connection,
       }),
     ).resolves.toBe(0);
 
     const mapIo = makeIo();
     await expect(
-      runKloCli(['--project-dir', tempDir, 'connection', 'map', 'prod-metabase', '--json'], mapIo.io, {
+      runKtxCli(['--project-dir', tempDir, 'connection', 'map', 'prod-metabase', '--json'], mapIo.io, {
         connection,
       }),
     ).resolves.toBe(0);
@@ -1444,9 +1444,9 @@ describe('runKloCli', () => {
   it('prints help for connection metabase setup', async () => {
     const helpIo = makeIo();
 
-    await expect(runKloCli(['connection', 'metabase', 'setup', '--help'], helpIo.io)).resolves.toBe(0);
+    await expect(runKtxCli(['connection', 'metabase', 'setup', '--help'], helpIo.io)).resolves.toBe(0);
 
-    expect(helpIo.stdout()).toContain('Usage: klo connection metabase setup');
+    expect(helpIo.stdout()).toContain('Usage: ktx connection metabase setup');
     for (const option of [
       '--id <connectionId>',
       '--url <url>',
@@ -1465,10 +1465,10 @@ describe('runKloCli', () => {
     }
     expect(helpIo.stdout()).toContain('Guided equivalent of:');
     for (const line of [
-      'klo connection mapping refresh <connectionId> --auto-accept',
-      'klo connection mapping set <connectionId> databaseMappings <id>=<target>',
-      'klo connection mapping set-sync-enabled <connectionId> <id> --enabled true',
-      'klo ingest <connectionId>',
+      'ktx connection mapping refresh <connectionId> --auto-accept',
+      'ktx connection mapping set <connectionId> databaseMappings <id>=<target>',
+      'ktx connection mapping set-sync-enabled <connectionId> <id> --enabled true',
+      'ktx ingest <connectionId>',
     ]) {
       expect(helpIo.stdout()).toContain(line);
     }
@@ -1481,7 +1481,7 @@ describe('runKloCli', () => {
     const setupIo = makeIo();
 
     await expect(
-      runKloCli(
+      runKtxCli(
         [
           'connection',
           'metabase',
@@ -1598,7 +1598,7 @@ describe('runKloCli', () => {
       ],
     ]) {
       const testIo = makeIo();
-      await expect(runKloCli(argv, testIo.io, { connectionMetabaseSetup })).resolves.toBe(1);
+      await expect(runKtxCli(argv, testIo.io, { connectionMetabaseSetup })).resolves.toBe(1);
       expect(testIo.stderr()).toMatch(/map|sync|sync-mode|conflict|cannot be used|invalid|integer|choices/i);
     }
 
@@ -1615,7 +1615,7 @@ describe('runKloCli', () => {
     ]) {
       const testIo = makeIo();
 
-      await expect(runKloCli(argv, testIo.io)).resolves.toBe(1);
+      await expect(runKtxCli(argv, testIo.io)).resolves.toBe(1);
 
       expect(testIo.stderr()).toMatch(/unknown command|error:/);
     }
@@ -1626,7 +1626,7 @@ describe('runKloCli', () => {
     const connection = vi.fn(async () => 0);
 
     await expect(
-      runKloCli(
+      runKtxCli(
         [
           'connection',
           'add',
@@ -1688,9 +1688,9 @@ describe('runKloCli', () => {
       const testIo = makeIo();
       const connectionNotion = vi.fn(async () => 0);
 
-      await expect(runKloCli(argv, testIo.io, { connectionNotion })).resolves.toBe(0);
+      await expect(runKtxCli(argv, testIo.io, { connectionNotion })).resolves.toBe(0);
 
-      expect(testIo.stdout()).toContain('Usage: klo connection notion');
+      expect(testIo.stdout()).toContain('Usage: ktx connection notion');
       expect(testIo.stdout()).toContain('pick');
       expect(testIo.stderr()).toBe('');
       expect(connectionNotion).not.toHaveBeenCalled();
@@ -1702,7 +1702,7 @@ describe('runKloCli', () => {
     const connectionNotion = vi.fn(async () => 0);
 
     await expect(
-      runKloCli(
+      runKtxCli(
         [
           '--project-dir',
           tempDir,
@@ -1739,7 +1739,7 @@ describe('runKloCli', () => {
     const connectionNotion = vi.fn(async () => 0);
 
     await expect(
-      runKloCli(['connection', 'notion', 'pick', 'notion-main', '--root-page-id', 'not-a-uuid'], testIo.io, {
+      runKtxCli(['connection', 'notion', 'pick', 'notion-main', '--root-page-id', 'not-a-uuid'], testIo.io, {
         connectionNotion,
       }),
     ).resolves.toBe(0);
@@ -1761,7 +1761,7 @@ describe('runKloCli', () => {
     const connectionNotion = vi.fn(async () => 0);
 
     await expect(
-      runKloCli(['connection', 'notion', 'pick', 'notion-main', '--no-input'], testIo.io, { connectionNotion }),
+      runKtxCli(['connection', 'notion', 'pick', 'notion-main', '--no-input'], testIo.io, { connectionNotion }),
     ).resolves.toBe(1);
 
     expect(connectionNotion).not.toHaveBeenCalled();
@@ -1773,18 +1773,18 @@ describe('runKloCli', () => {
     const connection = vi.fn().mockResolvedValue(0);
 
     await expect(
-      runKloCli(['--project-dir', tempDir, '--debug', 'connection', 'list'], testIo.io, { connection }),
+      runKtxCli(['--project-dir', tempDir, '--debug', 'connection', 'list'], testIo.io, { connection }),
     ).resolves.toBe(0);
 
     expect(testIo.stderr()).toContain(`[debug] projectDir=${tempDir}`);
     expect(testIo.stderr()).toContain('[debug] dispatch=connection');
   });
 
-  it('routes low-level scan through klo dev with top-level project-dir', async () => {
+  it('routes low-level scan through ktx dev with top-level project-dir', async () => {
     const testIo = makeIo();
     const scan = vi.fn().mockResolvedValue(0);
 
-    await expect(runKloCli(['--project-dir', tempDir, 'dev', 'scan', 'warehouse'], testIo.io, { scan })).resolves.toBe(
+    await expect(runKtxCli(['--project-dir', tempDir, 'dev', 'scan', 'warehouse'], testIo.io, { scan })).resolves.toBe(
       0,
     );
 
@@ -1807,7 +1807,7 @@ describe('runKloCli', () => {
     const serveStdio = vi.fn(async () => 0);
 
     await expect(
-      runKloCli(
+      runKtxCli(
         [
           'serve',
           '--mcp',
@@ -1843,9 +1843,9 @@ describe('runKloCli', () => {
   it('prints dev help for bare dev commands', async () => {
     const testIo = makeIo();
 
-    await expect(runKloCli(['dev'], testIo.io)).resolves.toBe(0);
+    await expect(runKtxCli(['dev'], testIo.io)).resolves.toBe(0);
 
-    expect(testIo.stdout()).toContain('Usage: klo dev [options] [command]');
+    expect(testIo.stdout()).toContain('Usage: ktx dev [options] [command]');
     expect(testIo.stdout()).toContain('Low-level diagnostics');
     expect(testIo.stdout()).toContain('scan');
     expect(testIo.stdout()).toContain('ingest');
@@ -1857,15 +1857,15 @@ describe('runKloCli', () => {
 
   it('prints dev command help without invoking low-level execution', async () => {
     for (const [command, expected] of [
-      ['scan', ['Usage: klo dev scan', '--dry-run', 'status', 'report']],
-      ['ingest', ['Usage: klo dev ingest', 'run', 'replay']],
-      ['mapping', ['Usage: klo dev mapping', 'sync-state', 'validate']],
+      ['scan', ['Usage: ktx dev scan', '--dry-run', 'status', 'report']],
+      ['ingest', ['Usage: ktx dev ingest', 'run', 'replay']],
+      ['mapping', ['Usage: ktx dev mapping', 'sync-state', 'validate']],
     ] as const) {
       const testIo = makeIo();
       const scan = vi.fn().mockResolvedValue(0);
       const sl = vi.fn().mockResolvedValue(0);
 
-      await expect(runKloCli(['dev', command, '--help'], testIo.io, { scan, sl })).resolves.toBe(0);
+      await expect(runKtxCli(['dev', command, '--help'], testIo.io, { scan, sl })).resolves.toBe(0);
 
       for (const text of expected) {
         expect(testIo.stdout()).toContain(text);
@@ -1880,9 +1880,9 @@ describe('runKloCli', () => {
     const testIo = makeIo();
     const scan = vi.fn().mockResolvedValue(0);
 
-    await expect(runKloCli(['dev', 'scan', 'report', '--help'], testIo.io, { scan })).resolves.toBe(0);
+    await expect(runKtxCli(['dev', 'scan', 'report', '--help'], testIo.io, { scan })).resolves.toBe(0);
 
-    expect(testIo.stdout()).toContain('Usage: klo dev scan report [options] <runId>');
+    expect(testIo.stdout()).toContain('Usage: ktx dev scan report [options] <runId>');
     expect(testIo.stderr()).toBe('');
     expect(scan).not.toHaveBeenCalled();
   });
@@ -1890,7 +1890,7 @@ describe('runKloCli', () => {
   it('rejects removed reserved dev subcommands', async () => {
     const testIo = makeIo();
 
-    await expect(runKloCli(['dev', 'artifacts'], testIo.io)).resolves.toBe(1);
+    await expect(runKtxCli(['dev', 'artifacts'], testIo.io)).resolves.toBe(1);
 
     expect(testIo.stderr()).toMatch(/unknown command|error:/);
   });
@@ -1906,7 +1906,7 @@ describe('runKloCli', () => {
       ['setup', 'demo', 'replay', '--json', '--plain'],
     ]) {
       const testIo = makeIo();
-      await expect(runKloCli(argv, testIo.io, { ingest, demo })).resolves.toBe(1);
+      await expect(runKtxCli(argv, testIo.io, { ingest, demo })).resolves.toBe(1);
       expect(testIo.stderr()).toMatch(/conflict|cannot be used/i);
     }
 
@@ -1920,7 +1920,7 @@ describe('runKloCli', () => {
 
     const tokenIo = makeIo();
     await expect(
-      runKloCli(
+      runKtxCli(
         [
           'connection',
           'add',
@@ -1946,14 +1946,14 @@ describe('runKloCli', () => {
   it('validates connection mapping set syntax before runner domain validation', async () => {
     const badFieldIo = makeIo();
     await expect(
-      runKloCli(['connection', 'mapping', 'set', 'prod-metabase', 'invalidMappings', '1=warehouse'], badFieldIo.io),
+      runKtxCli(['connection', 'mapping', 'set', 'prod-metabase', 'invalidMappings', '1=warehouse'], badFieldIo.io),
     ).resolves.toBe(1);
     expect(badFieldIo.stderr()).toContain('databaseMappings or connectionMappings');
 
     for (const assignment of ['missing-equals', '=warehouse', '1=']) {
       const testIo = makeIo();
       await expect(
-        runKloCli(['connection', 'mapping', 'set', 'prod-metabase', 'databaseMappings', assignment], testIo.io),
+        runKtxCli(['connection', 'mapping', 'set', 'prod-metabase', 'databaseMappings', assignment], testIo.io),
       ).resolves.toBe(1);
       expect(testIo.stderr()).toContain('non-empty <key>=<value>');
     }
@@ -1962,7 +1962,7 @@ describe('runKloCli', () => {
   it('does not expose root init after setup owns project creation', async () => {
     const testIo = makeIo();
 
-    await expect(runKloCli(['init'], testIo.io)).resolves.toBe(1);
+    await expect(runKtxCli(['init'], testIo.io)).resolves.toBe(1);
 
     expect(testIo.stderr()).toContain("error: unknown command 'init'");
   });
@@ -1970,7 +1970,7 @@ describe('runKloCli', () => {
   it('returns an error code for unknown commands', async () => {
     const testIo = makeIo();
 
-    await expect(runKloCli(['unknown'], testIo.io)).resolves.toBe(1);
+    await expect(runKtxCli(['unknown'], testIo.io)).resolves.toBe(1);
 
     expect(testIo.stderr()).toContain("error: unknown command 'unknown'");
   });

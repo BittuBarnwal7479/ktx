@@ -1,12 +1,12 @@
-import type { KloEnrichedRelationship, KloEnrichedSchema, KloSkippedRelationship } from './enrichment-types.js';
+import type { KtxEnrichedRelationship, KtxEnrichedSchema, KtxSkippedRelationship } from './enrichment-types.js';
 
-export interface KloFormalMetadataRelationshipCollection {
-  accepted: KloEnrichedRelationship[];
-  skipped: KloSkippedRelationship[];
+export interface KtxFormalMetadataRelationshipCollection {
+  accepted: KtxEnrichedRelationship[];
+  skipped: KtxSkippedRelationship[];
   acceptedIds: Set<string>;
 }
 
-function relationshipEndpointExists(schema: KloEnrichedSchema, relationship: KloEnrichedRelationship): boolean {
+function relationshipEndpointExists(schema: KtxEnrichedSchema, relationship: KtxEnrichedRelationship): boolean {
   const fromTable = schema.tables.find((table) => table.id === relationship.from.tableId && table.enabled);
   const toTable = schema.tables.find((table) => table.id === relationship.to.tableId && table.enabled);
   const fromColumn = fromTable?.columns.some(
@@ -18,11 +18,11 @@ function relationshipEndpointExists(schema: KloEnrichedSchema, relationship: Klo
   return Boolean(fromTable && toTable && fromColumn && toColumn);
 }
 
-export function collectKloFormalMetadataRelationships(
-  schema: KloEnrichedSchema,
-): KloFormalMetadataRelationshipCollection {
-  const accepted: KloEnrichedRelationship[] = [];
-  const skipped: KloSkippedRelationship[] = [];
+export function collectKtxFormalMetadataRelationships(
+  schema: KtxEnrichedSchema,
+): KtxFormalMetadataRelationshipCollection {
+  const accepted: KtxEnrichedRelationship[] = [];
+  const skipped: KtxSkippedRelationship[] = [];
   const acceptedIds = new Set<string>();
 
   for (const relationship of schema.relationships) {

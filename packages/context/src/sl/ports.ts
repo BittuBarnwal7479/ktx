@@ -1,21 +1,21 @@
 import type { SemanticLayerQueryInput, SemanticLayerSource } from './types.js';
 
-export interface KloConnectionInfo {
+export interface KtxConnectionInfo {
   id: string;
   name: string;
   connectionType: string;
 }
 
-export interface KloQueryResult {
+export interface KtxQueryResult {
   headers?: string[];
   rows?: unknown[][];
   totalRows?: number;
 }
 
 export interface SlConnectionCatalogPort {
-  listEnabledConnections(ids: string[]): Promise<KloConnectionInfo[]>;
-  getConnectionById(connectionId: string): Promise<KloConnectionInfo | null>;
-  executeQuery(connectionId: string, sql: string): Promise<KloQueryResult>;
+  listEnabledConnections(ids: string[]): Promise<KtxConnectionInfo[]>;
+  getConnectionById(connectionId: string): Promise<KtxConnectionInfo | null>;
+  executeQuery(connectionId: string, sql: string): Promise<KtxQueryResult>;
 }
 
 export interface SlPythonPort {

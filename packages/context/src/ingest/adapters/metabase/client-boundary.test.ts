@@ -9,8 +9,8 @@ async function readMetabaseFile(name: string): Promise<string> {
   return readFile(join(metabaseDir, name), 'utf-8');
 }
 
-describe('KLO Metabase client boundary', () => {
-  it('keeps NestJS, server data-source base classes, and server-relative imports out of the KLO client', async () => {
+describe('KTX Metabase client boundary', () => {
+  it('keeps NestJS, server data-source base classes, and server-relative imports out of the KTX client', async () => {
     const client = await readMetabaseFile('client.ts');
     expect(client).not.toContain(`@${'nestjs'}`);
     expect(client).not.toContain(`DataSource${'Client'}`);
@@ -19,7 +19,7 @@ describe('KLO Metabase client boundary', () => {
     expect(client).not.toContain('../../types/brand');
   });
 
-  it('keeps proxy implementation code out of the KLO v1 client', async () => {
+  it('keeps proxy implementation code out of the KTX v1 client', async () => {
     const client = await readMetabaseFile('client.ts');
     expect(client).not.toContain(`network-${'proxy'}`);
     expect(client).not.toContain(`ssh${'2'}`);

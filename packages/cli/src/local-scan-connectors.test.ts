@@ -1,9 +1,9 @@
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { initKloProject, loadKloProject } from '@klo/context/project';
+import { initKtxProject, loadKtxProject } from '@ktx/context/project';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createKloCliScanConnector } from './local-scan-connectors.js';
+import { createKtxCliScanConnector } from './local-scan-connectors.js';
 
 const bigQueryMock = vi.hoisted(() => ({
   constructorInputs: [] as Array<{
@@ -13,10 +13,10 @@ const bigQueryMock = vi.hoisted(() => ({
   }>,
 }));
 
-vi.mock('@klo/connector-bigquery', () => ({
-  isKloBigQueryConnectionConfig: (connection: { driver?: unknown } | undefined) =>
+vi.mock('@ktx/connector-bigquery', () => ({
+  isKtxBigQueryConnectionConfig: (connection: { driver?: unknown } | undefined) =>
     String(connection?.driver ?? '').toLowerCase() === 'bigquery',
-  KloBigQueryScanConnector: class {
+  KtxBigQueryScanConnector: class {
     readonly id: string;
     readonly driver = 'bigquery';
 
@@ -27,12 +27,12 @@ vi.mock('@klo/connector-bigquery', () => ({
   },
 }));
 
-describe('createKloCliScanConnector', () => {
+describe('createKtxCliScanConnector', () => {
   let tempDir: string;
 
   beforeEach(async () => {
     bigQueryMock.constructorInputs.length = 0;
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-cli-scan-connector-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-cli-scan-connector-'));
   });
 
   afterEach(async () => {
@@ -40,9 +40,9 @@ describe('createKloCliScanConnector', () => {
   });
 
   it('creates a native sqlite connector from standalone config', async () => {
-    await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
     await writeFile(
-      join(tempDir, 'klo.yaml'),
+      join(tempDir, 'ktx.yaml'),
       [
         'project: warehouse',
         'connections:',
@@ -54,9 +54,9 @@ describe('createKloCliScanConnector', () => {
       ].join('\n'),
       'utf-8',
     );
-    const project = await loadKloProject({ projectDir: tempDir });
+    const project = await loadKtxProject({ projectDir: tempDir });
 
-    const connector = await createKloCliScanConnector(project, 'warehouse');
+    const connector = await createKtxCliScanConnector(project, 'warehouse');
 
     expect(connector.id).toBe('sqlite:warehouse');
     expect(connector.driver).toBe('sqlite');
@@ -66,9 +66,9 @@ describe('createKloCliScanConnector', () => {
     ['maxBytesBilled', '    maxBytesBilled: 123456789', 123456789],
     ['max_bytes_billed', '    max_bytes_billed: "987654321"', '987654321'],
   ])('passes BigQuery %s from standalone config', async (_label, byteCapLine, expectedMaxBytesBilled) => {
-    await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
     await writeFile(
-      join(tempDir, 'klo.yaml'),
+      join(tempDir, 'ktx.yaml'),
       [
         'project: warehouse',
         'connections:',
@@ -81,9 +81,9 @@ describe('createKloCliScanConnector', () => {
       ].join('\n'),
       'utf-8',
     );
-    const project = await loadKloProject({ projectDir: tempDir });
+    const project = await loadKtxProject({ projectDir: tempDir });
 
-    const connector = await createKloCliScanConnector(project, 'warehouse');
+    const connector = await createKtxCliScanConnector(project, 'warehouse');
 
     expect(connector.id).toBe('bigquery:warehouse');
     expect(connector.driver).toBe('bigquery');
@@ -96,9 +96,9 @@ describe('createKloCliScanConnector', () => {
   });
 
   it('does not create a standalone PostHog scan connector', async () => {
-    await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
     await writeFile(
-      join(tempDir, 'klo.yaml'),
+      join(tempDir, 'ktx.yaml'),
       [
         'project: warehouse',
         'connections:',
@@ -111,17 +111,17 @@ describe('createKloCliScanConnector', () => {
       ].join('\n'),
       'utf-8',
     );
-    const project = await loadKloProject({ projectDir: tempDir });
+    const project = await loadKtxProject({ projectDir: tempDir });
 
-    await expect(createKloCliScanConnector(project, 'product')).rejects.toThrow(
-      'Connection "product" uses driver "posthog", which has no native standalone KLO scan connector',
+    await expect(createKtxCliScanConnector(project, 'product')).rejects.toThrow(
+      'Connection "product" uses driver "posthog", which has no native standalone KTX scan connector',
     );
   });
 
   it('throws for structural daemon-only fallback configs', async () => {
-    await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
     await writeFile(
-      join(tempDir, 'klo.yaml'),
+      join(tempDir, 'ktx.yaml'),
       [
         'project: warehouse',
         'connections:',
@@ -132,17 +132,17 @@ describe('createKloCliScanConnector', () => {
       ].join('\n'),
       'utf-8',
     );
-    const project = await loadKloProject({ projectDir: tempDir });
+    const project = await loadKtxProject({ projectDir: tempDir });
 
-    await expect(createKloCliScanConnector(project, 'warehouse')).rejects.toThrow(
-      'Connection "warehouse" uses driver "duckdb", which has no native standalone KLO scan connector',
+    await expect(createKtxCliScanConnector(project, 'warehouse')).rejects.toThrow(
+      'Connection "warehouse" uses driver "duckdb", which has no native standalone KTX scan connector',
     );
   });
 
   it('throws a clear error when the connection block has no driver field', async () => {
-    await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
     await writeFile(
-      join(tempDir, 'klo.yaml'),
+      join(tempDir, 'ktx.yaml'),
       [
         'project: warehouse',
         'connections:',
@@ -154,10 +154,10 @@ describe('createKloCliScanConnector', () => {
       ].join('\n'),
       'utf-8',
     );
-    const project = await loadKloProject({ projectDir: tempDir });
+    const project = await loadKtxProject({ projectDir: tempDir });
 
-    await expect(createKloCliScanConnector(project, 'warehouse')).rejects.toThrow(
-      'Connection "warehouse" has no `driver` field in klo.yaml',
+    await expect(createKtxCliScanConnector(project, 'warehouse')).rejects.toThrow(
+      'Connection "warehouse" has no `driver` field in ktx.yaml',
     );
   });
 });

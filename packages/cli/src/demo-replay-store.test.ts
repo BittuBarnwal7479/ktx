@@ -1,7 +1,7 @@
 import { mkdtemp, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { type MemoryFlowReplayInput } from '@klo/context/ingest/memory-flow';
+import { type MemoryFlowReplayInput } from '@ktx/context/ingest/memory-flow';
 import { describe, expect, it } from 'vitest';
 import { DEMO_LATEST_REPLAY_FILE, loadLatestDemoReplay, writeDemoReplay } from './demo-replay-store.js';
 
@@ -35,7 +35,7 @@ function replay(overrides: Partial<MemoryFlowReplayInput> = {}): MemoryFlowRepla
 
 describe('demo replay store', () => {
   it('writes a versioned replay file and updates latest', async () => {
-    const projectDir = await mkdtemp(join(tmpdir(), 'klo-demo-replay-store-'));
+    const projectDir = await mkdtemp(join(tmpdir(), 'ktx-demo-replay-store-'));
 
     const saved = await writeDemoReplay(projectDir, replay(), { label: 'full' });
 
@@ -53,7 +53,7 @@ describe('demo replay store', () => {
   });
 
   it('returns null when no latest local replay exists', async () => {
-    const projectDir = await mkdtemp(join(tmpdir(), 'klo-demo-replay-store-empty-'));
+    const projectDir = await mkdtemp(join(tmpdir(), 'ktx-demo-replay-store-empty-'));
 
     await expect(loadLatestDemoReplay(projectDir)).resolves.toBeNull();
   });

@@ -1,15 +1,15 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
-  createKloConnectorCapabilities,
-  type KloScanConnector,
-  type KloScanContext,
-  type KloScanEnrichmentStateSummary,
-  type KloScanInput,
-  KloScanOrchestrator,
-  type KloSchemaSnapshot,
+  createKtxConnectorCapabilities,
+  type KtxScanConnector,
+  type KtxScanContext,
+  type KtxScanEnrichmentStateSummary,
+  type KtxScanInput,
+  KtxScanOrchestrator,
+  type KtxSchemaSnapshot,
 } from './index.js';
 
-function snapshot(): KloSchemaSnapshot {
+function snapshot(): KtxSchemaSnapshot {
   return {
     connectionId: 'warehouse',
     driver: 'postgres',
@@ -42,8 +42,8 @@ function snapshot(): KloSchemaSnapshot {
 }
 
 function connector(
-  capabilities = createKloConnectorCapabilities({ tableSampling: true, columnSampling: true }),
-): KloScanConnector {
+  capabilities = createKtxConnectorCapabilities({ tableSampling: true, columnSampling: true }),
+): KtxScanConnector {
   return {
     id: 'connector-1',
     driver: 'postgres',
@@ -52,7 +52,7 @@ function connector(
   };
 }
 
-function context(): KloScanContext {
+function context(): KtxScanContext {
   return {
     runId: 'scan-run-1',
     logger: {
@@ -64,24 +64,24 @@ function context(): KloScanContext {
   };
 }
 
-const input: KloScanInput = {
+const input: KtxScanInput = {
   connectionId: 'warehouse',
   driver: 'postgres',
   mode: 'structural',
 };
 
-describe('KloScanOrchestrator', () => {
+describe('KtxScanOrchestrator', () => {
   it('runs structural scans through connector introspection and structural host callback', async () => {
     const scanConnector = connector();
     const scanContext = context();
-    const runStructural = vi.fn(async (scanSnapshot: KloSchemaSnapshot) => ({
+    const runStructural = vi.fn(async (scanSnapshot: KtxSchemaSnapshot) => ({
       result: { synced: true },
       diffSummary: { tablesAdded: scanSnapshot.tables.length, columnsAdded: 1 },
       structuralSyncStats: { tablesCreated: 1, columnsCreated: 1 },
       artifactPaths: { manifestShards: ['semantic-layer/warehouse/_schema/public.yaml'] },
     }));
 
-    const result = await new KloScanOrchestrator({
+    const result = await new KtxScanOrchestrator({
       now: () => new Date('2026-04-29T00:10:00.000Z'),
       syncIdFactory: () => 'sync-1',
     }).run({
@@ -137,7 +137,7 @@ describe('KloScanOrchestrator', () => {
 
   it('runs enriched scans through structural and enrichment host callbacks', async () => {
     const scanConnector = connector(
-      createKloConnectorCapabilities({
+      createKtxConnectorCapabilities({
         tableSampling: true,
         columnSampling: true,
         columnStats: true,
@@ -146,7 +146,7 @@ describe('KloScanOrchestrator', () => {
     );
     const scanContext = context();
 
-    const result = await new KloScanOrchestrator({ syncIdFactory: () => 'sync-2' }).run({
+    const result = await new KtxScanOrchestrator({ syncIdFactory: () => 'sync-2' }).run({
       connector: scanConnector,
       input: { ...input, mode: 'enriched', detectRelationships: true },
       trigger: 'schema_scan',
@@ -178,20 +178,20 @@ describe('KloScanOrchestrator', () => {
 
   it('reports host enrichment state summaries from enriched scan phases', async () => {
     const scanConnector = connector(
-      createKloConnectorCapabilities({
+      createKtxConnectorCapabilities({
         tableSampling: true,
         columnSampling: true,
         columnStats: true,
         readOnlySql: true,
       }),
     );
-    const enrichmentState: Partial<KloScanEnrichmentStateSummary> = {
+    const enrichmentState: Partial<KtxScanEnrichmentStateSummary> = {
       resumedStages: ['relationships', 'descriptions', 'descriptions'],
       completedStages: ['embeddings', 'descriptions', 'relationships'],
       failedStages: [],
     };
 
-    const result = await new KloScanOrchestrator({ syncIdFactory: () => 'sync-state' }).run({
+    const result = await new KtxScanOrchestrator({ syncIdFactory: () => 'sync-state' }).run({
       connector: scanConnector,
       input: { ...input, mode: 'enriched', detectRelationships: true },
       trigger: 'schema_scan',
@@ -211,8 +211,8 @@ describe('KloScanOrchestrator', () => {
   });
 
   it('records recoverable warnings for missing optional capabilities during enriched scans', async () => {
-    const result = await new KloScanOrchestrator({ syncIdFactory: () => 'sync-3' }).run({
-      connector: connector(createKloConnectorCapabilities()),
+    const result = await new KtxScanOrchestrator({ syncIdFactory: () => 'sync-3' }).run({
+      connector: connector(createKtxConnectorCapabilities()),
       input: { ...input, mode: 'enriched', detectRelationships: true },
       trigger: 'schema_scan',
       context: context(),
@@ -231,9 +231,9 @@ describe('KloScanOrchestrator', () => {
   });
 
   it('redacts structural and enrichment warning metadata before returning reports', async () => {
-    const result = await new KloScanOrchestrator({ syncIdFactory: () => 'sync-redacted' }).run({
+    const result = await new KtxScanOrchestrator({ syncIdFactory: () => 'sync-redacted' }).run({
       connector: connector(
-        createKloConnectorCapabilities({
+        createKtxConnectorCapabilities({
           tableSampling: true,
           columnSampling: true,
           columnStats: true,
@@ -301,7 +301,7 @@ describe('KloScanOrchestrator', () => {
 
   it('keeps structural results when the enrichment phase fails after structural sync', async () => {
     const scanConnector = connector(
-      createKloConnectorCapabilities({
+      createKtxConnectorCapabilities({
         tableSampling: true,
         columnSampling: true,
         columnStats: true,
@@ -320,7 +320,7 @@ describe('KloScanOrchestrator', () => {
       throw new Error('AI Gateway timed out');
     });
 
-    const result = await new KloScanOrchestrator({
+    const result = await new KtxScanOrchestrator({
       now: () => new Date('2026-04-29T18:00:00.000Z'),
       syncIdFactory: () => 'sync-failed-enrichment',
     }).run({
@@ -348,7 +348,7 @@ describe('KloScanOrchestrator', () => {
     expect(result.report.warnings).toEqual([
       {
         code: 'enrichment_failed',
-        message: 'KLO scan enrichment failed after structural scan completed: AI Gateway timed out',
+        message: 'KTX scan enrichment failed after structural scan completed: AI Gateway timed out',
         recoverable: true,
         metadata: {
           mode: 'enriched',
@@ -361,7 +361,7 @@ describe('KloScanOrchestrator', () => {
   it('marks dry-run reports without changing host callback behavior', async () => {
     const runStructural = vi.fn(async () => ({ result: { planned: true }, manifestShardsWritten: 0 }));
 
-    const result = await new KloScanOrchestrator({ syncIdFactory: () => 'sync-4' }).run({
+    const result = await new KtxScanOrchestrator({ syncIdFactory: () => 'sync-4' }).run({
       connector: connector(),
       input: { ...input, dryRun: true },
       trigger: 'cli',

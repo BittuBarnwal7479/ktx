@@ -1,12 +1,12 @@
 import { type Command, InvalidArgumentError, Option } from '@commander-js/extra-typings';
 import {
   collectOption,
-  type KloCliCommandContext,
+  type KtxCliCommandContext,
   parsePositiveIntegerOption,
   resolveCommandProjectDir,
 } from '../cli-program.js';
 import { slQueryCommandSchema } from '../command-schemas.js';
-import type { KloSlArgs } from '../sl.js';
+import type { KtxSlArgs } from '../sl.js';
 import { profileMark } from '../startup-profile.js';
 
 profileMark('module:commands/sl-commands');
@@ -32,24 +32,24 @@ function collectOrderBy(
   return [...previous, parseOrderBy(value)];
 }
 
-async function runSlArgs(context: KloCliCommandContext, args: KloSlArgs): Promise<void> {
-  const runner = context.deps.sl ?? (await import('../sl.js')).runKloSl;
+async function runSlArgs(context: KtxCliCommandContext, args: KtxSlArgs): Promise<void> {
+  const runner = context.deps.sl ?? (await import('../sl.js')).runKtxSl;
   context.setExitCode(await runner(args, context.io));
 }
 
-export function registerSlCommands(program: Command, context: KloCliCommandContext, commandName = 'sl'): void {
+export function registerSlCommands(program: Command, context: KtxCliCommandContext, commandName = 'sl'): void {
   const sl = program
     .command(commandName)
     .description('List, read, validate, query, or write local semantic-layer sources')
     .showHelpAfterError()
     .addHelpText(
       'after',
-      '\nProject directory defaults to KLO_PROJECT_DIR when set, otherwise the current working directory.\n',
+      '\nProject directory defaults to KTX_PROJECT_DIR when set, otherwise the current working directory.\n',
     );
 
   sl.command('list')
     .description('List semantic-layer sources')
-    .option('--connection-id <id>', 'KLO connection id')
+    .option('--connection-id <id>', 'KTX connection id')
     .addOption(
       new Option('--output <mode>', 'Output mode: pretty (default in TTY), plain (TSV), or json').choices([
         'pretty',
@@ -71,7 +71,7 @@ export function registerSlCommands(program: Command, context: KloCliCommandConte
   sl.command('read')
     .description('Read a semantic-layer source')
     .argument('<sourceName>', 'Semantic-layer source name')
-    .requiredOption('--connection-id <id>', 'KLO connection id')
+    .requiredOption('--connection-id <id>', 'KTX connection id')
     .action(async (sourceName: string, options: { connectionId: string }, command) => {
       await runSlArgs(context, {
         command: 'read',
@@ -84,7 +84,7 @@ export function registerSlCommands(program: Command, context: KloCliCommandConte
   sl.command('validate')
     .description('Validate a semantic-layer source')
     .argument('<sourceName>', 'Semantic-layer source name')
-    .requiredOption('--connection-id <id>', 'KLO connection id')
+    .requiredOption('--connection-id <id>', 'KTX connection id')
     .action(async (sourceName: string, options: { connectionId: string }, command) => {
       await runSlArgs(context, {
         command: 'validate',
@@ -97,7 +97,7 @@ export function registerSlCommands(program: Command, context: KloCliCommandConte
   sl.command('write')
     .description('Write a semantic-layer source')
     .argument('<sourceName>', 'Semantic-layer source name')
-    .requiredOption('--connection-id <id>', 'KLO connection id')
+    .requiredOption('--connection-id <id>', 'KTX connection id')
     .requiredOption('--yaml <yaml>', 'Semantic-layer source YAML')
     .action(async (sourceName: string, options: { connectionId: string; yaml: string }, command) => {
       await runSlArgs(context, {
@@ -111,7 +111,7 @@ export function registerSlCommands(program: Command, context: KloCliCommandConte
 
   sl.command('query')
     .description('Compile or execute a semantic-layer query')
-    .option('--connection-id <id>', 'KLO connection id')
+    .option('--connection-id <id>', 'KTX connection id')
     .option('--measure <measure>', 'Measure to query; repeatable', collectOption, [])
     .option('--dimension <dimension>', 'Dimension to include; repeatable', collectOption, [])
     .option('--filter <filter>', 'Filter expression; repeatable', collectOption, [])

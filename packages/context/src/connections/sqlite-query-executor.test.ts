@@ -11,7 +11,7 @@ describe('createSqliteQueryExecutor', () => {
   let dbPath: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-sqlite-query-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-sqlite-query-'));
     dbPath = join(tempDir, 'warehouse.db');
     const db = new Database(dbPath);
     db.exec(`
@@ -81,23 +81,23 @@ describe('createSqliteQueryExecutor', () => {
   });
 
   it('resolves env references for SQLite database urls', async () => {
-    const originalDatabaseUrl = process.env.KLO_SQLITE_TEST_URL;
-    process.env.KLO_SQLITE_TEST_URL = `sqlite:${dbPath}`;
+    const originalDatabaseUrl = process.env.KTX_SQLITE_TEST_URL;
+    process.env.KTX_SQLITE_TEST_URL = `sqlite:${dbPath}`;
 
     try {
       expect(
         sqliteDatabasePathFromConnection({
           connectionId: 'warehouse',
           projectDir: tempDir,
-          connection: { driver: 'sqlite', url: 'env:KLO_SQLITE_TEST_URL', readonly: true },
+          connection: { driver: 'sqlite', url: 'env:KTX_SQLITE_TEST_URL', readonly: true },
           sql: 'select 1',
         }),
       ).toBe(dbPath);
     } finally {
       if (originalDatabaseUrl === undefined) {
-        delete process.env.KLO_SQLITE_TEST_URL;
+        delete process.env.KTX_SQLITE_TEST_URL;
       } else {
-        process.env.KLO_SQLITE_TEST_URL = originalDatabaseUrl;
+        process.env.KTX_SQLITE_TEST_URL = originalDatabaseUrl;
       }
     }
   });

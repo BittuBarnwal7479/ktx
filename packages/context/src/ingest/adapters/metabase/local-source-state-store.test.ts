@@ -9,8 +9,8 @@ describe('LocalMetabaseSourceStateReader', () => {
   let store: LocalMetabaseSourceStateReader;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-metabase-local-state-'));
-    store = new LocalMetabaseSourceStateReader({ dbPath: join(tempDir, '.klo', 'db.sqlite') });
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-metabase-local-state-'));
+    store = new LocalMetabaseSourceStateReader({ dbPath: join(tempDir, '.ktx', 'db.sqlite') });
   });
 
   afterEach(async () => {
@@ -74,7 +74,7 @@ describe('LocalMetabaseSourceStateReader', () => {
           metabaseDbName: null,
           targetConnectionId: 'warehouse',
           syncEnabled: true,
-          source: 'klo.yaml',
+          source: 'ktx.yaml',
         },
         {
           metabaseDatabaseId: 2,
@@ -247,7 +247,7 @@ describe('LocalMetabaseSourceStateReader', () => {
     await store.applyYamlBootstrap({
       connectionId: 'prod-metabase',
       syncMode: 'ALL',
-      defaultTagNames: ['klo'],
+      defaultTagNames: ['ktx'],
       selections: [{ selectionType: 'collection', metabaseObjectId: 12 }],
       mappings: [{ metabaseDatabaseId: 1, targetConnectionId: 'prod-warehouse', syncEnabled: true }],
     });
@@ -255,7 +255,7 @@ describe('LocalMetabaseSourceStateReader', () => {
     await expect(store.getUnhydratedSyncEnabledMappingIds('prod-metabase')).resolves.toEqual([1]);
     await expect(store.getSourceState('prod-metabase')).resolves.toMatchObject({
       syncMode: 'ALL',
-      defaultTagNames: ['klo'],
+      defaultTagNames: ['ktx'],
       selections: [{ selectionType: 'collection', metabaseObjectId: 12 }],
       mappings: [],
     });
@@ -265,7 +265,7 @@ describe('LocalMetabaseSourceStateReader', () => {
         metabaseDatabaseName: null,
         targetConnectionId: 'prod-warehouse',
         syncEnabled: true,
-        source: 'klo.yaml',
+        source: 'ktx.yaml',
       },
     ]);
   });
@@ -301,7 +301,7 @@ describe('LocalMetabaseSourceStateReader', () => {
         metabaseEngine: 'postgres',
         targetConnectionId: 'yaml-warehouse',
         syncEnabled: true,
-        source: 'klo.yaml',
+        source: 'ktx.yaml',
       },
       {
         metabaseDatabaseId: 2,

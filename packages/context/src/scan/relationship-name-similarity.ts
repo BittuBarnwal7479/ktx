@@ -1,4 +1,4 @@
-export interface KloRelationshipNormalizedName {
+export interface KtxRelationshipNormalizedName {
   raw: string;
   normalized: string;
   singular: string;
@@ -6,7 +6,7 @@ export interface KloRelationshipNormalizedName {
   tokens: string[];
 }
 
-export type KloRelationshipTokenInput = string | readonly string[] | KloRelationshipNormalizedName;
+export type KtxRelationshipTokenInput = string | readonly string[] | KtxRelationshipNormalizedName;
 
 const WAREHOUSE_LAYER_PREFIXES = new Set(['stg', 'stage', 'staging', 'dim', 'fct', 'fact', 'int', 'mart']);
 
@@ -27,7 +27,7 @@ function foldAccents(value: string): string {
     .replace(/œ/giu, 'oe');
 }
 
-export function singularizeKloRelationshipToken(value: string): string {
+export function singularizeKtxRelationshipToken(value: string): string {
   if (value.length <= 2) {
     return value;
   }
@@ -46,7 +46,7 @@ export function singularizeKloRelationshipToken(value: string): string {
   return value;
 }
 
-export function pluralizeKloRelationshipToken(value: string): string {
+export function pluralizeKtxRelationshipToken(value: string): string {
   if (value.endsWith('y')) {
     return `${value.slice(0, -1)}ies`;
   }
@@ -63,7 +63,7 @@ function singularizeTokens(tokens: readonly string[]): string[] {
   const result = [...tokens];
   const last = result[result.length - 1];
   if (last) {
-    result[result.length - 1] = singularizeKloRelationshipToken(last);
+    result[result.length - 1] = singularizeKtxRelationshipToken(last);
   }
   return result;
 }
@@ -75,12 +75,12 @@ function pluralizeTokens(tokens: readonly string[]): string[] {
   const result = [...tokens];
   const last = result[result.length - 1];
   if (last) {
-    result[result.length - 1] = pluralizeKloRelationshipToken(last);
+    result[result.length - 1] = pluralizeKtxRelationshipToken(last);
   }
   return result;
 }
 
-export function tokenizeKloRelationshipName(name: string): string[] {
+export function tokenizeKtxRelationshipName(name: string): string[] {
   const boundarySeparated = splitCaseBoundaries(foldAccents(name.trim()));
   const tokens = boundarySeparated
     .toLowerCase()
@@ -92,8 +92,8 @@ export function tokenizeKloRelationshipName(name: string): string[] {
   return tokens.filter((token, index) => index > 0 || !WAREHOUSE_LAYER_PREFIXES.has(token));
 }
 
-export function normalizeKloRelationshipName(name: string): KloRelationshipNormalizedName {
-  const tokens = tokenizeKloRelationshipName(name);
+export function normalizeKtxRelationshipName(name: string): KtxRelationshipNormalizedName {
+  const tokens = tokenizeKtxRelationshipName(name);
   const singularTokens = singularizeTokens(tokens);
   const pluralTokens = pluralizeTokens(singularTokens);
 
@@ -106,14 +106,14 @@ export function normalizeKloRelationshipName(name: string): KloRelationshipNorma
   };
 }
 
-function tokensFromInput(input: KloRelationshipTokenInput): string[] {
+function tokensFromInput(input: KtxRelationshipTokenInput): string[] {
   if (typeof input === 'string') {
-    return tokenizeKloRelationshipName(input);
+    return tokenizeKtxRelationshipName(input);
   }
   if ('tokens' in input) {
     return input.tokens;
   }
-  return input.map((token) => normalizeKloRelationshipName(token).normalized).filter(Boolean);
+  return input.map((token) => normalizeKtxRelationshipName(token).normalized).filter(Boolean);
 }
 
 function longestCommonSuffixLength(left: readonly string[], right: readonly string[]): number {
@@ -132,7 +132,7 @@ function roundedScore(value: number): number {
   return Number(Math.max(0, Math.min(1, value)).toFixed(3));
 }
 
-export function tokenSimilarity(leftInput: KloRelationshipTokenInput, rightInput: KloRelationshipTokenInput): number {
+export function tokenSimilarity(leftInput: KtxRelationshipTokenInput, rightInput: KtxRelationshipTokenInput): number {
   const left = tokensFromInput(leftInput);
   const right = tokensFromInput(rightInput);
   if (left.length === 0 || right.length === 0) {

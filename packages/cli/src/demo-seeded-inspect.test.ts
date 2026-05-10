@@ -4,10 +4,10 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { runDemoSeeded } from './demo-seeded.js';
 import { formatSeededInspect, inspectSeededProject } from './demo-seeded-inspect.js';
-import { KLO_NEXT_STEP_COMMANDS } from './next-steps.js';
+import { KTX_NEXT_STEP_COMMANDS } from './next-steps.js';
 
 describe('seeded demo inspect contract', () => {
-  const projectDir = join(tmpdir(), `klo-demo-seeded-inspect-${process.pid}`);
+  const projectDir = join(tmpdir(), `ktx-demo-seeded-inspect-${process.pid}`);
 
   afterEach(async () => {
     await rm(projectDir, { recursive: true, force: true });
@@ -59,7 +59,7 @@ describe('seeded demo inspect contract', () => {
         reports: { primaryPath: 'reports/seeded-demo-report.json', fileCount: 1 },
         replays: { primaryPath: 'replays/replay.memory-flow.v1.json', latestPath: 'replays/latest.memory-flow.v1.json' },
       },
-      nextCommands: KLO_NEXT_STEP_COMMANDS,
+      nextCommands: KTX_NEXT_STEP_COMMANDS,
     });
 
     expect(inspect.generatedOutputs.replays.fileCount).toBeGreaterThanOrEqual(3);
@@ -89,13 +89,13 @@ describe('seeded demo inspect contract', () => {
     expect(output).toContain('Report: reports/seeded-demo-report.json');
     expect(output).toContain('Replay: replays/replay.memory-flow.v1.json');
     expect(output).toContain('Latest replay: seeded (packaged, prebuilt)');
-    expect(output).toContain('  $ klo agent tools --json');
-    expect(output).toContain('  $ klo agent context --json');
-    expect(output).toContain('  $ klo serve --mcp stdio --user-id local');
-    expect(output.indexOf('klo agent tools --json')).toBeLessThan(
-      output.indexOf('klo serve --mcp stdio --user-id local'),
+    expect(output).toContain('  $ ktx agent tools --json');
+    expect(output).toContain('  $ ktx agent context --json');
+    expect(output).toContain('  $ ktx serve --mcp stdio --user-id local');
+    expect(output.indexOf('ktx agent tools --json')).toBeLessThan(
+      output.indexOf('ktx serve --mcp stdio --user-id local'),
     );
-    expect(output).not.toContain('klo ask');
+    expect(output).not.toContain('ktx ask');
     expect(output).not.toContain('deterministic mode');
   });
 

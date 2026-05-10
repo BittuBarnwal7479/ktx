@@ -1,11 +1,11 @@
-import type { KloSchemaDimensionType, KloTableRef } from '@klo/context/scan';
+import type { KtxSchemaDimensionType, KtxTableRef } from '@ktx/context/scan';
 
-type ClickHouseTableNameRef = Pick<KloTableRef, 'name'> & Partial<Pick<KloTableRef, 'catalog' | 'db'>>;
+type ClickHouseTableNameRef = Pick<KtxTableRef, 'name'> & Partial<Pick<KtxTableRef, 'catalog' | 'db'>>;
 
-export class KloClickHouseDialect {
+export class KtxClickHouseDialect {
   readonly type = 'clickhouse';
 
-  private readonly typeMappings: Record<string, KloSchemaDimensionType> = {
+  private readonly typeMappings: Record<string, KtxSchemaDimensionType> = {
     date: 'time',
     date32: 'time',
     datetime: 'time',
@@ -54,7 +54,7 @@ export class KloClickHouseDialect {
     return nativeType;
   }
 
-  mapToDimensionType(nativeType: string): KloSchemaDimensionType {
+  mapToDimensionType(nativeType: string): KtxSchemaDimensionType {
     if (!nativeType) {
       return 'string';
     }

@@ -1,28 +1,28 @@
 import Database from 'better-sqlite3';
 import { describe, expect, it, vi } from 'vitest';
-import { buildDefaultKloProjectConfig } from '../project/config.js';
+import { buildDefaultKtxProjectConfig } from '../project/config.js';
 import type {
-  KloScanEnrichmentCompletedStage,
-  KloScanEnrichmentFailedStage,
-  KloScanEnrichmentStageLookup,
-  KloScanEnrichmentStateStore,
+  KtxScanEnrichmentCompletedStage,
+  KtxScanEnrichmentFailedStage,
+  KtxScanEnrichmentStageLookup,
+  KtxScanEnrichmentStateStore,
 } from './enrichment-state.js';
 import {
   createDeterministicLocalScanEnrichmentProviders,
   runLocalScanEnrichment,
-  snapshotToKloEnrichedSchema,
+  snapshotToKtxEnrichedSchema,
 } from './local-enrichment.js';
 import { createLocalScanEnrichmentProvidersFromConfig } from './local-scan.js';
 import {
-  createKloConnectorCapabilities,
-  type KloQueryResult,
-  type KloReadOnlyQueryInput,
-  type KloScanConnector,
-  type KloScanContext,
-  type KloSchemaSnapshot,
+  createKtxConnectorCapabilities,
+  type KtxQueryResult,
+  type KtxReadOnlyQueryInput,
+  type KtxScanConnector,
+  type KtxScanContext,
+  type KtxSchemaSnapshot,
 } from './types.js';
 
-const snapshot: KloSchemaSnapshot = {
+const snapshot: KtxSchemaSnapshot = {
   connectionId: 'warehouse',
   driver: 'postgres',
   extractedAt: '2026-04-29T12:00:00.000Z',
@@ -81,11 +81,11 @@ const snapshot: KloSchemaSnapshot = {
   ],
 };
 
-function connector(): KloScanConnector {
+function connector(): KtxScanConnector {
   return {
     id: 'test:warehouse',
     driver: 'postgres',
-    capabilities: createKloConnectorCapabilities({
+    capabilities: createKtxConnectorCapabilities({
       tableSampling: true,
       columnSampling: true,
       readOnlySql: true,
@@ -108,7 +108,7 @@ function connector(): KloScanConnector {
 class InMemorySqliteExecutor {
   readonly db = new Database(':memory:');
 
-  executeReadOnly(input: KloReadOnlyQueryInput, _ctx: KloScanContext): Promise<KloQueryResult> {
+  executeReadOnly(input: KtxReadOnlyQueryInput, _ctx: KtxScanContext): Promise<KtxQueryResult> {
     const rows = this.db.prepare(input.sql).all() as Record<string, unknown>[];
     const headers = Object.keys(rows[0] ?? {});
     return Promise.resolve({
@@ -124,7 +124,7 @@ class InMemorySqliteExecutor {
   }
 }
 
-function noDeclaredRelationshipSnapshot(): KloSchemaSnapshot {
+function noDeclaredRelationshipSnapshot(): KtxSchemaSnapshot {
   return {
     connectionId: 'warehouse',
     driver: 'sqlite',
@@ -185,16 +185,16 @@ function noDeclaredRelationshipSnapshot(): KloSchemaSnapshot {
   };
 }
 
-function memoryEnrichmentStateStore(): KloScanEnrichmentStateStore {
-  const records = new Map<string, KloScanEnrichmentCompletedStage | KloScanEnrichmentFailedStage>();
-  const key = (input: Pick<KloScanEnrichmentStageLookup, 'runId' | 'stage'>) => `${input.runId}:${input.stage}`;
+function memoryEnrichmentStateStore(): KtxScanEnrichmentStateStore {
+  const records = new Map<string, KtxScanEnrichmentCompletedStage | KtxScanEnrichmentFailedStage>();
+  const key = (input: Pick<KtxScanEnrichmentStageLookup, 'runId' | 'stage'>) => `${input.runId}:${input.stage}`;
   return {
-    async findCompletedStage<TOutput>(input: KloScanEnrichmentStageLookup) {
+    async findCompletedStage<TOutput>(input: KtxScanEnrichmentStageLookup) {
       const record = records.get(key(input));
       if (!record || record.status !== 'completed' || record.inputHash !== input.inputHash) {
         return null;
       }
-      return record as KloScanEnrichmentCompletedStage<TOutput>;
+      return record as KtxScanEnrichmentCompletedStage<TOutput>;
     },
     async saveCompletedStage(input) {
       records.set(key(input), {
@@ -218,7 +218,7 @@ function memoryEnrichmentStateStore(): KloScanEnrichmentStateStore {
 
 describe('local scan enrichment', () => {
   it('maps a scan snapshot into relationship detector schema', () => {
-    const schema = snapshotToKloEnrichedSchema(snapshot);
+    const schema = snapshotToKtxEnrichedSchema(snapshot);
 
     expect(schema.connectionId).toBe('warehouse');
     expect(schema.tables).toHaveLength(2);
@@ -262,7 +262,7 @@ describe('local scan enrichment', () => {
       ),
     };
 
-    const schema = snapshotToKloEnrichedSchema(snapshotWithForeignKey);
+    const schema = snapshotToKtxEnrichedSchema(snapshotWithForeignKey);
 
     expect(schema.relationships).toEqual([
       {
@@ -306,7 +306,7 @@ describe('local scan enrichment', () => {
     expect(result.summary.statisticalValidation).toBe('skipped');
     expect(result.warnings).toContainEqual({
       code: 'relationship_validation_failed',
-      message: 'KLO scan connector advertises readOnlySql but does not expose executeReadOnly',
+      message: 'KTX scan connector advertises readOnlySql but does not expose executeReadOnly',
       recoverable: true,
       metadata: { capability: 'readOnlySql' },
     });
@@ -324,7 +324,7 @@ describe('local scan enrichment', () => {
       const scanConnector = {
         ...connector(),
         driver: 'sqlite' as const,
-        capabilities: createKloConnectorCapabilities({ readOnlySql: true, columnStats: true }),
+        capabilities: createKtxConnectorCapabilities({ readOnlySql: true, columnStats: true }),
         introspect: vi.fn(async () => noDeclaredRelationshipSnapshot()),
         executeReadOnly: executor.executeReadOnly.bind(executor),
       };
@@ -371,7 +371,7 @@ describe('local scan enrichment', () => {
         },
       },
       relationshipSettings: {
-        ...buildDefaultKloProjectConfig('warehouse').scan.relationships,
+        ...buildDefaultKtxProjectConfig('warehouse').scan.relationships,
         llmProposals: false,
         maxLlmTablesPerBatch: 40,
       },
@@ -383,7 +383,7 @@ describe('local scan enrichment', () => {
 
   it('skips relationship detection when scan relationships are disabled', async () => {
     const settings = {
-      ...buildDefaultKloProjectConfig('warehouse').scan.relationships,
+      ...buildDefaultKtxProjectConfig('warehouse').scan.relationships,
       enabled: false,
     };
     const result = await runLocalScanEnrichment({
@@ -488,7 +488,7 @@ describe('local scan enrichment', () => {
   });
 
   it('splits enrichment embedding requests by provider batch size', async () => {
-    const manyColumnSnapshot: KloSchemaSnapshot = {
+    const manyColumnSnapshot: KtxSchemaSnapshot = {
       ...snapshot,
       tables: [
         {
@@ -644,7 +644,7 @@ describe('local scan enrichment', () => {
       const scanConnector = {
         ...connector(),
         driver: 'sqlite' as const,
-        capabilities: createKloConnectorCapabilities({ readOnlySql: true, columnStats: true }),
+        capabilities: createKtxConnectorCapabilities({ readOnlySql: true, columnStats: true }),
         introspect: vi.fn(async () => noDeclaredRelationshipSnapshot()),
         executeReadOnly: executor.executeReadOnly.bind(executor),
       };
@@ -695,10 +695,10 @@ describe('local scan enrichment', () => {
   });
 
   it('resolves gateway LLM providers and OpenAI embeddings from local scan config', () => {
-    const createKloLlmProvider = vi.fn(() => ({
+    const createKtxLlmProvider = vi.fn(() => ({
       getModel: vi.fn().mockReturnValue({ modelId: 'provider/language-model', provider: 'gateway' }),
     }));
-    const createKloEmbeddingProvider = vi.fn(() => ({
+    const createKtxEmbeddingProvider = vi.fn(() => ({
       dimensions: 1536,
       maxBatchSize: 8,
       embed: vi.fn(),
@@ -724,18 +724,18 @@ describe('local scan enrichment', () => {
         models: { default: 'provider/language-model' },
       },
       {
-        createKloLlmProvider: createKloLlmProvider as any,
-        createKloEmbeddingProvider: createKloEmbeddingProvider as any,
+        createKtxLlmProvider: createKtxLlmProvider as any,
+        createKtxEmbeddingProvider: createKtxEmbeddingProvider as any,
         env: { OPENAI_API_KEY: 'openai-key' },
       },
     );
 
     expect(providers?.embedding.dimensions).toBe(1536);
     expect(providers?.embedding.maxBatchSize).toBe(8);
-    expect(createKloLlmProvider).toHaveBeenCalledWith(
+    expect(createKtxLlmProvider).toHaveBeenCalledWith(
       expect.objectContaining({ backend: 'gateway', modelSlots: { default: 'provider/language-model' } }),
     );
-    expect(createKloEmbeddingProvider).toHaveBeenCalledWith(
+    expect(createKtxEmbeddingProvider).toHaveBeenCalledWith(
       expect.objectContaining({ backend: 'openai', model: 'provider/embedding-model' }),
     );
   });

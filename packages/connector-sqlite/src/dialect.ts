@@ -1,11 +1,11 @@
-import type { KloSchemaDimensionType, KloTableRef } from '@klo/context/scan';
+import type { KtxSchemaDimensionType, KtxTableRef } from '@ktx/context/scan';
 
-type SqliteTableNameRef = Pick<KloTableRef, 'name'> & Partial<Pick<KloTableRef, 'catalog' | 'db'>>;
+type SqliteTableNameRef = Pick<KtxTableRef, 'name'> & Partial<Pick<KtxTableRef, 'catalog' | 'db'>>;
 
-export class KloSqliteDialect {
+export class KtxSqliteDialect {
   readonly type = 'sqlite';
 
-  private readonly typeMappings: Record<string, KloSchemaDimensionType> = {
+  private readonly typeMappings: Record<string, KtxSchemaDimensionType> = {
     DATETIME: 'time',
     DATE: 'time',
     TIMESTAMP: 'time',
@@ -36,7 +36,7 @@ export class KloSqliteDialect {
     return nativeType;
   }
 
-  mapToDimensionType(nativeType: string): KloSchemaDimensionType {
+  mapToDimensionType(nativeType: string): KtxSchemaDimensionType {
     if (!nativeType) {
       return 'string';
     }

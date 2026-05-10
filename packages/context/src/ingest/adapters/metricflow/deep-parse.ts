@@ -1,5 +1,5 @@
 import { parse as parseYaml } from 'yaml';
-import { noopLogger, type KloLogger } from '../../../core/index.js';
+import { noopLogger, type KtxLogger } from '../../../core/index.js';
 
 export interface DimensionDefinition {
   name: string;
@@ -42,7 +42,7 @@ export interface ParsedMetricflowRelationship {
 }
 
 export interface MetricflowParseOptions {
-  logger?: KloLogger;
+  logger?: KtxLogger;
 }
 
 // ============ MetricFlow YAML Interfaces ============
@@ -191,7 +191,7 @@ export function translateMetricflowJinjaFilter(filter: string): string {
 }
 
 class MetricflowDeepParser {
-  constructor(private readonly logger: KloLogger) {}
+  constructor(private readonly logger: KtxLogger) {}
 
   parseFiles(files: Array<{ content: string; path: string }>): MetricFlowParseResult {
     this.logger.log(`Parsing ${files.length} files for MetricFlow definitions`);

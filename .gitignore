@@ -39,7 +39,7 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # Local project runtime state
-.klo/
+.ktx/
 *.db
 *.sqlite
 *.sqlite3

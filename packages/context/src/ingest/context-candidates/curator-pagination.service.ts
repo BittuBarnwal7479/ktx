@@ -1,7 +1,7 @@
-import type { KloModelRole } from '@klo/llm';
+import type { KtxModelRole } from '@ktx/llm';
 import type { ToolSet } from 'ai';
 import type { AgentRunnerService } from '../../agent/index.js';
-import { type KloLogger, noopLogger } from '../../core/index.js';
+import { type KtxLogger, noopLogger } from '../../core/index.js';
 import type { MemoryAction } from '../../memory/index.js';
 import type { ContextCandidateForDedup, CuratorPaginationPort, CuratorPaginationReport } from '../ports.js';
 import type {
@@ -35,7 +35,7 @@ export interface CuratorPaginationInput {
   evictionUnit: EvictionUnit | undefined;
   representatives: ContextCandidateForDedup[];
   initialBudget: CuratorPaginationBudget;
-  modelRole: KloModelRole;
+  modelRole: KtxModelRole;
   buildSystemPrompt: () => string;
   buildUserPrompt: (input: CuratorPaginationPromptInput) => string;
   buildToolSet: (passNumber: number) => ToolSet;
@@ -52,11 +52,11 @@ export interface CuratorPaginationServiceDeps {
   store: ContextCandidateStorePort;
   agentRunner: AgentRunnerService;
   settings: CuratorPaginationSettings;
-  logger?: KloLogger;
+  logger?: KtxLogger;
 }
 
 export class CuratorPaginationService implements CuratorPaginationPort {
-  private readonly logger: KloLogger;
+  private readonly logger: KtxLogger;
 
   constructor(private readonly deps: CuratorPaginationServiceDeps) {
     this.logger = deps.logger ?? noopLogger;

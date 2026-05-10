@@ -1,30 +1,30 @@
-export { createKloEmbeddingProvider } from './embedding-provider.js';
-export { runKloEmbeddingHealthCheck } from './embedding-health.js';
-export { KloMessageBuilder } from './message-builder.js';
-export type { KloEmbeddingHealthCheckOptions, KloEmbeddingHealthCheckResult } from './embedding-health.js';
-export type { KloEmbeddingProviderDeps } from './embedding-provider.js';
-export type { KloLlmHealthCheckDeps, KloLlmHealthCheckOptions, KloLlmHealthCheckResult } from './model-health.js';
-export { runKloLlmHealthCheck } from './model-health.js';
+export { createKtxEmbeddingProvider } from './embedding-provider.js';
+export { runKtxEmbeddingHealthCheck } from './embedding-health.js';
+export { KtxMessageBuilder } from './message-builder.js';
+export type { KtxEmbeddingHealthCheckOptions, KtxEmbeddingHealthCheckResult } from './embedding-health.js';
+export type { KtxEmbeddingProviderDeps } from './embedding-provider.js';
+export type { KtxLlmHealthCheckDeps, KtxLlmHealthCheckOptions, KtxLlmHealthCheckResult } from './model-health.js';
+export { runKtxLlmHealthCheck } from './model-health.js';
 export {
-  createKloLlmProvider,
+  createKtxLlmProvider,
   isAnthropicProtocolModel,
   modelIdFromLanguageModel,
-  type KloLlmProviderFactoryDeps,
+  type KtxLlmProviderFactoryDeps,
 } from './model-provider.js';
 export type {
-  KloEmbeddingBackend,
-  KloEmbeddingConfig,
-  KloEmbeddingProvider,
-  KloEmbeddingTokenUsageEvent,
-  KloJsonValue,
-  KloLlmBackend,
-  KloLlmConfig,
-  KloLlmProvider,
-  KloModelRole,
-  KloPromptCacheTtl,
-  KloPromptCachingConfig,
-  KloPromptParts,
-  KloProviderOptions,
-  KloTokenUsageEvent,
+  KtxEmbeddingBackend,
+  KtxEmbeddingConfig,
+  KtxEmbeddingProvider,
+  KtxEmbeddingTokenUsageEvent,
+  KtxJsonValue,
+  KtxLlmBackend,
+  KtxLlmConfig,
+  KtxLlmProvider,
+  KtxModelRole,
+  KtxPromptCacheTtl,
+  KtxPromptCachingConfig,
+  KtxPromptParts,
+  KtxProviderOptions,
+  KtxTokenUsageEvent,
 } from './types.js';
-export { KLO_MODEL_ROLES } from './types.js';
+export { KTX_MODEL_ROLES } from './types.js';

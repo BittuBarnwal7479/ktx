@@ -1,17 +1,17 @@
-export { KloSqlServerDialect } from './dialect.js';
+export { KtxSqlServerDialect } from './dialect.js';
 export {
-  isKloSqlServerConnectionConfig,
-  KloSqlServerScanConnector,
+  isKtxSqlServerConnectionConfig,
+  KtxSqlServerScanConnector,
   sqlServerConnectionPoolConfigFromConfig,
-  type KloSqlServerColumnDistinctValuesOptions,
-  type KloSqlServerColumnDistinctValuesResult,
-  type KloSqlServerConnectionConfig,
-  type KloSqlServerEndpointResolver,
-  type KloSqlServerPool,
-  type KloSqlServerPoolConfig,
-  type KloSqlServerPoolFactory,
-  type KloSqlServerQueryResult,
-  type KloSqlServerReadOnlyQueryInput,
-  type KloSqlServerScanConnectorOptions,
+  type KtxSqlServerColumnDistinctValuesOptions,
+  type KtxSqlServerColumnDistinctValuesResult,
+  type KtxSqlServerConnectionConfig,
+  type KtxSqlServerEndpointResolver,
+  type KtxSqlServerPool,
+  type KtxSqlServerPoolConfig,
+  type KtxSqlServerPoolFactory,
+  type KtxSqlServerQueryResult,
+  type KtxSqlServerReadOnlyQueryInput,
+  type KtxSqlServerScanConnectorOptions,
 } from './connector.js';
 export { createSqlServerLiveDatabaseIntrospection } from './live-database-introspection.js';

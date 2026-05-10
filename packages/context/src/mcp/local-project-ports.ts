@@ -1,11 +1,11 @@
 import YAML from 'yaml';
 import {
-  type KloSqlQueryExecutorPort,
+  type KtxSqlQueryExecutorPort,
   localConnectionInfoFromConfig,
   localConnectionTypeForConfig,
 } from '../connections/index.js';
-import type { KloEmbeddingPort } from '../core/index.js';
-import type { KloSemanticLayerComputePort } from '../daemon/index.js';
+import type { KtxEmbeddingPort } from '../core/index.js';
+import type { KtxSemanticLayerComputePort } from '../daemon/index.js';
 import {
   createDefaultLocalIngestAdapters,
   getLocalIngestStatus,
@@ -15,14 +15,14 @@ import {
   runLocalIngest,
   runLocalMetabaseIngest,
 } from '../ingest/index.js';
-import { createLocalKloEmbeddingProviderFromConfig, KloIngestEmbeddingPortAdapter } from '../llm/index.js';
-import type { KloLocalProject } from '../project/index.js';
+import { createLocalKtxEmbeddingProviderFromConfig, KtxIngestEmbeddingPortAdapter } from '../llm/index.js';
+import type { KtxLocalProject } from '../project/index.js';
 import {
   getLocalScanReport,
   getLocalScanStatus,
-  type KloConnectionDriver,
-  type KloScanConnector,
-  type KloScanReport,
+  type KtxConnectionDriver,
+  type KtxScanConnector,
+  type KtxScanReport,
   type LocalScanMcpOptions,
   runLocalScan,
 } from '../scan/index.js';
@@ -37,25 +37,25 @@ import {
 } from '../sl/index.js';
 import { readLocalKnowledgePage, searchLocalKnowledgePages, writeLocalKnowledgePage } from '../wiki/local-knowledge.js';
 import type {
-  KloConnectionTestResponse,
-  KloIngestStatusResponse,
-  KloMcpContextPorts,
-  KloScanArtifactListResponse,
-  KloScanArtifactReadResponse,
-  KloScanArtifactSummary,
-  KloScanArtifactType,
+  KtxConnectionTestResponse,
+  KtxIngestStatusResponse,
+  KtxMcpContextPorts,
+  KtxScanArtifactListResponse,
+  KtxScanArtifactReadResponse,
+  KtxScanArtifactSummary,
+  KtxScanArtifactType,
 } from './types.js';
 
-const LOCAL_AUTHOR = 'klo';
-const LOCAL_AUTHOR_EMAIL = 'klo@example.com';
+const LOCAL_AUTHOR = 'ktx';
+const LOCAL_AUTHOR_EMAIL = 'ktx@example.com';
 const SL_SHAPE_WARNING = 'Local stdio validation checks YAML shape only; Python semantic validation is not configured.';
 
 interface CreateLocalProjectMcpContextPortsOptions {
-  semanticLayerCompute?: KloSemanticLayerComputePort;
-  queryExecutor?: KloSqlQueryExecutorPort;
+  semanticLayerCompute?: KtxSemanticLayerComputePort;
+  queryExecutor?: KtxSqlQueryExecutorPort;
   localIngest?: LocalIngestMcpOptions;
   localScan?: LocalScanMcpOptions;
-  embeddingService?: KloEmbeddingPort | null;
+  embeddingService?: KtxEmbeddingPort | null;
 }
 
 function dialectForDriver(driver: string | undefined): string {
@@ -105,7 +105,7 @@ function assertSafeSourceName(sourceName: string): string {
   return assertSafePathToken('semantic-layer source name', sourceName);
 }
 
-function normalizeScanDriver(driver: string | undefined): KloConnectionDriver {
+function normalizeScanDriver(driver: string | undefined): KtxConnectionDriver {
   const normalized = (driver ?? '').toLowerCase();
   if (
     normalized === 'postgres' ||
@@ -124,17 +124,17 @@ function normalizeScanDriver(driver: string | undefined): KloConnectionDriver {
   return 'postgres';
 }
 
-async function cleanupConnector(connector: KloScanConnector | null): Promise<void> {
+async function cleanupConnector(connector: KtxScanConnector | null): Promise<void> {
   if (connector?.cleanup) {
     await connector.cleanup();
   }
 }
 
 async function testLocalConnection(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   options: CreateLocalProjectMcpContextPortsOptions,
   connectionId: string,
-): Promise<KloConnectionTestResponse | null> {
+): Promise<KtxConnectionTestResponse | null> {
   const safeConnectionId = assertSafeConnectionId(connectionId);
   const connection = project.config.connections[safeConnectionId];
   if (!connection) {
@@ -149,11 +149,11 @@ async function testLocalConnection(
       ok: true,
       tableCount: null,
       message: 'Connection is configured; no native scan connector is available for live testing.',
-      warnings: ['klo serve was not configured with a local scan connector factory.'],
+      warnings: ['ktx serve was not configured with a local scan connector factory.'],
     };
   }
 
-  let connector: KloScanConnector | null = null;
+  let connector: KtxScanConnector | null = null;
   try {
     connector = await createConnector(safeConnectionId);
     const snapshot = await connector.introspect(
@@ -188,7 +188,7 @@ async function testLocalConnection(
   }
 }
 
-function scanArtifactType(path: string, report: KloScanReport): KloScanArtifactType {
+function scanArtifactType(path: string, report: KtxScanReport): KtxScanArtifactType {
   if (path === report.artifactPaths.reportPath) {
     return 'report';
   }
@@ -201,7 +201,7 @@ function scanArtifactType(path: string, report: KloScanReport): KloScanArtifactT
   return 'raw_source';
 }
 
-async function artifactSize(project: KloLocalProject, path: string): Promise<number | undefined> {
+async function artifactSize(project: KtxLocalProject, path: string): Promise<number | undefined> {
   try {
     const result = await project.fileStore.readFile(path);
     return typeof result.size === 'number' ? result.size : undefined;
@@ -211,10 +211,10 @@ async function artifactSize(project: KloLocalProject, path: string): Promise<num
 }
 
 async function listArtifactsForReport(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   runId: string,
-  report: KloScanReport,
-): Promise<KloScanArtifactListResponse> {
+  report: KtxScanReport,
+): Promise<KtxScanArtifactListResponse> {
   const paths = new Set<string>();
   if (report.artifactPaths.rawSourcesDir) {
     const listed = await project.fileStore.listFiles(report.artifactPaths.rawSourcesDir);
@@ -232,7 +232,7 @@ async function listArtifactsForReport(
     paths.add(path);
   }
 
-  const artifacts: KloScanArtifactSummary[] = [];
+  const artifacts: KtxScanArtifactSummary[] = [];
   for (const path of [...paths].sort()) {
     const size = await artifactSize(project, path);
     artifacts.push({
@@ -245,10 +245,10 @@ async function listArtifactsForReport(
 }
 
 async function readScanArtifact(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   runId: string,
   path: string,
-): Promise<KloScanArtifactReadResponse | null> {
+): Promise<KtxScanArtifactReadResponse | null> {
   const report = await getLocalScanReport(project, runId);
   if (!report) {
     return null;
@@ -293,14 +293,14 @@ function parseYamlRecord(raw: string): Record<string, unknown> {
   return parsed;
 }
 
-async function listSlPaths(project: KloLocalProject, connectionId?: string): Promise<string[]> {
+async function listSlPaths(project: KtxLocalProject, connectionId?: string): Promise<string[]> {
   const root = connectionId ? `semantic-layer/${assertSafeConnectionId(connectionId)}` : 'semantic-layer';
   const listed = await project.fileStore.listFiles(root);
   return listed.files.filter((file) => file.endsWith('.yaml') || file.endsWith('.yml')).sort();
 }
 
 async function loadComputableSources(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   connectionId: string,
 ): Promise<Record<string, unknown>[]> {
   const paths = await listSlPaths(project, connectionId);
@@ -348,7 +348,7 @@ function hasSlSearchMetadata(
   return 'score' in source;
 }
 
-function statusFromIngestReport(report: IngestReportSnapshot): KloIngestStatusResponse {
+function statusFromIngestReport(report: IngestReportSnapshot): KtxIngestStatusResponse {
   const failedWorkUnits = report.body.failedWorkUnits;
   return {
     runId: report.runId,
@@ -380,14 +380,14 @@ function statusFromIngestReport(report: IngestReportSnapshot): KloIngestStatusRe
 }
 
 export function createLocalProjectMcpContextPorts(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   options: CreateLocalProjectMcpContextPortsOptions = {},
-): KloMcpContextPorts {
-  const configuredEmbeddingProvider = createLocalKloEmbeddingProviderFromConfig(project.config.ingest.embeddings);
+): KtxMcpContextPorts {
+  const configuredEmbeddingProvider = createLocalKtxEmbeddingProviderFromConfig(project.config.ingest.embeddings);
   const embeddingService =
     options.embeddingService ??
-    (configuredEmbeddingProvider ? new KloIngestEmbeddingPortAdapter(configuredEmbeddingProvider) : null);
-  const ports: KloMcpContextPorts = {
+    (configuredEmbeddingProvider ? new KtxIngestEmbeddingPortAdapter(configuredEmbeddingProvider) : null);
+  const ports: KtxMcpContextPorts = {
     connections: {
       async list() {
         return Object.entries(project.config.connections)

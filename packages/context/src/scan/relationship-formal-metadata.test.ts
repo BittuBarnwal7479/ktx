@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { KloEnrichedRelationship, KloEnrichedSchema } from './enrichment-types.js';
-import { collectKloFormalMetadataRelationships } from './relationship-formal-metadata.js';
+import type { KtxEnrichedRelationship, KtxEnrichedSchema } from './enrichment-types.js';
+import { collectKtxFormalMetadataRelationships } from './relationship-formal-metadata.js';
 
-function schema(relationships: KloEnrichedRelationship[]): KloEnrichedSchema {
+function schema(relationships: KtxEnrichedRelationship[]): KtxEnrichedSchema {
   return {
     connectionId: 'warehouse',
     tables: [
@@ -59,7 +59,7 @@ function schema(relationships: KloEnrichedRelationship[]): KloEnrichedSchema {
   };
 }
 
-function formalRelationship(overrides: Partial<KloEnrichedRelationship> = {}): KloEnrichedRelationship {
+function formalRelationship(overrides: Partial<KtxEnrichedRelationship> = {}): KtxEnrichedRelationship {
   return {
     id: 'orders:orders.account_id->accounts:accounts.id',
     source: 'formal',
@@ -84,7 +84,7 @@ function formalRelationship(overrides: Partial<KloEnrichedRelationship> = {}): K
 
 describe('formal metadata relationship collection', () => {
   it('accepts valid formal relationships with ground-truth confidence', () => {
-    const result = collectKloFormalMetadataRelationships(schema([formalRelationship()]));
+    const result = collectKtxFormalMetadataRelationships(schema([formalRelationship()]));
 
     expect(result.accepted).toEqual([
       expect.objectContaining({
@@ -99,7 +99,7 @@ describe('formal metadata relationship collection', () => {
   });
 
   it('skips duplicate and invalid formal relationships with reasons', () => {
-    const result = collectKloFormalMetadataRelationships(
+    const result = collectKtxFormalMetadataRelationships(
       schema([
         formalRelationship(),
         formalRelationship(),

@@ -2,17 +2,17 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
-  initKloProject,
-  type KloProjectConnectionConfig,
-  parseKloProjectConfig,
-  serializeKloProjectConfig,
-} from '@klo/context/project';
+  initKtxProject,
+  type KtxProjectConnectionConfig,
+  parseKtxProjectConfig,
+  serializeKtxProjectConfig,
+} from '@ktx/context/project';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  runKloSetupSourcesStep,
-  type KloSetupSourcesDeps,
-  type KloSetupSourcesPromptAdapter,
-  type KloSetupSourceType,
+  runKtxSetupSourcesStep,
+  type KtxSetupSourcesDeps,
+  type KtxSetupSourcesPromptAdapter,
+  type KtxSetupSourceType,
 } from './setup-sources.js';
 
 function makeIo() {
@@ -41,7 +41,7 @@ function prompts(values: {
   multiselect?: string[][];
   select?: string[];
   text?: Array<string | undefined>;
-}): KloSetupSourcesPromptAdapter {
+}): KtxSetupSourcesPromptAdapter {
   const multiselectValues = [...(values.multiselect ?? [])];
   const selectValues = [...(values.select ?? [])];
   const textValues = [...(values.text ?? [])];
@@ -55,7 +55,7 @@ function prompts(values: {
 }
 
 function connectionNamePrompt(label: string): string {
-  return `Name this ${label} connection\nKLO will use this short name in commands and config. You can rename it now.`;
+  return `Name this ${label} connection\nKTX will use this short name in commands and config. You can rename it now.`;
 }
 
 function textInputPrompt(message: string): string {
@@ -72,9 +72,9 @@ describe('setup sources step', () => {
   let projectDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-setup-sources-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-setup-sources-'));
     projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'sources' });
+    await initKtxProject({ projectDir, projectName: 'sources' });
   });
 
   afterEach(async () => {
@@ -82,14 +82,14 @@ describe('setup sources step', () => {
   });
 
   async function readConfig() {
-    return parseKloProjectConfig(await readFile(join(projectDir, 'klo.yaml'), 'utf-8'));
+    return parseKtxProjectConfig(await readFile(join(projectDir, 'ktx.yaml'), 'utf-8'));
   }
 
   async function addPrimarySource() {
     const config = await readConfig();
     await writeFile(
-      join(projectDir, 'klo.yaml'),
-      serializeKloProjectConfig({
+      join(projectDir, 'ktx.yaml'),
+      serializeKtxProjectConfig({
         ...config,
         connections: {
           ...config.connections,
@@ -105,11 +105,11 @@ describe('setup sources step', () => {
     );
   }
 
-  async function addConnection(connectionId: string, connection: KloProjectConnectionConfig) {
+  async function addConnection(connectionId: string, connection: KtxProjectConnectionConfig) {
     const config = await readConfig();
     await writeFile(
-      join(projectDir, 'klo.yaml'),
-      serializeKloProjectConfig({
+      join(projectDir, 'ktx.yaml'),
+      serializeKtxProjectConfig({
         ...config,
         connections: {
           ...config.connections,
@@ -123,7 +123,7 @@ describe('setup sources step', () => {
   it('marks optional sources complete when skipped', async () => {
     const io = makeIo();
     await expect(
-      runKloSetupSourcesStep(
+      runKtxSetupSourcesStep(
         { projectDir, inputMode: 'disabled', runInitialSourceIngest: false, skipSources: true },
         io.io,
       ),
@@ -143,7 +143,7 @@ describe('setup sources step', () => {
     const io = makeIo();
 
     await expect(
-      runKloSetupSourcesStep(
+      runKtxSetupSourcesStep(
         {
           projectDir,
           inputMode: 'disabled',
@@ -176,7 +176,7 @@ describe('setup sources step', () => {
     const io = makeIo();
 
     await expect(
-      runKloSetupSourcesStep(
+      runKtxSetupSourcesStep(
         {
           projectDir,
           inputMode: 'disabled',
@@ -211,7 +211,7 @@ describe('setup sources step', () => {
     await addPrimarySource();
     const io = makeIo();
     await expect(
-      runKloSetupSourcesStep(
+      runKtxSetupSourcesStep(
         {
           projectDir,
           inputMode: 'disabled',
@@ -236,7 +236,7 @@ describe('setup sources step', () => {
     const testPrompts = prompts({ multiselect: [['back']] });
 
     await expect(
-      runKloSetupSourcesStep(
+      runKtxSetupSourcesStep(
         { projectDir, inputMode: 'auto', runInitialSourceIngest: false, skipSources: false },
         io.io,
         {
@@ -248,7 +248,7 @@ describe('setup sources step', () => {
     expect(testPrompts.multiselect).toHaveBeenCalledWith(
       expect.objectContaining({
         message:
-          'Which context sources should KLO ingest?\nUse Up/Down to move, Space to select or unselect, Enter to confirm, Escape to go back, or Ctrl+C to exit.',
+          'Which context sources should KTX ingest?\nUse Up/Down to move, Space to select or unselect, Enter to confirm, Escape to go back, or Ctrl+C to exit.',
       }),
     );
     const options = vi.mocked(testPrompts.multiselect).mock.calls[0]?.[0].options ?? [];
@@ -267,7 +267,7 @@ describe('setup sources step', () => {
     });
 
     await expect(
-      runKloSetupSourcesStep(
+      runKtxSetupSourcesStep(
         { projectDir, inputMode: 'auto', runInitialSourceIngest: false, skipSources: false },
         io.io,
         {
@@ -296,11 +296,11 @@ describe('setup sources step', () => {
     const testPrompts = prompts({
       multiselect: [['dbt']],
       select: ['git'],
-      text: ['dbt-main', 'https://github.com/acme-org/klo-dbt-demo', 'main', ''],
+      text: ['dbt-main', 'https://github.com/acme-org/ktx-dbt-demo', 'main', ''],
     });
 
     await expect(
-      runKloSetupSourcesStep(
+      runKtxSetupSourcesStep(
         { projectDir, inputMode: 'auto', runInitialSourceIngest: false, skipSources: false },
         io.io,
         {
@@ -311,7 +311,7 @@ describe('setup sources step', () => {
       ),
     ).resolves.toEqual({ status: 'ready', projectDir, connectionIds: ['dbt-main'] });
 
-    expect(testGitRepo).toHaveBeenCalledWith({ repoUrl: 'https://github.com/acme-org/klo-dbt-demo' });
+    expect(testGitRepo).toHaveBeenCalledWith({ repoUrl: 'https://github.com/acme-org/ktx-dbt-demo' });
     expect(testPrompts.log).toHaveBeenCalledWith('Repository connected.');
     expect(testPrompts.text).toHaveBeenNthCalledWith(4, {
       message: textInputPrompt(
@@ -338,7 +338,7 @@ describe('setup sources step', () => {
     });
 
     await expect(
-      runKloSetupSourcesStep(
+      runKtxSetupSourcesStep(
         { projectDir, inputMode: 'auto', runInitialSourceIngest: false, skipSources: false },
         io.io,
         {
@@ -370,7 +370,7 @@ describe('setup sources step', () => {
     const validateDbt = vi.fn(async () => ({ ok: true as const, detail: 'project=analytics schemas=2' }));
 
     await expect(
-      runKloSetupSourcesStep(
+      runKtxSetupSourcesStep(
         {
           projectDir,
           inputMode: 'disabled',
@@ -400,7 +400,7 @@ describe('setup sources step', () => {
     });
 
     await expect(
-      runKloSetupSourcesStep(
+      runKtxSetupSourcesStep(
         { projectDir, inputMode: 'auto', runInitialSourceIngest: true, skipSources: false },
         io.io,
         {
@@ -414,7 +414,7 @@ describe('setup sources step', () => {
     expect(runInitialIngest).toHaveBeenCalledTimes(1);
     expect((await readConfig()).connections['dbt-main']).toMatchObject({ driver: 'dbt', source_dir: '/repo/dbt' });
     expect(io.stdout()).toContain('Context source saved without a completed context build for dbt-main.');
-    expect(io.stdout()).toContain('Run later: klo ingest dbt-main');
+    expect(io.stdout()).toContain('Run later: ktx ingest dbt-main');
   });
 
   it('retries initial source ingest from the failure menu', async () => {
@@ -428,7 +428,7 @@ describe('setup sources step', () => {
     });
 
     await expect(
-      runKloSetupSourcesStep(
+      runKtxSetupSourcesStep(
         { projectDir, inputMode: 'auto', runInitialSourceIngest: true, skipSources: false },
         makeIo().io,
         {
@@ -457,7 +457,7 @@ describe('setup sources step', () => {
     });
 
     await expect(
-      runKloSetupSourcesStep(
+      runKtxSetupSourcesStep(
         { projectDir, inputMode: 'auto', runInitialSourceIngest: false, skipSources: false },
         makeIo().io,
         {
@@ -490,10 +490,10 @@ describe('setup sources step', () => {
   it('offers existing connections for every context source type', async () => {
     await addPrimarySource();
     const cases: Array<{
-      source: KloSetupSourceType;
+      source: KtxSetupSourceType;
       connectionId: string;
-      connection: KloProjectConnectionConfig;
-      deps: KloSetupSourcesDeps;
+      connection: KtxProjectConnectionConfig;
+      deps: KtxSetupSourcesDeps;
       expectedLabel: string;
     }> = [
       {
@@ -581,7 +581,7 @@ describe('setup sources step', () => {
       });
 
       await expect(
-        runKloSetupSourcesStep(
+        runKtxSetupSourcesStep(
           { projectDir, inputMode: 'auto', runInitialSourceIngest: false, skipSources: false },
           makeIo().io,
           {
@@ -616,7 +616,7 @@ describe('setup sources step', () => {
     });
 
     await expect(
-      runKloSetupSourcesStep(
+      runKtxSetupSourcesStep(
         { projectDir, inputMode: 'auto', runInitialSourceIngest: false, skipSources: false },
         makeIo().io,
         {
@@ -645,7 +645,7 @@ describe('setup sources step', () => {
     });
 
     await expect(
-      runKloSetupSourcesStep(
+      runKtxSetupSourcesStep(
         { projectDir, inputMode: 'auto', runInitialSourceIngest: false, skipSources: false },
         makeIo().io,
         {
@@ -662,10 +662,10 @@ describe('setup sources step', () => {
   it('backs up one prompt inside every interactive context source connection', async () => {
     await addPrimarySource();
     const cases: Array<{
-      source: KloSetupSourceType;
+      source: KtxSetupSourceType;
       select?: string[];
       text: Array<string | undefined>;
-      deps: KloSetupSourcesDeps;
+      deps: KtxSetupSourcesDeps;
       repeatedSelectMessage?: string;
       repeatedTextMessage?: string;
     }> = [
@@ -742,7 +742,7 @@ describe('setup sources step', () => {
       });
 
       await expect(
-        runKloSetupSourcesStep(
+        runKtxSetupSourcesStep(
           { projectDir, inputMode: 'auto', runInitialSourceIngest: false, skipSources: false },
           makeIo().io,
           {
@@ -776,7 +776,7 @@ describe('setup sources step', () => {
     const testPrompts = prompts({ multiselect: [['notion']] });
 
     await expect(
-      runKloSetupSourcesStep(
+      runKtxSetupSourcesStep(
         { projectDir, inputMode: 'auto', runInitialSourceIngest: false, skipSources: false },
         io.io,
         { prompts: testPrompts },

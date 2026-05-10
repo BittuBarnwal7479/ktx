@@ -1,13 +1,13 @@
 import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { initKloProject, parseKloProjectConfig } from '@klo/context/project';
+import { initKtxProject, parseKtxProjectConfig } from '@ktx/context/project';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   BUNDLED_ANTHROPIC_MODELS,
   fetchAnthropicModels,
-  type KloSetupModelPromptAdapter,
-  runKloSetupAnthropicModelStep,
+  type KtxSetupModelPromptAdapter,
+  runKtxSetupAnthropicModelStep,
 } from './setup-models.js';
 
 function makeIo() {
@@ -39,7 +39,7 @@ function makePromptAdapter(options: {
   textValues?: string[];
   passwordValue?: string;
   passwordValues?: Array<string | undefined>;
-}): KloSetupModelPromptAdapter {
+}): KtxSetupModelPromptAdapter {
   const selectValues = [...(options.selectValues ?? [])];
   const textValues = [...(options.textValues ?? [])];
   const passwordValues = [...(options.passwordValues ?? [])];
@@ -64,8 +64,8 @@ describe('setup Anthropic model step', () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-setup-models-'));
-    await initKloProject({ projectDir: tempDir, projectName: 'warehouse' });
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-setup-models-'));
+    await initKtxProject({ projectDir: tempDir, projectName: 'warehouse' });
   });
 
   afterEach(async () => {
@@ -102,7 +102,7 @@ describe('setup Anthropic model step', () => {
   it('filters Claude Sonnet 4 and Claude Opus 4 from Anthropic model prompt choices', async () => {
     const prompts = makePromptAdapter({ selectValues: ['env', 'back', 'back'] });
 
-    await runKloSetupAnthropicModelStep(
+    await runKtxSetupAnthropicModelStep(
       { projectDir: tempDir, inputMode: 'auto', skipLlm: false },
       makeIo().io,
       {
@@ -120,7 +120,7 @@ describe('setup Anthropic model step', () => {
 
     expect(prompts.select).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: expect.stringContaining('Which Anthropic model should KLO use?'),
+        message: expect.stringContaining('Which Anthropic model should KTX use?'),
         options: [
           { value: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6 (recommended)' },
           { value: 'claude-opus-4-6', label: 'Claude Opus 4.6' },
@@ -134,7 +134,7 @@ describe('setup Anthropic model step', () => {
 
   it('configures env credentials, selected model, prompt caching, and llm completion state', async () => {
     const io = makeIo();
-    const result = await runKloSetupAnthropicModelStep(
+    const result = await runKtxSetupAnthropicModelStep(
       {
         projectDir: tempDir,
         inputMode: 'disabled',
@@ -150,7 +150,7 @@ describe('setup Anthropic model step', () => {
     );
 
     expect(result.status).toBe('ready');
-    const config = parseKloProjectConfig(await readFile(join(tempDir, 'klo.yaml'), 'utf-8'));
+    const config = parseKtxProjectConfig(await readFile(join(tempDir, 'ktx.yaml'), 'utf-8'));
     expect(config.llm).toMatchObject({
       provider: {
         backend: 'anthropic',
@@ -171,7 +171,7 @@ describe('setup Anthropic model step', () => {
     await writeFile(secretPath, 'sk-ant-file', 'utf-8');
     const healthCheck = vi.fn(async () => ({ ok: true as const }));
 
-    const result = await runKloSetupAnthropicModelStep(
+    const result = await runKtxSetupAnthropicModelStep(
       {
         projectDir: tempDir,
         inputMode: 'disabled',
@@ -190,7 +190,7 @@ describe('setup Anthropic model step', () => {
         modelSlots: { default: 'claude-sonnet-4-6' },
       }),
     );
-    const config = parseKloProjectConfig(await readFile(join(tempDir, 'klo.yaml'), 'utf-8'));
+    const config = parseKtxProjectConfig(await readFile(join(tempDir, 'ktx.yaml'), 'utf-8'));
     expect(config.llm).toMatchObject({
       provider: {
         backend: 'anthropic',
@@ -207,7 +207,7 @@ describe('setup Anthropic model step', () => {
     const missingSecretPath = join(tempDir, 'missing-anthropic-api-key');
     const healthCheck = vi.fn(async () => ({ ok: true as const }));
 
-    const result = await runKloSetupAnthropicModelStep(
+    const result = await runKtxSetupAnthropicModelStep(
       {
         projectDir: tempDir,
         inputMode: 'disabled',
@@ -227,7 +227,7 @@ describe('setup Anthropic model step', () => {
   it('does not recommend skipping when non-interactive setup is missing an Anthropic credential source', async () => {
     const io = makeIo();
 
-    const result = await runKloSetupAnthropicModelStep(
+    const result = await runKtxSetupAnthropicModelStep(
       { projectDir: tempDir, inputMode: 'disabled', skipLlm: false },
       io.io,
     );
@@ -243,7 +243,7 @@ describe('setup Anthropic model step', () => {
     const io = makeIo();
     const healthCheck = vi.fn(async () => ({ ok: true as const }));
 
-    const result = await runKloSetupAnthropicModelStep(
+    const result = await runKtxSetupAnthropicModelStep(
       {
         projectDir: tempDir,
         inputMode: 'disabled',
@@ -260,7 +260,7 @@ describe('setup Anthropic model step', () => {
     expect(io.stderr()).not.toContain('--skip-llm');
   });
 
-  it('writes pasted keys to .klo/secrets and never prints the key', async () => {
+  it('writes pasted keys to .ktx/secrets and never prints the key', async () => {
     const io = makeIo();
     const prompts = makePromptAdapter({
       credentialChoice: 'paste',
@@ -268,7 +268,7 @@ describe('setup Anthropic model step', () => {
       passwordValue: 'sk-ant-pasted',
     });
 
-    const result = await runKloSetupAnthropicModelStep(
+    const result = await runKtxSetupAnthropicModelStep(
       { projectDir: tempDir, inputMode: 'auto', skipLlm: false },
       io.io,
       {
@@ -280,11 +280,11 @@ describe('setup Anthropic model step', () => {
     );
 
     expect(result.status).toBe('ready');
-    await expect(readFile(join(tempDir, '.klo/secrets/anthropic-api-key'), 'utf-8')).resolves.toBe('sk-ant-pasted\n');
+    await expect(readFile(join(tempDir, '.ktx/secrets/anthropic-api-key'), 'utf-8')).resolves.toBe('sk-ant-pasted\n');
     if (process.platform !== 'win32') {
-      expect((await stat(join(tempDir, '.klo/secrets/anthropic-api-key'))).mode & 0o777).toBe(0o600);
+      expect((await stat(join(tempDir, '.ktx/secrets/anthropic-api-key'))).mode & 0o777).toBe(0o600);
     }
-    const yaml = await readFile(join(tempDir, 'klo.yaml'), 'utf-8');
+    const yaml = await readFile(join(tempDir, 'ktx.yaml'), 'utf-8');
     expect(yaml).toContain('api_key: file:');
     expect(yaml).not.toContain('sk-ant-pasted');
     expect(io.stdout()).not.toContain('sk-ant-pasted');
@@ -296,7 +296,7 @@ describe('setup Anthropic model step', () => {
       passwordValue: 'sk-ant-pasted',
     });
 
-    const result = await runKloSetupAnthropicModelStep(
+    const result = await runKtxSetupAnthropicModelStep(
       { projectDir: tempDir, inputMode: 'auto', skipLlm: false },
       makeIo().io,
       {
@@ -317,7 +317,7 @@ describe('setup Anthropic model step', () => {
   it('does not offer skipping while choosing an Anthropic credential source', async () => {
     const prompts = makePromptAdapter({ credentialChoice: 'back' });
 
-    const result = await runKloSetupAnthropicModelStep(
+    const result = await runKtxSetupAnthropicModelStep(
       { projectDir: tempDir, inputMode: 'auto', skipLlm: false },
       makeIo().io,
       { prompts, env: {} },
@@ -326,26 +326,26 @@ describe('setup Anthropic model step', () => {
     expect(result.status).toBe('back');
     expect(prompts.select).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: expect.stringContaining('How should KLO find your Anthropic API key?'),
+        message: expect.stringContaining('How should KTX find your Anthropic API key?'),
         options: expect.not.arrayContaining([expect.objectContaining({ value: 'skip' })]),
       }),
     );
   });
 
-  it('explains why KLO asks for an Anthropic API key', async () => {
+  it('explains why KTX asks for an Anthropic API key', async () => {
     const io = makeIo();
     const prompts = makePromptAdapter({ credentialChoice: 'back' });
     const expectedPromptMessage = [
-      'How should KLO find your Anthropic API key?',
+      'How should KTX find your Anthropic API key?',
       '',
       [
-        'KLO uses the key to verify Anthropic model access now and to run ingest agents that turn schemas, SQL,',
-        'BI metadata, and docs into semantic-layer sources and wiki context. klo.yaml stores an env: or file:',
+        'KTX uses the key to verify Anthropic model access now and to run ingest agents that turn schemas, SQL,',
+        'BI metadata, and docs into semantic-layer sources and wiki context. ktx.yaml stores an env: or file:',
         'reference, not the raw key.',
       ].join(' '),
     ].join('\n');
 
-    const result = await runKloSetupAnthropicModelStep(
+    const result = await runKtxSetupAnthropicModelStep(
       { projectDir: tempDir, inputMode: 'auto', skipLlm: false },
       io.io,
       { prompts, env: {} },
@@ -357,13 +357,13 @@ describe('setup Anthropic model step', () => {
         message: expectedPromptMessage,
       }),
     );
-    expect(io.stdout()).not.toContain('KLO uses the key');
+    expect(io.stdout()).not.toContain('KTX uses the key');
   });
 
   it('does not offer skipping while choosing an Anthropic model', async () => {
     const prompts = makePromptAdapter({ selectValues: ['env', 'back', 'back'] });
 
-    const result = await runKloSetupAnthropicModelStep(
+    const result = await runKtxSetupAnthropicModelStep(
       { projectDir: tempDir, inputMode: 'auto', skipLlm: false },
       makeIo().io,
       {
@@ -376,25 +376,25 @@ describe('setup Anthropic model step', () => {
     expect(result.status).toBe('back');
     expect(prompts.select).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: expect.stringContaining('Which Anthropic model should KLO use?'),
+        message: expect.stringContaining('Which Anthropic model should KTX use?'),
         options: expect.not.arrayContaining([expect.objectContaining({ value: 'skip' })]),
       }),
     );
   });
 
-  it('explains why KLO asks for an Anthropic model', async () => {
+  it('explains why KTX asks for an Anthropic model', async () => {
     const io = makeIo();
     const prompts = makePromptAdapter({ credentialChoice: 'env', modelChoice: 'claude-sonnet-4-6' });
     const expectedPromptMessage = [
-      'Which Anthropic model should KLO use?',
+      'Which Anthropic model should KTX use?',
       '',
       [
-        'KLO uses this as the default model for ingest agents that turn schemas, SQL, BI metadata, and docs',
+        'KTX uses this as the default model for ingest agents that turn schemas, SQL, BI metadata, and docs',
         'into semantic-layer sources and wiki context.',
       ].join(' '),
     ].join('\n');
 
-    const result = await runKloSetupAnthropicModelStep(
+    const result = await runKtxSetupAnthropicModelStep(
       { projectDir: tempDir, inputMode: 'auto', skipLlm: false },
       io.io,
       {
@@ -411,7 +411,7 @@ describe('setup Anthropic model step', () => {
         message: expectedPromptMessage,
       }),
     );
-    expect(io.stdout()).not.toContain('KLO uses this as the default model');
+    expect(io.stdout()).not.toContain('KTX uses this as the default model');
     expect(io.stdout()).not.toContain('Setup verifies the selected model now');
   });
 
@@ -420,7 +420,7 @@ describe('setup Anthropic model step', () => {
     const prompts = makePromptAdapter({ credentialChoice: 'env', modelChoice: 'claude-sonnet-4-6' });
 
     await expect(
-      runKloSetupAnthropicModelStep({ projectDir: tempDir, inputMode: 'auto', skipLlm: false }, io.io, {
+      runKtxSetupAnthropicModelStep({ projectDir: tempDir, inputMode: 'auto', skipLlm: false }, io.io, {
         prompts,
         env: { ANTHROPIC_API_KEY: 'sk-ant-test' },
         listModels: vi.fn(async () => {
@@ -437,7 +437,7 @@ describe('setup Anthropic model step', () => {
     const io = makeIo();
     const prompts = makePromptAdapter({ selectValues: ['env', 'manual'], textValues: [''] });
 
-    const result = await runKloSetupAnthropicModelStep(
+    const result = await runKtxSetupAnthropicModelStep(
       { projectDir: tempDir, inputMode: 'auto', skipLlm: false },
       io.io,
       {
@@ -454,7 +454,7 @@ describe('setup Anthropic model step', () => {
     expect(BUNDLED_ANTHROPIC_MODELS.length).toBeGreaterThan(0);
     expect(prompts.select).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: expect.stringContaining('Which Anthropic model should KLO use?'),
+        message: expect.stringContaining('Which Anthropic model should KTX use?'),
         options: expect.arrayContaining([
           { value: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6 (recommended)' },
         ]),
@@ -476,7 +476,7 @@ describe('setup Anthropic model step', () => {
     );
     const healthCheck = vi.fn(async () => ({ ok: true as const }));
 
-    const result = await runKloSetupAnthropicModelStep(
+    const result = await runKtxSetupAnthropicModelStep(
       { projectDir: tempDir, inputMode: 'auto', skipLlm: false },
       io.io,
       {
@@ -498,7 +498,7 @@ describe('setup Anthropic model step', () => {
 
   it('does not persist llm completion when the health check fails', async () => {
     const io = makeIo();
-    const result = await runKloSetupAnthropicModelStep(
+    const result = await runKtxSetupAnthropicModelStep(
       {
         projectDir: tempDir,
         inputMode: 'disabled',
@@ -514,7 +514,7 @@ describe('setup Anthropic model step', () => {
     );
 
     expect(result.status).toBe('failed');
-    const config = parseKloProjectConfig(await readFile(join(tempDir, 'klo.yaml'), 'utf-8'));
+    const config = parseKtxProjectConfig(await readFile(join(tempDir, 'ktx.yaml'), 'utf-8'));
     expect(config.setup?.completed_steps ?? []).not.toContain('llm');
     expect(io.stderr()).toContain('Anthropic model health check failed: 401 invalid x-api-key [redacted]');
     expect(io.stderr()).not.toContain('sk-ant-test');
@@ -530,7 +530,7 @@ describe('setup Anthropic model step', () => {
       .mockResolvedValueOnce({ ok: false as const, message: 'model not found' })
       .mockResolvedValueOnce({ ok: true as const });
 
-    const result = await runKloSetupAnthropicModelStep(
+    const result = await runKtxSetupAnthropicModelStep(
       { projectDir: tempDir, inputMode: 'auto', skipLlm: false },
       io.io,
       {
@@ -549,33 +549,33 @@ describe('setup Anthropic model step', () => {
     expect(prompts.select).toHaveBeenCalledTimes(4);
     expect(io.stderr()).toContain('Anthropic model health check failed: model not found');
     expect(io.stderr()).toContain('Choose a different credential source or model, or Back.');
-    const config = parseKloProjectConfig(await readFile(join(tempDir, 'klo.yaml'), 'utf-8'));
+    const config = parseKtxProjectConfig(await readFile(join(tempDir, 'ktx.yaml'), 'utf-8'));
     expect(config.llm.models.default).toBe('claude-sonnet-4-6');
     expect(config.setup?.completed_steps).toContain('llm');
     expect(io.stderr()).not.toContain('sk-ant-test');
   });
 
   it('leaves setup incomplete when skipped', async () => {
-    const result = await runKloSetupAnthropicModelStep(
+    const result = await runKtxSetupAnthropicModelStep(
       { projectDir: tempDir, inputMode: 'disabled', skipLlm: true },
       makeIo().io,
     );
 
     expect(result.status).toBe('skipped');
-    const config = parseKloProjectConfig(await readFile(join(tempDir, 'klo.yaml'), 'utf-8'));
+    const config = parseKtxProjectConfig(await readFile(join(tempDir, 'ktx.yaml'), 'utf-8'));
     expect(config.setup?.completed_steps ?? []).not.toContain('llm');
   });
 
   it('returns back without writing config when Back is selected', async () => {
     const prompts = makePromptAdapter({ credentialChoice: 'back' });
-    const result = await runKloSetupAnthropicModelStep(
+    const result = await runKtxSetupAnthropicModelStep(
       { projectDir: tempDir, inputMode: 'auto', skipLlm: false },
       makeIo().io,
       { prompts, env: {} },
     );
 
     expect(result.status).toBe('back');
-    const config = parseKloProjectConfig(await readFile(join(tempDir, 'klo.yaml'), 'utf-8'));
+    const config = parseKtxProjectConfig(await readFile(join(tempDir, 'ktx.yaml'), 'utf-8'));
     expect(config.llm.provider.backend).toBe('none');
   });
 
@@ -585,7 +585,7 @@ describe('setup Anthropic model step', () => {
       passwordValue: 'sk-ant-pasted',
     });
 
-    const result = await runKloSetupAnthropicModelStep(
+    const result = await runKtxSetupAnthropicModelStep(
       { projectDir: tempDir, inputMode: 'auto', skipLlm: false },
       makeIo().io,
       {
@@ -600,10 +600,10 @@ describe('setup Anthropic model step', () => {
     expect(prompts.select).toHaveBeenNthCalledWith(
       3,
       expect.objectContaining({
-        message: expect.stringContaining('How should KLO find your Anthropic API key?'),
+        message: expect.stringContaining('How should KTX find your Anthropic API key?'),
       }),
     );
-    const config = parseKloProjectConfig(await readFile(join(tempDir, 'klo.yaml'), 'utf-8'));
+    const config = parseKtxProjectConfig(await readFile(join(tempDir, 'ktx.yaml'), 'utf-8'));
     expect(config.llm.provider.backend).toBe('none');
   });
 
@@ -613,7 +613,7 @@ describe('setup Anthropic model step', () => {
       passwordValues: [undefined],
     });
 
-    const result = await runKloSetupAnthropicModelStep(
+    const result = await runKtxSetupAnthropicModelStep(
       { projectDir: tempDir, inputMode: 'auto', skipLlm: false },
       makeIo().io,
       {
@@ -628,10 +628,10 @@ describe('setup Anthropic model step', () => {
     expect(prompts.password).toHaveBeenCalledWith({
       message: 'Anthropic API key\nPress Escape to go back.\n',
     });
-    await expect(readFile(join(tempDir, '.klo/secrets/anthropic-api-key'), 'utf-8')).rejects.toMatchObject({
+    await expect(readFile(join(tempDir, '.ktx/secrets/anthropic-api-key'), 'utf-8')).rejects.toMatchObject({
       code: 'ENOENT',
     });
-    const config = parseKloProjectConfig(await readFile(join(tempDir, 'klo.yaml'), 'utf-8'));
+    const config = parseKtxProjectConfig(await readFile(join(tempDir, 'ktx.yaml'), 'utf-8'));
     expect(config.llm.provider).toMatchObject({
       backend: 'anthropic',
       anthropic: { api_key: 'env:ANTHROPIC_API_KEY' },
@@ -639,10 +639,10 @@ describe('setup Anthropic model step', () => {
   });
 
   it('preserves already completed llm setup when no model args request changes', async () => {
-    await mkdir(join(tempDir, '.klo'), { recursive: true });
-    await initKloProject({ projectDir: tempDir, projectName: 'warehouse', force: true });
+    await mkdir(join(tempDir, '.ktx'), { recursive: true });
+    await initKtxProject({ projectDir: tempDir, projectName: 'warehouse', force: true });
     await writeFile(
-      join(tempDir, 'klo.yaml'),
+      join(tempDir, 'ktx.yaml'),
       [
         'project: warehouse',
         'setup:',
@@ -669,7 +669,7 @@ describe('setup Anthropic model step', () => {
 
     const healthCheck = vi.fn(async () => ({ ok: true as const }));
     await expect(
-      runKloSetupAnthropicModelStep({ projectDir: tempDir, inputMode: 'disabled', skipLlm: false }, makeIo().io, {
+      runKtxSetupAnthropicModelStep({ projectDir: tempDir, inputMode: 'disabled', skipLlm: false }, makeIo().io, {
         env: { ANTHROPIC_API_KEY: 'sk-ant-test' },
         healthCheck,
       }),

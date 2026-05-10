@@ -243,11 +243,11 @@ const buildRunner = (deps: ReturnType<typeof makeDeps> = makeDeps(), overrides: 
     gitService: deps.gitService as any,
     lockingService: deps.lockingService as any,
     storage: {
-      homeDir: '/tmp/klo-test',
-      systemGitAuthor: { name: 'KLO Test', email: 'system@klo.local' },
-      resolveUploadDir: (uploadId) => `/tmp/klo-test/ingest-uploads/${uploadId}`,
-      resolvePullDir: (jobId) => `/tmp/klo-test/ingest-pulls/${jobId}`,
-      resolveTranscriptDir: (jobId) => `/tmp/klo-test/run/wu-transcripts/${jobId}`,
+      homeDir: '/tmp/ktx-test',
+      systemGitAuthor: { name: 'KTX Test', email: 'system@ktx.local' },
+      resolveUploadDir: (uploadId) => `/tmp/ktx-test/ingest-uploads/${uploadId}`,
+      resolvePullDir: (jobId) => `/tmp/ktx-test/ingest-pulls/${jobId}`,
+      resolveTranscriptDir: (jobId) => `/tmp/ktx-test/run/wu-transcripts/${jobId}`,
     },
     settings: { probeRowCount: 1, memoryIngestionModel: 'test-model' },
     skillsRegistry: deps.skillsRegistry as any,
@@ -845,7 +845,7 @@ describe('IngestBundleRunner — Stages 1 → 7', () => {
           toolTranscripts: [
             {
               unitKey: 'u1',
-              path: '/tmp/klo-test/run/wu-transcripts/j1/u1.jsonl',
+              path: '/tmp/ktx-test/run/wu-transcripts/j1/u1.jsonl',
               toolCallCount: 2,
               errorCount: 0,
               toolNames: ['read_raw_span', 'wiki_write'],
@@ -1065,7 +1065,7 @@ describe('IngestBundleRunner — Stages 1 → 7', () => {
   });
 
   it('runs manual override reconciliation from the prior report snapshot and marks the prior report superseded', async () => {
-    const tempRoot = await mkdtemp(join(tmpdir(), 'klo-override-'));
+    const tempRoot = await mkdtemp(join(tmpdir(), 'ktx-override-'));
     const deps = makeDeps();
     deps.reportsRepo.findByJobId.mockResolvedValue({
       id: 'report-old',
@@ -1134,7 +1134,7 @@ describe('IngestBundleRunner — Stages 1 → 7', () => {
       ...(buildRunner(deps) as any).deps,
       storage: {
         homeDir: tempRoot,
-        systemGitAuthor: { name: 'KLO Test', email: 'system@klo.local' },
+        systemGitAuthor: { name: 'KTX Test', email: 'system@ktx.local' },
         resolveUploadDir: (uploadId: string) => join(tempRoot, 'ingest-uploads', uploadId),
         resolvePullDir: (jobId: string) => join(tempRoot, 'ingest-pulls', jobId),
         resolveTranscriptDir: (jobId: string) => join(tempRoot, 'run', 'wu-transcripts', jobId),
@@ -1770,8 +1770,8 @@ describe('IngestBundleRunner — Stages 1 → 7', () => {
           await currentToolSession.gitService.commitFiles(
             ['semantic-layer/c1/good.yaml'],
             'test: add good source',
-            'KLO Test',
-            'system@klo.local',
+            'KTX Test',
+            'system@ktx.local',
           );
         }
         if (unitKey === 'wu-bad') {
@@ -1782,8 +1782,8 @@ describe('IngestBundleRunner — Stages 1 → 7', () => {
           await currentToolSession.gitService.commitFiles(
             ['semantic-layer/c1/bad.yaml'],
             'test: add bad source',
-            'KLO Test',
-            'system@klo.local',
+            'KTX Test',
+            'system@ktx.local',
           );
         }
         return { stopReason: 'natural' };

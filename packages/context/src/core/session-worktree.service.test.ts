@@ -2,7 +2,7 @@ import { mkdtemp, realpath, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { KloCoreConfig } from './config.js';
+import type { KtxCoreConfig } from './config.js';
 import { GitService } from './git.service.js';
 import { SessionWorktreeService, type WorktreeConfigPort } from './session-worktree.service.js';
 
@@ -20,7 +20,7 @@ describe('SessionWorktreeService', () => {
     homeDir = await mkdtemp(join(tmpdir(), 'sws-spec-'));
     homeDir = await realpath(homeDir);
 
-    const coreConfig: KloCoreConfig = {
+    const coreConfig: KtxCoreConfig = {
       storage: { configDir: homeDir, homeDir },
       git: {
         userName: 'System User',
@@ -113,7 +113,7 @@ describe('SessionWorktreeService', () => {
       await expect(stat(session.workdir)).resolves.toBeTruthy();
 
       const { readFile } = await import('node:fs/promises');
-      const raw = await readFile(join(session.workdir, '.klo-outcome'), 'utf-8');
+      const raw = await readFile(join(session.workdir, '.ktx-outcome'), 'utf-8');
       const parsed = JSON.parse(raw);
       expect(parsed.outcome).toBe('conflict');
       expect(parsed.chatId).toBe('chat-cleanup-conflict');

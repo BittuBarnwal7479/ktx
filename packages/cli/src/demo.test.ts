@@ -1,14 +1,14 @@
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import type { IngestReportSnapshot, MemoryFlowReplayInput } from '@klo/context/ingest';
+import type { IngestReportSnapshot, MemoryFlowReplayInput } from '@ktx/context/ingest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { runKloDemo } from './demo.js';
+import { runKtxDemo } from './demo.js';
 import { DEMO_FULL_JOB_ID, defaultDemoProjectDir, ensureDemoProject } from './demo-assets.js';
 import type { DemoFullResult } from './demo-full.js';
 import { createTestDemoPromptAdapter } from './demo-interaction.js';
 import type { renderMemoryFlowTui } from './memory-flow-tui.js';
-import { KLO_NEXT_STEP_COMMANDS } from './next-steps.js';
+import { KTX_NEXT_STEP_COMMANDS } from './next-steps.js';
 import { resetVizFallbackWarningsForTest } from './viz-fallback.js';
 
 function makeIo(options: { isTTY?: boolean; columns?: number; rawMode?: boolean } = {}) {
@@ -108,12 +108,12 @@ function fakeFullResult(projectDir: string): DemoFullResult {
   };
 }
 
-describe('runKloDemo', () => {
+describe('runKtxDemo', () => {
   let tempDir: string;
 
   beforeEach(async () => {
     resetVizFallbackWarningsForTest();
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-demo-command-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-demo-command-'));
   });
 
   afterEach(async () => {
@@ -123,7 +123,7 @@ describe('runKloDemo', () => {
   it('initializes the demo project', async () => {
     const io = makeIo();
     await expect(
-      runKloDemo({ command: 'init', projectDir: tempDir, force: false, inputMode: 'disabled' }, io.io),
+      runKtxDemo({ command: 'init', projectDir: tempDir, force: false, inputMode: 'disabled' }, io.io),
     ).resolves.toBe(0);
 
     expect(io.stdout()).toContain(`Demo project: ${tempDir}`);
@@ -135,14 +135,14 @@ describe('runKloDemo', () => {
   it('renders the packaged replay in no-input viz mode', async () => {
     const io = makeIo({ isTTY: true });
     await expect(
-      runKloDemo(
+      runKtxDemo(
         { command: 'replay', projectDir: tempDir, outputMode: 'viz', inputMode: 'disabled' },
         io.io,
         { env: { ...process.env, TERM: 'xterm-256color' } },
       ),
     ).resolves.toBe(0);
 
-    expect(io.stdout()).toContain('KLO memory flow  Warehouse + dbt + BI + Docs  done');
+    expect(io.stdout()).toContain('KTX memory flow  Warehouse + dbt + BI + Docs  done');
     expect(io.stdout()).toContain('Saved 16 memories');
     expect(io.stderr()).toBe('');
   });
@@ -152,7 +152,7 @@ describe('runKloDemo', () => {
     const renderStoredMemoryFlow = vi.fn<typeof renderMemoryFlowTui>(async () => true);
 
     await expect(
-      runKloDemo(
+      runKtxDemo(
         { command: 'replay', projectDir: tempDir, outputMode: 'viz' },
         io.io,
         { env: { ...process.env, TERM: 'xterm-256color' }, renderStoredMemoryFlow },
@@ -166,7 +166,7 @@ describe('runKloDemo', () => {
       adapter: 'live-database',
     });
     expect(renderStoredMemoryFlow.mock.calls[0]?.[2]).toEqual({ speedMultiplier: 0.125 });
-    expect(io.stdout()).toContain('KLO finished ingesting your data');
+    expect(io.stdout()).toContain('KTX finished ingesting your data');
     expect(io.stderr()).toBe('');
   });
 
@@ -175,7 +175,7 @@ describe('runKloDemo', () => {
     const renderStoredMemoryFlow = vi.fn<typeof renderMemoryFlowTui>(async () => true);
 
     await expect(
-      runKloDemo(
+      runKtxDemo(
         { command: 'seeded', projectDir: tempDir, outputMode: 'viz' },
         io.io,
         { env: { ...process.env, TERM: 'xterm-256color' }, renderStoredMemoryFlow },
@@ -184,7 +184,7 @@ describe('runKloDemo', () => {
 
     expect(renderStoredMemoryFlow).toHaveBeenCalledTimes(1);
     expect(renderStoredMemoryFlow.mock.calls[0]?.[2]).toEqual({ speedMultiplier: 0.125 });
-    expect(io.stdout()).toContain('KLO finished ingesting your data');
+    expect(io.stdout()).toContain('KTX finished ingesting your data');
     expect(io.stderr()).toBe('');
   });
 
@@ -193,7 +193,7 @@ describe('runKloDemo', () => {
     const renderStoredMemoryFlow = vi.fn(async (_input: MemoryFlowReplayInput, _io: unknown) => true);
 
     await expect(
-      runKloDemo(
+      runKtxDemo(
         { command: 'replay', projectDir: tempDir, outputMode: 'viz' },
         io.io,
         { env: { ...process.env, TERM: 'xterm-256color' }, renderStoredMemoryFlow },
@@ -203,10 +203,10 @@ describe('runKloDemo', () => {
     expect(renderStoredMemoryFlow).not.toHaveBeenCalled();
     expect(io.stdout()).toContain('Memory-flow summary: done');
     expect(io.stdout()).toContain('Connection: orbit_demo');
-    expect(io.stdout()).toContain('klo sl list');
-    expect(io.stdout()).toContain('klo wiki list');
-    expect(io.stdout()).toContain('klo serve --mcp stdio --user-id local');
-    expect(io.stdout()).not.toContain('KLO memory flow');
+    expect(io.stdout()).toContain('ktx sl list');
+    expect(io.stdout()).toContain('ktx wiki list');
+    expect(io.stdout()).toContain('ktx serve --mcp stdio --user-id local');
+    expect(io.stdout()).not.toContain('KTX memory flow');
     expect(io.stderr()).toContain(
       'Visualization requested but stdin raw mode is unavailable; printing plain output.',
     );
@@ -216,15 +216,15 @@ describe('runKloDemo', () => {
     const testIo = makeIo({ isTTY: false });
 
     await expect(
-      runKloDemo({ command: 'replay', projectDir: tempDir, outputMode: 'viz', inputMode: 'disabled' }, testIo.io),
+      runKtxDemo({ command: 'replay', projectDir: tempDir, outputMode: 'viz', inputMode: 'disabled' }, testIo.io),
     ).resolves.toBe(0);
 
     expect(testIo.stdout()).toContain('Memory-flow summary: done');
     expect(testIo.stdout()).toContain('Connection: orbit_demo');
-    expect(testIo.stdout()).toContain('klo sl list');
-    expect(testIo.stdout()).toContain('klo wiki list');
-    expect(testIo.stdout()).toContain('klo serve --mcp stdio --user-id local');
-    expect(testIo.stdout()).not.toContain('KLO memory flow');
+    expect(testIo.stdout()).toContain('ktx sl list');
+    expect(testIo.stdout()).toContain('ktx wiki list');
+    expect(testIo.stdout()).toContain('ktx serve --mcp stdio --user-id local');
+    expect(testIo.stdout()).not.toContain('KTX memory flow');
     expect(testIo.stderr()).toContain(
       'Visualization requested but stdout is not an interactive terminal; printing plain output.',
     );
@@ -233,7 +233,7 @@ describe('runKloDemo', () => {
   it('prints JSON replay output when requested', async () => {
     const io = makeIo();
     await expect(
-      runKloDemo({ command: 'replay', projectDir: tempDir, outputMode: 'json', inputMode: 'disabled' }, io.io),
+      runKtxDemo({ command: 'replay', projectDir: tempDir, outputMode: 'json', inputMode: 'disabled' }, io.io),
     ).resolves.toBe(0);
 
     expect(JSON.parse(io.stdout())).toMatchObject({ runId: 'demo-seeded-orbit', connectionId: 'orbit_demo' });
@@ -242,7 +242,7 @@ describe('runKloDemo', () => {
 
   it('runs the packaged SQLite demo scan', async () => {
     const io = makeIo();
-    await expect(runKloDemo({ command: 'scan', projectDir: tempDir, inputMode: 'disabled' }, io.io)).resolves.toBe(0);
+    await expect(runKtxDemo({ command: 'scan', projectDir: tempDir, inputMode: 'disabled' }, io.io)).resolves.toBe(0);
 
     expect(io.stdout()).toContain('Demo scan: done');
     expect(io.stdout()).toContain('Connection: orbit_demo');
@@ -254,7 +254,7 @@ describe('runKloDemo', () => {
   it('runs seeded mode with pre-seeded assets and inspect summary', async () => {
     const io = makeIo({ isTTY: true });
     await expect(
-      runKloDemo(
+      runKtxDemo(
         { command: 'seeded', projectDir: tempDir, outputMode: 'plain', inputMode: 'disabled' },
         io.io,
         { env: { ...process.env, TERM: 'xterm-256color' } },
@@ -272,7 +272,7 @@ describe('runKloDemo', () => {
     const io = makeIo();
 
     await expect(
-      runKloDemo(
+      runKtxDemo(
         { command: 'seeded', projectDir: defaultDemoProjectDir(), outputMode: 'plain', inputMode: 'disabled' },
         io.io,
       ),
@@ -282,10 +282,10 @@ describe('runKloDemo', () => {
     expect(io.stdout()).toContain('Source: packaged demo project');
     expect(io.stdout()).toContain('Generated context: prebuilt from bundled assets');
     expect(io.stdout()).toContain('LLM calls: none');
-    expect(io.stdout()).toContain('Your KLO project files are at:');
-    expect(io.stdout()).toContain(join(tmpdir(), 'klo-demo-'));
-    expect(io.stdout()).toContain('klo serve --mcp stdio');
-    expect(io.stdout()).not.toContain(['klo', 'mcp'].join(' '));
+    expect(io.stdout()).toContain('Your KTX project files are at:');
+    expect(io.stdout()).toContain(join(tmpdir(), 'ktx-demo-'));
+    expect(io.stdout()).toContain('ktx serve --mcp stdio');
+    expect(io.stdout()).not.toContain(['ktx', 'mcp'].join(' '));
     expect(io.stdout()).not.toContain('deterministic');
   });
 
@@ -293,7 +293,7 @@ describe('runKloDemo', () => {
     const testIo = makeIo({ isTTY: true, columns: 120 });
 
     await expect(
-      runKloDemo(
+      runKtxDemo(
         { command: 'seeded', projectDir: tempDir, outputMode: 'viz', inputMode: 'disabled' },
         testIo.io,
         { env: { ...process.env, TERM: 'dumb' } },
@@ -310,19 +310,19 @@ describe('runKloDemo', () => {
   it('prints demo inspect as plain text and JSON', async () => {
     const seededIo = makeIo();
     await expect(
-      runKloDemo({ command: 'seeded', projectDir: tempDir, outputMode: 'plain', inputMode: 'disabled' }, seededIo.io),
+      runKtxDemo({ command: 'seeded', projectDir: tempDir, outputMode: 'plain', inputMode: 'disabled' }, seededIo.io),
     ).resolves.toBe(0);
 
     const plainIo = makeIo();
     await expect(
-      runKloDemo({ command: 'inspect', projectDir: tempDir, outputMode: 'plain', inputMode: 'disabled' }, plainIo.io),
+      runKtxDemo({ command: 'inspect', projectDir: tempDir, outputMode: 'plain', inputMode: 'disabled' }, plainIo.io),
     ).resolves.toBe(0);
     expect(plainIo.stdout()).toContain('Mode: seeded');
     expect(plainIo.stdout()).toContain('Semantic-layer sources:');
 
     const jsonIo = makeIo();
     await expect(
-      runKloDemo({ command: 'inspect', projectDir: tempDir, outputMode: 'json', inputMode: 'disabled' }, jsonIo.io),
+      runKtxDemo({ command: 'inspect', projectDir: tempDir, outputMode: 'json', inputMode: 'disabled' }, jsonIo.io),
     ).resolves.toBe(0);
     const parsed = JSON.parse(jsonIo.stdout());
     expect(parsed).toMatchObject({
@@ -347,7 +347,7 @@ describe('runKloDemo', () => {
         generatedContext: 'prebuilt from bundled assets',
         llmCalls: 'none',
       },
-      nextCommands: KLO_NEXT_STEP_COMMANDS,
+      nextCommands: KTX_NEXT_STEP_COMMANDS,
     });
     expect(parsed.generatedOutputs.replays.fileCount).toBeGreaterThanOrEqual(3);
     expect(jsonIo.stderr()).toBe('');
@@ -359,7 +359,7 @@ describe('runKloDemo', () => {
     await ensureDemoProject({ projectDir: tempDir, force: false });
 
     await expect(
-      runKloDemo({ command: 'full', projectDir: tempDir, outputMode: 'viz', inputMode: 'disabled' }, testIo.io, {
+      runKtxDemo({ command: 'full', projectDir: tempDir, outputMode: 'viz', inputMode: 'disabled' }, testIo.io, {
         env: {},
         runFullDemo,
       }),
@@ -372,10 +372,10 @@ describe('runKloDemo', () => {
         onMemoryFlowChange: expect.any(Function),
       }),
     );
-    expect(testIo.stdout()).toContain('KLO memory flow  orbit_demo/live-database  done');
+    expect(testIo.stdout()).toContain('KTX memory flow  orbit_demo/live-database  done');
     expect(testIo.stdout()).toContain('Full demo ingest: done');
-    expect(testIo.stdout()).toContain('Next: klo setup demo inspect');
-    expect(testIo.stdout()).toContain('Shows the files, semantic-layer sources, and memory KLO just produced.');
+    expect(testIo.stdout()).toContain('Next: ktx setup demo inspect');
+    expect(testIo.stdout()).toContain('Shows the files, semantic-layer sources, and memory KTX just produced.');
   });
 
   it('streams live memory-flow snapshots for full demo viz and then prints final summary', async () => {
@@ -399,7 +399,7 @@ describe('runKloDemo', () => {
     await ensureDemoProject({ projectDir: tempDir, force: false });
 
     await expect(
-      runKloDemo({ command: 'full', projectDir: tempDir, outputMode: 'viz' }, testIo.io, {
+      runKtxDemo({ command: 'full', projectDir: tempDir, outputMode: 'viz' }, testIo.io, {
         env: { ANTHROPIC_API_KEY: 'sk-ant-test' }, // pragma: allowlist secret
         prompts: createTestDemoPromptAdapter({ choices: ['reuse'] }),
         runFullDemo,
@@ -411,12 +411,12 @@ describe('runKloDemo', () => {
     expect(liveSession.update).toHaveBeenCalledTimes(1);
     expect(liveSession.close).toHaveBeenCalledTimes(1);
     expect(testIo.stdout()).not.toContain('Memory-flow summary: done');
-    expect(testIo.stdout()).toContain('KLO finished ingesting your data');
-    expect(testIo.stdout()).toContain('klo sl list');
-    expect(testIo.stdout()).toContain('klo wiki list');
-    expect(testIo.stdout()).toContain('klo serve --mcp stdio --user-id local');
-    expect(testIo.stdout()).not.toContain(['klo', 'ask'].join(' '));
-    expect(testIo.stdout()).not.toContain(['klo', 'mcp'].join(' '));
+    expect(testIo.stdout()).toContain('KTX finished ingesting your data');
+    expect(testIo.stdout()).toContain('ktx sl list');
+    expect(testIo.stdout()).toContain('ktx wiki list');
+    expect(testIo.stdout()).toContain('ktx serve --mcp stdio --user-id local');
+    expect(testIo.stdout()).not.toContain(['ktx', 'ask'].join(' '));
+    expect(testIo.stdout()).not.toContain(['ktx', 'mcp'].join(' '));
   });
 
   it('uses plain progress for full demo viz when stdin raw mode is unavailable', async () => {
@@ -440,7 +440,7 @@ describe('runKloDemo', () => {
     await ensureDemoProject({ projectDir: tempDir, force: false });
 
     await expect(
-      runKloDemo({ command: 'full', projectDir: tempDir, outputMode: 'viz' }, testIo.io, {
+      runKtxDemo({ command: 'full', projectDir: tempDir, outputMode: 'viz' }, testIo.io, {
         env: { ANTHROPIC_API_KEY: 'sk-ant-test' }, // pragma: allowlist secret
         prompts: createTestDemoPromptAdapter({ choices: ['reuse'] }),
         runFullDemo,
@@ -456,7 +456,7 @@ describe('runKloDemo', () => {
     );
     expect(testIo.stdout()).toContain('[connect]  Connected live-database - 7 database files (demo_full)');
     expect(testIo.stdout()).toContain('Full demo ingest: done');
-    expect(testIo.stdout()).not.toContain('KLO memory flow');
+    expect(testIo.stdout()).not.toContain('KTX memory flow');
     expect(testIo.stderr()).toContain(
       'Visualization requested but stdin raw mode is unavailable; printing plain output.',
     );
@@ -486,7 +486,7 @@ describe('runKloDemo', () => {
     await ensureDemoProject({ projectDir: tempDir, force: false });
 
     await expect(
-      runKloDemo(
+      runKtxDemo(
         { command: 'full', projectDir: tempDir, outputMode: 'plain', inputMode: 'disabled' },
         testIo.io,
         { env: { ANTHROPIC_API_KEY: 'sk-ant-test' }, runFullDemo }, // pragma: allowlist secret
@@ -510,7 +510,7 @@ describe('runKloDemo', () => {
     await ensureDemoProject({ projectDir: tempDir, force: false });
 
     await expect(
-      runKloDemo(
+      runKtxDemo(
         { command: 'full', projectDir: tempDir, outputMode: 'json', inputMode: 'disabled' },
         testIo.io,
         { env: { ANTHROPIC_API_KEY: 'sk-ant-test' }, runFullDemo }, // pragma: allowlist secret
@@ -526,7 +526,7 @@ describe('runKloDemo', () => {
     await ensureDemoProject({ projectDir: tempDir, force: false });
 
     await expect(
-      runKloDemo(
+      runKtxDemo(
         { command: 'ingest', mode: 'full', projectDir: tempDir, outputMode: 'plain', inputMode: 'disabled' },
         testIo.io,
         { env: {}, runFullDemo },
@@ -537,12 +537,12 @@ describe('runKloDemo', () => {
   });
 
   it('saves full-demo replay output for the next demo replay command', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'klo-demo-full-replay-'));
+    const tempDir = await mkdtemp(join(tmpdir(), 'ktx-demo-full-replay-'));
     await ensureDemoProject({ projectDir: tempDir, force: false });
     const io = makeIo();
 
     await expect(
-      runKloDemo(
+      runKtxDemo(
         { command: 'full', projectDir: tempDir, outputMode: 'plain', inputMode: 'disabled' },
         io.io,
         {
@@ -554,7 +554,7 @@ describe('runKloDemo', () => {
 
     const replayIo = makeIo();
     await expect(
-      runKloDemo({ command: 'replay', projectDir: tempDir, outputMode: 'json', inputMode: 'disabled' }, replayIo.io),
+      runKtxDemo({ command: 'replay', projectDir: tempDir, outputMode: 'json', inputMode: 'disabled' }, replayIo.io),
     ).resolves.toBe(0);
     expect(JSON.parse(replayIo.stdout())).toMatchObject({
       runId: 'run-full',
@@ -566,7 +566,7 @@ describe('runKloDemo', () => {
     const testIo = makeIo();
 
     await expect(
-      runKloDemo(
+      runKtxDemo(
         { command: 'ingest', mode: 'seeded', projectDir: tempDir, outputMode: 'plain', inputMode: 'disabled' },
         testIo.io,
       ),
@@ -581,7 +581,7 @@ describe('runKloDemo', () => {
     const runDoctor = vi.fn().mockResolvedValue(0);
 
     await expect(
-      runKloDemo(
+      runKtxDemo(
         {
           command: 'doctor',
           projectDir: tempDir,
@@ -610,13 +610,13 @@ describe('runKloDemo', () => {
 
     const rejected = makeIo();
     await expect(
-      runKloDemo({ command: 'reset', projectDir: tempDir, force: false, inputMode: 'disabled' }, rejected.io),
+      runKtxDemo({ command: 'reset', projectDir: tempDir, force: false, inputMode: 'disabled' }, rejected.io),
     ).resolves.toBe(1);
-    expect(rejected.stderr()).toContain(`klo setup demo reset is destructive; pass --force to recreate ${tempDir}`);
+    expect(rejected.stderr()).toContain(`ktx setup demo reset is destructive; pass --force to recreate ${tempDir}`);
 
     const accepted = makeIo();
     await expect(
-      runKloDemo({ command: 'reset', projectDir: tempDir, force: true, inputMode: 'disabled' }, accepted.io),
+      runKtxDemo({ command: 'reset', projectDir: tempDir, force: true, inputMode: 'disabled' }, accepted.io),
     ).resolves.toBe(0);
     expect(accepted.stdout()).toContain(`Demo project reset: ${tempDir}`);
   });
@@ -624,12 +624,12 @@ describe('runKloDemo', () => {
   it('rehydrates seeded assets after reset --force', async () => {
     const resetIo = makeIo();
     await expect(
-      runKloDemo({ command: 'reset', projectDir: tempDir, force: true, inputMode: 'disabled' }, resetIo.io),
+      runKtxDemo({ command: 'reset', projectDir: tempDir, force: true, inputMode: 'disabled' }, resetIo.io),
     ).resolves.toBe(0);
 
     const seededIo = makeIo();
     await expect(
-      runKloDemo(
+      runKtxDemo(
         { command: 'seeded', projectDir: tempDir, outputMode: 'plain', inputMode: 'disabled' },
         seededIo.io,
       ),
@@ -648,11 +648,11 @@ describe('runKloDemo', () => {
     const testIo = makeIo();
 
     await expect(
-      runKloDemo({ command: 'replay', projectDir: tempDir, outputMode: 'plain', inputMode: 'disabled' }, testIo.io),
+      runKtxDemo({ command: 'replay', projectDir: tempDir, outputMode: 'plain', inputMode: 'disabled' }, testIo.io),
     ).resolves.toBe(1);
 
     expect(testIo.stderr()).toContain(`Demo project is not ready at ${tempDir}: missing demo.db`);
-    expect(testIo.stderr()).toContain(`klo setup demo reset --project-dir ${tempDir} --force --no-input`);
+    expect(testIo.stderr()).toContain(`ktx setup demo reset --project-dir ${tempDir} --force --no-input`);
   });
 
   it('uses a process-local Anthropic key from the interactive prompt', async () => {
@@ -661,7 +661,7 @@ describe('runKloDemo', () => {
     await ensureDemoProject({ projectDir: tempDir, force: false });
 
     await expect(
-      runKloDemo(
+      runKtxDemo(
         { command: 'full', projectDir: tempDir, outputMode: 'plain' },
         testIo.io,
         {
@@ -682,7 +682,7 @@ describe('runKloDemo', () => {
         onMemoryFlowChange: expect.any(Function),
       }),
     );
-    expect(await readFile(join(tempDir, 'klo.yaml'), 'utf-8')).toContain('api_key: env:ANTHROPIC_API_KEY');
+    expect(await readFile(join(tempDir, 'ktx.yaml'), 'utf-8')).toContain('api_key: env:ANTHROPIC_API_KEY');
   });
 
   it('routes an interactive missing-key choice to seeded mode', async () => {
@@ -691,7 +691,7 @@ describe('runKloDemo', () => {
     await ensureDemoProject({ projectDir: tempDir, force: false });
 
     await expect(
-      runKloDemo(
+      runKtxDemo(
         { command: 'full', projectDir: tempDir, outputMode: 'plain' },
         testIo.io,
         {
@@ -712,7 +712,7 @@ describe('runKloDemo', () => {
     const testIo = makeIo({ isTTY: true });
 
     await expect(
-      runKloDemo(
+      runKtxDemo(
         { command: 'full', projectDir: tempDir, outputMode: 'plain' },
         testIo.io,
         {
@@ -733,7 +733,7 @@ describe('runKloDemo', () => {
     await ensureDemoProject({ projectDir: tempDir, force: false });
 
     await expect(
-      runKloDemo(
+      runKtxDemo(
         { command: 'full', projectDir: tempDir, outputMode: 'viz' },
         testIo.io,
         {
@@ -745,7 +745,7 @@ describe('runKloDemo', () => {
     ).resolves.toBe(0);
 
     expect(runFullDemo).not.toHaveBeenCalled();
-    expect(testIo.stdout()).toContain('KLO memory flow');
+    expect(testIo.stdout()).toContain('KTX memory flow');
     expect(testIo.stdout()).toContain('done');
   });
 });

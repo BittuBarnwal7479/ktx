@@ -1,17 +1,17 @@
 import { type Command, Option } from '@commander-js/extra-typings';
 
 import {
-  type KloCliCommandContext,
+  type KtxCliCommandContext,
   parseNonEmptyAssignmentOption,
   parsePositiveIntegerOption,
   parseSafeConnectionIdOption,
   resolveCommandProjectDir,
 } from '../cli-program.js';
 import {
-  type KloConnectionMetabaseSetupArgs,
+  type KtxConnectionMetabaseSetupArgs,
   type MetabaseSetupMappingAssignment,
   type MetabaseSetupSyncMode,
-  runKloConnectionMetabaseSetup,
+  runKtxConnectionMetabaseSetup,
 } from './connection-metabase-setup.js';
 
 const SYNC_MODE_CHOICES = ['ALL', 'ONLY', 'EXCEPT'] as const satisfies readonly MetabaseSetupSyncMode[];
@@ -51,21 +51,21 @@ function collectMappingOption(
 }
 
 async function runMetabaseSetupArgs(
-  context: KloCliCommandContext,
-  args: KloConnectionMetabaseSetupArgs,
+  context: KtxCliCommandContext,
+  args: KtxConnectionMetabaseSetupArgs,
 ): Promise<void> {
-  const runner = context.deps.connectionMetabaseSetup ?? runKloConnectionMetabaseSetup;
+  const runner = context.deps.connectionMetabaseSetup ?? runKtxConnectionMetabaseSetup;
   context.setExitCode(await runner(args, context.io));
 }
 
-export function registerConnectionMetabaseCommands(connection: Command, context: KloCliCommandContext): void {
+export function registerConnectionMetabaseCommands(connection: Command, context: KtxCliCommandContext): void {
   const metabase = connection
     .command('metabase')
     .description('Configure Metabase connections')
     .showHelpAfterError()
     .addHelpText(
       'after',
-      '\nProject directory defaults to KLO_PROJECT_DIR when set, otherwise the current working directory.\n',
+      '\nProject directory defaults to KTX_PROJECT_DIR when set, otherwise the current working directory.\n',
     );
 
   metabase.action(() => {
@@ -76,7 +76,7 @@ export function registerConnectionMetabaseCommands(connection: Command, context:
   metabase
     .command('setup')
     .description('Guided setup for a Metabase connection')
-    .option('--id <connectionId>', 'KLO connection id to write', parseSafeConnectionIdOption)
+    .option('--id <connectionId>', 'KTX connection id to write', parseSafeConnectionIdOption)
     .option('--url <url>', 'Metabase API URL')
     .addOption(new Option('--api-key <key>', 'Metabase API key').conflicts('mintApiKey'))
     .option('--mint-api-key', 'Mint a Metabase API key with credentials', false)
@@ -85,10 +85,10 @@ export function registerConnectionMetabaseCommands(connection: Command, context:
     .addHelpText(
       'after',
       '\nGuided equivalent of:\n' +
-        '  klo connection mapping refresh <connectionId> --auto-accept\n' +
-        '  klo connection mapping set <connectionId> databaseMappings <id>=<target>\n' +
-        '  klo connection mapping set-sync-enabled <connectionId> <id> --enabled true\n' +
-        '  klo ingest <connectionId>\n',
+        '  ktx connection mapping refresh <connectionId> --auto-accept\n' +
+        '  ktx connection mapping set <connectionId> databaseMappings <id>=<target>\n' +
+        '  ktx connection mapping set-sync-enabled <connectionId> <id> --enabled true\n' +
+        '  ktx ingest <connectionId>\n',
     )
     .option(
       '--map <metabaseDatabaseId=targetConnectionId>',

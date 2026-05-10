@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import type {
-  KloEnrichedColumn,
-  KloEnrichedSchema,
-  KloEnrichedTable,
-  KloRelationshipEndpoint,
+  KtxEnrichedColumn,
+  KtxEnrichedSchema,
+  KtxEnrichedTable,
+  KtxRelationshipEndpoint,
 } from './enrichment-types.js';
-import type { KloRelationshipProfileArtifact } from './relationship-profiling.js';
-import type { KloValidatedRelationshipDiscoveryCandidate } from './relationship-validation.js';
-import { resolveKloRelationshipGraph } from './relationship-graph-resolver.js';
+import type { KtxRelationshipProfileArtifact } from './relationship-profiling.js';
+import type { KtxValidatedRelationshipDiscoveryCandidate } from './relationship-validation.js';
+import { resolveKtxRelationshipGraph } from './relationship-graph-resolver.js';
 
-function column(tableId: string, name: string, overrides: Partial<KloEnrichedColumn> = {}): KloEnrichedColumn {
+function column(tableId: string, name: string, overrides: Partial<KtxEnrichedColumn> = {}): KtxEnrichedColumn {
   const tableRef = overrides.tableRef ?? { catalog: null, db: null, name: tableId };
   return {
     id: `${tableId}.${name}`,
@@ -30,7 +30,7 @@ function column(tableId: string, name: string, overrides: Partial<KloEnrichedCol
   };
 }
 
-function table(name: string, columns: KloEnrichedColumn[]): KloEnrichedTable {
+function table(name: string, columns: KtxEnrichedColumn[]): KtxEnrichedTable {
   const ref = { catalog: null, db: null, name };
   return {
     id: name,
@@ -41,7 +41,7 @@ function table(name: string, columns: KloEnrichedColumn[]): KloEnrichedTable {
   };
 }
 
-function schema(overrides: { accountsPrimaryKey?: boolean } = {}): KloEnrichedSchema {
+function schema(overrides: { accountsPrimaryKey?: boolean } = {}): KtxEnrichedSchema {
   return {
     connectionId: 'warehouse',
     tables: [
@@ -59,7 +59,7 @@ function schema(overrides: { accountsPrimaryKey?: boolean } = {}): KloEnrichedSc
   };
 }
 
-function endpoint(tableName: string, columnName: string): KloRelationshipEndpoint {
+function endpoint(tableName: string, columnName: string): KtxRelationshipEndpoint {
   return {
     tableId: tableName,
     columnIds: [`${tableName}.${columnName}`],
@@ -68,7 +68,7 @@ function endpoint(tableName: string, columnName: string): KloRelationshipEndpoin
   };
 }
 
-function profiles(): KloRelationshipProfileArtifact {
+function profiles(): KtxRelationshipProfileArtifact {
   return {
     connectionId: 'warehouse',
     driver: 'sqlite',
@@ -128,8 +128,8 @@ function profiles(): KloRelationshipProfileArtifact {
 }
 
 function validatedCandidate(
-  overrides: Partial<KloValidatedRelationshipDiscoveryCandidate> = {},
-): KloValidatedRelationshipDiscoveryCandidate {
+  overrides: Partial<KtxValidatedRelationshipDiscoveryCandidate> = {},
+): KtxValidatedRelationshipDiscoveryCandidate {
   const from = overrides.from ?? endpoint('users', 'account_id');
   const to = overrides.to ?? endpoint('accounts', 'id');
   return {
@@ -170,7 +170,7 @@ function validatedCandidate(
 
 describe('relationship graph resolver', () => {
   it('promotes validated relationship discovery references to accepted relationships and inferred PKs', () => {
-    const result = resolveKloRelationshipGraph({
+    const result = resolveKtxRelationshipGraph({
       schema: schema(),
       profiles: profiles(),
       candidates: [validatedCandidate()],
@@ -206,7 +206,7 @@ describe('relationship graph resolver', () => {
   });
 
   it('keeps validation-unavailable candidates in review even when name evidence is strong', () => {
-    const result = resolveKloRelationshipGraph({
+    const result = resolveKtxRelationshipGraph({
       schema: schema(),
       profiles: { ...profiles(), sqlAvailable: false, columns: {}, warnings: ['read_only_sql_unavailable'] },
       candidates: [
@@ -257,7 +257,7 @@ describe('relationship graph resolver', () => {
       },
     });
 
-    const result = resolveKloRelationshipGraph({
+    const result = resolveKtxRelationshipGraph({
       schema: schema(),
       profiles: profiles(),
       candidates: [loser, winner],
@@ -275,7 +275,7 @@ describe('relationship graph resolver', () => {
   });
 
   it('preserves declared primary keys as accepted even without incoming candidates', () => {
-    const result = resolveKloRelationshipGraph({
+    const result = resolveKtxRelationshipGraph({
       schema: schema({ accountsPrimaryKey: true }),
       profiles: profiles(),
       candidates: [],
@@ -316,7 +316,7 @@ describe('relationship graph resolver', () => {
       }),
     ]);
     const baseProfiles = profiles();
-    const result = resolveKloRelationshipGraph({
+    const result = resolveKtxRelationshipGraph({
       schema: { ...baseSchema, tables: [...baseSchema.tables, invoices] },
       profiles: {
         ...baseProfiles,
@@ -458,7 +458,7 @@ describe('relationship graph resolver', () => {
           ],
         },
       ],
-    } satisfies KloEnrichedSchema;
+    } satisfies KtxEnrichedSchema;
     const profiles = {
       connectionId: 'warehouse',
       driver: 'sqlite' as const,
@@ -483,7 +483,7 @@ describe('relationship graph resolver', () => {
         },
       },
     };
-    const result = resolveKloRelationshipGraph({
+    const result = resolveKtxRelationshipGraph({
       schema,
       profiles,
       candidates: [
@@ -579,7 +579,7 @@ describe('relationship graph resolver', () => {
       maxTextLength: 3,
     };
 
-    const result = resolveKloRelationshipGraph({
+    const result = resolveKtxRelationshipGraph({
       schema: baseSchema,
       profiles: baseProfiles,
       candidates: [],
@@ -629,7 +629,7 @@ describe('relationship graph resolver', () => {
       maxTextLength: 3,
     };
 
-    const result = resolveKloRelationshipGraph({
+    const result = resolveKtxRelationshipGraph({
       schema: baseSchema,
       profiles: baseProfiles,
       candidates: [],

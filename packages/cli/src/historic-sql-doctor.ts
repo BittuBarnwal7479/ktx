@@ -1,15 +1,15 @@
-import type { KloProjectConfig, KloProjectConnectionConfig } from '@klo/context/project';
+import type { KtxProjectConfig, KtxProjectConnectionConfig } from '@ktx/context/project';
 import type { DoctorCheck } from './doctor.js';
 
 export interface HistoricSqlDoctorProject {
   projectDir: string;
-  config: Pick<KloProjectConfig, 'connections' | 'ingest'>;
+  config: Pick<KtxProjectConfig, 'connections' | 'ingest'>;
 }
 
 export interface PostgresHistoricSqlDoctorProbeInput {
   projectDir: string;
   connectionId: string;
-  connection: KloProjectConnectionConfig;
+  connection: KtxProjectConnectionConfig;
   env: NodeJS.ProcessEnv;
 }
 
@@ -31,19 +31,19 @@ function check(status: DoctorCheck['status'], id: string, label: string, detail:
   return fix ? { id, label, status, detail, fix } : { id, label, status, detail };
 }
 
-function historicSqlRecord(connection: KloProjectConnectionConfig): Record<string, unknown> | null {
+function historicSqlRecord(connection: KtxProjectConnectionConfig): Record<string, unknown> | null {
   const historicSql = connection.historicSql;
   return historicSql && typeof historicSql === 'object' && !Array.isArray(historicSql)
     ? (historicSql as Record<string, unknown>)
     : null;
 }
 
-function isEnabledPostgresHistoricSql(connection: KloProjectConnectionConfig): boolean {
+function isEnabledPostgresHistoricSql(connection: KtxProjectConnectionConfig): boolean {
   const historicSql = historicSqlRecord(connection);
   return historicSql?.enabled === true && historicSql.dialect === 'postgres';
 }
 
-function isPostgresDriver(connection: KloProjectConnectionConfig): boolean {
+function isPostgresDriver(connection: KtxProjectConnectionConfig): boolean {
   const driver = String(connection.driver ?? '').toLowerCase();
   return driver === 'postgres' || driver === 'postgresql';
 }
@@ -62,7 +62,7 @@ function capabilityFailureFix(error: unknown, connectionId: string, projectDir: 
   if (error instanceof Error && error.name === 'HistoricSqlVersionUnsupportedError') {
     return 'Use PostgreSQL 14 or newer, or disable historicSql for this connection';
   }
-  return `Fix connections.${connectionId} Postgres settings, then rerun \`klo dev doctor --project-dir ${projectDir}\``;
+  return `Fix connections.${connectionId} Postgres settings, then rerun \`ktx dev doctor --project-dir ${projectDir}\``;
 }
 
 function failureDetail(error: unknown): string {
@@ -75,14 +75,14 @@ function failureDetail(error: unknown): string {
 async function defaultPostgresHistoricSqlProbe(
   input: PostgresHistoricSqlDoctorProbeInput,
 ): Promise<PostgresHistoricSqlDoctorProbeResult> {
-  const [{ PostgresPgssQueryHistoryReader }, { KloPostgresHistoricSqlQueryClient, isKloPostgresConnectionConfig }] =
-    await Promise.all([import('@klo/context/ingest'), import('@klo/connector-postgres')]);
+  const [{ PostgresPgssQueryHistoryReader }, { KtxPostgresHistoricSqlQueryClient, isKtxPostgresConnectionConfig }] =
+    await Promise.all([import('@ktx/context/ingest'), import('@ktx/connector-postgres')]);
 
-  if (!isKloPostgresConnectionConfig(input.connection)) {
+  if (!isKtxPostgresConnectionConfig(input.connection)) {
     throw new Error(`Native PostgreSQL connector cannot run driver "${input.connection.driver ?? 'unknown'}"`);
   }
 
-  const client = new KloPostgresHistoricSqlQueryClient({
+  const client = new KtxPostgresHistoricSqlQueryClient({
     connectionId: input.connectionId,
     connection: input.connection,
     env: input.env,
@@ -135,7 +135,7 @@ export async function runPostgresHistoricSqlDoctorChecks(
             checkId(connectionId),
             label,
             `pg_stat_statements ready (${result.pgServerVersion}) with warnings: ${result.warnings.join('; ')}`,
-            `Update the Postgres parameter group or config, then rerun \`klo dev doctor --project-dir ${project.projectDir}\``,
+            `Update the Postgres parameter group or config, then rerun \`ktx dev doctor --project-dir ${project.projectDir}\``,
           ),
         );
       } else {

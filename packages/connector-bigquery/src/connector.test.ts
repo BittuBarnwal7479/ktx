@@ -2,26 +2,26 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   bigQueryConnectionConfigFromConfig,
   createBigQueryLiveDatabaseIntrospection,
-  isKloBigQueryConnectionConfig,
-  type KloBigQueryClient,
-  KloBigQueryScanConnector,
-  type KloBigQueryClientFactory,
-  type KloBigQueryDataset,
-  type KloBigQueryQueryJob,
-  type KloBigQueryTableRef,
+  isKtxBigQueryConnectionConfig,
+  type KtxBigQueryClient,
+  KtxBigQueryScanConnector,
+  type KtxBigQueryClientFactory,
+  type KtxBigQueryDataset,
+  type KtxBigQueryQueryJob,
+  type KtxBigQueryTableRef,
 } from './index.js';
 
-function fakeClientFactory(): KloBigQueryClientFactory {
-  const queryResults = vi.fn(async (): ReturnType<KloBigQueryQueryJob['getQueryResults']> => [
+function fakeClientFactory(): KtxBigQueryClientFactory {
+  const queryResults = vi.fn(async (): ReturnType<KtxBigQueryQueryJob['getQueryResults']> => [
     [{ id: 1, status: 'paid' }],
     undefined,
     { schema: { fields: [{ name: 'id', type: 'INT64' }, { name: 'status', type: 'STRING' }] } },
   ]);
-  const createQueryJob = vi.fn(async (input: { query: string }): ReturnType<KloBigQueryClient['createQueryJob']> => {
+  const createQueryJob = vi.fn(async (input: { query: string }): ReturnType<KtxBigQueryClient['createQueryJob']> => {
     if (input.query.includes('INFORMATION_SCHEMA.TABLE_CONSTRAINTS')) {
       return [
         {
-          getQueryResults: async (): ReturnType<KloBigQueryQueryJob['getQueryResults']> => [
+          getQueryResults: async (): ReturnType<KtxBigQueryQueryJob['getQueryResults']> => [
             [{ table_name: 'orders', column_name: 'id' }],
             undefined,
             { schema: { fields: [{ name: 'table_name', type: 'STRING' }, { name: 'column_name', type: 'STRING' }] } },
@@ -32,7 +32,7 @@ function fakeClientFactory(): KloBigQueryClientFactory {
     if (input.query.includes('APPROX_COUNT_DISTINCT')) {
       return [
         {
-          getQueryResults: async (): ReturnType<KloBigQueryQueryJob['getQueryResults']> => [
+          getQueryResults: async (): ReturnType<KtxBigQueryQueryJob['getQueryResults']> => [
             [{ cardinality: 2 }],
             undefined,
             { schema: { fields: [{ name: 'cardinality', type: 'INT64' }] } },
@@ -43,7 +43,7 @@ function fakeClientFactory(): KloBigQueryClientFactory {
     if (input.query.includes('SELECT DISTINCT CAST')) {
       return [
         {
-          getQueryResults: async (): ReturnType<KloBigQueryQueryJob['getQueryResults']> => [
+          getQueryResults: async (): ReturnType<KtxBigQueryQueryJob['getQueryResults']> => [
             [{ val: 'open' }, { val: 'paid' }],
             undefined,
             { schema: { fields: [{ name: 'val', type: 'STRING' }] } },
@@ -54,7 +54,7 @@ function fakeClientFactory(): KloBigQueryClientFactory {
     if (input.query.includes('SELECT `status`')) {
       return [
         {
-          getQueryResults: async (): ReturnType<KloBigQueryQueryJob['getQueryResults']> => [
+          getQueryResults: async (): ReturnType<KtxBigQueryQueryJob['getQueryResults']> => [
             [{ status: 'paid' }],
             undefined,
             { schema: { fields: [{ name: 'status', type: 'STRING' }] } },
@@ -64,7 +64,7 @@ function fakeClientFactory(): KloBigQueryClientFactory {
     }
     return [{ getQueryResults: queryResults }];
   });
-  const getTable = vi.fn(async (): ReturnType<KloBigQueryTableRef['get']> => [
+  const getTable = vi.fn(async (): ReturnType<KtxBigQueryTableRef['get']> => [
     {
       metadata: {
         type: 'TABLE',
@@ -80,14 +80,14 @@ function fakeClientFactory(): KloBigQueryClientFactory {
       },
     },
   ]);
-  const tableRef: KloBigQueryTableRef = { id: 'orders', get: getTable };
+  const tableRef: KtxBigQueryTableRef = { id: 'orders', get: getTable };
   return {
     createClient: vi.fn(() => ({
-      getDatasets: vi.fn(async (): ReturnType<KloBigQueryClient['getDatasets']> => [[{ id: 'analytics' }, { id: 'staging' }]]),
+      getDatasets: vi.fn(async (): ReturnType<KtxBigQueryClient['getDatasets']> => [[{ id: 'analytics' }, { id: 'staging' }]]),
       dataset: vi.fn(
-        (datasetId: string): KloBigQueryDataset => ({
+        (datasetId: string): KtxBigQueryDataset => ({
         get: vi.fn(async () => [{ id: datasetId }]),
-        getTables: vi.fn(async (): ReturnType<KloBigQueryDataset['getTables']> => [[tableRef]]),
+        getTables: vi.fn(async (): ReturnType<KtxBigQueryDataset['getTables']> => [[tableRef]]),
       }),
       ),
       createQueryJob,
@@ -103,10 +103,10 @@ const connection = {
   readonly: true,
 };
 
-describe('KloBigQueryScanConnector', () => {
+describe('KtxBigQueryScanConnector', () => {
   it('resolves configuration safely', () => {
-    expect(isKloBigQueryConnectionConfig(connection)).toBe(true);
-    expect(isKloBigQueryConnectionConfig({ driver: 'mysql' })).toBe(false);
+    expect(isKtxBigQueryConnectionConfig(connection)).toBe(true);
+    expect(isKtxBigQueryConnectionConfig({ driver: 'mysql' })).toBe(false);
     expect(bigQueryConnectionConfigFromConfig({ connectionId: 'warehouse', connection })).toMatchObject({
       projectId: 'project-1',
       datasetIds: ['analytics'],
@@ -121,7 +121,7 @@ describe('KloBigQueryScanConnector', () => {
   });
 
   it('introspects datasets, table metadata, primary keys, and normalized types', async () => {
-    const connector = new KloBigQueryScanConnector({
+    const connector = new KtxBigQueryScanConnector({
       connectionId: 'warehouse',
       connection,
       clientFactory: fakeClientFactory(),
@@ -186,7 +186,7 @@ describe('KloBigQueryScanConnector', () => {
   });
 
   it('runs samples, read-only SQL, distinct values, dataset listing, row counts, and cleanup', async () => {
-    const connector = new KloBigQueryScanConnector({
+    const connector = new KtxBigQueryScanConnector({
       connectionId: 'warehouse',
       connection,
       clientFactory: fakeClientFactory(),
@@ -252,7 +252,7 @@ describe('KloBigQueryScanConnector', () => {
 
   it('applies maximumBytesBilled to read-only queries when configured', async () => {
     const clientFactory = fakeClientFactory();
-    const connector = new KloBigQueryScanConnector({
+    const connector = new KtxBigQueryScanConnector({
       connectionId: 'warehouse',
       connection,
       clientFactory,
@@ -266,7 +266,7 @@ describe('KloBigQueryScanConnector', () => {
       ),
     ).resolves.toMatchObject({ rows: [[1, 'paid']], rowCount: 1 });
 
-    const client = vi.mocked(clientFactory.createClient).mock.results[0]?.value as KloBigQueryClient;
+    const client = vi.mocked(clientFactory.createClient).mock.results[0]?.value as KtxBigQueryClient;
     expect(client.createQueryJob).toHaveBeenLastCalledWith(
       expect.objectContaining({
         maximumBytesBilled: '123456789',

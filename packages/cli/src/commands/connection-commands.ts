@@ -1,7 +1,7 @@
 import { type Command, InvalidArgumentError, Option } from '@commander-js/extra-typings';
 import {
   collectOption,
-  type KloCliCommandContext,
+  type KtxCliCommandContext,
   parseBooleanStringOption,
   parseNonEmptyAssignmentOption,
   parseNonNegativeIntegerOption,
@@ -10,9 +10,9 @@ import {
   resolveCommandProjectDir,
 } from '../cli-program.js';
 import { connectionAddCommandSchema } from '../command-schemas.js';
-import type { KloConnectionArgs } from '../connection.js';
+import type { KtxConnectionArgs } from '../connection.js';
 import { profileMark } from '../startup-profile.js';
-import type { KloConnectionMappingArgs } from './connection-mapping.js';
+import type { KtxConnectionMappingArgs } from './connection-mapping.js';
 import { registerConnectionMetabaseCommands } from './connection-metabase-commands.js';
 import { registerConnectionNotionCommands } from './connection-notion-commands.js';
 
@@ -42,24 +42,24 @@ function parseMappingFieldOption(value: string): 'databaseMappings' | 'connectio
   throw new InvalidArgumentError('must be databaseMappings or connectionMappings');
 }
 
-async function runConnectionArgs(context: KloCliCommandContext, args: KloConnectionArgs): Promise<void> {
-  const runner = context.deps.connection ?? (await import('../connection.js')).runKloConnection;
+async function runConnectionArgs(context: KtxCliCommandContext, args: KtxConnectionArgs): Promise<void> {
+  const runner = context.deps.connection ?? (await import('../connection.js')).runKtxConnection;
   context.setExitCode(await runner(args, context.io));
 }
 
-async function runMappingArgs(context: KloCliCommandContext, args: KloConnectionMappingArgs): Promise<void> {
-  const { runKloConnectionMapping } = await import('./connection-mapping.js');
-  context.setExitCode(await runKloConnectionMapping(args, context.io));
+async function runMappingArgs(context: KtxCliCommandContext, args: KtxConnectionMappingArgs): Promise<void> {
+  const { runKtxConnectionMapping } = await import('./connection-mapping.js');
+  context.setExitCode(await runKtxConnectionMapping(args, context.io));
 }
 
-export function registerConnectionCommands(program: Command, context: KloCliCommandContext, commandName = 'connection'): void {
+export function registerConnectionCommands(program: Command, context: KtxCliCommandContext, commandName = 'connection'): void {
   const connection = program
     .command(commandName)
     .description('Add, list, test, and map data sources')
     .showHelpAfterError()
     .addHelpText(
       'after',
-      '\nProject directory defaults to KLO_PROJECT_DIR when set, otherwise the nearest klo.yaml or current working directory.\n',
+      '\nProject directory defaults to KTX_PROJECT_DIR when set, otherwise the nearest ktx.yaml or current working directory.\n',
     );
   connection.hook('preAction', (_thisCommand, actionCommand) => {
     context.writeDebug?.(commandName, actionCommand);
@@ -75,7 +75,7 @@ export function registerConnectionCommands(program: Command, context: KloCliComm
   connection
     .command('test')
     .description('Test a configured connection')
-    .argument('<connectionId>', 'KLO connection id')
+    .argument('<connectionId>', 'KTX connection id')
     .action(async (connectionId: string, _options: unknown, command) => {
       await runConnectionArgs(context, {
         command: 'test',
@@ -88,12 +88,12 @@ export function registerConnectionCommands(program: Command, context: KloCliComm
     .command('add')
     .description('Add or replace a configured connection')
     .argument('<driver>', 'Connection driver')
-    .argument('<connectionId>', 'KLO connection id')
+    .argument('<connectionId>', 'KTX connection id')
     .option('--url <url>', 'Connection URL, env:NAME, or file:/path reference')
     .option('--schema <schema>', 'Schema to include; repeatable', collectOption, [])
     .option('--readonly', 'Mark the connection as read-only', false)
     .option('--force', 'Replace an existing connection', false)
-    .option('--allow-literal-credentials', 'Allow writing a literal credential URL to klo.yaml', false)
+    .option('--allow-literal-credentials', 'Allow writing a literal credential URL to ktx.yaml', false)
     .addOption(new Option('--token-env <name>', 'Environment variable containing Notion auth token').conflicts('tokenFile'))
     .addOption(new Option('--token-file <path>', 'File containing Notion auth token').conflicts('tokenEnv'))
     .addOption(
@@ -155,8 +155,8 @@ export function registerConnectionCommands(program: Command, context: KloCliComm
 
   connection
     .command('remove')
-    .description('Remove a configured connection from klo.yaml')
-    .argument('<connectionId>', 'KLO connection id')
+    .description('Remove a configured connection from ktx.yaml')
+    .argument('<connectionId>', 'KTX connection id')
     .option('--force', 'Remove without prompting', false)
     .option('--no-input', 'Disable interactive terminal input')
     .action(async (connectionId: string, options: { force?: boolean; input?: boolean }, command) => {
@@ -188,14 +188,14 @@ export function registerConnectionCommands(program: Command, context: KloCliComm
   registerConnectionNotionCommands(connection, context);
 }
 
-export function registerConnectionMappingCommands(connection: Command, context: KloCliCommandContext): void {
+export function registerConnectionMappingCommands(connection: Command, context: KtxCliCommandContext): void {
   const mapping = connection
     .command('mapping')
     .description('Manage Metabase warehouse mappings')
     .showHelpAfterError()
     .addHelpText(
       'after',
-      '\nProject directory defaults to KLO_PROJECT_DIR when set, otherwise the current working directory.\n',
+      '\nProject directory defaults to KTX_PROJECT_DIR when set, otherwise the current working directory.\n',
     );
 
   mapping

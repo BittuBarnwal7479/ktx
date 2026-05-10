@@ -9,7 +9,7 @@ describe('SqliteSlSourcesIndex', () => {
   let dbPath: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-sqlite-sl-index-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-sqlite-sl-index-'));
     dbPath = join(tempDir, 'db.sqlite');
   });
 

@@ -509,7 +509,7 @@ export function buildMemoryFlowViewModel(input: MemoryFlowReplayInput): MemoryFl
     : `${input.connectionId}/${input.adapter}`;
 
   return {
-    title: `KLO memory flow  ${titleSources}  ${input.status}`,
+    title: `KTX memory flow  ${titleSources}  ${input.status}`,
     subtitle: `Run ${input.runId}  Sync ${input.syncId}`,
     status: input.status,
     activeLine: activeLine(input),

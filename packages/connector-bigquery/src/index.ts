@@ -1,18 +1,18 @@
-export { KloBigQueryDialect } from './dialect.js';
+export { KtxBigQueryDialect } from './dialect.js';
 export {
   bigQueryConnectionConfigFromConfig,
-  isKloBigQueryConnectionConfig,
-  KloBigQueryScanConnector,
-  type KloBigQueryClient,
-  type KloBigQueryClientFactory,
-  type KloBigQueryColumnDistinctValuesOptions,
-  type KloBigQueryColumnDistinctValuesResult,
-  type KloBigQueryConnectionConfig,
-  type KloBigQueryDataset,
-  type KloBigQueryQueryJob,
-  type KloBigQueryReadOnlyQueryInput,
-  type KloBigQueryResolvedConnectionConfig,
-  type KloBigQueryScanConnectorOptions,
-  type KloBigQueryTableRef,
+  isKtxBigQueryConnectionConfig,
+  KtxBigQueryScanConnector,
+  type KtxBigQueryClient,
+  type KtxBigQueryClientFactory,
+  type KtxBigQueryColumnDistinctValuesOptions,
+  type KtxBigQueryColumnDistinctValuesResult,
+  type KtxBigQueryConnectionConfig,
+  type KtxBigQueryDataset,
+  type KtxBigQueryQueryJob,
+  type KtxBigQueryReadOnlyQueryInput,
+  type KtxBigQueryResolvedConnectionConfig,
+  type KtxBigQueryScanConnectorOptions,
+  type KtxBigQueryTableRef,
 } from './connector.js';
 export { createBigQueryLiveDatabaseIntrospection } from './live-database-introspection.js';

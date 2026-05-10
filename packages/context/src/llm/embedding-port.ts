@@ -1,17 +1,17 @@
-import type { KloEmbeddingProvider } from '@klo/llm';
-import type { KloEmbeddingPort as KloIngestEmbeddingPort } from '../core/embedding.js';
-import type { KloEmbeddingPort as KloScanEmbeddingPort } from '../scan/types.js';
+import type { KtxEmbeddingProvider } from '@ktx/llm';
+import type { KtxEmbeddingPort as KtxIngestEmbeddingPort } from '../core/embedding.js';
+import type { KtxEmbeddingPort as KtxScanEmbeddingPort } from '../scan/types.js';
 
-const bulkEmbeddingMethod = ['embed', 'Many'].join('') as keyof KloEmbeddingProvider;
+const bulkEmbeddingMethod = ['embed', 'Many'].join('') as keyof KtxEmbeddingProvider;
 
-function computeBulkEmbeddings(provider: KloEmbeddingProvider, texts: string[]): Promise<number[][]> {
+function computeBulkEmbeddings(provider: KtxEmbeddingProvider, texts: string[]): Promise<number[][]> {
   return (provider[bulkEmbeddingMethod] as (items: string[]) => Promise<number[][]>)(texts);
 }
 
-export class KloIngestEmbeddingPortAdapter implements KloIngestEmbeddingPort {
+export class KtxIngestEmbeddingPortAdapter implements KtxIngestEmbeddingPort {
   readonly maxBatchSize: number;
 
-  constructor(private readonly provider: KloEmbeddingProvider) {
+  constructor(private readonly provider: KtxEmbeddingProvider) {
     this.maxBatchSize = provider.maxBatchSize;
   }
 
@@ -24,11 +24,11 @@ export class KloIngestEmbeddingPortAdapter implements KloIngestEmbeddingPort {
   }
 }
 
-export class KloScanEmbeddingPortAdapter implements KloScanEmbeddingPort {
+export class KtxScanEmbeddingPortAdapter implements KtxScanEmbeddingPort {
   readonly dimensions: number;
   readonly maxBatchSize: number;
 
-  constructor(private readonly provider: KloEmbeddingProvider) {
+  constructor(private readonly provider: KtxEmbeddingProvider) {
     this.dimensions = provider.dimensions;
     this.maxBatchSize = provider.maxBatchSize;
   }

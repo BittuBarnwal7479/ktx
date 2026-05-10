@@ -11,7 +11,7 @@ import {
   type PgssBaseline,
 } from './stage-pgss.js';
 import { historicSqlManifestSchema, historicSqlMetadataSchema, historicSqlUsageSchema } from './types.js';
-import type { KloPostgresQueryClient, PostgresPgssReader, PostgresPgssRow } from './types.js';
+import type { KtxPostgresQueryClient, PostgresPgssReader, PostgresPgssRow } from './types.js';
 
 async function tempDir(prefix: string): Promise<string> {
   return mkdtemp(join(tmpdir(), prefix));
@@ -21,7 +21,7 @@ async function readJson<T>(root: string, relPath: string): Promise<T> {
   return JSON.parse(await readFile(join(root, relPath), 'utf-8')) as T;
 }
 
-function fakePgClient(): KloPostgresQueryClient {
+function fakePgClient(): KtxPostgresQueryClient {
   return {
     async executeQuery() {
       return { headers: [], rows: [] };

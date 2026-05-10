@@ -1,12 +1,12 @@
-import type { KloLocalProject } from '../project/index.js';
+import type { KtxLocalProject } from '../project/index.js';
 import { describe, expect, it, vi } from 'vitest';
 import {
   exportLocalRelationshipFeedbackLabels,
-  formatKloRelationshipFeedbackLabelsJsonl,
+  formatKtxRelationshipFeedbackLabelsJsonl,
 } from './relationship-feedback-export.js';
-import type { KloRelationshipReviewDecisionArtifact } from './relationship-review-decisions.js';
+import type { KtxRelationshipReviewDecisionArtifact } from './relationship-review-decisions.js';
 
-function projectWithFiles(files: Record<string, unknown>): KloLocalProject {
+function projectWithFiles(files: Record<string, unknown>): KtxLocalProject {
   const contentByPath = new Map(
     Object.entries(files).map(([path, value]) => [
       path,
@@ -14,7 +14,7 @@ function projectWithFiles(files: Record<string, unknown>): KloLocalProject {
     ]),
   );
   return {
-    projectDir: '/tmp/klo-project',
+    projectDir: '/tmp/ktx-project',
     fileStore: {
       async listFiles(path: string) {
         return {
@@ -33,15 +33,15 @@ function projectWithFiles(files: Record<string, unknown>): KloLocalProject {
       getFileHistory: vi.fn(),
       forWorktree: vi.fn(),
     },
-  } as unknown as KloLocalProject;
+  } as unknown as KtxLocalProject;
 }
 
 function decisionsArtifact(input: {
   connectionId: string;
   runId: string;
   syncId: string;
-  decisions: KloRelationshipReviewDecisionArtifact['decisions'];
-}): KloRelationshipReviewDecisionArtifact {
+  decisions: KtxRelationshipReviewDecisionArtifact['decisions'];
+}): KtxRelationshipReviewDecisionArtifact {
   return {
     connectionId: input.connectionId,
     runId: input.runId,
@@ -121,7 +121,7 @@ const acceptedInvoiceAccount = {
   runId: 'scan-run-b',
   syncId: 'sync-b',
   decidedAt: '2026-05-07T12:10:00.000Z',
-  reviewer: 'klo',
+  reviewer: 'ktx',
   note: null,
   from: {
     tableId: 'invoices',
@@ -232,7 +232,7 @@ describe('relationship feedback export', () => {
       now: () => new Date('2026-05-07T13:00:00.000Z'),
     });
 
-    const lines = formatKloRelationshipFeedbackLabelsJsonl(result).trim().split('\n').map((line) => JSON.parse(line));
+    const lines = formatKtxRelationshipFeedbackLabelsJsonl(result).trim().split('\n').map((line) => JSON.parse(line));
 
     expect(lines).toHaveLength(1);
     expect(lines[0]).toMatchObject({

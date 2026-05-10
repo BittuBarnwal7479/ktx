@@ -1,4 +1,4 @@
-import type { SlValidationDeps, SlValidatorPort } from '@klo/context/sl';
+import type { SlValidationDeps, SlValidatorPort } from '@ktx/context/sl';
 import type { TouchedSlSource } from '../../tools/index.js';
 
 export interface WuValidationResult {

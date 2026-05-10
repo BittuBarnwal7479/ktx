@@ -34,7 +34,7 @@ function forbiddenProductPattern() {
 }
 
 describe('ingest runtime assets', () => {
-  it('resolves every reusable ingest skill from packaged KLO assets without server fallback', async () => {
+  it('resolves every reusable ingest skill from packaged KTX assets without server fallback', async () => {
     const registry = new SkillsRegistryService({ skillsDir });
     const expected = [...new Set([...adapterSkillNames, ...adapterReconcileSkillNames])].sort();
 
@@ -48,7 +48,7 @@ describe('ingest runtime assets', () => {
     }
   });
 
-  it('loads page-triage and light-extraction prompts from packaged KLO prompt assets', async () => {
+  it('loads page-triage and light-extraction prompts from packaged KTX prompt assets', async () => {
     const prompts = new PromptService({ promptsDir, partials: [] });
 
     for (const promptName of pageTriagePromptNames) {
@@ -67,7 +67,7 @@ describe('ingest runtime assets', () => {
     await expect(prompts.loadPrompt('skills/light_extraction')).resolves.toContain('# Light Context Extraction');
   });
 
-  it('packages historic-SQL WorkUnit skill guidance from KLO assets', async () => {
+  it('packages historic-SQL WorkUnit skill guidance from KTX assets', async () => {
     const registry = new SkillsRegistryService({ skillsDir });
     const skills = await registry.listSkills(['historic_sql_ingest'], 'memory_agent');
 
@@ -100,7 +100,7 @@ describe('ingest runtime assets', () => {
     expect(body).not.toMatch(forbiddenProductPattern());
   });
 
-  it('packages historic-SQL curator reconcile guidance from KLO assets', async () => {
+  it('packages historic-SQL curator reconcile guidance from KTX assets', async () => {
     const registry = new SkillsRegistryService({ skillsDir });
     const skills = await registry.listSkills(['historic_sql_curator'], 'memory_agent');
 

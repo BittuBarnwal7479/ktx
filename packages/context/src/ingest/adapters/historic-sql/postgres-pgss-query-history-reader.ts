@@ -4,7 +4,7 @@ import {
   HistoricSqlVersionUnsupportedError,
 } from './errors.js';
 import type {
-  KloPostgresQueryClient,
+  KtxPostgresQueryClient,
   PostgresPgssProbeResult,
   PostgresPgssReader,
   PostgresPgssRow,
@@ -58,19 +58,19 @@ const POSTGRES_EXTENSION_REMEDIATION = [
 
 const POSTGRES_GRANTS_REMEDIATION = 'GRANT pg_read_all_stats TO <connection role>;';
 
-function queryClient(client: unknown): KloPostgresQueryClient {
+function queryClient(client: unknown): KtxPostgresQueryClient {
   if (
     client &&
     typeof client === 'object' &&
     'executeQuery' in client &&
     typeof (client as { executeQuery?: unknown }).executeQuery === 'function'
   ) {
-    return client as KloPostgresQueryClient;
+    return client as KtxPostgresQueryClient;
   }
   throw new Error('Historic SQL Postgres PGSS reader requires a query client with executeQuery(sql, params?)');
 }
 
-async function execute(client: KloPostgresQueryClient, sql: string, params?: unknown[]): Promise<QueryResultLike> {
+async function execute(client: KtxPostgresQueryClient, sql: string, params?: unknown[]): Promise<QueryResultLike> {
   const result = await client.executeQuery(sql, params);
   if ('error' in result && typeof result.error === 'string' && result.error.length > 0) {
     throw new Error(result.error);

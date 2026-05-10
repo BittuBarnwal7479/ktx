@@ -21,7 +21,7 @@ type MemoryRunRow = {
 };
 
 function localMemoryDbPath(projectDir: string): string {
-  return join(projectDir, '.klo', 'db.sqlite');
+  return join(projectDir, '.ktx', 'db.sqlite');
 }
 
 function isSafeRunId(runId: string): boolean {

@@ -1,30 +1,30 @@
-import type { KloLlmProvider } from '@klo/llm';
-import { generateKloText } from '../llm/index.js';
+import type { KtxLlmProvider } from '@ktx/llm';
+import { generateKtxText } from '../llm/index.js';
 import type {
-  KloColumnSampleInput,
-  KloColumnSampleResult,
-  KloScanContext,
-  KloScanLoggerPort,
-  KloTableRef,
-  KloTableSampleInput,
-  KloTableSampleResult,
+  KtxColumnSampleInput,
+  KtxColumnSampleResult,
+  KtxScanContext,
+  KtxScanLoggerPort,
+  KtxTableRef,
+  KtxTableSampleInput,
+  KtxTableSampleResult,
 } from './types.js';
 
-export interface KloDescriptionCachePort {
-  buildTableKey(table: KloTableRef): string;
-  buildColumnKey(table: KloTableRef, columnName: string): string;
+export interface KtxDescriptionCachePort {
+  buildTableKey(table: KtxTableRef): string;
+  buildColumnKey(table: KtxTableRef, columnName: string): string;
   buildConnectionKey(connectionName: string): string;
   get(key: string): Promise<string | null>;
   set(key: string, value: string): Promise<void>;
 }
 
-export interface KloDescriptionSamplingPort {
+export interface KtxDescriptionSamplingPort {
   id: string;
-  sampleColumn?(input: KloColumnSampleInput, ctx: KloScanContext): Promise<KloColumnSampleResult>;
-  sampleTable?(input: KloTableSampleInput, ctx: KloScanContext): Promise<KloTableSampleResult>;
+  sampleColumn?(input: KtxColumnSampleInput, ctx: KtxScanContext): Promise<KtxColumnSampleResult>;
+  sampleTable?(input: KtxTableSampleInput, ctx: KtxScanContext): Promise<KtxTableSampleResult>;
 }
 
-export interface KloDescriptionGenerationSettings {
+export interface KtxDescriptionGenerationSettings {
   columnMaxWords: number;
   tableMaxWords: number;
   dataSourceMaxWords: number;
@@ -32,7 +32,7 @@ export interface KloDescriptionGenerationSettings {
   concurrencyLimit?: number;
 }
 
-interface ResolvedKloDescriptionGenerationSettings {
+interface ResolvedKtxDescriptionGenerationSettings {
   columnMaxWords: number;
   tableMaxWords: number;
   dataSourceMaxWords: number;
@@ -40,28 +40,28 @@ interface ResolvedKloDescriptionGenerationSettings {
   concurrencyLimit: number;
 }
 
-export interface KloDescriptionColumn {
+export interface KtxDescriptionColumn {
   name: string;
   type?: string;
   rawDescriptions?: Record<string, string>;
   sampleValues?: unknown[];
 }
 
-export interface KloDescriptionColumnTable extends KloTableRef {
-  columns: KloDescriptionColumn[];
+export interface KtxDescriptionColumnTable extends KtxTableRef {
+  columns: KtxDescriptionColumn[];
 }
 
-export interface KloDescriptionTableInput extends KloTableRef {
+export interface KtxDescriptionTableInput extends KtxTableRef {
   rawDescriptions?: Record<string, string>;
 }
 
-export interface KloColumnAnalysisResult {
+export interface KtxColumnAnalysisResult {
   columnDescriptions: Array<[string, string | null]>;
   processedColumns: string[];
   skippedColumns: string[];
 }
 
-export interface KloColumnDescriptionPromptInput {
+export interface KtxColumnDescriptionPromptInput {
   columnName: string;
   columnValues: unknown[];
   tableContext: string;
@@ -70,51 +70,51 @@ export interface KloColumnDescriptionPromptInput {
   rawDescriptions?: Record<string, string>;
 }
 
-export interface KloTableDescriptionPromptInput {
+export interface KtxTableDescriptionPromptInput {
   tableName: string;
-  sampleData: KloTableSampleResult;
+  sampleData: KtxTableSampleResult;
   dataSourceType: string;
   rawDescriptions?: Record<string, string>;
 }
 
-export interface KloDataSourceDescriptionPromptInput {
-  tableSamples: Array<[string, KloTableSampleResult]>;
+export interface KtxDataSourceDescriptionPromptInput {
+  tableSamples: Array<[string, KtxTableSampleResult]>;
   dataSourceType: string;
 }
 
-export interface KloGenerateColumnDescriptionsInput {
+export interface KtxGenerateColumnDescriptionsInput {
   connectionId: string;
-  connector: KloDescriptionSamplingPort;
-  context: KloScanContext;
+  connector: KtxDescriptionSamplingPort;
+  context: KtxScanContext;
   dataSourceType: string;
   supportsNestedAnalysis: boolean;
-  table: KloDescriptionColumnTable;
+  table: KtxDescriptionColumnTable;
   skipExisting?: boolean;
   existingDescriptions?: Record<string, string | null>;
 }
 
-export interface KloGenerateTableDescriptionInput {
+export interface KtxGenerateTableDescriptionInput {
   connectionId: string;
-  connector: KloDescriptionSamplingPort;
-  context: KloScanContext;
+  connector: KtxDescriptionSamplingPort;
+  context: KtxScanContext;
   dataSourceType: string;
-  table: KloDescriptionTableInput;
+  table: KtxDescriptionTableInput;
 }
 
-export interface KloGenerateDataSourceDescriptionInput {
+export interface KtxGenerateDataSourceDescriptionInput {
   connectionId: string;
-  connector: KloDescriptionSamplingPort;
-  context: KloScanContext;
+  connector: KtxDescriptionSamplingPort;
+  context: KtxScanContext;
   dataSourceType: string;
-  tables: KloTableRef[];
+  tables: KtxTableRef[];
   connectionName?: string;
 }
 
-export interface KloDescriptionGeneratorOptions {
-  llmProvider: KloLlmProvider;
-  cache?: KloDescriptionCachePort;
-  logger?: KloScanLoggerPort;
-  settings: KloDescriptionGenerationSettings;
+export interface KtxDescriptionGeneratorOptions {
+  llmProvider: KtxLlmProvider;
+  cache?: KtxDescriptionCachePort;
+  logger?: KtxScanLoggerPort;
+  settings: KtxDescriptionGenerationSettings;
 }
 
 interface ColumnTaskResult {
@@ -136,7 +136,7 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-function toTableRef(table: KloTableRef): KloTableRef {
+function toTableRef(table: KtxTableRef): KtxTableRef {
   return {
     catalog: table.catalog,
     db: table.db,
@@ -169,11 +169,11 @@ async function runWithConcurrency<TInput, TOutput>(
   return results;
 }
 
-export function appendKloWordLimitInstruction(prompt: string, maxWords: number): string {
+export function appendKtxWordLimitInstruction(prompt: string, maxWords: number): string {
   return `${prompt}\n\nPlease provide a concise description in ${maxWords} words or less.`;
 }
 
-export function buildKloColumnDescriptionPrompt(input: KloColumnDescriptionPromptInput): string {
+export function buildKtxColumnDescriptionPrompt(input: KtxColumnDescriptionPromptInput): string {
   const sampleValues = input.columnValues.slice(0, 5);
   const valuesStr = sampleValues
     .filter((value) => value !== null && value !== undefined)
@@ -221,7 +221,7 @@ Example:
   return prompt.trim();
 }
 
-export function buildKloTableDescriptionPrompt(input: KloTableDescriptionPromptInput): string {
+export function buildKtxTableDescriptionPrompt(input: KtxTableDescriptionPromptInput): string {
   const columnInfo: string[] = [];
   for (let index = 0; index < Math.min(input.sampleData.headers.length, 10); index += 1) {
     const header = input.sampleData.headers[index];
@@ -268,7 +268,7 @@ export function buildKloTableDescriptionPrompt(input: KloTableDescriptionPromptI
   return prompt.trim();
 }
 
-export function buildKloDataSourceDescriptionPrompt(input: KloDataSourceDescriptionPromptInput): string {
+export function buildKtxDataSourceDescriptionPrompt(input: KtxDataSourceDescriptionPromptInput): string {
   const tablesText = input.tableSamples
     .map(
       ([tableName, sampleData]) =>
@@ -301,13 +301,13 @@ export function buildKloDataSourceDescriptionPrompt(input: KloDataSourceDescript
   return prompt.trim();
 }
 
-export class KloDescriptionGenerator {
-  private readonly llmProvider: KloLlmProvider;
-  private readonly cache?: KloDescriptionCachePort;
-  private readonly logger?: KloScanLoggerPort;
-  private readonly settings: ResolvedKloDescriptionGenerationSettings;
+export class KtxDescriptionGenerator {
+  private readonly llmProvider: KtxLlmProvider;
+  private readonly cache?: KtxDescriptionCachePort;
+  private readonly logger?: KtxScanLoggerPort;
+  private readonly settings: ResolvedKtxDescriptionGenerationSettings;
 
-  constructor(options: KloDescriptionGeneratorOptions) {
+  constructor(options: KtxDescriptionGeneratorOptions) {
     this.llmProvider = options.llmProvider;
     this.cache = options.cache;
     this.logger = options.logger;
@@ -320,7 +320,7 @@ export class KloDescriptionGenerator {
     };
   }
 
-  async generateColumnDescriptions(input: KloGenerateColumnDescriptionsInput): Promise<KloColumnAnalysisResult> {
+  async generateColumnDescriptions(input: KtxGenerateColumnDescriptionsInput): Promise<KtxColumnAnalysisResult> {
     const columnsToProcess = input.table.columns;
     const tableContext = `Table: ${input.table.name} | Columns: ${columnsToProcess.map((column) => column.name).join(', ')} | Data source: ${input.dataSourceType}`;
 
@@ -348,7 +348,7 @@ export class KloDescriptionGenerator {
     };
   }
 
-  async generateTableDescription(input: KloGenerateTableDescriptionInput): Promise<string> {
+  async generateTableDescription(input: KtxGenerateTableDescriptionInput): Promise<string> {
     const tableRef = toTableRef(input.table);
     const cacheKey = this.cache?.buildTableKey(tableRef);
     if (cacheKey) {
@@ -359,7 +359,7 @@ export class KloDescriptionGenerator {
     }
 
     if (!input.connector.sampleTable) {
-      this.logger?.warn('KLO scan connector does not support table sampling for table description generation', {
+      this.logger?.warn('KTX scan connector does not support table sampling for table description generation', {
         connectorId: input.connector.id,
         table: input.table.name,
       });
@@ -375,7 +375,7 @@ export class KloDescriptionGenerator {
         },
         input.context,
       );
-      const prompt = buildKloTableDescriptionPrompt({
+      const prompt = buildKtxTableDescriptionPrompt({
         tableName: input.table.name,
         sampleData,
         dataSourceType: input.dataSourceType,
@@ -384,7 +384,7 @@ export class KloDescriptionGenerator {
       const description = await this.generateAiDescription(
         prompt,
         this.settings.tableMaxWords,
-        'klo-table-description',
+        'ktx-table-description',
       );
       if (cacheKey) {
         await this.cache?.set(cacheKey, description);
@@ -396,7 +396,7 @@ export class KloDescriptionGenerator {
     }
   }
 
-  async generateDataSourceDescription(input: KloGenerateDataSourceDescriptionInput): Promise<string> {
+  async generateDataSourceDescription(input: KtxGenerateDataSourceDescriptionInput): Promise<string> {
     if (input.tables.length === 0) {
       return 'No tables found in database';
     }
@@ -410,7 +410,7 @@ export class KloDescriptionGenerator {
     }
 
     if (!input.connector.sampleTable) {
-      this.logger?.warn('KLO scan connector does not support table sampling for data-source description generation', {
+      this.logger?.warn('KTX scan connector does not support table sampling for data-source description generation', {
         connectorId: input.connector.id,
       });
       return 'No accessible tables found in database';
@@ -427,7 +427,7 @@ export class KloDescriptionGenerator {
           },
           input.context,
         );
-        return [table.name, sampleData] as [string, KloTableSampleResult];
+        return [table.name, sampleData] as [string, KtxTableSampleResult];
       } catch (error) {
         this.logger?.warn(`Failed to sample table '${table.name}' for data source analysis - ${errorMessage(error)}`);
         return null;
@@ -435,21 +435,21 @@ export class KloDescriptionGenerator {
     });
 
     const accessibleSamples = tableSamples.filter(
-      (sample): sample is [string, KloTableSampleResult] => sample !== null,
+      (sample): sample is [string, KtxTableSampleResult] => sample !== null,
     );
     if (accessibleSamples.length === 0) {
       return 'No accessible tables found in database';
     }
 
     try {
-      const prompt = buildKloDataSourceDescriptionPrompt({
+      const prompt = buildKtxDataSourceDescriptionPrompt({
         tableSamples: accessibleSamples,
         dataSourceType: input.dataSourceType,
       });
       const description = await this.generateAiDescription(
         prompt,
         this.settings.dataSourceMaxWords,
-        'klo-data-source-description',
+        'ktx-data-source-description',
       );
       if (cacheKey) {
         await this.cache?.set(cacheKey, description);
@@ -462,8 +462,8 @@ export class KloDescriptionGenerator {
   }
 
   private async generateOneColumnDescription(
-    input: KloGenerateColumnDescriptionsInput,
-    column: KloDescriptionColumn,
+    input: KtxGenerateColumnDescriptionsInput,
+    column: KtxDescriptionColumn,
     tableContext: string,
   ): Promise<ColumnTaskResult> {
     const existingDescription = input.existingDescriptions?.[column.name];
@@ -494,7 +494,7 @@ export class KloDescriptionGenerator {
       let columnValues = column.sampleValues;
       if (!columnValues || columnValues.length === 0) {
         if (!input.connector.sampleColumn) {
-          this.logger?.warn('KLO scan connector does not support column sampling for column description generation', {
+          this.logger?.warn('KTX scan connector does not support column sampling for column description generation', {
             connectorId: input.connector.id,
             table: input.table.name,
             column: column.name,
@@ -529,7 +529,7 @@ export class KloDescriptionGenerator {
         };
       }
 
-      const prompt = buildKloColumnDescriptionPrompt({
+      const prompt = buildKtxColumnDescriptionPrompt({
         columnName: column.name,
         columnValues: nonNullValues,
         tableContext,
@@ -540,7 +540,7 @@ export class KloDescriptionGenerator {
       const description = await this.generateAiDescription(
         prompt,
         this.settings.columnMaxWords,
-        'klo-column-description',
+        'ktx-column-description',
       );
 
       if (cacheKey) {
@@ -566,10 +566,10 @@ export class KloDescriptionGenerator {
 
   private async generateAiDescription(prompt: string, maxWords: number, _operationName: string): Promise<string> {
     try {
-      const text = await generateKloText({
+      const text = await generateKtxText({
         llmProvider: this.llmProvider,
         role: 'candidateExtraction',
-        prompt: appendKloWordLimitInstruction(prompt, maxWords),
+        prompt: appendKtxWordLimitInstruction(prompt, maxWords),
         temperature: this.settings.temperature,
       });
       const description = text.trim();

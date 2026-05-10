@@ -6,30 +6,30 @@ import { gunzipSync } from 'node:zlib';
 import Database from 'better-sqlite3';
 import YAML from 'yaml';
 import { z } from 'zod';
-import type { KloEnrichedRelationship, KloEnrichedSchema, KloRelationshipType } from './enrichment-types.js';
-import { snapshotToKloEnrichedSchema } from './local-enrichment.js';
-import type { KloRelationshipDiscoveryCandidate } from './relationship-candidates.js';
+import type { KtxEnrichedRelationship, KtxEnrichedSchema, KtxRelationshipType } from './enrichment-types.js';
+import { snapshotToKtxEnrichedSchema } from './local-enrichment.js';
+import type { KtxRelationshipDiscoveryCandidate } from './relationship-candidates.js';
 import {
-  generateKloRelationshipDiscoveryCandidates,
-  mergeKloRelationshipDiscoveryCandidates,
+  generateKtxRelationshipDiscoveryCandidates,
+  mergeKtxRelationshipDiscoveryCandidates,
 } from './relationship-candidates.js';
-import type { KloLlmProvider } from '@klo/llm';
-import { proposeKloRelationshipCandidatesWithLlm } from './relationship-llm-proposal.js';
+import type { KtxLlmProvider } from '@ktx/llm';
+import { proposeKtxRelationshipCandidatesWithLlm } from './relationship-llm-proposal.js';
 import {
-  discoverKloCompositeRelationships,
-  type KloCompositePrimaryKeyCandidate,
-  type KloCompositeRelationshipCandidate,
+  discoverKtxCompositeRelationships,
+  type KtxCompositePrimaryKeyCandidate,
+  type KtxCompositeRelationshipCandidate,
 } from './relationship-composite-candidates.js';
-import { emptyKloRelationshipProfileArtifact } from './relationship-diagnostics.js';
-import { collectKloFormalMetadataRelationships } from './relationship-formal-metadata.js';
-import { resolveKloRelationshipGraph } from './relationship-graph-resolver.js';
-import { type KloRelationshipReadOnlyExecutor, profileKloRelationshipSchema } from './relationship-profiling.js';
-import type { KloRelationshipValidationBudget } from './relationship-budget.js';
-import type { KloRelationshipFixtureOrigin } from './relationship-scoring.js';
-import { validateKloRelationshipDiscoveryCandidates } from './relationship-validation.js';
-import type { KloQueryResult, KloReadOnlyQueryInput, KloScanContext, KloSchemaSnapshot } from './types.js';
+import { emptyKtxRelationshipProfileArtifact } from './relationship-diagnostics.js';
+import { collectKtxFormalMetadataRelationships } from './relationship-formal-metadata.js';
+import { resolveKtxRelationshipGraph } from './relationship-graph-resolver.js';
+import { type KtxRelationshipReadOnlyExecutor, profileKtxRelationshipSchema } from './relationship-profiling.js';
+import type { KtxRelationshipValidationBudget } from './relationship-budget.js';
+import type { KtxRelationshipFixtureOrigin } from './relationship-scoring.js';
+import { validateKtxRelationshipDiscoveryCandidates } from './relationship-validation.js';
+import type { KtxQueryResult, KtxReadOnlyQueryInput, KtxScanContext, KtxSchemaSnapshot } from './types.js';
 
-export const KLO_RELATIONSHIP_BENCHMARK_MODES = [
+export const KTX_RELATIONSHIP_BENCHMARK_MODES = [
   'metadata_present',
   'declared_fks_removed',
   'declared_pks_removed',
@@ -40,87 +40,87 @@ export const KLO_RELATIONSHIP_BENCHMARK_MODES = [
   'embeddings_disabled',
 ] as const;
 
-export type KloRelationshipBenchmarkMode = (typeof KLO_RELATIONSHIP_BENCHMARK_MODES)[number];
+export type KtxRelationshipBenchmarkMode = (typeof KTX_RELATIONSHIP_BENCHMARK_MODES)[number];
 
-export const KLO_RELATIONSHIP_BENCHMARK_TIERS = ['unit', 'row_bearing', 'schema_only', 'smoke', 'product'] as const;
+export const KTX_RELATIONSHIP_BENCHMARK_TIERS = ['unit', 'row_bearing', 'schema_only', 'smoke', 'product'] as const;
 
-export type KloRelationshipBenchmarkTier = (typeof KLO_RELATIONSHIP_BENCHMARK_TIERS)[number];
+export type KtxRelationshipBenchmarkTier = (typeof KTX_RELATIONSHIP_BENCHMARK_TIERS)[number];
 
-export type KloRelationshipBenchmarkStatus = 'accepted' | 'review' | 'rejected';
+export type KtxRelationshipBenchmarkStatus = 'accepted' | 'review' | 'rejected';
 
-export interface KloRelationshipBenchmarkExpectedPk {
+export interface KtxRelationshipBenchmarkExpectedPk {
   table: string;
   columns: string[];
 }
 
-export interface KloRelationshipBenchmarkExpectedLink {
+export interface KtxRelationshipBenchmarkExpectedLink {
   fromTable: string;
   fromColumns: string[];
   toTable: string;
   toColumns: string[];
-  relationship: KloRelationshipType;
+  relationship: KtxRelationshipType;
 }
 
-export interface KloRelationshipBenchmarkExpectedLinks {
-  expectedPks: KloRelationshipBenchmarkExpectedPk[];
-  expectedLinks: KloRelationshipBenchmarkExpectedLink[];
+export interface KtxRelationshipBenchmarkExpectedLinks {
+  expectedPks: KtxRelationshipBenchmarkExpectedPk[];
+  expectedLinks: KtxRelationshipBenchmarkExpectedLink[];
 }
 
-export interface KloRelationshipBenchmarkFixture {
+export interface KtxRelationshipBenchmarkFixture {
   id: string;
   name: string;
-  tier: KloRelationshipBenchmarkTier;
-  origin: KloRelationshipFixtureOrigin;
+  tier: KtxRelationshipBenchmarkTier;
+  origin: KtxRelationshipFixtureOrigin;
   thresholdEligible?: boolean;
-  validationBudget?: KloRelationshipValidationBudget;
-  snapshot: KloSchemaSnapshot;
-  expected: KloRelationshipBenchmarkExpectedLinks;
-  defaultModes: KloRelationshipBenchmarkMode[];
+  validationBudget?: KtxRelationshipValidationBudget;
+  snapshot: KtxSchemaSnapshot;
+  expected: KtxRelationshipBenchmarkExpectedLinks;
+  defaultModes: KtxRelationshipBenchmarkMode[];
   dataPath: string | null;
   columnEmbeddings: Record<string, number[]>;
 }
 
-export interface KloRelationshipBenchmarkDetectedPk {
+export interface KtxRelationshipBenchmarkDetectedPk {
   table: string;
   columns: string[];
   score: number;
-  status: KloRelationshipBenchmarkStatus;
+  status: KtxRelationshipBenchmarkStatus;
 }
 
-export interface KloRelationshipBenchmarkDetectedLink {
+export interface KtxRelationshipBenchmarkDetectedLink {
   fromTable: string;
   fromColumns: string[];
   toTable: string;
   toColumns: string[];
-  relationship: KloRelationshipType;
+  relationship: KtxRelationshipType;
   score: number;
-  status: KloRelationshipBenchmarkStatus;
+  status: KtxRelationshipBenchmarkStatus;
   source: string;
 }
 
-export interface KloRelationshipBenchmarkDetectorResult {
-  pks: KloRelationshipBenchmarkDetectedPk[];
-  links: KloRelationshipBenchmarkDetectedLink[];
+export interface KtxRelationshipBenchmarkDetectorResult {
+  pks: KtxRelationshipBenchmarkDetectedPk[];
+  links: KtxRelationshipBenchmarkDetectedLink[];
   validationBlocked: boolean;
   sqlQueries: number;
   llmCalls: number;
   runtimeSeconds: number;
 }
 
-export interface KloRelationshipBenchmarkDetectorInput {
+export interface KtxRelationshipBenchmarkDetectorInput {
   fixtureId: string;
-  mode: KloRelationshipBenchmarkMode;
-  snapshot: KloSchemaSnapshot;
-  schema: KloEnrichedSchema;
+  mode: KtxRelationshipBenchmarkMode;
+  snapshot: KtxSchemaSnapshot;
+  schema: KtxEnrichedSchema;
   dataPath: string | null;
-  validationBudget?: KloRelationshipValidationBudget;
+  validationBudget?: KtxRelationshipValidationBudget;
 }
 
-export interface KloRelationshipBenchmarkDetector {
-  detect(input: KloRelationshipBenchmarkDetectorInput): Promise<KloRelationshipBenchmarkDetectorResult>;
+export interface KtxRelationshipBenchmarkDetector {
+  detect(input: KtxRelationshipBenchmarkDetectorInput): Promise<KtxRelationshipBenchmarkDetectorResult>;
 }
 
-export interface KloRelationshipBenchmarkMetrics {
+export interface KtxRelationshipBenchmarkMetrics {
   pkPrecision: number;
   pkRecall: number;
   pkF1: number;
@@ -135,10 +135,10 @@ export interface KloRelationshipBenchmarkMetrics {
   llmCalls: number;
 }
 
-export interface KloRelationshipBenchmarkCaseResult {
+export interface KtxRelationshipBenchmarkCaseResult {
   fixtureId: string;
-  mode: KloRelationshipBenchmarkMode;
-  metrics: KloRelationshipBenchmarkMetrics;
+  mode: KtxRelationshipBenchmarkMode;
+  metrics: KtxRelationshipBenchmarkMetrics;
   expected: {
     pk: string[];
     fk: string[];
@@ -164,8 +164,8 @@ export interface KloRelationshipBenchmarkCaseResult {
   validationBlocked: boolean;
 }
 
-export interface KloRelationshipBenchmarkSuiteResult {
-  cases: KloRelationshipBenchmarkCaseResult[];
+export interface KtxRelationshipBenchmarkSuiteResult {
+  cases: KtxRelationshipBenchmarkCaseResult[];
   validationBlockedCases: string[];
   aggregate: {
     caseCount: number;
@@ -179,7 +179,7 @@ export interface KloRelationshipBenchmarkSuiteResult {
   };
 }
 
-class KloRelationshipBenchmarkSqliteExecutor implements KloRelationshipReadOnlyExecutor {
+class KtxRelationshipBenchmarkSqliteExecutor implements KtxRelationshipReadOnlyExecutor {
   private readonly db: Database.Database;
   queryCount = 0;
 
@@ -187,7 +187,7 @@ class KloRelationshipBenchmarkSqliteExecutor implements KloRelationshipReadOnlyE
     this.db = new Database(dataPath, { readonly: true, fileMustExist: true });
   }
 
-  async executeReadOnly(input: KloReadOnlyQueryInput, _ctx: KloScanContext): Promise<KloQueryResult> {
+  async executeReadOnly(input: KtxReadOnlyQueryInput, _ctx: KtxScanContext): Promise<KtxQueryResult> {
     this.queryCount += 1;
     const rows = this.db.prepare(input.sql).all() as Record<string, unknown>[];
     const headers = Object.keys(rows[0] ?? {});
@@ -236,7 +236,7 @@ async function fixtureDataPath(fixtureDir: string): Promise<string | null> {
       return null;
     }
     const digest = createHash('sha256').update(fixtureDir).digest('hex').slice(0, 16);
-    const tempRoot = await mkdtemp(join(tmpdir(), `klo-relationship-benchmark-${digest}-`));
+    const tempRoot = await mkdtemp(join(tmpdir(), `ktx-relationship-benchmark-${digest}-`));
     const extractedPath = join(tempRoot, 'data.sqlite');
     await writeFile(extractedPath, gunzipSync(await readFile(compressedPath)));
     return extractedPath;
@@ -266,8 +266,8 @@ async function fixtureColumnEmbeddings(fixtureDir: string): Promise<Record<strin
   }
 }
 
-const modeSchema = z.enum(KLO_RELATIONSHIP_BENCHMARK_MODES);
-const tierSchema = z.enum(KLO_RELATIONSHIP_BENCHMARK_TIERS);
+const modeSchema = z.enum(KTX_RELATIONSHIP_BENCHMARK_MODES);
+const tierSchema = z.enum(KTX_RELATIONSHIP_BENCHMARK_TIERS);
 const originSchema = z.enum(['synthetic', 'public', 'customer']);
 const validationBudgetSchema = z.union([z.literal('all'), z.number().int().nonnegative()]);
 
@@ -307,21 +307,21 @@ function tupleKey(columns: readonly string[]): string {
   return `(${columns.join(',')})`;
 }
 
-function pkKey(pk: Pick<KloRelationshipBenchmarkExpectedPk, 'table' | 'columns'>): string {
+function pkKey(pk: Pick<KtxRelationshipBenchmarkExpectedPk, 'table' | 'columns'>): string {
   return `${pk.table}.${tupleKey(pk.columns)}`;
 }
 
 function fkKey(
-  link: Pick<KloRelationshipBenchmarkExpectedLink, 'fromTable' | 'fromColumns' | 'toTable' | 'toColumns'>,
+  link: Pick<KtxRelationshipBenchmarkExpectedLink, 'fromTable' | 'fromColumns' | 'toTable' | 'toColumns'>,
 ): string {
   return `${link.fromTable}.${tupleKey(link.fromColumns)}->${link.toTable}.${tupleKey(link.toColumns)}`;
 }
 
-function relationshipKey(link: KloRelationshipBenchmarkDetectedLink): string {
+function relationshipKey(link: KtxRelationshipBenchmarkDetectedLink): string {
   return fkKey(link);
 }
 
-function relationshipToBenchmarkLink(candidate: KloEnrichedRelationship): KloRelationshipBenchmarkDetectedLink {
+function relationshipToBenchmarkLink(candidate: KtxEnrichedRelationship): KtxRelationshipBenchmarkDetectedLink {
   return {
     fromTable: candidate.from.table.name,
     fromColumns: candidate.from.columns,
@@ -335,8 +335,8 @@ function relationshipToBenchmarkLink(candidate: KloEnrichedRelationship): KloRel
 }
 
 function broadCandidateToBenchmarkLink(
-  candidate: Pick<KloRelationshipDiscoveryCandidate, 'confidence' | 'from' | 'relationshipType' | 'source' | 'to'>,
-): KloRelationshipBenchmarkDetectedLink {
+  candidate: Pick<KtxRelationshipDiscoveryCandidate, 'confidence' | 'from' | 'relationshipType' | 'source' | 'to'>,
+): KtxRelationshipBenchmarkDetectedLink {
   return {
     fromTable: candidate.from.table.name,
     fromColumns: candidate.from.columns,
@@ -349,7 +349,7 @@ function broadCandidateToBenchmarkLink(
   };
 }
 
-function compositePkToBenchmarkPk(candidate: KloCompositePrimaryKeyCandidate): KloRelationshipBenchmarkDetectedPk {
+function compositePkToBenchmarkPk(candidate: KtxCompositePrimaryKeyCandidate): KtxRelationshipBenchmarkDetectedPk {
   return {
     table: candidate.table.name,
     columns: candidate.columns,
@@ -359,8 +359,8 @@ function compositePkToBenchmarkPk(candidate: KloCompositePrimaryKeyCandidate): K
 }
 
 function compositeRelationshipToBenchmarkLink(
-  candidate: KloCompositeRelationshipCandidate,
-): KloRelationshipBenchmarkDetectedLink {
+  candidate: KtxCompositeRelationshipCandidate,
+): KtxRelationshipBenchmarkDetectedLink {
   return {
     fromTable: candidate.from.table.name,
     fromColumns: candidate.from.columns,
@@ -391,30 +391,30 @@ function intersectionSize(left: readonly string[], right: readonly string[]): nu
   return left.filter((item) => rightSet.has(item)).length;
 }
 
-function compositePkKeys(expected: KloRelationshipBenchmarkExpectedLinks): string[] {
+function compositePkKeys(expected: KtxRelationshipBenchmarkExpectedLinks): string[] {
   return sortedUnique(expected.expectedPks.filter((pk) => pk.columns.length > 1).map(pkKey));
 }
 
-function compositeFkKeys(expected: KloRelationshipBenchmarkExpectedLinks): string[] {
+function compositeFkKeys(expected: KtxRelationshipBenchmarkExpectedLinks): string[] {
   return sortedUnique(
     expected.expectedLinks.filter((link) => link.fromColumns.length > 1 || link.toColumns.length > 1).map(fkKey),
   );
 }
 
-function scalarExpectedPkKeys(expected: KloRelationshipBenchmarkExpectedLinks): string[] {
+function scalarExpectedPkKeys(expected: KtxRelationshipBenchmarkExpectedLinks): string[] {
   return sortedUnique(expected.expectedPks.map(pkKey));
 }
 
-function scalarExpectedFkKeys(expected: KloRelationshipBenchmarkExpectedLinks): string[] {
+function scalarExpectedFkKeys(expected: KtxRelationshipBenchmarkExpectedLinks): string[] {
   return sortedUnique(expected.expectedLinks.map(fkKey));
 }
 
 function scoreBenchmarkCase(input: {
   fixtureId: string;
-  mode: KloRelationshipBenchmarkMode;
-  expected: KloRelationshipBenchmarkExpectedLinks;
-  detected: KloRelationshipBenchmarkDetectorResult;
-}): KloRelationshipBenchmarkCaseResult {
+  mode: KtxRelationshipBenchmarkMode;
+  expected: KtxRelationshipBenchmarkExpectedLinks;
+  detected: KtxRelationshipBenchmarkDetectorResult;
+}): KtxRelationshipBenchmarkCaseResult {
   const expectedPk = scalarExpectedPkKeys(input.expected);
   const expectedFk = scalarExpectedFkKeys(input.expected);
   const predictedPk = sortedUnique(input.detected.pks.map(pkKey));
@@ -478,10 +478,10 @@ function scoreBenchmarkCase(input: {
   };
 }
 
-export function maskKloRelationshipBenchmarkSnapshot(
-  snapshot: KloSchemaSnapshot,
-  mode: KloRelationshipBenchmarkMode,
-): KloSchemaSnapshot {
+export function maskKtxRelationshipBenchmarkSnapshot(
+  snapshot: KtxSchemaSnapshot,
+  mode: KtxRelationshipBenchmarkMode,
+): KtxSchemaSnapshot {
   const relationshipDiscoveryMode =
     mode === 'declared_pks_and_declared_fks_removed' ||
     mode === 'llm_disabled' ||
@@ -506,9 +506,9 @@ export function maskKloRelationshipBenchmarkSnapshot(
   };
 }
 
-export function isKloRelationshipBenchmarkTuningEligible(input: {
-  fixture: Pick<KloRelationshipBenchmarkFixture, 'tier' | 'thresholdEligible'>;
-  mode: KloRelationshipBenchmarkMode;
+export function isKtxRelationshipBenchmarkTuningEligible(input: {
+  fixture: Pick<KtxRelationshipBenchmarkFixture, 'tier' | 'thresholdEligible'>;
+  mode: KtxRelationshipBenchmarkMode;
   validationBlocked: boolean;
 }): boolean {
   if (input.validationBlocked || input.mode !== 'declared_pks_and_declared_fks_removed') {
@@ -526,49 +526,49 @@ export function isKloRelationshipBenchmarkTuningEligible(input: {
   return input.fixture.tier === 'unit' || input.fixture.tier === 'row_bearing';
 }
 
-export function kloRelationshipBenchmarkDetectorWithLlm(
-  llmProvider: KloLlmProvider,
-): KloRelationshipBenchmarkDetector {
+export function ktxRelationshipBenchmarkDetectorWithLlm(
+  llmProvider: KtxLlmProvider,
+): KtxRelationshipBenchmarkDetector {
   return {
     async detect(input) {
       const startedAt = performance.now();
-      const formalMetadata = collectKloFormalMetadataRelationships(input.schema);
+      const formalMetadata = collectKtxFormalMetadataRelationships(input.schema);
       const formalLinks = formalMetadata.accepted.map((relationship) => relationshipToBenchmarkLink(relationship));
       const acceptedKeys = new Set(formalLinks.map(fkKey));
       const sqliteDataAvailable = Boolean(input.dataPath && input.snapshot.driver === 'sqlite');
       const profilingExecutor =
         sqliteDataAvailable && input.mode !== 'profiling_disabled'
-          ? new KloRelationshipBenchmarkSqliteExecutor(input.dataPath as string)
+          ? new KtxRelationshipBenchmarkSqliteExecutor(input.dataPath as string)
           : null;
       const validationExecutor = profilingExecutor && input.mode !== 'validation_disabled' ? profilingExecutor : null;
       const profiles =
         input.mode === 'profiling_disabled'
-          ? emptyKloRelationshipProfileArtifact({
+          ? emptyKtxRelationshipProfileArtifact({
               connectionId: input.snapshot.connectionId,
               driver: input.snapshot.driver,
               reason: 'relationship_benchmark_profiling_disabled',
             })
-          : await profileKloRelationshipSchema({
+          : await profileKtxRelationshipSchema({
               connectionId: input.snapshot.connectionId,
               driver: input.snapshot.driver,
               schema: input.schema,
               executor: profilingExecutor,
               ctx: { runId: `relationship-benchmark:${input.fixtureId}:${input.mode}:profile` },
             });
-      const broadRelationshipCandidates = generateKloRelationshipDiscoveryCandidates(input.schema, {
+      const broadRelationshipCandidates = generateKtxRelationshipDiscoveryCandidates(input.schema, {
         profiles,
         useEmbeddings: input.mode !== 'embeddings_disabled',
       });
       const llmProposalResult =
         input.mode === 'llm_disabled'
           ? { candidates: [], warnings: [], llmCalls: 0, summary: 'skipped' as const }
-          : await proposeKloRelationshipCandidatesWithLlm({
+          : await proposeKtxRelationshipCandidatesWithLlm({
               connectionId: input.snapshot.connectionId,
               schema: input.schema,
               profile: profiles,
               llmProvider,
             });
-      const candidates = mergeKloRelationshipDiscoveryCandidates([
+      const candidates = mergeKtxRelationshipDiscoveryCandidates([
         ...broadRelationshipCandidates,
         ...llmProposalResult.candidates,
       ]);
@@ -578,7 +578,7 @@ export function kloRelationshipBenchmarkDetectorWithLlm(
           : input.validationBudget === undefined
             ? 'all'
             : Math.max(0, input.validationBudget - profiles.queryCount);
-      const validatedBroadCandidates = await validateKloRelationshipDiscoveryCandidates({
+      const validatedBroadCandidates = await validateKtxRelationshipDiscoveryCandidates({
         connectionId: input.snapshot.connectionId,
         driver: input.snapshot.driver,
         candidates,
@@ -595,7 +595,7 @@ export function kloRelationshipBenchmarkDetectorWithLlm(
         validationExecutor &&
         input.mode !== 'profiling_disabled' &&
         input.mode !== 'validation_disabled'
-          ? await discoverKloCompositeRelationships({
+          ? await discoverKtxCompositeRelationships({
               connectionId: input.snapshot.connectionId,
               driver: input.snapshot.driver,
               schema: input.schema,
@@ -605,7 +605,7 @@ export function kloRelationshipBenchmarkDetectorWithLlm(
             })
           : { primaryKeys: [], relationships: [], queryCount: 0, warnings: [] };
       profilingExecutor?.close();
-      const graph = resolveKloRelationshipGraph({
+      const graph = resolveKtxRelationshipGraph({
         schema: input.schema,
         profiles,
         candidates: validatedBroadCandidates,
@@ -663,34 +663,34 @@ export function kloRelationshipBenchmarkDetectorWithLlm(
   };
 }
 
-export function currentKloRelationshipBenchmarkDetector(): KloRelationshipBenchmarkDetector {
+export function currentKtxRelationshipBenchmarkDetector(): KtxRelationshipBenchmarkDetector {
   return {
     async detect(input) {
       const startedAt = performance.now();
-      const formalMetadata = collectKloFormalMetadataRelationships(input.schema);
+      const formalMetadata = collectKtxFormalMetadataRelationships(input.schema);
       const formalLinks = formalMetadata.accepted.map((relationship) => relationshipToBenchmarkLink(relationship));
       const acceptedKeys = new Set(formalLinks.map(fkKey));
       const sqliteDataAvailable = Boolean(input.dataPath && input.snapshot.driver === 'sqlite');
       const profilingExecutor =
         sqliteDataAvailable && input.mode !== 'profiling_disabled'
-          ? new KloRelationshipBenchmarkSqliteExecutor(input.dataPath as string)
+          ? new KtxRelationshipBenchmarkSqliteExecutor(input.dataPath as string)
           : null;
       const validationExecutor = profilingExecutor && input.mode !== 'validation_disabled' ? profilingExecutor : null;
       const profiles =
         input.mode === 'profiling_disabled'
-          ? emptyKloRelationshipProfileArtifact({
+          ? emptyKtxRelationshipProfileArtifact({
               connectionId: input.snapshot.connectionId,
               driver: input.snapshot.driver,
               reason: 'relationship_benchmark_profiling_disabled',
             })
-          : await profileKloRelationshipSchema({
+          : await profileKtxRelationshipSchema({
               connectionId: input.snapshot.connectionId,
               driver: input.snapshot.driver,
               schema: input.schema,
               executor: profilingExecutor,
               ctx: { runId: `relationship-benchmark:${input.fixtureId}:${input.mode}:profile` },
             });
-      const broadRelationshipCandidates = generateKloRelationshipDiscoveryCandidates(input.schema, {
+      const broadRelationshipCandidates = generateKtxRelationshipDiscoveryCandidates(input.schema, {
         profiles,
         useEmbeddings: input.mode !== 'embeddings_disabled',
       });
@@ -700,7 +700,7 @@ export function currentKloRelationshipBenchmarkDetector(): KloRelationshipBenchm
           : input.validationBudget === undefined
             ? 'all'
             : Math.max(0, input.validationBudget - profiles.queryCount);
-      const validatedBroadCandidates = await validateKloRelationshipDiscoveryCandidates({
+      const validatedBroadCandidates = await validateKtxRelationshipDiscoveryCandidates({
         connectionId: input.snapshot.connectionId,
         driver: input.snapshot.driver,
         candidates: broadRelationshipCandidates,
@@ -717,7 +717,7 @@ export function currentKloRelationshipBenchmarkDetector(): KloRelationshipBenchm
         validationExecutor &&
         input.mode !== 'profiling_disabled' &&
         input.mode !== 'validation_disabled'
-          ? await discoverKloCompositeRelationships({
+          ? await discoverKtxCompositeRelationships({
               connectionId: input.snapshot.connectionId,
               driver: input.snapshot.driver,
               schema: input.schema,
@@ -727,7 +727,7 @@ export function currentKloRelationshipBenchmarkDetector(): KloRelationshipBenchm
             })
           : { primaryKeys: [], relationships: [], queryCount: 0, warnings: [] };
       profilingExecutor?.close();
-      const graph = resolveKloRelationshipGraph({
+      const graph = resolveKtxRelationshipGraph({
         schema: input.schema,
         profiles,
         candidates: validatedBroadCandidates,
@@ -785,9 +785,9 @@ export function currentKloRelationshipBenchmarkDetector(): KloRelationshipBenchm
   };
 }
 
-export async function loadKloRelationshipBenchmarkFixture(
+export async function loadKtxRelationshipBenchmarkFixture(
   fixtureDir: string,
-): Promise<KloRelationshipBenchmarkFixture> {
+): Promise<KtxRelationshipBenchmarkFixture> {
   const [fixtureRaw, snapshotRaw, expectedRaw] = await Promise.all([
     fixtureText(fixtureDir, 'fixture.yaml'),
     fixtureText(fixtureDir, 'snapshot.json'),
@@ -795,7 +795,7 @@ export async function loadKloRelationshipBenchmarkFixture(
   ]);
   const fixture = fixtureConfigSchema.parse(YAML.parse(fixtureRaw));
   const expected = expectedLinksSchema.parse(YAML.parse(expectedRaw));
-  const snapshot = JSON.parse(snapshotRaw) as KloSchemaSnapshot;
+  const snapshot = JSON.parse(snapshotRaw) as KtxSchemaSnapshot;
 
   return {
     ...fixture,
@@ -806,30 +806,30 @@ export async function loadKloRelationshipBenchmarkFixture(
   };
 }
 
-export async function loadKloRelationshipBenchmarkFixtures(
+export async function loadKtxRelationshipBenchmarkFixtures(
   fixtureRoot: string,
-): Promise<KloRelationshipBenchmarkFixture[]> {
+): Promise<KtxRelationshipBenchmarkFixture[]> {
   const entries = await readdir(fixtureRoot, { withFileTypes: true });
   const fixtureDirs = entries
     .filter((entry) => entry.isDirectory())
     .map((entry) => join(fixtureRoot, entry.name))
     .sort((left, right) => left.localeCompare(right));
 
-  return Promise.all(fixtureDirs.map((fixtureDir) => loadKloRelationshipBenchmarkFixture(fixtureDir)));
+  return Promise.all(fixtureDirs.map((fixtureDir) => loadKtxRelationshipBenchmarkFixture(fixtureDir)));
 }
 
-export async function runKloRelationshipBenchmarkCase(input: {
-  fixture: KloRelationshipBenchmarkFixture;
-  mode: KloRelationshipBenchmarkMode;
-  detector?: KloRelationshipBenchmarkDetector;
-}): Promise<KloRelationshipBenchmarkCaseResult> {
-  const snapshot = maskKloRelationshipBenchmarkSnapshot(input.fixture.snapshot, input.mode);
+export async function runKtxRelationshipBenchmarkCase(input: {
+  fixture: KtxRelationshipBenchmarkFixture;
+  mode: KtxRelationshipBenchmarkMode;
+  detector?: KtxRelationshipBenchmarkDetector;
+}): Promise<KtxRelationshipBenchmarkCaseResult> {
+  const snapshot = maskKtxRelationshipBenchmarkSnapshot(input.fixture.snapshot, input.mode);
   const embeddings =
     input.mode === 'embeddings_disabled'
       ? new Map<string, number[]>()
       : new Map(Object.entries(input.fixture.columnEmbeddings));
-  const schema = snapshotToKloEnrichedSchema(snapshot, embeddings);
-  const detected = await (input.detector ?? currentKloRelationshipBenchmarkDetector()).detect({
+  const schema = snapshotToKtxEnrichedSchema(snapshot, embeddings);
+  const detected = await (input.detector ?? currentKtxRelationshipBenchmarkDetector()).detect({
     fixtureId: input.fixture.id,
     mode: input.mode,
     snapshot,
@@ -846,15 +846,15 @@ export async function runKloRelationshipBenchmarkCase(input: {
   });
 }
 
-export async function runKloRelationshipBenchmarkSuite(input: {
-  fixtures: KloRelationshipBenchmarkFixture[];
-  detector?: KloRelationshipBenchmarkDetector;
-}): Promise<KloRelationshipBenchmarkSuiteResult> {
-  const cases: KloRelationshipBenchmarkCaseResult[] = [];
+export async function runKtxRelationshipBenchmarkSuite(input: {
+  fixtures: KtxRelationshipBenchmarkFixture[];
+  detector?: KtxRelationshipBenchmarkDetector;
+}): Promise<KtxRelationshipBenchmarkSuiteResult> {
+  const cases: KtxRelationshipBenchmarkCaseResult[] = [];
   for (const fixture of input.fixtures) {
     for (const mode of fixture.defaultModes) {
       cases.push(
-        await runKloRelationshipBenchmarkCase({
+        await runKtxRelationshipBenchmarkCase({
           fixture,
           mode,
           detector: input.detector,
@@ -867,7 +867,7 @@ export async function runKloRelationshipBenchmarkSuite(input: {
   const headlineCases = cases.filter((item) => {
     const fixture = fixtureById.get(item.fixtureId);
     return fixture
-      ? isKloRelationshipBenchmarkTuningEligible({
+      ? isKtxRelationshipBenchmarkTuningEligible({
           fixture,
           mode: item.mode,
           validationBlocked: item.validationBlocked,

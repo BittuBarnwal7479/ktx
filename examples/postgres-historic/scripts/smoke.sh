@@ -3,12 +3,12 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EXAMPLE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-KLO_ROOT="$(cd "$EXAMPLE_DIR/../.." && pwd)"
-REPO_ROOT="$(cd "$KLO_ROOT/.." && pwd)"
+KTX_ROOT="$(cd "$EXAMPLE_DIR/../.." && pwd)"
+REPO_ROOT="$(cd "$KTX_ROOT/.." && pwd)"
 COMPOSE_FILE="$EXAMPLE_DIR/docker-compose.yml"
-PROJECT_PARENT="${KLO_POSTGRES_HISTORIC_PROJECT_PARENT:-$(mktemp -d)}"
-PROJECT_DIR="$PROJECT_PARENT/postgres-historic-klo"
-KLO_BIN="$KLO_ROOT/packages/cli/dist/bin.js"
+PROJECT_PARENT="${KTX_POSTGRES_HISTORIC_PROJECT_PARENT:-$(mktemp -d)}"
+PROJECT_DIR="$PROJECT_PARENT/postgres-historic-ktx"
+KTX_BIN="$KTX_ROOT/packages/cli/dist/bin.js"
 PYTHON_SERVICE_LOG="$PROJECT_PARENT/python-service.log"
 PYTHON_SERVICE_PID=""
 
@@ -16,18 +16,18 @@ cleanup() {
   if [[ -n "$PYTHON_SERVICE_PID" ]]; then
     kill "$PYTHON_SERVICE_PID" >/dev/null 2>&1 || true
   fi
-  if [[ "${KLO_POSTGRES_HISTORIC_KEEP_DOCKER:-0}" != "1" ]]; then
+  if [[ "${KTX_POSTGRES_HISTORIC_KEEP_DOCKER:-0}" != "1" ]]; then
     docker compose -f "$COMPOSE_FILE" down -v >/dev/null 2>&1 || true
   fi
 }
 trap cleanup EXIT
 
 start_sql_analysis_if_needed() {
-  if [[ -n "${KLO_SQL_ANALYSIS_URL:-}" ]]; then
+  if [[ -n "${KTX_SQL_ANALYSIS_URL:-}" ]]; then
     return
   fi
   if [[ ! -d "$REPO_ROOT/python-service/.venv" ]]; then
-    echo "Set KLO_SQL_ANALYSIS_URL or create python-service/.venv before running this smoke." >&2
+    echo "Set KTX_SQL_ANALYSIS_URL or create python-service/.venv before running this smoke." >&2
     exit 1
   fi
   (
@@ -36,9 +36,9 @@ start_sql_analysis_if_needed() {
     uvicorn app.main:app --host 127.0.0.1 --port 18081 >"$PYTHON_SERVICE_LOG" 2>&1
   ) &
   PYTHON_SERVICE_PID="$!"
-  export KLO_SQL_ANALYSIS_URL="http://127.0.0.1:18081"
+  export KTX_SQL_ANALYSIS_URL="http://127.0.0.1:18081"
   for _ in $(seq 1 60); do
-    if curl -fsS "$KLO_SQL_ANALYSIS_URL/health" >/dev/null 2>&1; then
+    if curl -fsS "$KTX_SQL_ANALYSIS_URL/health" >/dev/null 2>&1; then
       return
     fi
     sleep 1
@@ -74,18 +74,18 @@ NODE
 
 run_historic_stage_only() {
   local job_id="$1"
-  node - "$KLO_ROOT" "$PROJECT_DIR" "$job_id" <<'NODE'
+  node - "$KTX_ROOT" "$PROJECT_DIR" "$job_id" <<'NODE'
 const { join } = await import('node:path');
 
-const kloRoot = process.argv[2];
+const ktxRoot = process.argv[2];
 const projectDir = process.argv[3];
 const jobId = process.argv[4];
-const { loadKloProject } = await import(join(kloRoot, 'packages/context/dist/project/index.js'));
-const { runLocalStageOnlyIngest } = await import(join(kloRoot, 'packages/context/dist/ingest/index.js'));
-const { createKloCliLocalIngestAdapters } = await import(join(kloRoot, 'packages/cli/dist/local-adapters.js'));
+const { loadKtxProject } = await import(join(ktxRoot, 'packages/context/dist/project/index.js'));
+const { runLocalStageOnlyIngest } = await import(join(ktxRoot, 'packages/context/dist/ingest/index.js'));
+const { createKtxCliLocalIngestAdapters } = await import(join(ktxRoot, 'packages/cli/dist/local-adapters.js'));
 
-const project = await loadKloProject({ projectDir });
-const adapters = createKloCliLocalIngestAdapters(project, { historicSqlConnectionId: 'warehouse' });
+const project = await loadKtxProject({ projectDir });
+const adapters = createKtxCliLocalIngestAdapters(project, { historicSqlConnectionId: 'warehouse' });
 const adapter = adapters.find((candidate) => candidate.source === 'historic-sql');
 if (!adapter) throw new Error('historic-sql adapter was not registered for local run');
 const record = await runLocalStageOnlyIngest({
@@ -102,22 +102,22 @@ await adapter.onPullSucceeded?.({
   syncId: record.syncId,
   trigger: 'manual_resync',
   completedAt: new Date(record.completedAt),
-  stagedDir: join(project.projectDir, '.klo/cache/local-ingest', jobId, 'staged'),
+  stagedDir: join(project.projectDir, '.ktx/cache/local-ingest', jobId, 'staged'),
 });
 console.log(record.syncId);
 NODE
 }
 
-cd "$KLO_ROOT"
-pnpm --filter @klo/context run build
-pnpm --filter @klo/cli run build
+cd "$KTX_ROOT"
+pnpm --filter @ktx/context run build
+pnpm --filter @ktx/cli run build
 start_sql_analysis_if_needed
 
 docker compose -f "$COMPOSE_FILE" up -d --wait
 "$EXAMPLE_DIR/scripts/generate-workload.sh" base
 
-export WAREHOUSE_DATABASE_URL="${WAREHOUSE_DATABASE_URL:-postgresql://klo_reader:klo_reader@127.0.0.1:55432/analytics}" # pragma: allowlist secret
-node "$KLO_BIN" --project-dir "$PROJECT_DIR" setup \
+export WAREHOUSE_DATABASE_URL="${WAREHOUSE_DATABASE_URL:-postgresql://ktx_reader:ktx_reader@127.0.0.1:55432/analytics}" # pragma: allowlist secret
+node "$KTX_BIN" --project-dir "$PROJECT_DIR" setup \
   --new \
   --skip-agents \
   --skip-llm \

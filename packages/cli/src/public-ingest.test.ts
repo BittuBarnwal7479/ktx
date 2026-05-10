@@ -1,6 +1,6 @@
-import { buildDefaultKloProjectConfig, type KloProjectConfig } from '@klo/context/project';
+import { buildDefaultKtxProjectConfig, type KtxProjectConfig } from '@ktx/context/project';
 import { describe, expect, it, vi } from 'vitest';
-import { buildPublicIngestPlan, type KloPublicIngestProject, runKloPublicIngest } from './public-ingest.js';
+import { buildPublicIngestPlan, type KtxPublicIngestProject, runKtxPublicIngest } from './public-ingest.js';
 
 function makeIo(options: { isTTY?: boolean } = {}) {
   let stdout = '';
@@ -24,11 +24,11 @@ function makeIo(options: { isTTY?: boolean } = {}) {
   };
 }
 
-function projectWithConnections(connections: KloProjectConfig['connections']): KloPublicIngestProject {
+function projectWithConnections(connections: KtxProjectConfig['connections']): KtxPublicIngestProject {
   return {
     projectDir: '/tmp/project',
     config: {
-      ...buildDefaultKloProjectConfig('warehouse'),
+      ...buildDefaultKtxProjectConfig('warehouse'),
       connections,
     },
   };
@@ -49,7 +49,7 @@ describe('buildPublicIngestPlan', () => {
           connectionId: 'warehouse',
           driver: 'postgres',
           operation: 'scan',
-          debugCommand: 'klo scan warehouse --debug',
+          debugCommand: 'ktx scan warehouse --debug',
           steps: ['scan'],
         },
         {
@@ -57,7 +57,7 @@ describe('buildPublicIngestPlan', () => {
           driver: 'notion',
           operation: 'source-ingest',
           adapter: 'notion',
-          debugCommand: 'klo dev ingest run --connection-id docs --adapter notion --debug',
+          debugCommand: 'ktx dev ingest run --connection-id docs --adapter notion --debug',
           steps: ['source-ingest', 'memory-update'],
         },
         {
@@ -65,7 +65,7 @@ describe('buildPublicIngestPlan', () => {
           driver: 'metabase',
           operation: 'source-ingest',
           adapter: 'metabase',
-          debugCommand: 'klo dev ingest run --connection-id prod_metabase --adapter metabase --debug',
+          debugCommand: 'ktx dev ingest run --connection-id prod_metabase --adapter metabase --debug',
           steps: ['source-ingest', 'memory-update'],
         },
       ],
@@ -76,7 +76,7 @@ describe('buildPublicIngestPlan', () => {
     const project = projectWithConnections({ warehouse: { driver: 'postgres' } });
 
     expect(() => buildPublicIngestPlan(project, { projectDir: '/tmp/project', all: false })).toThrow(
-      'klo ingest requires <connectionId> or --all in this release',
+      'ktx ingest requires <connectionId> or --all in this release',
     );
   });
 
@@ -89,7 +89,7 @@ describe('buildPublicIngestPlan', () => {
   });
 });
 
-describe('runKloPublicIngest', () => {
+describe('runKtxPublicIngest', () => {
   it('runs all independent targets and reports partial failures', async () => {
     const io = makeIo();
     const project = projectWithConnections({
@@ -100,7 +100,7 @@ describe('runKloPublicIngest', () => {
     const runIngest = vi.fn(async () => 0);
 
     await expect(
-      runKloPublicIngest(
+      runKtxPublicIngest(
         { command: 'run', projectDir: '/tmp/project', all: true, json: false, inputMode: 'disabled' },
         io.io,
         {
@@ -135,7 +135,7 @@ describe('runKloPublicIngest', () => {
     );
     expect(io.stdout()).toContain('Ingest finished with partial failures');
     expect(io.stdout()).toContain('warehouse failed at scan.');
-    expect(io.stdout()).toContain('Debug: klo scan warehouse --debug');
+    expect(io.stdout()).toContain('Debug: ktx scan warehouse --debug');
   });
 
   it('can request enriched relationship scans for setup-managed context builds', async () => {
@@ -144,7 +144,7 @@ describe('runKloPublicIngest', () => {
     const runScan = vi.fn(async () => 0);
 
     await expect(
-      runKloPublicIngest(
+      runKtxPublicIngest(
         {
           command: 'run',
           projectDir: '/tmp/project',
@@ -180,7 +180,7 @@ describe('runKloPublicIngest', () => {
     const project = projectWithConnections({ warehouse: { driver: 'postgres' } });
 
     await expect(
-      runKloPublicIngest(
+      runKtxPublicIngest(
         {
           command: 'run',
           projectDir: '/tmp/project',
@@ -203,15 +203,15 @@ describe('runKloPublicIngest', () => {
     });
   });
 
-  it('passes dbt source_dir from connection config to runKloIngest', async () => {
+  it('passes dbt source_dir from connection config to runKtxIngest', async () => {
     const runIngest = vi.fn(async () => 0);
     const io = makeIo();
 
     await expect(
-      runKloPublicIngest(
+      runKtxPublicIngest(
         {
           command: 'run',
-          projectDir: '/tmp/klo',
+          projectDir: '/tmp/ktx',
           targetConnectionId: 'analytics_dbt',
           all: false,
           json: false,
@@ -221,7 +221,7 @@ describe('runKloPublicIngest', () => {
         {
           loadProject: async () =>
             ({
-              projectDir: '/tmp/klo',
+              projectDir: '/tmp/ktx',
               config: {
                 connections: {
                   analytics_dbt: {
@@ -253,15 +253,15 @@ describe('runKloPublicIngest', () => {
     const watchIo = makeIo();
 
     await expect(
-      runKloPublicIngest(
-        { command: 'status', projectDir: '/tmp/klo', json: false, inputMode: 'disabled' },
+      runKtxPublicIngest(
+        { command: 'status', projectDir: '/tmp/ktx', json: false, inputMode: 'disabled' },
         statusIo.io,
         { runIngest },
       ),
     ).resolves.toBe(0);
     await expect(
-      runKloPublicIngest(
-        { command: 'watch', projectDir: '/tmp/klo', runId: 'run-1', json: false, inputMode: 'auto' },
+      runKtxPublicIngest(
+        { command: 'watch', projectDir: '/tmp/ktx', runId: 'run-1', json: false, inputMode: 'auto' },
         watchIo.io,
         { runIngest },
       ),
@@ -271,7 +271,7 @@ describe('runKloPublicIngest', () => {
       1,
       {
         command: 'status',
-        projectDir: '/tmp/klo',
+        projectDir: '/tmp/ktx',
         outputMode: 'plain',
         inputMode: 'disabled',
       },
@@ -281,7 +281,7 @@ describe('runKloPublicIngest', () => {
       2,
       {
         command: 'watch',
-        projectDir: '/tmp/klo',
+        projectDir: '/tmp/ktx',
         runId: 'run-1',
         outputMode: 'viz',
         inputMode: 'auto',

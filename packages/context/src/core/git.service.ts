@@ -1,7 +1,7 @@
 import { promises as fs } from 'node:fs';
 import { join } from 'node:path';
 import type { SimpleGit } from 'simple-git';
-import { noopLogger, resolveConfigDir, type KloCoreConfig, type KloLogger } from './config.js';
+import { noopLogger, resolveConfigDir, type KtxCoreConfig, type KtxLogger } from './config.js';
 import { createSimpleGit } from './git-env.js';
 
 export interface GitCommitInfo {
@@ -32,13 +32,13 @@ export type SquashMergeResult =
   | { ok: false; conflict: true; conflictPaths: string[] };
 
 export class GitService {
-  private readonly logger: KloLogger;
+  private readonly logger: KtxLogger;
   private git!: SimpleGit;
   private configDir: string;
 
   constructor(
-    private readonly config: KloCoreConfig,
-    logger?: KloLogger,
+    private readonly config: KtxCoreConfig,
+    logger?: KtxLogger,
   ) {
     this.logger = logger ?? noopLogger;
     this.configDir = resolveConfigDir(config);
@@ -73,10 +73,10 @@ export class GitService {
       // can rely on `revParseHead()` returning a SHA. Idempotent: skip if HEAD already exists.
       const head = await this.revParseHead();
       if (!head) {
-        await this.git.commit(this.config.git.bootstrapMessage ?? 'Initialize klo project repository', {
+        await this.git.commit(this.config.git.bootstrapMessage ?? 'Initialize ktx project repository', {
           '--allow-empty': null,
-          '--author': `${this.config.git.bootstrapAuthor ?? 'klo system'} <${
-            this.config.git.bootstrapAuthorEmail ?? 'system@klo.local'
+          '--author': `${this.config.git.bootstrapAuthor ?? 'ktx system'} <${
+            this.config.git.bootstrapAuthorEmail ?? 'system@ktx.local'
           }>`,
         });
         this.logger.log('Wrote bootstrap commit to config repo');
@@ -676,7 +676,7 @@ export class GitService {
 
   /**
    * Remove the worktree entry and its on-disk directory. Uses `--force` because session
-   * worktrees are klo-internal — a clean working tree is not required.
+   * worktrees are ktx-internal — a clean working tree is not required.
    */
   async removeWorktree(path: string): Promise<void> {
     try {

@@ -30,34 +30,34 @@ importers:
       '@commander-js/extra-typings':
         specifier: 14.0.0
         version: 14.0.0(commander@14.0.3)
-      '@klo/connector-bigquery':
+      '@ktx/connector-bigquery':
         specifier: workspace:*
         version: file:packages/connector-bigquery(ws@8.20.0)
-      '@klo/connector-clickhouse':
+      '@ktx/connector-clickhouse':
         specifier: workspace:*
         version: file:packages/connector-clickhouse(ws@8.20.0)
-      '@klo/connector-mysql':
+      '@ktx/connector-mysql':
         specifier: workspace:*
         version: file:packages/connector-mysql(@types/node@24.12.2)(ws@8.20.0)
-      '@klo/connector-postgres':
+      '@ktx/connector-postgres':
         specifier: workspace:*
         version: file:packages/connector-postgres(ws@8.20.0)
-      '@klo/connector-posthog':
+      '@ktx/connector-posthog':
         specifier: workspace:*
         version: file:packages/connector-posthog(ws@8.20.0)
-      '@klo/connector-snowflake':
+      '@ktx/connector-snowflake':
         specifier: workspace:*
         version: file:packages/connector-snowflake(asn1.js@5.4.1)(ws@8.20.0)
-      '@klo/connector-sqlite':
+      '@ktx/connector-sqlite':
         specifier: workspace:*
         version: file:packages/connector-sqlite(ws@8.20.0)
-      '@klo/connector-sqlserver':
+      '@ktx/connector-sqlserver':
         specifier: workspace:*
-        version: file:packages/connector-sqlserver(ws@8.20.0)
-      '@klo/context':
+        version: file:packages/connector-sqlserver(@azure/core-client@1.10.1)(ws@8.20.0)
+      '@ktx/context':
         specifier: workspace:*
         version: file:packages/context(ws@8.20.0)
-      '@klo/llm':
+      '@ktx/llm':
         specifier: workspace:*
         version: link:../llm
       '@modelcontextprotocol/sdk':
@@ -103,7 +103,7 @@ importers:
       '@google-cloud/bigquery':
         specifier: ^8.1.1
         version: 8.3.0
-      '@klo/context':
+      '@ktx/context':
         specifier: workspace:*
         version: file:packages/context
     devDependencies:
@@ -122,7 +122,7 @@ importers:
       '@clickhouse/client':
         specifier: ^1.18.2
         version: 1.18.3
-      '@klo/context':
+      '@ktx/context':
         specifier: workspace:*
         version: file:packages/context
     devDependencies:
@@ -138,7 +138,7 @@ importers:
 
   packages/connector-mysql:
     dependencies:
-      '@klo/context':
+      '@ktx/context':
         specifier: workspace:*
         version: file:packages/context
       mysql2:
@@ -157,7 +157,7 @@ importers:
 
   packages/connector-postgres:
     dependencies:
-      '@klo/context':
+      '@ktx/context':
         specifier: workspace:*
         version: file:packages/context
       pg:
@@ -179,7 +179,7 @@ importers:
 
   packages/connector-posthog:
     dependencies:
-      '@klo/context':
+      '@ktx/context':
         specifier: workspace:*
         version: file:packages/context
     devDependencies:
@@ -195,7 +195,7 @@ importers:
 
   packages/connector-snowflake:
     dependencies:
-      '@klo/context':
+      '@ktx/context':
         specifier: workspace:*
         version: file:packages/context
       snowflake-sdk:
@@ -214,7 +214,7 @@ importers:
 
   packages/connector-sqlite:
     dependencies:
-      '@klo/context':
+      '@ktx/context':
         specifier: workspace:*
         version: file:packages/context
       better-sqlite3:
@@ -236,7 +236,7 @@ importers:
 
   packages/connector-sqlserver:
     dependencies:
-      '@klo/context':
+      '@ktx/context':
         specifier: workspace:*
         version: file:packages/context
       mssql:
@@ -258,7 +258,7 @@ importers:
 
   packages/context:
     dependencies:
-      '@klo/llm':
+      '@ktx/llm':
         specifier: workspace:*
         version: file:packages/llm(ws@8.20.0)(zod@4.3.6)
       '@looker/sdk':
@@ -903,43 +903,43 @@ packages:
   '@js-joda/core@5.7.0':
     resolution: {integrity: sha512-WBu4ULVVxySLLzK1Ppq+OdfP+adRS4ntmDQT915rzDJ++i95gc2jZkM5B6LWEAwN3lGXpfie3yPABozdD3K3Vg==}
 
-  '@klo/connector-bigquery@file:packages/connector-bigquery':
+  '@ktx/connector-bigquery@file:packages/connector-bigquery':
     resolution: {directory: packages/connector-bigquery, type: directory}
     engines: {node: '>=22.0.0'}
 
-  '@klo/connector-clickhouse@file:packages/connector-clickhouse':
+  '@ktx/connector-clickhouse@file:packages/connector-clickhouse':
     resolution: {directory: packages/connector-clickhouse, type: directory}
     engines: {node: '>=22.0.0'}
 
-  '@klo/connector-mysql@file:packages/connector-mysql':
+  '@ktx/connector-mysql@file:packages/connector-mysql':
     resolution: {directory: packages/connector-mysql, type: directory}
     engines: {node: '>=22.0.0'}
 
-  '@klo/connector-postgres@file:packages/connector-postgres':
+  '@ktx/connector-postgres@file:packages/connector-postgres':
     resolution: {directory: packages/connector-postgres, type: directory}
     engines: {node: '>=22.0.0'}
 
-  '@klo/connector-posthog@file:packages/connector-posthog':
+  '@ktx/connector-posthog@file:packages/connector-posthog':
     resolution: {directory: packages/connector-posthog, type: directory}
     engines: {node: '>=22.0.0'}
 
-  '@klo/connector-snowflake@file:packages/connector-snowflake':
+  '@ktx/connector-snowflake@file:packages/connector-snowflake':
     resolution: {directory: packages/connector-snowflake, type: directory}
     engines: {node: '>=22.0.0'}
 
-  '@klo/connector-sqlite@file:packages/connector-sqlite':
+  '@ktx/connector-sqlite@file:packages/connector-sqlite':
     resolution: {directory: packages/connector-sqlite, type: directory}
     engines: {node: '>=22.0.0'}
 
-  '@klo/connector-sqlserver@file:packages/connector-sqlserver':
+  '@ktx/connector-sqlserver@file:packages/connector-sqlserver':
     resolution: {directory: packages/connector-sqlserver, type: directory}
     engines: {node: '>=22.0.0'}
 
-  '@klo/context@file:packages/context':
+  '@ktx/context@file:packages/context':
     resolution: {directory: packages/context, type: directory}
     engines: {node: '>=22.0.0'}
 
-  '@klo/llm@file:packages/llm':
+  '@ktx/llm@file:packages/llm':
     resolution: {directory: packages/llm, type: directory}
     engines: {node: '>=22.0.0'}
 
@@ -3632,11 +3632,6 @@ snapshots:
       '@azure/core-client': 1.10.1
       '@azure/core-rest-pipeline': 1.23.0
 
-  '@azure/core-http-compat@2.4.0(@azure/core-rest-pipeline@1.23.0)':
-    dependencies:
-      '@azure/abort-controller': 2.1.2
-      '@azure/core-rest-pipeline': 1.23.0
-
   '@azure/core-lro@2.7.2':
     dependencies:
       '@azure/abort-controller': 2.1.2
@@ -3706,24 +3701,6 @@ snapshots:
       '@azure/logger': 1.3.0
       tslib: 2.8.1
     transitivePeerDependencies:
-      - supports-color
-
-  '@azure/keyvault-keys@4.10.0':
-    dependencies:
-      '@azure-rest/core-client': 2.6.0
-      '@azure/abort-controller': 2.1.2
-      '@azure/core-auth': 1.10.1
-      '@azure/core-http-compat': 2.4.0(@azure/core-rest-pipeline@1.23.0)
-      '@azure/core-lro': 2.7.2
-      '@azure/core-paging': 1.6.2
-      '@azure/core-rest-pipeline': 1.23.0
-      '@azure/core-tracing': 1.3.1
-      '@azure/core-util': 1.13.1
-      '@azure/keyvault-common': 2.1.0
-      '@azure/logger': 1.3.0
-      tslib: 2.8.1
-    transitivePeerDependencies:
-      - '@azure/core-client'
       - supports-color
 
   '@azure/keyvault-keys@4.10.0(@azure/core-client@1.10.1)':
@@ -3959,10 +3936,10 @@ snapshots:
 
   '@js-joda/core@5.7.0': {}
 
-  '@klo/connector-bigquery@file:packages/connector-bigquery(ws@8.20.0)':
+  '@ktx/connector-bigquery@file:packages/connector-bigquery(ws@8.20.0)':
     dependencies:
       '@google-cloud/bigquery': 8.3.0
-      '@klo/context': file:packages/context(ws@8.20.0)
+      '@ktx/context': file:packages/context(ws@8.20.0)
     transitivePeerDependencies:
       - '@cfworker/json-schema'
       - js-yaml
@@ -3970,10 +3947,10 @@ snapshots:
       - supports-color
       - ws
 
-  '@klo/connector-clickhouse@file:packages/connector-clickhouse(ws@8.20.0)':
+  '@ktx/connector-clickhouse@file:packages/connector-clickhouse(ws@8.20.0)':
     dependencies:
       '@clickhouse/client': 1.18.3
-      '@klo/context': file:packages/context(ws@8.20.0)
+      '@ktx/context': file:packages/context(ws@8.20.0)
     transitivePeerDependencies:
       - '@cfworker/json-schema'
       - js-yaml
@@ -3981,9 +3958,9 @@ snapshots:
       - supports-color
       - ws
 
-  '@klo/connector-mysql@file:packages/connector-mysql(@types/node@24.12.2)(ws@8.20.0)':
+  '@ktx/connector-mysql@file:packages/connector-mysql(@types/node@24.12.2)(ws@8.20.0)':
     dependencies:
-      '@klo/context': file:packages/context(ws@8.20.0)
+      '@ktx/context': file:packages/context(ws@8.20.0)
       mysql2: 3.22.3(@types/node@24.12.2)
     transitivePeerDependencies:
       - '@cfworker/json-schema'
@@ -3993,9 +3970,9 @@ snapshots:
       - supports-color
       - ws
 
-  '@klo/connector-postgres@file:packages/connector-postgres(ws@8.20.0)':
+  '@ktx/connector-postgres@file:packages/connector-postgres(ws@8.20.0)':
     dependencies:
-      '@klo/context': file:packages/context(ws@8.20.0)
+      '@ktx/context': file:packages/context(ws@8.20.0)
       pg: 8.20.0
     transitivePeerDependencies:
       - '@cfworker/json-schema'
@@ -4004,9 +3981,9 @@ snapshots:
       - supports-color
       - ws
 
-  '@klo/connector-posthog@file:packages/connector-posthog(ws@8.20.0)':
+  '@ktx/connector-posthog@file:packages/connector-posthog(ws@8.20.0)':
     dependencies:
-      '@klo/context': file:packages/context(ws@8.20.0)
+      '@ktx/context': file:packages/context(ws@8.20.0)
     transitivePeerDependencies:
       - '@cfworker/json-schema'
       - js-yaml
@@ -4014,9 +3991,9 @@ snapshots:
       - supports-color
       - ws
 
-  '@klo/connector-snowflake@file:packages/connector-snowflake(asn1.js@5.4.1)(ws@8.20.0)':
+  '@ktx/connector-snowflake@file:packages/connector-snowflake(asn1.js@5.4.1)(ws@8.20.0)':
     dependencies:
-      '@klo/context': file:packages/context(ws@8.20.0)
+      '@ktx/context': file:packages/context(ws@8.20.0)
       snowflake-sdk: 2.4.0(asn1.js@5.4.1)
     transitivePeerDependencies:
       - '@cfworker/json-schema'
@@ -4028,9 +4005,9 @@ snapshots:
       - supports-color
       - ws
 
-  '@klo/connector-sqlite@file:packages/connector-sqlite(ws@8.20.0)':
+  '@ktx/connector-sqlite@file:packages/connector-sqlite(ws@8.20.0)':
     dependencies:
-      '@klo/context': file:packages/context(ws@8.20.0)
+      '@ktx/context': file:packages/context(ws@8.20.0)
       better-sqlite3: 12.9.0
     transitivePeerDependencies:
       - '@cfworker/json-schema'
@@ -4039,10 +4016,10 @@ snapshots:
       - supports-color
       - ws
 
-  '@klo/connector-sqlserver@file:packages/connector-sqlserver(ws@8.20.0)':
+  '@ktx/connector-sqlserver@file:packages/connector-sqlserver(@azure/core-client@1.10.1)(ws@8.20.0)':
     dependencies:
-      '@klo/context': file:packages/context(ws@8.20.0)
-      mssql: 12.5.0
+      '@ktx/context': file:packages/context(ws@8.20.0)
+      mssql: 12.5.0(@azure/core-client@1.10.1)
     transitivePeerDependencies:
       - '@azure/core-client'
       - '@cfworker/json-schema'
@@ -4051,9 +4028,9 @@ snapshots:
       - supports-color
       - ws
 
-  '@klo/context@file:packages/context':
+  '@ktx/context@file:packages/context':
     dependencies:
-      '@klo/llm': file:packages/llm(zod@4.4.3)
+      '@ktx/llm': file:packages/llm(zod@4.4.3)
       '@looker/sdk': 26.6.1
       '@looker/sdk-node': 26.6.1
       '@looker/sdk-rtl': 21.6.5
@@ -4076,9 +4053,9 @@ snapshots:
       - supports-color
       - ws
 
-  '@klo/context@file:packages/context(ws@8.20.0)':
+  '@ktx/context@file:packages/context(ws@8.20.0)':
     dependencies:
-      '@klo/llm': file:packages/llm(ws@8.20.0)(zod@4.4.3)
+      '@ktx/llm': file:packages/llm(ws@8.20.0)(zod@4.4.3)
       '@looker/sdk': 26.6.1
       '@looker/sdk-node': 26.6.1
       '@looker/sdk-rtl': 21.6.5
@@ -4101,7 +4078,7 @@ snapshots:
       - supports-color
       - ws
 
-  '@klo/llm@file:packages/llm(ws@8.20.0)(zod@4.3.6)':
+  '@ktx/llm@file:packages/llm(ws@8.20.0)(zod@4.3.6)':
     dependencies:
       '@ai-sdk/anthropic': 3.0.71(zod@4.3.6)
       '@ai-sdk/google-vertex': 4.0.118(zod@4.3.6)
@@ -4112,7 +4089,7 @@ snapshots:
       - ws
       - zod
 
-  '@klo/llm@file:packages/llm(ws@8.20.0)(zod@4.4.3)':
+  '@ktx/llm@file:packages/llm(ws@8.20.0)(zod@4.4.3)':
     dependencies:
       '@ai-sdk/anthropic': 3.0.71(zod@4.4.3)
       '@ai-sdk/google-vertex': 4.0.118(zod@4.4.3)
@@ -4123,7 +4100,7 @@ snapshots:
       - ws
       - zod
 
-  '@klo/llm@file:packages/llm(zod@4.4.3)':
+  '@ktx/llm@file:packages/llm(zod@4.4.3)':
     dependencies:
       '@ai-sdk/anthropic': 3.0.71(zod@4.4.3)
       '@ai-sdk/google-vertex': 4.0.118(zod@4.4.3)
@@ -5594,17 +5571,6 @@ snapshots:
 
   ms@2.1.3: {}
 
-  mssql@12.5.0:
-    dependencies:
-      '@tediousjs/connection-string': 1.1.0
-      commander: 11.1.0
-      debug: 4.4.3
-      tarn: 3.0.2
-      tedious: 19.2.1
-    transitivePeerDependencies:
-      - '@azure/core-client'
-      - supports-color
-
   mssql@12.5.0(@azure/core-client@1.10.1):
     dependencies:
       '@tediousjs/connection-string': 1.1.0
@@ -6106,22 +6072,6 @@ snapshots:
       readable-stream: 3.6.2
 
   tarn@3.0.2: {}
-
-  tedious@19.2.1:
-    dependencies:
-      '@azure/core-auth': 1.10.1
-      '@azure/identity': 4.13.1
-      '@azure/keyvault-keys': 4.10.0
-      '@js-joda/core': 5.7.0
-      '@types/node': 24.12.2
-      bl: 6.1.6
-      iconv-lite: 0.7.2
-      js-md4: 0.3.2
-      native-duplexpair: 1.0.0
-      sprintf-js: 1.1.3
-    transitivePeerDependencies:
-      - '@azure/core-client'
-      - supports-color
 
   tedious@19.2.1(@azure/core-client@1.10.1):
     dependencies:

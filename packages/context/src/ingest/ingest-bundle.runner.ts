@@ -3,7 +3,7 @@ import { dirname, join } from 'node:path';
 import { type Tool, tool } from 'ai';
 import pLimit from 'p-limit';
 import { z } from 'zod';
-import { type KloLogger, noopLogger } from '../core/index.js';
+import { type KtxLogger, noopLogger } from '../core/index.js';
 import type { CaptureSession, MemoryAction } from '../memory/index.js';
 import type { SlValidationDeps } from '../sl/index.js';
 import { createTouchedSlSources, type ToolContext, type ToolSession } from '../tools/index.js';
@@ -88,7 +88,7 @@ function reportIdFromCreateResult(result: unknown): string | undefined {
 }
 
 export class IngestBundleRunner {
-  private readonly logger: KloLogger;
+  private readonly logger: KtxLogger;
   private readonly chainByConnection = new Map<string, Promise<unknown>>();
 
   constructor(private readonly deps: IngestBundleRunnerDeps) {

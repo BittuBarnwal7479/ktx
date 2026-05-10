@@ -1,11 +1,11 @@
-import type { LiveDatabaseIntrospectionPort } from '@klo/context/ingest';
-import type { KloProjectConnectionConfig } from '@klo/context/project';
-import { KloPostHogScanConnector, type KloPostHogConnectionConfig, type KloPostHogFetch } from './connector.js';
+import type { LiveDatabaseIntrospectionPort } from '@ktx/context/ingest';
+import type { KtxProjectConnectionConfig } from '@ktx/context/project';
+import { KtxPostHogScanConnector, type KtxPostHogConnectionConfig, type KtxPostHogFetch } from './connector.js';
 
 interface CreatePostHogLiveDatabaseIntrospectionOptions {
-  connections: Record<string, KloProjectConnectionConfig>;
+  connections: Record<string, KtxProjectConnectionConfig>;
   env?: NodeJS.ProcessEnv;
-  fetch?: KloPostHogFetch;
+  fetch?: KtxPostHogFetch;
   sleep?: (ms: number) => Promise<void>;
   now?: () => Date;
 }
@@ -15,8 +15,8 @@ export function createPostHogLiveDatabaseIntrospection(
 ): LiveDatabaseIntrospectionPort {
   return {
     async extractSchema(connectionId: string) {
-      const connection = options.connections[connectionId] as KloPostHogConnectionConfig | undefined;
-      const connector = new KloPostHogScanConnector({
+      const connection = options.connections[connectionId] as KtxPostHogConnectionConfig | undefined;
+      const connector = new KtxPostHogScanConnector({
         connectionId,
         connection,
         env: options.env,

@@ -1,11 +1,11 @@
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { LocalMetabaseSourceStateReader } from '@klo/context/ingest';
-import { initKloProject, kloLocalStateDbPath, loadKloProject, serializeKloProjectConfig } from '@klo/context/project';
+import { LocalMetabaseSourceStateReader } from '@ktx/context/ingest';
+import { initKtxProject, ktxLocalStateDbPath, loadKtxProject, serializeKtxProjectConfig } from '@ktx/context/project';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { runKloConnectionMetabaseSetup } from './connection-metabase-setup.js';
+import { runKtxConnectionMetabaseSetup } from './connection-metabase-setup.js';
 
 const CANCEL_PROMPT = Symbol('cancel');
 
@@ -135,7 +135,7 @@ function makeIo(options: { isTTY?: boolean; stdinIsTTY?: boolean } = {}) {
   };
 }
 
-describe('runKloConnectionMetabaseSetup', () => {
+describe('runKtxConnectionMetabaseSetup', () => {
   const fakeMetabaseCredential = 'mb_example';
   const existingMetabaseCredential = 'mb_existing';
   const fakeAdminCredential = 'pw';
@@ -144,9 +144,9 @@ describe('runKloConnectionMetabaseSetup', () => {
   let projectDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-cli-metabase-setup-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-cli-metabase-setup-'));
     projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'metabase-setup' });
+    await initKtxProject({ projectDir, projectName: 'metabase-setup' });
   });
 
   afterEach(async () => {
@@ -154,15 +154,15 @@ describe('runKloConnectionMetabaseSetup', () => {
   });
 
   async function writeConnections(connections: Record<string, { driver: string; [key: string]: unknown }>) {
-    const project = await loadKloProject({ projectDir });
+    const project = await loadKtxProject({ projectDir });
     await project.fileStore.writeFile(
-      'klo.yaml',
-      serializeKloProjectConfig({
+      'ktx.yaml',
+      serializeKtxProjectConfig({
         ...project.config,
         connections,
       }),
-      'klo',
-      'klo@example.com',
+      'ktx',
+      'ktx@example.com',
       'Seed Metabase setup test connections',
     );
   }
@@ -208,7 +208,7 @@ describe('runKloConnectionMetabaseSetup', () => {
     const io = makeIo();
 
     await expect(
-      runKloConnectionMetabaseSetup(
+      runKtxConnectionMetabaseSetup(
         {
           command: 'setup',
           projectDir,
@@ -230,17 +230,17 @@ describe('runKloConnectionMetabaseSetup', () => {
 
     expect(io.stdout()).toContain('Connection: metabase');
     expect(io.stdout()).toContain('Discovered 1 database');
-    expect(io.stdout()).toContain(`klo ingest metabase --project-dir ${projectDir}`);
+    expect(io.stdout()).toContain(`ktx ingest metabase --project-dir ${projectDir}`);
     expect(io.stdout()).not.toContain('mb_example');
     expect(io.stderr()).not.toContain('mb_example');
 
-    const config = await readFile(join(projectDir, 'klo.yaml'), 'utf-8');
+    const config = await readFile(join(projectDir, 'ktx.yaml'), 'utf-8');
     expect(config).toContain('driver: metabase');
     expect(config).toContain('api_url: http://metabase.example.test:3000');
     expect(config).toContain('api_key: mb_example');
 
-    const updatedProject = await loadKloProject({ projectDir });
-    const store = new LocalMetabaseSourceStateReader({ dbPath: kloLocalStateDbPath(updatedProject) });
+    const updatedProject = await loadKtxProject({ projectDir });
+    const store = new LocalMetabaseSourceStateReader({ dbPath: ktxLocalStateDbPath(updatedProject) });
     await expect(store.listDatabaseMappings('metabase')).resolves.toMatchObject([
       {
         metabaseDatabaseId: 2,
@@ -275,7 +275,7 @@ describe('runKloConnectionMetabaseSetup', () => {
     const io = makeIo();
 
     await expect(
-      runKloConnectionMetabaseSetup(
+      runKtxConnectionMetabaseSetup(
         {
           command: 'setup',
           projectDir,
@@ -295,8 +295,8 @@ describe('runKloConnectionMetabaseSetup', () => {
       ),
     ).resolves.toBe(0);
 
-    const updatedProject = await loadKloProject({ projectDir });
-    const store = new LocalMetabaseSourceStateReader({ dbPath: kloLocalStateDbPath(updatedProject) });
+    const updatedProject = await loadKtxProject({ projectDir });
+    const store = new LocalMetabaseSourceStateReader({ dbPath: ktxLocalStateDbPath(updatedProject) });
     await expect(store.listDatabaseMappings('metabase')).resolves.toMatchObject([
       { metabaseDatabaseId: 2, targetConnectionId: 'orbit', syncEnabled: true },
     ]);
@@ -314,7 +314,7 @@ describe('runKloConnectionMetabaseSetup', () => {
     const io = makeIo();
 
     await expect(
-      runKloConnectionMetabaseSetup(
+      runKtxConnectionMetabaseSetup(
         {
           command: 'setup',
           projectDir,
@@ -350,7 +350,7 @@ describe('runKloConnectionMetabaseSetup', () => {
     const io = makeIo();
 
     await expect(
-      runKloConnectionMetabaseSetup(
+      runKtxConnectionMetabaseSetup(
         {
           command: 'setup',
           projectDir,
@@ -370,8 +370,8 @@ describe('runKloConnectionMetabaseSetup', () => {
       ),
     ).resolves.toBe(0);
 
-    const updatedProject = await loadKloProject({ projectDir });
-    const store = new LocalMetabaseSourceStateReader({ dbPath: kloLocalStateDbPath(updatedProject) });
+    const updatedProject = await loadKtxProject({ projectDir });
+    const store = new LocalMetabaseSourceStateReader({ dbPath: ktxLocalStateDbPath(updatedProject) });
     await expect(store.listDatabaseMappings('metabase')).resolves.toMatchObject([
       { metabaseDatabaseId: 2, targetConnectionId: 'orbit', syncEnabled: true },
     ]);
@@ -384,7 +384,7 @@ describe('runKloConnectionMetabaseSetup', () => {
     const io = makeIo();
 
     await expect(
-      runKloConnectionMetabaseSetup(
+      runKtxConnectionMetabaseSetup(
         {
           command: 'setup',
           projectDir,
@@ -412,7 +412,7 @@ describe('runKloConnectionMetabaseSetup', () => {
     const io = makeIo();
 
     await expect(
-      runKloConnectionMetabaseSetup(
+      runKtxConnectionMetabaseSetup(
         {
           command: 'setup',
           projectDir,
@@ -440,7 +440,7 @@ describe('runKloConnectionMetabaseSetup', () => {
 
     const missingUsernameIo = makeIo();
     await expect(
-      runKloConnectionMetabaseSetup(
+      runKtxConnectionMetabaseSetup(
         {
           command: 'setup',
           projectDir,
@@ -462,7 +462,7 @@ describe('runKloConnectionMetabaseSetup', () => {
 
     const missingPasswordIo = makeIo();
     await expect(
-      runKloConnectionMetabaseSetup(
+      runKtxConnectionMetabaseSetup(
         {
           command: 'setup',
           projectDir,
@@ -500,7 +500,7 @@ describe('runKloConnectionMetabaseSetup', () => {
     const mintingIo = makeIo();
 
     await expect(
-      runKloConnectionMetabaseSetup(
+      runKtxConnectionMetabaseSetup(
         {
           command: 'setup',
           projectDir,
@@ -537,7 +537,7 @@ describe('runKloConnectionMetabaseSetup', () => {
     expect(mintingIo.stdout()).not.toContain(fakeAdminCredential);
     expect(mintingIo.stderr()).not.toContain(fakeAdminCredential);
 
-    const config = await readFile(join(projectDir, 'klo.yaml'), 'utf-8');
+    const config = await readFile(join(projectDir, 'ktx.yaml'), 'utf-8');
     expect(config).toContain('driver: metabase');
     expect(config).toContain('api_url: http://metabase.example.test:3000');
     expect(config).toContain(`api_key: ${mintedMetabaseCredential}`);
@@ -548,7 +548,7 @@ describe('runKloConnectionMetabaseSetup', () => {
     const io = makeIo();
 
     await expect(
-      runKloConnectionMetabaseSetup(
+      runKtxConnectionMetabaseSetup(
         {
           command: 'setup',
           projectDir,
@@ -590,7 +590,7 @@ describe('runKloConnectionMetabaseSetup', () => {
     const io = makeIo();
 
     await expect(
-      runKloConnectionMetabaseSetup(
+      runKtxConnectionMetabaseSetup(
         {
           command: 'setup',
           projectDir,
@@ -640,7 +640,7 @@ describe('runKloConnectionMetabaseSetup', () => {
     const io = makeIo();
 
     await expect(
-      runKloConnectionMetabaseSetup(
+      runKtxConnectionMetabaseSetup(
         {
           command: 'setup',
           projectDir,
@@ -660,8 +660,8 @@ describe('runKloConnectionMetabaseSetup', () => {
       ),
     ).resolves.toBe(0);
 
-    const updatedProject = await loadKloProject({ projectDir });
-    const store = new LocalMetabaseSourceStateReader({ dbPath: kloLocalStateDbPath(updatedProject) });
+    const updatedProject = await loadKtxProject({ projectDir });
+    const store = new LocalMetabaseSourceStateReader({ dbPath: ktxLocalStateDbPath(updatedProject) });
     await expect(store.listDatabaseMappings('metabase')).resolves.toMatchObject([
       { metabaseDatabaseId: 1, targetConnectionId: 'orbit', syncEnabled: true },
       { metabaseDatabaseId: 2, targetConnectionId: null, syncEnabled: false },
@@ -676,7 +676,7 @@ describe('runKloConnectionMetabaseSetup', () => {
     const io = makeIo();
 
     await expect(
-      runKloConnectionMetabaseSetup(
+      runKtxConnectionMetabaseSetup(
         {
           command: 'setup',
           projectDir,
@@ -712,7 +712,7 @@ describe('runKloConnectionMetabaseSetup', () => {
     const io = makeIo();
 
     await expect(
-      runKloConnectionMetabaseSetup(
+      runKtxConnectionMetabaseSetup(
         {
           command: 'setup',
           projectDir,
@@ -759,7 +759,7 @@ describe('runKloConnectionMetabaseSetup', () => {
     const io = makeIo();
 
     await expect(
-      runKloConnectionMetabaseSetup(
+      runKtxConnectionMetabaseSetup(
         {
           command: 'setup',
           projectDir,
@@ -782,12 +782,12 @@ describe('runKloConnectionMetabaseSetup', () => {
       ),
     ).resolves.toBe(1);
 
-    const config = await readFile(join(projectDir, 'klo.yaml'), 'utf-8');
+    const config = await readFile(join(projectDir, 'ktx.yaml'), 'utf-8');
     expect(config).toContain('driver: metabase');
-    expect(io.stderr()).toContain(`klo ingest metabase --project-dir ${projectDir}`);
+    expect(io.stderr()).toContain(`ktx ingest metabase --project-dir ${projectDir}`);
 
-    const updatedProject = await loadKloProject({ projectDir });
-    const store = new LocalMetabaseSourceStateReader({ dbPath: kloLocalStateDbPath(updatedProject) });
+    const updatedProject = await loadKtxProject({ projectDir });
+    const store = new LocalMetabaseSourceStateReader({ dbPath: ktxLocalStateDbPath(updatedProject) });
     await expect(store.listDatabaseMappings('metabase')).resolves.toMatchObject([
       { metabaseDatabaseId: 2, targetConnectionId: 'orbit' },
     ]);
@@ -810,7 +810,7 @@ describe('runKloConnectionMetabaseSetup', () => {
     const io = makeIo();
 
     await expect(
-      runKloConnectionMetabaseSetup(
+      runKtxConnectionMetabaseSetup(
         {
           command: 'setup',
           projectDir,
@@ -857,7 +857,7 @@ describe('runKloConnectionMetabaseSetup', () => {
     const interactiveMetabaseCredential = 'mb_interactive_fixture';
 
     await expect(
-      runKloConnectionMetabaseSetup(
+      runKtxConnectionMetabaseSetup(
         {
           command: 'setup',
           projectDir,
@@ -882,13 +882,13 @@ describe('runKloConnectionMetabaseSetup', () => {
       ),
     ).resolves.toBe(0);
 
-    const config = await readFile(join(projectDir, 'klo.yaml'), 'utf-8');
+    const config = await readFile(join(projectDir, 'ktx.yaml'), 'utf-8');
     expect(config).toContain('driver: metabase');
     expect(config).toContain('api_url: http://metabase.example.test:3000');
     expect(config).toContain(`api_key: ${interactiveMetabaseCredential}`);
 
-    const updatedProject = await loadKloProject({ projectDir });
-    const store = new LocalMetabaseSourceStateReader({ dbPath: kloLocalStateDbPath(updatedProject) });
+    const updatedProject = await loadKtxProject({ projectDir });
+    const store = new LocalMetabaseSourceStateReader({ dbPath: ktxLocalStateDbPath(updatedProject) });
     await expect(store.listDatabaseMappings('metabase')).resolves.toMatchObject([
       {
         metabaseDatabaseId: 2,
@@ -931,7 +931,7 @@ describe('runKloConnectionMetabaseSetup', () => {
     const events: string[] = [];
 
     await expect(
-      runKloConnectionMetabaseSetup(
+      runKtxConnectionMetabaseSetup(
         {
           command: 'setup',
           projectDir,
@@ -958,8 +958,8 @@ describe('runKloConnectionMetabaseSetup', () => {
       ),
     ).resolves.toBe(0);
 
-    const updatedProject = await loadKloProject({ projectDir });
-    const store = new LocalMetabaseSourceStateReader({ dbPath: kloLocalStateDbPath(updatedProject) });
+    const updatedProject = await loadKtxProject({ projectDir });
+    const store = new LocalMetabaseSourceStateReader({ dbPath: ktxLocalStateDbPath(updatedProject) });
     await expect(store.listDatabaseMappings('metabase')).resolves.toMatchObject([
       { metabaseDatabaseId: 2, targetConnectionId: 'orbit', syncEnabled: true },
       { metabaseDatabaseId: 3, targetConnectionId: 'warehouse2', syncEnabled: false },
@@ -997,7 +997,7 @@ describe('runKloConnectionMetabaseSetup', () => {
     const events: string[] = [];
 
     await expect(
-      runKloConnectionMetabaseSetup(
+      runKtxConnectionMetabaseSetup(
         {
           command: 'setup',
           projectDir,
@@ -1023,7 +1023,7 @@ describe('runKloConnectionMetabaseSetup', () => {
       ),
     ).resolves.toBe(0);
 
-    expect(events).toContain('intro:KLO Metabase setup');
+    expect(events).toContain('intro:KTX Metabase setup');
     expect(events.some((event) => event.startsWith('spinner.start:Testing Metabase connection'))).toBe(true);
     expect(events.some((event) => event.startsWith('spinner.stop:Metabase reachable'))).toBe(true);
     expect(events.some((event) => event.startsWith('spinner.start:Discovering Metabase databases'))).toBe(true);
@@ -1053,7 +1053,7 @@ describe('runKloConnectionMetabaseSetup', () => {
     const io = makeIo();
 
     await expect(
-      runKloConnectionMetabaseSetup(
+      runKtxConnectionMetabaseSetup(
         {
           command: 'setup',
           projectDir,
@@ -1081,7 +1081,7 @@ describe('runKloConnectionMetabaseSetup', () => {
       },
     });
 
-    const beforeConfig = await readFile(join(projectDir, 'klo.yaml'), 'utf-8');
+    const beforeConfig = await readFile(join(projectDir, 'ktx.yaml'), 'utf-8');
     const metabaseClient = makeMetabaseClient({
       testConnectionSuccess: true,
       databases: [
@@ -1098,7 +1098,7 @@ describe('runKloConnectionMetabaseSetup', () => {
     const cancelMetabaseCredential = 'mb_cancel_fixture';
 
     await expect(
-      runKloConnectionMetabaseSetup(
+      runKtxConnectionMetabaseSetup(
         {
           command: 'setup',
           projectDir,
@@ -1126,11 +1126,11 @@ describe('runKloConnectionMetabaseSetup', () => {
     expect(io.stderr()).toContain('Setup cancelled.');
     expect(io.stderr()).not.toContain(cancelMetabaseCredential);
 
-    const afterConfig = await readFile(join(projectDir, 'klo.yaml'), 'utf-8');
+    const afterConfig = await readFile(join(projectDir, 'ktx.yaml'), 'utf-8');
     expect(afterConfig).toBe(beforeConfig);
 
-    const updatedProject = await loadKloProject({ projectDir });
-    const store = new LocalMetabaseSourceStateReader({ dbPath: kloLocalStateDbPath(updatedProject) });
+    const updatedProject = await loadKtxProject({ projectDir });
+    const store = new LocalMetabaseSourceStateReader({ dbPath: ktxLocalStateDbPath(updatedProject) });
     await expect(store.listDatabaseMappings('metabase')).resolves.toEqual([]);
   });
 });

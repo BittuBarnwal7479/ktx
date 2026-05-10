@@ -1,5 +1,5 @@
 /* @jsxImportSource react */
-import type { MemoryFlowReplayInput } from '@klo/context/ingest';
+import type { MemoryFlowReplayInput } from '@ktx/context/ingest';
 import { render as renderInkTest } from 'ink-testing-library';
 import React, { type ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
@@ -9,7 +9,7 @@ import {
   renderMemoryFlowTui,
   sanitizeMemoryFlowTuiError,
   startLiveMemoryFlowTui,
-  type KloMemoryFlowTuiIo,
+  type KtxMemoryFlowTuiIo,
   type MemoryFlowInkInstance,
   type MemoryFlowInkRenderOptions,
 } from './memory-flow-tui.js';
@@ -72,7 +72,7 @@ function packagedReplayInput(overrides: Partial<MemoryFlowReplayInput> = {}): Me
   };
 }
 
-function makeIo(): { io: KloMemoryFlowTuiIo; stderr: () => string } {
+function makeIo(): { io: KtxMemoryFlowTuiIo; stderr: () => string } {
   let stderr = '';
   return { io: { stdin: { isTTY: true, setRawMode: vi.fn() }, stdout: { isTTY: true, columns: 120, write: vi.fn() }, stderr: { write(chunk: string) { stderr += chunk; } } }, stderr: () => stderr };
 }
@@ -103,7 +103,7 @@ describe('sanitizeMemoryFlowTuiError', () => {
 });
 
 describe('MemoryFlowTuiApp', () => {
-  it('always shows the KLO logo', () => {
+  it('always shows the KTX logo', () => {
     const { lastFrame } = renderInkTest(<MemoryFlowTuiApp input={replayInput()} terminalWidth={120} onExit={vi.fn()} showBoot={false} />);
     expect(lastFrame()).toContain('█████╔╝');
   });
@@ -198,12 +198,12 @@ describe('MemoryFlowTuiApp', () => {
     expect(frame).toContain('Created so far:');
     expect(frame).toContain('order lifecycle');
     expect(frame).toContain('customer metrics');
-    expect(frame).toContain('KLO finished ingesting your data');
-    expect(frame).toContain('klo sl list');
-    expect(frame).toContain('klo wiki list');
-    expect(frame).toContain('klo serve --mcp stdio --user-id local');
-    expect(frame).not.toContain(['klo', 'ask'].join(' '));
-    expect(frame).not.toContain(['klo', 'mcp'].join(' '));
+    expect(frame).toContain('KTX finished ingesting your data');
+    expect(frame).toContain('ktx sl list');
+    expect(frame).toContain('ktx wiki list');
+    expect(frame).toContain('ktx serve --mcp stdio --user-id local');
+    expect(frame).not.toContain(['ktx', 'ask'].join(' '));
+    expect(frame).not.toContain(['ktx', 'mcp'].join(' '));
   });
 
   it('handles quit while running', async () => {
@@ -254,7 +254,7 @@ describe('MemoryFlowTuiApp', () => {
 
   it('hides completion while running', () => {
     const { lastFrame } = renderInkTest(<MemoryFlowTuiApp input={runningReplayInput()} terminalWidth={120} onExit={vi.fn()} showBoot={false} />);
-    expect(lastFrame()).not.toContain('KLO finished ingesting');
+    expect(lastFrame()).not.toContain('KTX finished ingesting');
   });
 });
 

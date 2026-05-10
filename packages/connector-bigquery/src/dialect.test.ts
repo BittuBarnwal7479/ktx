@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { KloBigQueryDialect } from './dialect.js';
+import { KtxBigQueryDialect } from './dialect.js';
 
-describe('KloBigQueryDialect', () => {
-  const dialect = new KloBigQueryDialect();
+describe('KtxBigQueryDialect', () => {
+  const dialect = new KtxBigQueryDialect();
 
   it('quotes identifiers and formats project.dataset.table names', () => {
     expect(dialect.quoteIdentifier('order`items')).toBe('`order\\`items`');

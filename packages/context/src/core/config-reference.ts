@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { resolve } from 'node:path';
 
-export function resolveKloHomePath(path: string): string {
+export function resolveKtxHomePath(path: string): string {
   if (path === '~') {
     return homedir();
   }
@@ -14,7 +14,7 @@ export function resolveKloHomePath(path: string): string {
   return resolve(path);
 }
 
-export function resolveKloConfigReference(value: string | undefined, env: NodeJS.ProcessEnv): string | undefined {
+export function resolveKtxConfigReference(value: string | undefined, env: NodeJS.ProcessEnv): string | undefined {
   if (!value) {
     return undefined;
   }
@@ -26,7 +26,7 @@ export function resolveKloConfigReference(value: string | undefined, env: NodeJS
   }
 
   if (value.startsWith('file:')) {
-    const filePath = resolveKloHomePath(value.slice('file:'.length).trim());
+    const filePath = resolveKtxHomePath(value.slice('file:'.length).trim());
     const fileValue = readFileSync(filePath, 'utf8').trim();
     return fileValue.length > 0 ? fileValue : undefined;
   }

@@ -29,7 +29,7 @@ export function matchDbtTables(
   targetSchema?: string | null,
 ): DbtTableMatch[] {
   return dbtTables.map((dbtTable) => {
-    const hostTable = findMatchingKloTable(dbtTable, hostTables, targetSchema);
+    const hostTable = findMatchingKtxTable(dbtTable, hostTables, targetSchema);
 
     if (!hostTable) {
       return {
@@ -63,7 +63,7 @@ export function matchDbtTables(
   });
 }
 
-export function findMatchingKloTable(
+export function findMatchingKtxTable(
   dbtTable: DbtParsedTable,
   hostTables: DbtHostTableLite[],
   targetSchema?: string | null,

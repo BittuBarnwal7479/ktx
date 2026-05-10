@@ -1,16 +1,16 @@
-import type { LiveDatabaseIntrospectionPort } from '@klo/context/ingest';
-import type { KloProjectConnectionConfig } from '@klo/context/project';
+import type { LiveDatabaseIntrospectionPort } from '@ktx/context/ingest';
+import type { KtxProjectConnectionConfig } from '@ktx/context/project';
 import {
-  KloClickHouseScanConnector,
-  type KloClickHouseClientFactory,
-  type KloClickHouseConnectionConfig,
-  type KloClickHouseEndpointResolver,
+  KtxClickHouseScanConnector,
+  type KtxClickHouseClientFactory,
+  type KtxClickHouseConnectionConfig,
+  type KtxClickHouseEndpointResolver,
 } from './connector.js';
 
 interface CreateClickHouseLiveDatabaseIntrospectionOptions {
-  connections: Record<string, KloProjectConnectionConfig>;
-  clientFactory?: KloClickHouseClientFactory;
-  endpointResolver?: KloClickHouseEndpointResolver;
+  connections: Record<string, KtxProjectConnectionConfig>;
+  clientFactory?: KtxClickHouseClientFactory;
+  endpointResolver?: KtxClickHouseEndpointResolver;
   now?: () => Date;
 }
 
@@ -19,8 +19,8 @@ export function createClickHouseLiveDatabaseIntrospection(
 ): LiveDatabaseIntrospectionPort {
   return {
     async extractSchema(connectionId: string) {
-      const connection = options.connections[connectionId] as KloClickHouseConnectionConfig | undefined;
-      const connector = new KloClickHouseScanConnector({
+      const connection = options.connections[connectionId] as KtxClickHouseConnectionConfig | undefined;
+      const connector = new KtxClickHouseScanConnector({
         connectionId,
         connection,
         clientFactory: options.clientFactory,

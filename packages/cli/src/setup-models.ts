@@ -1,20 +1,20 @@
 import { writeFile } from 'node:fs/promises';
 import { cancel, isCancel, password, select, text } from '@clack/prompts';
-import { resolveKloConfigReference } from '@klo/context/core';
+import { resolveKtxConfigReference } from '@ktx/context/core';
 import {
-  type KloProjectConfig,
-  type KloProjectLlmConfig,
-  loadKloProject,
-  markKloSetupStepComplete,
-  serializeKloProjectConfig,
-} from '@klo/context/project';
-import { type KloLlmConfig, type KloLlmHealthCheckResult, runKloLlmHealthCheck } from '@klo/llm';
-import type { KloCliIo } from './cli-runtime.js';
+  type KtxProjectConfig,
+  type KtxProjectLlmConfig,
+  loadKtxProject,
+  markKtxSetupStepComplete,
+  serializeKtxProjectConfig,
+} from '@ktx/context/project';
+import { type KtxLlmConfig, type KtxLlmHealthCheckResult, runKtxLlmHealthCheck } from '@ktx/llm';
+import type { KtxCliIo } from './cli-runtime.js';
 import { withMenuOptionsSpacing, withTextInputNavigation } from './prompt-navigation.js';
 import { withSetupInterruptConfirmation } from './setup-interrupt.js';
 import { envCredentialReference, writeProjectLocalSecretReference } from './setup-secrets.js';
 
-export interface KloSetupModelArgs {
+export interface KtxSetupModelArgs {
   projectDir: string;
   inputMode: 'auto' | 'disabled';
   anthropicApiKeyEnv?: string;
@@ -25,7 +25,7 @@ export interface KloSetupModelArgs {
   skipLlm: boolean;
 }
 
-export type KloSetupModelResult =
+export type KtxSetupModelResult =
   | { status: 'ready'; projectDir: string }
   | { status: 'skipped'; projectDir: string }
   | { status: 'back'; projectDir: string }
@@ -38,19 +38,19 @@ export interface AnthropicModelChoice {
   recommended: boolean;
 }
 
-export interface KloSetupModelPromptAdapter {
+export interface KtxSetupModelPromptAdapter {
   select(options: { message: string; options: Array<{ value: string; label: string }> }): Promise<string>;
   text(options: { message: string; placeholder?: string }): Promise<string | undefined>;
   password(options: { message: string }): Promise<string | undefined>;
   cancel(message: string): void;
 }
 
-export interface KloSetupModelDeps {
+export interface KtxSetupModelDeps {
   env?: NodeJS.ProcessEnv;
   fetch?: typeof fetch;
-  prompts?: KloSetupModelPromptAdapter;
+  prompts?: KtxSetupModelPromptAdapter;
   listModels?: (apiKey: string) => Promise<AnthropicModelChoice[]>;
-  healthCheck?: (config: KloLlmConfig) => Promise<KloLlmHealthCheckResult>;
+  healthCheck?: (config: KtxLlmConfig) => Promise<KtxLlmHealthCheckResult>;
 }
 
 export const BUNDLED_ANTHROPIC_MODEL_REGISTRY_VERSION = '2026-05-07';
@@ -69,12 +69,12 @@ const HIDDEN_ANTHROPIC_MODEL_PATTERNS = [
 ];
 
 const ANTHROPIC_CREDENTIAL_PROMPT_CONTEXT =
-  'KLO uses the key to verify Anthropic model access now and to run ingest agents that turn schemas, SQL, ' +
-  'BI metadata, and docs into semantic-layer sources and wiki context. klo.yaml stores an env: or file: ' +
+  'KTX uses the key to verify Anthropic model access now and to run ingest agents that turn schemas, SQL, ' +
+  'BI metadata, and docs into semantic-layer sources and wiki context. ktx.yaml stores an env: or file: ' +
   'reference, not the raw key.';
 
 const ANTHROPIC_MODEL_PROMPT_CONTEXT =
-  'KLO uses this as the default model for ingest agents that turn schemas, SQL, BI metadata, and docs ' +
+  'KTX uses this as the default model for ingest agents that turn schemas, SQL, BI metadata, and docs ' +
   'into semantic-layer sources and wiki context.';
 
 type AnthropicModelDiscoveryErrorReason = 'authentication' | 'http' | 'empty-response';
@@ -102,7 +102,7 @@ type ChooseModelResult =
   | { status: 'ready'; model: string }
   | { status: 'back' | 'missing-input' | 'invalid-credential' };
 
-function createPromptAdapter(): KloSetupModelPromptAdapter {
+function createPromptAdapter(): KtxSetupModelPromptAdapter {
   return {
     async select(options) {
       const value = await withSetupInterruptConfirmation(() => select(withMenuOptionsSpacing(options)));
@@ -170,7 +170,7 @@ export async function fetchAnthropicModels(
   return models.map((item, index) => ({ ...item, recommended: index === Math.max(recommendedIndex, 0) }));
 }
 
-function hasCompletedLlm(config: KloProjectConfig): boolean {
+function hasCompletedLlm(config: KtxProjectConfig): boolean {
   return (
     config.setup?.completed_steps.includes('llm') === true &&
     config.llm.provider.backend === 'anthropic' &&
@@ -180,10 +180,10 @@ function hasCompletedLlm(config: KloProjectConfig): boolean {
 }
 
 function buildProjectLlmConfig(
-  existing: KloProjectLlmConfig,
+  existing: KtxProjectLlmConfig,
   credentialRef: string,
   model: string,
-): KloProjectLlmConfig {
+): KtxProjectLlmConfig {
   return {
     provider: {
       backend: 'anthropic',
@@ -194,7 +194,7 @@ function buildProjectLlmConfig(
   };
 }
 
-function buildHealthConfig(credentialValue: string, model: string): KloLlmConfig {
+function buildHealthConfig(credentialValue: string, model: string): KtxLlmConfig {
   return {
     backend: 'anthropic',
     anthropic: { apiKey: credentialValue },
@@ -204,14 +204,14 @@ function buildHealthConfig(credentialValue: string, model: string): KloLlmConfig
 }
 
 async function chooseCredentialRef(
-  args: KloSetupModelArgs,
-  io: KloCliIo,
-  deps: KloSetupModelDeps,
+  args: KtxSetupModelArgs,
+  io: KtxCliIo,
+  deps: KtxSetupModelDeps,
 ): Promise<{ status: 'ready'; ref: string; value: string } | { status: 'back' | 'missing-input' }> {
   const env = deps.env ?? process.env;
   if (args.anthropicApiKeyEnv) {
     const ref = envCredentialReference(args.anthropicApiKeyEnv);
-    const value = resolveKloConfigReference(ref, env);
+    const value = resolveKtxConfigReference(ref, env);
     if (!value) {
       io.stderr.write(`Missing Anthropic API key: ${args.anthropicApiKeyEnv} is not set.\n`);
       return { status: 'missing-input' };
@@ -222,7 +222,7 @@ async function chooseCredentialRef(
     const ref = `file:${args.anthropicApiKeyFile}`;
     let value: string | undefined;
     try {
-      value = resolveKloConfigReference(ref, env);
+      value = resolveKtxConfigReference(ref, env);
     } catch {
       value = undefined;
     }
@@ -245,7 +245,7 @@ async function chooseCredentialRef(
   }
   while (true) {
     const choice = await prompts.select({
-      message: `How should KLO find your Anthropic API key?\n\n${ANTHROPIC_CREDENTIAL_PROMPT_CONTEXT}`,
+      message: `How should KTX find your Anthropic API key?\n\n${ANTHROPIC_CREDENTIAL_PROMPT_CONTEXT}`,
       options: [
         { value: 'env', label: 'Use ANTHROPIC_API_KEY from the environment' },
         { value: 'paste', label: 'Paste a key and save it as a local secret file' },
@@ -257,7 +257,7 @@ async function chooseCredentialRef(
     }
     if (choice === 'paste') {
       io.stdout.write(
-        'KLO will save the key in .klo/secrets/anthropic-api-key with local file permissions, then write a file: reference in klo.yaml.\n',
+        'KTX will save the key in .ktx/secrets/anthropic-api-key with local file permissions, then write a file: reference in ktx.yaml.\n',
       );
       const value = await prompts.password({ message: withTextInputNavigation('Anthropic API key') });
       if (value === undefined) {
@@ -275,7 +275,7 @@ async function chooseCredentialRef(
     }
 
     const ref = envCredentialReference('ANTHROPIC_API_KEY');
-    const value = resolveKloConfigReference(ref, env);
+    const value = resolveKtxConfigReference(ref, env);
     if (!value) {
       io.stderr.write('Missing Anthropic API key: ANTHROPIC_API_KEY is not set.\n');
       return { status: 'missing-input' };
@@ -285,10 +285,10 @@ async function chooseCredentialRef(
 }
 
 async function chooseModel(
-  args: KloSetupModelArgs,
+  args: KtxSetupModelArgs,
   credentialValue: string,
-  io: KloCliIo,
-  deps: KloSetupModelDeps,
+  io: KtxCliIo,
+  deps: KtxSetupModelDeps,
 ): Promise<ChooseModelResult> {
   if (args.anthropicModel) {
     return { status: 'ready', model: args.anthropicModel };
@@ -326,7 +326,7 @@ async function chooseModel(
     { value: 'back', label: 'Back' },
   ];
   const choice = await prompts.select({
-    message: `Which Anthropic model should KLO use?\n\n${ANTHROPIC_MODEL_PROMPT_CONTEXT}`,
+    message: `Which Anthropic model should KTX use?\n\n${ANTHROPIC_MODEL_PROMPT_CONTEXT}`,
     options: modelOptions,
   });
   if (choice === 'back') {
@@ -346,8 +346,8 @@ async function chooseModel(
 }
 
 async function persistLlmConfig(projectDir: string, credentialRef: string, model: string): Promise<void> {
-  const project = await loadKloProject({ projectDir });
-  const config = markKloSetupStepComplete(
+  const project = await loadKtxProject({ projectDir });
+  const config = markKtxSetupStepComplete(
     {
       ...project.config,
       llm: buildProjectLlmConfig(project.config.llm, credentialRef, model),
@@ -361,10 +361,10 @@ async function persistLlmConfig(projectDir: string, credentialRef: string, model
     },
     'llm',
   );
-  await writeFile(project.configPath, serializeKloProjectConfig(config), 'utf-8');
+  await writeFile(project.configPath, serializeKtxProjectConfig(config), 'utf-8');
 }
 
-function buildInteractiveRetryArgs(args: KloSetupModelArgs): KloSetupModelArgs {
+function buildInteractiveRetryArgs(args: KtxSetupModelArgs): KtxSetupModelArgs {
   return {
     projectDir: args.projectDir,
     inputMode: args.inputMode,
@@ -373,17 +373,17 @@ function buildInteractiveRetryArgs(args: KloSetupModelArgs): KloSetupModelArgs {
   };
 }
 
-export async function runKloSetupAnthropicModelStep(
-  args: KloSetupModelArgs,
-  io: KloCliIo,
-  deps: KloSetupModelDeps = {},
-): Promise<KloSetupModelResult> {
+export async function runKtxSetupAnthropicModelStep(
+  args: KtxSetupModelArgs,
+  io: KtxCliIo,
+  deps: KtxSetupModelDeps = {},
+): Promise<KtxSetupModelResult> {
   if (args.skipLlm) {
     io.stdout.write('LLM setup skipped.\n');
     return { status: 'skipped', projectDir: args.projectDir };
   }
 
-  const project = await loadKloProject({ projectDir: args.projectDir });
+  const project = await loadKtxProject({ projectDir: args.projectDir });
   if (
     args.forcePrompt !== true &&
     hasCompletedLlm(project.config) &&
@@ -395,7 +395,7 @@ export async function runKloSetupAnthropicModelStep(
     return { status: 'ready', projectDir: args.projectDir };
   }
 
-  const healthCheck = deps.healthCheck ?? ((config: KloLlmConfig) => runKloLlmHealthCheck(config));
+  const healthCheck = deps.healthCheck ?? ((config: KtxLlmConfig) => runKtxLlmHealthCheck(config));
   let attemptArgs = args;
 
   while (true) {

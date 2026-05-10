@@ -1,15 +1,15 @@
 import { type Command, InvalidArgumentError, Option } from '@commander-js/extra-typings';
-import type { KloCliCommandContext } from '../cli-program.js';
+import type { KtxCliCommandContext } from '../cli-program.js';
 import { resolveCommandProjectDir } from '../cli-program.js';
-import type { KloSetupDatabaseDriver } from '../setup-databases.js';
-import type { KloSetupSourceType } from '../setup-sources.js';
+import type { KtxSetupDatabaseDriver } from '../setup-databases.js';
+import type { KtxSetupSourceType } from '../setup-sources.js';
 import { registerDemoCommands } from './demo-commands.js';
 
 async function runSetupArgs(
-  context: KloCliCommandContext,
+  context: KtxCliCommandContext,
   args: Parameters<NonNullable<typeof context.deps.setup>>[0],
 ) {
-  const runner = context.deps.setup ?? (await import('../setup.js')).runKloSetup;
+  const runner = context.deps.setup ?? (await import('../setup.js')).runKtxSetup;
   context.setExitCode(await runner(args, context.io));
 }
 
@@ -28,7 +28,7 @@ function embeddingBackend(value: string): 'openai' | 'sentence-transformers' {
   throw new InvalidArgumentError(`invalid choice '${value}'`);
 }
 
-function databaseDriver(value: string): KloSetupDatabaseDriver {
+function databaseDriver(value: string): KtxSetupDatabaseDriver {
   if (
     value === 'sqlite' ||
     value === 'postgres' ||
@@ -43,7 +43,7 @@ function databaseDriver(value: string): KloSetupDatabaseDriver {
   throw new InvalidArgumentError(`invalid choice '${value}'`);
 }
 
-function sourceType(value: string): KloSetupSourceType {
+function sourceType(value: string): KtxSetupSourceType {
   if (
     value === 'dbt' ||
     value === 'metricflow' ||
@@ -109,7 +109,7 @@ function shouldShowSetupEntryMenu(
     embeddingApiKeyEnv?: string;
     embeddingApiKeyFile?: string;
     skipEmbeddings?: boolean;
-    database?: KloSetupDatabaseDriver[];
+    database?: KtxSetupDatabaseDriver[];
     databaseConnectionId?: string[];
     newDatabaseConnectionId?: string;
     databaseUrl?: string;
@@ -121,7 +121,7 @@ function shouldShowSetupEntryMenu(
     historicSqlServiceAccountPattern?: string[];
     historicSqlRedactionPattern?: string[];
     skipDatabases?: boolean;
-    source?: KloSetupSourceType;
+    source?: KtxSetupSourceType;
     sourceConnectionId?: string;
     sourcePath?: string;
     sourceGitUrl?: string;
@@ -210,13 +210,13 @@ function shouldShowSetupEntryMenu(
   ].some((optionName) => optionWasSpecified(command, optionName));
 }
 
-export function registerSetupCommands(program: Command, context: KloCliCommandContext): void {
+export function registerSetupCommands(program: Command, context: KtxCliCommandContext): void {
   const setup = program
     .command('setup')
-    .description('Set up or resume a local KLO project')
-    .option('--project-dir <path>', 'KLO project directory')
-    .option('--new', 'Create a new KLO project before setup', false)
-    .option('--existing', 'Use an existing KLO project', false)
+    .description('Set up or resume a local KTX project')
+    .option('--project-dir <path>', 'KTX project directory')
+    .option('--new', 'Create a new KTX project before setup', false)
+    .option('--existing', 'Use an existing KTX project', false)
     .option('--agents', 'Install agent integration only', false)
     .addOption(
       new Option('--target <target>', 'Agent target').choices([
@@ -247,10 +247,10 @@ export function registerSetupCommands(program: Command, context: KloCliCommandCo
     .option(
       '--database <driver>',
       'Database driver to configure; repeatable',
-      (value, previous: KloSetupDatabaseDriver[]) => {
+      (value, previous: KtxSetupDatabaseDriver[]) => {
         return [...previous, databaseDriver(value)];
       },
-      [] as KloSetupDatabaseDriver[],
+      [] as KtxSetupDatabaseDriver[],
     )
     .option(
       '--database-connection-id <id>',
@@ -291,7 +291,7 @@ export function registerSetupCommands(program: Command, context: KloCliCommandCo
       (value, previous: string[]) => [...previous, value],
       [],
     )
-    .option('--skip-databases', 'Leave database setup incomplete; KLO cannot work until a primary source is added', false)
+    .option('--skip-databases', 'Leave database setup incomplete; KTX cannot work until a primary source is added', false)
     .addOption(new Option('--source <type>', 'Source connector type').argParser(sourceType))
     .option('--source-connection-id <id>', 'Connection id for source setup')
     .option('--source-path <path>', 'Local source path for dbt, MetricFlow, or LookML')
@@ -421,9 +421,9 @@ export function registerSetupCommands(program: Command, context: KloCliCommandCo
     });
   });
 
-  registerDemoCommands(setup, context, { description: 'Run the packaged KLO demo from setup' });
+  registerDemoCommands(setup, context, { description: 'Run the packaged KTX demo from setup' });
 
-  const setupContext = setup.command('context').description('Build, inspect, and recover setup-managed KLO context');
+  const setupContext = setup.command('context').description('Build, inspect, and recover setup-managed KTX context');
 
   function setupContextInputMode(command: {
     optsWithGlobals?: () => unknown;
@@ -435,7 +435,7 @@ export function registerSetupCommands(program: Command, context: KloCliCommandCo
 
   setupContext
     .command('build')
-    .description('Build agent-ready KLO context for setup')
+    .description('Build agent-ready KTX context for setup')
     .option('--no-input', 'Disable interactive terminal input')
     .action(async (options: { input?: boolean }, command) => {
       await runSetupArgs(context, {
@@ -505,7 +505,7 @@ export function registerSetupCommands(program: Command, context: KloCliCommandCo
 
   setup
     .command('status')
-    .description('Show setup readiness for the resolved KLO project')
+    .description('Show setup readiness for the resolved KTX project')
     .option('--json', 'Print JSON output', false)
     .action(async (options: { json?: boolean }, command) => {
       await runSetupArgs(context, {

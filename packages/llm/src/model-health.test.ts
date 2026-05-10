@@ -1,15 +1,15 @@
 import { describe, expect, it, vi } from 'vitest';
-import { runKloLlmHealthCheck } from './model-health.js';
+import { runKtxLlmHealthCheck } from './model-health.js';
 
 const anthropicModel = { modelId: 'claude-sonnet-4-6' } as never;
 
-describe('KLO LLM health check', () => {
+describe('KTX LLM health check', () => {
   it('runs a minimal non-streaming model call through the configured provider', async () => {
     const generateText = vi.fn(async () => ({ text: 'ok' }));
     const createAnthropic = vi.fn(() => vi.fn(() => anthropicModel));
 
     await expect(
-      runKloLlmHealthCheck(
+      runKtxLlmHealthCheck(
         {
           backend: 'anthropic',
           anthropic: { apiKey: 'sk-ant-test' },
@@ -40,7 +40,7 @@ describe('KLO LLM health check', () => {
     });
 
     await expect(
-      runKloLlmHealthCheck(
+      runKtxLlmHealthCheck(
         {
           backend: 'anthropic',
           anthropic: { apiKey: 'sk-ant-secret' },

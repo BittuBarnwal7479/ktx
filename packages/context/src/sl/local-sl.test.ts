@@ -2,7 +2,7 @@ import { access, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { initKloProject, type KloLocalProject } from '../project/index.js';
+import { initKtxProject, type KtxLocalProject } from '../project/index.js';
 import {
   listLocalSlSources,
   readLocalSlSource,
@@ -46,11 +46,11 @@ const SUPPORT_YAML = [
 
 describe('local semantic-layer helpers', () => {
   let tempDir: string;
-  let project: KloLocalProject;
+  let project: KtxLocalProject;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-local-sl-'));
-    project = await initKloProject({ projectDir: join(tempDir, 'project'), projectName: 'warehouse' });
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-local-sl-'));
+    project = await initKtxProject({ projectDir: join(tempDir, 'project'), projectName: 'warehouse' });
   });
 
   afterEach(async () => {
@@ -102,8 +102,8 @@ describe('local semantic-layer helpers', () => {
       - name: amount
         type: number
 `,
-      'klo',
-      'klo@example.com',
+      'ktx',
+      'ktx@example.com',
       'Add manifest shard',
     );
 
@@ -144,8 +144,8 @@ describe('local semantic-layer helpers', () => {
       - name: amount
         type: number
 `,
-      'klo',
-      'klo@example.com',
+      'ktx',
+      'ktx@example.com',
       'Add manifest shard',
     );
 
@@ -184,7 +184,7 @@ describe('local semantic-layer helpers', () => {
       }),
     ]);
     expect(results[0]?.score).toBeGreaterThan(0);
-    await expect(access(join(project.projectDir, '.klo/db.sqlite'))).resolves.toBeUndefined();
+    await expect(access(join(project.projectDir, '.ktx/db.sqlite'))).resolves.toBeUndefined();
   });
 
   it('searches all connections with one global hybrid ranking pass', async () => {
@@ -260,8 +260,8 @@ describe('local semantic-layer helpers', () => {
         null,
         2,
       )}\n`,
-      'klo',
-      'klo@example.com',
+      'ktx',
+      'ktx@example.com',
       'Seed dictionary profile',
     );
 

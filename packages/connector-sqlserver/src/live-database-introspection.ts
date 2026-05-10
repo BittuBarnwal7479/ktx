@@ -1,16 +1,16 @@
-import type { LiveDatabaseIntrospectionPort } from '@klo/context/ingest';
-import type { KloProjectConnectionConfig } from '@klo/context/project';
+import type { LiveDatabaseIntrospectionPort } from '@ktx/context/ingest';
+import type { KtxProjectConnectionConfig } from '@ktx/context/project';
 import {
-  KloSqlServerScanConnector,
-  type KloSqlServerConnectionConfig,
-  type KloSqlServerEndpointResolver,
-  type KloSqlServerPoolFactory,
+  KtxSqlServerScanConnector,
+  type KtxSqlServerConnectionConfig,
+  type KtxSqlServerEndpointResolver,
+  type KtxSqlServerPoolFactory,
 } from './connector.js';
 
 interface CreateSqlServerLiveDatabaseIntrospectionOptions {
-  connections: Record<string, KloProjectConnectionConfig>;
-  poolFactory?: KloSqlServerPoolFactory;
-  endpointResolver?: KloSqlServerEndpointResolver;
+  connections: Record<string, KtxProjectConnectionConfig>;
+  poolFactory?: KtxSqlServerPoolFactory;
+  endpointResolver?: KtxSqlServerEndpointResolver;
   now?: () => Date;
 }
 
@@ -19,8 +19,8 @@ export function createSqlServerLiveDatabaseIntrospection(
 ): LiveDatabaseIntrospectionPort {
   return {
     async extractSchema(connectionId: string) {
-      const connection = options.connections[connectionId] as KloSqlServerConnectionConfig | undefined;
-      const connector = new KloSqlServerScanConnector({
+      const connection = options.connections[connectionId] as KtxSqlServerConnectionConfig | undefined;
+      const connector = new KtxSqlServerScanConnector({
         connectionId,
         connection,
         poolFactory: options.poolFactory,

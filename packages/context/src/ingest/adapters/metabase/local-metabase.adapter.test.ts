@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import type { KloProjectConnectionConfig } from '../../../project/index.js';
+import type { KtxProjectConnectionConfig } from '../../../project/index.js';
 import { metabaseRuntimeConfigFromLocalConnection } from './local-metabase.adapter.js';
 
 describe('metabaseRuntimeConfigFromLocalConnection', () => {
-  it('resolves api_url and env-backed api_key_ref from a flat klo.yaml connection', () => {
-    const connection: KloProjectConnectionConfig = {
+  it('resolves api_url and env-backed api_key_ref from a flat ktx.yaml connection', () => {
+    const connection: KtxProjectConnectionConfig = {
       driver: 'metabase',
       api_url: 'https://metabase.example.com',
       api_key_ref: 'env:METABASE_API_KEY', // pragma: allowlist secret
@@ -21,7 +21,7 @@ describe('metabaseRuntimeConfigFromLocalConnection', () => {
   });
 
   it('accepts url as the local api URL alias', () => {
-    const connection: KloProjectConnectionConfig = {
+    const connection: KtxProjectConnectionConfig = {
       driver: 'metabase',
       url: 'https://metabase.example.com',
       api_key: 'literal-test-key', // pragma: allowlist secret
@@ -34,7 +34,7 @@ describe('metabaseRuntimeConfigFromLocalConnection', () => {
   });
 
   it('rejects proxy-bearing local Metabase connections', () => {
-    const connection: KloProjectConnectionConfig = {
+    const connection: KtxProjectConnectionConfig = {
       driver: 'metabase',
       api_url: 'https://metabase.example.com',
       api_key: 'literal-test-key', // pragma: allowlist secret
@@ -42,12 +42,12 @@ describe('metabaseRuntimeConfigFromLocalConnection', () => {
     };
 
     expect(() => metabaseRuntimeConfigFromLocalConnection('prod-metabase', connection)).toThrow(
-      'Standalone KLO does not support proxy-bearing Metabase connections yet',
+      'Standalone KTX does not support proxy-bearing Metabase connections yet',
     );
   });
 
   it('rejects non-Metabase source connections', () => {
-    const connection: KloProjectConnectionConfig = {
+    const connection: KtxProjectConnectionConfig = {
       driver: 'postgres',
       url: 'postgres://localhost/db',
     };

@@ -2,10 +2,10 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { KloEmbeddingConfig, KloEmbeddingHealthCheckOptions, KloEmbeddingHealthCheckResult } from '@klo/llm';
+import type { KtxEmbeddingConfig, KtxEmbeddingHealthCheckOptions, KtxEmbeddingHealthCheckResult } from '@ktx/llm';
 import {
   formatDoctorReport,
-  runKloDoctor,
+  runKtxDoctor,
   runSetupDoctorChecks,
   type DoctorCheck,
 } from './doctor.js';
@@ -32,13 +32,13 @@ function makeIo() {
 }
 
 type EmbeddingHealthCheck = (
-  config: KloEmbeddingConfig,
-  options?: KloEmbeddingHealthCheckOptions,
-) => Promise<KloEmbeddingHealthCheckResult>;
+  config: KtxEmbeddingConfig,
+  options?: KtxEmbeddingHealthCheckOptions,
+) => Promise<KtxEmbeddingHealthCheckResult>;
 
 async function writeProjectConfig(projectDir: string, embeddingLines: string[]): Promise<void> {
   await writeFile(
-    join(projectDir, 'klo.yaml'),
+    join(projectDir, 'ktx.yaml'),
     [
       'project: warehouse',
       'connections:',
@@ -69,9 +69,9 @@ describe('formatDoctorReport', () => {
       },
     ];
 
-    expect(formatDoctorReport({ title: 'KLO setup doctor', checks })).toBe(
+    expect(formatDoctorReport({ title: 'KTX setup doctor', checks })).toBe(
       [
-        'KLO setup doctor',
+        'KTX setup doctor',
         'PASS Node 22+: v22.16.0 ABI 127',
         'FAIL Native SQLite: Cannot load better-sqlite3',
         '     Fix: Run: pnpm run native:rebuild',
@@ -85,12 +85,12 @@ describe('runSetupDoctorChecks', () => {
   it('returns pass checks when injected commands and file checks succeed', async () => {
     const checks = await runSetupDoctorChecks({
       env: { PATH: '/bin' },
-      workspaceRoot: '/workspace/klo',
+      workspaceRoot: '/workspace/ktx',
       execText: async (command, args) => {
         if (command === 'pnpm' && args[0] === '--version') return '10.28.0';
         if (command === 'corepack' && args[0] === '--version') return '0.32.0';
         if (command === 'uv' && args[0] === '--version') return 'uv 0.9.5';
-        if (command === process.execPath && args.includes('--version')) return '@klo/cli 0.0.0-private';
+        if (command === process.execPath && args.includes('--version')) return '@ktx/cli 0.0.0-private';
         throw new Error(`${command} ${args.join(' ')}`);
       },
       pathExists: async () => true,
@@ -111,7 +111,7 @@ describe('runSetupDoctorChecks', () => {
   it('returns exact fixes when setup checks fail', async () => {
     const checks = await runSetupDoctorChecks({
       env: {},
-      workspaceRoot: '/workspace/klo',
+      workspaceRoot: '/workspace/ktx',
       execText: async (command) => {
         throw new Error(`${command} not found`);
       },
@@ -140,12 +140,12 @@ describe('runSetupDoctorChecks', () => {
   it('treats missing corepack as a warning so setup doctor can still pass', async () => {
     const checks = await runSetupDoctorChecks({
       env: { PATH: '/bin' },
-      workspaceRoot: '/workspace/klo',
+      workspaceRoot: '/workspace/ktx',
       execText: async (command, args) => {
         if (command === 'pnpm' && args[0] === '--version') return '10.28.0';
         if (command === 'corepack' && args[0] === '--version') throw new Error('spawn corepack ENOENT');
         if (command === 'uv' && args[0] === '--version') return 'uv 0.9.5';
-        if (command === process.execPath && args.includes('--version')) return '@klo/cli 0.0.0-private';
+        if (command === process.execPath && args.includes('--version')) return '@ktx/cli 0.0.0-private';
         throw new Error(`${command} ${args.join(' ')}`);
       },
       pathExists: async () => true,
@@ -154,7 +154,7 @@ describe('runSetupDoctorChecks', () => {
     const testIo = makeIo();
 
     await expect(
-      runKloDoctor({ command: 'setup', outputMode: 'plain', inputMode: 'disabled' }, testIo.io, {
+      runKtxDoctor({ command: 'setup', outputMode: 'plain', inputMode: 'disabled' }, testIo.io, {
         runSetupChecks: async () => checks,
       }),
     ).resolves.toBe(0);
@@ -171,11 +171,11 @@ describe('runSetupDoctorChecks', () => {
   });
 });
 
-describe('runKloDoctor', () => {
+describe('runKtxDoctor', () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-doctor-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-doctor-'));
   });
 
   afterEach(async () => {
@@ -186,7 +186,7 @@ describe('runKloDoctor', () => {
     const testIo = makeIo();
 
     await expect(
-      runKloDoctor(
+      runKtxDoctor(
         { command: 'setup', outputMode: 'plain', inputMode: 'disabled' },
         testIo.io,
         {
@@ -204,7 +204,7 @@ describe('runKloDoctor', () => {
       ),
     ).resolves.toBe(1);
 
-    expect(testIo.stdout()).toContain('KLO setup doctor');
+    expect(testIo.stdout()).toContain('KTX setup doctor');
     expect(testIo.stdout()).toContain('FAIL TypeScript package build: Missing packages/cli/dist/bin.js');
     expect(testIo.stdout()).toContain('Fix: Run: pnpm run build');
     expect(testIo.stderr()).toBe('');
@@ -214,7 +214,7 @@ describe('runKloDoctor', () => {
     const testIo = makeIo();
 
     await expect(
-      runKloDoctor(
+      runKtxDoctor(
         { command: 'setup', outputMode: 'json', inputMode: 'disabled' },
         testIo.io,
         {
@@ -226,14 +226,14 @@ describe('runKloDoctor', () => {
     ).resolves.toBe(0);
 
     expect(JSON.parse(testIo.stdout())).toEqual({
-      title: 'KLO setup doctor',
+      title: 'KTX setup doctor',
       checks: [{ id: 'node', label: 'Node 22+', status: 'pass', detail: 'v22.16.0 ABI 127' }],
     });
   });
 
-  it('runs project checks against a valid klo.yaml', async () => {
+  it('runs project checks against a valid ktx.yaml', async () => {
     await writeFile(
-      join(tempDir, 'klo.yaml'),
+      join(tempDir, 'ktx.yaml'),
       [
         'project: warehouse',
         'connections:',
@@ -250,7 +250,7 @@ describe('runKloDoctor', () => {
     const testIo = makeIo();
 
     await expect(
-      runKloDoctor(
+      runKtxDoctor(
         { command: 'project', projectDir: tempDir, outputMode: 'plain', inputMode: 'disabled' },
         testIo.io,
         {
@@ -261,14 +261,14 @@ describe('runKloDoctor', () => {
       ),
     ).resolves.toBe(0);
 
-    expect(testIo.stdout()).toContain('KLO project doctor');
+    expect(testIo.stdout()).toContain('KTX project doctor');
     expect(testIo.stdout()).toContain('PASS Project config: warehouse');
     expect(testIo.stdout()).toContain('PASS Connections: 1 configured');
   });
 
   it('includes Postgres historic-SQL readiness in project doctor output', async () => {
     await writeFile(
-      join(tempDir, 'klo.yaml'),
+      join(tempDir, 'ktx.yaml'),
       [
         'project: warehouse',
         'connections:',
@@ -295,12 +295,12 @@ describe('runKloDoctor', () => {
         status: 'warn' as const,
         detail:
           'pg_stat_statements ready (PostgreSQL 16.4) with warnings: pg_stat_statements.max is 1000; set it to at least 5000 to reduce query-template eviction churn',
-        fix: `Update the Postgres parameter group or config, then rerun \`klo dev doctor --project-dir ${tempDir}\``,
+        fix: `Update the Postgres parameter group or config, then rerun \`ktx dev doctor --project-dir ${tempDir}\``,
       },
     ]);
 
     await expect(
-      runKloDoctor(
+      runKtxDoctor(
         { command: 'project', projectDir: tempDir, outputMode: 'plain', inputMode: 'disabled' },
         testIo.io,
         {
@@ -322,7 +322,7 @@ describe('runKloDoctor', () => {
     const testIo = makeIo();
 
     await expect(
-      runKloDoctor(
+      runKtxDoctor(
         { command: 'project', projectDir: tempDir, outputMode: 'plain', inputMode: 'disabled' },
         testIo.io,
         {
@@ -338,7 +338,7 @@ describe('runKloDoctor', () => {
       'Semantic lane will be skipped; lexical, dictionary, and token lanes remain available.',
     );
     expect(testIo.stdout()).toContain(
-      `Fix: Run: klo setup --project-dir ${tempDir} --no-input`,
+      `Fix: Run: ktx setup --project-dir ${tempDir} --no-input`,
     );
   });
 
@@ -355,7 +355,7 @@ describe('runKloDoctor', () => {
     const testIo = makeIo();
 
     await expect(
-      runKloDoctor(
+      runKtxDoctor(
         { command: 'project', projectDir: tempDir, outputMode: 'plain', inputMode: 'disabled' },
         testIo.io,
         {
@@ -375,7 +375,7 @@ describe('runKloDoctor', () => {
         dimensions: 384,
         sentenceTransformers: { baseURL: 'http://127.0.0.1:8765', pathPrefix: '' },
       },
-      { text: 'KLO semantic search doctor probe', timeoutMs: 1234 },
+      { text: 'KTX semantic search doctor probe', timeoutMs: 1234 },
     );
     expect(testIo.stdout()).toContain(
       'PASS Semantic search embeddings: sentence-transformers/all-MiniLM-L6-v2 (384d) probe succeeded',
@@ -395,7 +395,7 @@ describe('runKloDoctor', () => {
     const testIo = makeIo();
 
     await expect(
-      runKloDoctor(
+      runKtxDoctor(
         { command: 'project', projectDir: tempDir, outputMode: 'plain', inputMode: 'disabled' },
         testIo.io,
         {
@@ -413,7 +413,7 @@ describe('runKloDoctor', () => {
         model: 'all-MiniLM-L6-v2',
         dimensions: 384,
       }),
-      { text: 'KLO semantic search doctor probe', timeoutMs: 120_000 },
+      { text: 'KTX semantic search doctor probe', timeoutMs: 120_000 },
     );
   });
 
@@ -433,7 +433,7 @@ describe('runKloDoctor', () => {
     const testIo = makeIo();
 
     await expect(
-      runKloDoctor(
+      runKtxDoctor(
         { command: 'project', projectDir: tempDir, outputMode: 'json', inputMode: 'disabled' },
         testIo.io,
         {
@@ -454,7 +454,7 @@ describe('runKloDoctor', () => {
       status: 'warn',
       detail:
         'sentence-transformers/all-MiniLM-L6-v2 (384d) probe failed: connect ECONNREFUSED 127.0.0.1:8765. Semantic lane will be skipped; lexical, dictionary, and token lanes remain available.',
-      fix: `Run: klo setup --project-dir ${tempDir} --no-input`,
+      fix: `Run: ktx setup --project-dir ${tempDir} --no-input`,
     });
   });
 });

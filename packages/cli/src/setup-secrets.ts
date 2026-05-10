@@ -14,7 +14,7 @@ export interface WriteProjectLocalSecretReferenceOptions {
 export async function writeProjectLocalSecretReference(
   options: WriteProjectLocalSecretReferenceOptions,
 ): Promise<string> {
-  const secretsDir = resolve(options.projectDir, '.klo/secrets');
+  const secretsDir = resolve(options.projectDir, '.ktx/secrets');
   const secretPath = join(secretsDir, options.fileName);
   await mkdir(secretsDir, { recursive: true });
   await writeFile(secretPath, `${options.value.trim()}\n`, { encoding: 'utf-8', mode: 0o600 });

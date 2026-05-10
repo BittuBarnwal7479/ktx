@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { AgentRunnerService } from '../agent/index.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { initKloProject, type KloLocalProject } from '../project/index.js';
+import { initKtxProject, type KtxLocalProject } from '../project/index.js';
 import { LocalMetabaseSourceStateReader } from './adapters/metabase/local-source-state-store.js';
 import { getLocalIngestStatus, runLocalMetabaseIngest } from './local-ingest.js';
 import type { ChunkResult, FetchContext, SourceAdapter } from './types.js';
@@ -72,11 +72,11 @@ class ThrowingFetchMetabaseSourceAdapter extends FakeMetabaseSourceAdapter {
 
 describe('runLocalMetabaseIngest', () => {
   let tempDir: string;
-  let project: KloLocalProject;
+  let project: KtxLocalProject;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-metabase-fanout-'));
-    project = await initKloProject({ projectDir: tempDir, force: true });
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-metabase-fanout-'));
+    project = await initKtxProject({ projectDir: tempDir, force: true });
     project.config.connections = {
       'prod-metabase': {
         driver: 'metabase',
@@ -94,11 +94,11 @@ describe('runLocalMetabaseIngest', () => {
   });
 
   async function seedMetabaseState(): Promise<void> {
-    const store = new LocalMetabaseSourceStateReader({ dbPath: join(tempDir, '.klo', 'db.sqlite') });
+    const store = new LocalMetabaseSourceStateReader({ dbPath: join(tempDir, '.ktx', 'db.sqlite') });
     await store.replaceSourceState({
       connectionId: 'prod-metabase',
       syncMode: 'ALL',
-      defaultTagNames: ['klo'],
+      defaultTagNames: ['ktx'],
       selections: [],
       mappings: [
         {
@@ -151,7 +151,7 @@ describe('runLocalMetabaseIngest', () => {
   });
 
   it('throws before runner work when there are no sync-enabled mapped rows', async () => {
-    const store = new LocalMetabaseSourceStateReader({ dbPath: join(tempDir, '.klo', 'db.sqlite') });
+    const store = new LocalMetabaseSourceStateReader({ dbPath: join(tempDir, '.ktx', 'db.sqlite') });
     await store.replaceSourceState({
       connectionId: 'prod-metabase',
       mappings: [
@@ -179,7 +179,7 @@ describe('runLocalMetabaseIngest', () => {
   });
 
   it('throws with refresh guidance for unhydrated sync-enabled rows', async () => {
-    const store = new LocalMetabaseSourceStateReader({ dbPath: join(tempDir, '.klo', 'db.sqlite') });
+    const store = new LocalMetabaseSourceStateReader({ dbPath: join(tempDir, '.ktx', 'db.sqlite') });
     await store.replaceSourceState({
       connectionId: 'prod-metabase',
       mappings: [
@@ -191,7 +191,7 @@ describe('runLocalMetabaseIngest', () => {
           metabaseDbName: null,
           targetConnectionId: 'warehouse_a',
           syncEnabled: true,
-          source: 'klo.yaml',
+          source: 'ktx.yaml',
         },
       ],
     });
@@ -203,7 +203,7 @@ describe('runLocalMetabaseIngest', () => {
         metabaseConnectionId: 'prod-metabase',
         agentRunner: new TestAgentRunner(),
       }),
-    ).rejects.toThrow('run `klo connection mapping refresh prod-metabase`');
+    ).rejects.toThrow('run `ktx connection mapping refresh prod-metabase`');
   });
 
   it('seeds yaml-only Metabase mappings before the unhydrated fan-out preflight', async () => {
@@ -230,7 +230,7 @@ describe('runLocalMetabaseIngest', () => {
         adapters: [new FakeMetabaseSourceAdapter()],
         metabaseConnectionId: 'prod-metabase',
       }),
-    ).rejects.toThrow('run `klo connection mapping refresh prod-metabase`');
+    ).rejects.toThrow('run `ktx connection mapping refresh prod-metabase`');
   });
 
   it('rejects source-dir uploads through the Metabase fan-out runner', async () => {
@@ -266,7 +266,7 @@ describe('runLocalMetabaseIngest', () => {
   it('captures fetch-time child failures and continues later mappings', async () => {
     await seedMetabaseState();
     project.config.connections.warehouse_c = { driver: 'postgres', url: 'postgres://localhost/c' };
-    const store = new LocalMetabaseSourceStateReader({ dbPath: join(tempDir, '.klo', 'db.sqlite') });
+    const store = new LocalMetabaseSourceStateReader({ dbPath: join(tempDir, '.ktx', 'db.sqlite') });
     await store.upsertDatabaseMapping({
       connectionId: 'prod-metabase',
       metabaseDatabaseId: 3,

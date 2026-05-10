@@ -1,5 +1,5 @@
 /* @jsxImportSource react */
-import type { MemoryFlowEvent, MemoryFlowReplayInput } from '@klo/context/ingest/memory-flow';
+import type { MemoryFlowEvent, MemoryFlowReplayInput } from '@ktx/context/ingest/memory-flow';
 import { Box, Text } from 'ink';
 import React, { type ReactNode } from 'react';
 import { buildDemoMetrics, formatCost, formatDuration } from './demo-metrics.js';
@@ -315,7 +315,7 @@ function pad(str: string, width: number): string {
   return str.length >= width ? str : str + ' '.repeat(width - str.length);
 }
 
-const KLO_LOGO_SMALL = [
+const KTX_LOGO_SMALL = [
   '██╗  ██╗██╗      ██████╗ ',
   '██║ ██╔╝██║     ██╔═══██╗',
   '█████╔╝ ██║     ██║   ██║',
@@ -328,7 +328,7 @@ export function Logo(props: { theme: HudTheme; done: boolean }): ReactNode {
   const color = props.done ? props.theme.complete : props.theme.active;
   return (
     <Box flexDirection="column" marginBottom={1} paddingLeft={2}>
-      {KLO_LOGO_SMALL.map((line, idx) => (
+      {KTX_LOGO_SMALL.map((line, idx) => (
         <Text key={idx} color={color}>
           {line}
         </Text>
@@ -492,7 +492,7 @@ export function ActivityFeed(props: {
         </Box>
       )}
 
-      {/* Results — what KLO has created */}
+      {/* Results — what KTX has created */}
       {insights.length > 0 && (
         <Box flexDirection="column" marginTop={1}>
           <Text color={props.theme.text}>  Created so far:</Text>
@@ -524,7 +524,7 @@ export function ActivityFeed(props: {
         <Text color={props.theme.active}>{spinner(props.frame)} Saving to context layer...</Text>
       )}
       {savedEvent && (
-        <Text color={props.theme.complete}>✓ Saved — your agents can now use the KLO context layer</Text>
+        <Text color={props.theme.complete}>✓ Saved — your agents can now use the KTX context layer</Text>
       )}
 
       {/* Phase 7: Completion */}
@@ -559,12 +559,12 @@ function CompletionSummary(props: {
         <>
           <Text color={props.theme.border}>{'─'.repeat(60)}</Text>
           <Text bold color={props.theme.complete}>
-            ★ KLO finished ingesting your data
+            ★ KTX finished ingesting your data
           </Text>
           {(sl > 0 || wiki > 0) && (
             <>
               <Text />
-              <Text color={props.theme.text}>KLO created:</Text>
+              <Text color={props.theme.text}>KTX created:</Text>
               {sl > 0 && (
                 <Text color={props.theme.active}>
                   {'  '}📊 {sl} query definition{sl === 1 ? '' : 's'} — so agents can write accurate SQL for your data

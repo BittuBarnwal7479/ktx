@@ -10,9 +10,9 @@ import {
   readLiveDatabaseTableFiles,
   writeLiveDatabaseSnapshot,
 } from './stage.js';
-import type { KloSchemaSnapshot } from '../../../scan/types.js';
+import type { KtxSchemaSnapshot } from '../../../scan/types.js';
 
-function snapshot(): KloSchemaSnapshot {
+function snapshot(): KtxSchemaSnapshot {
   return {
     connectionId: 'conn-1',
     driver: 'postgres',
@@ -93,7 +93,7 @@ function snapshot(): KloSchemaSnapshot {
 
 describe('live-database staged snapshot files', () => {
   it('writes deterministic metadata, table, and foreign-key files', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'klo-live-db-stage-'));
+    const dir = await mkdtemp(join(tmpdir(), 'ktx-live-db-stage-'));
     await writeLiveDatabaseSnapshot(dir, snapshot());
 
     await expect(readFile(join(dir, LIVE_DATABASE_META_FILE), 'utf8')).resolves.toContain('"connectionId": "conn-1"');
@@ -122,7 +122,7 @@ describe('live-database staged snapshot files', () => {
   });
 
   it('redacts sensitive snapshot metadata before writing connection metadata', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'klo-live-db-redacted-stage-'));
+    const dir = await mkdtemp(join(tmpdir(), 'ktx-live-db-redacted-stage-'));
     await writeLiveDatabaseSnapshot(dir, {
       ...snapshot(),
       metadata: {
@@ -146,7 +146,7 @@ describe('live-database staged snapshot files', () => {
   });
 
   it('returns false for a directory that is missing live database metadata', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'klo-live-db-empty-'));
+    const dir = await mkdtemp(join(tmpdir(), 'ktx-live-db-empty-'));
     expect(await detectLiveDatabaseStagedDir(dir)).toBe(false);
   });
 });

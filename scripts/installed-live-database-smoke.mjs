@@ -16,13 +16,13 @@ import {
   pythonArtifactInstallArgs,
 } from './package-artifacts.mjs';
 
-const POSTGRES_IMAGE = process.env.KLO_ARTIFACT_POSTGRES_IMAGE ?? 'postgres:16-alpine';
-const POSTGRES_USER = 'klo';
+const POSTGRES_IMAGE = process.env.KTX_ARTIFACT_POSTGRES_IMAGE ?? 'postgres:16-alpine';
+const POSTGRES_USER = 'ktx';
 const POSTGRES_PASSWORD = 'postgres'; // pragma: allowlist secret
 const POSTGRES_DB = 'warehouse';
 
 export function smokeContainerName(pid = process.pid, now = Date.now()) {
-  return `klo-live-db-smoke-${pid}-${now}`;
+  return `ktx-live-db-smoke-${pid}-${now}`;
 }
 
 export function buildPostgresUrl(hostPort) {
@@ -88,7 +88,7 @@ export function buildSeedSql() {
   ].join('\n');
 }
 
-export function buildKloYaml(postgresUrl) {
+export function buildKtxYaml(postgresUrl) {
   return [
     'project: artifact-live-database',
     'connections:',
@@ -109,7 +109,7 @@ export function buildKloYaml(postgresUrl) {
 export function buildLiveDatabaseIngestArgs(projectDir, databaseIntrospectionUrl) {
   return [
     'exec',
-    'klo',
+    'ktx',
     'dev',
     'ingest',
     'run',
@@ -125,7 +125,7 @@ export function buildLiveDatabaseIngestArgs(projectDir, databaseIntrospectionUrl
 }
 
 export function buildLiveDatabaseStatusArgs(projectDir, runId) {
-  return ['exec', 'klo', 'ingest', 'status', '--project-dir', projectDir, runId];
+  return ['exec', 'ktx', 'ingest', 'status', '--project-dir', projectDir, runId];
 }
 
 async function run(command, args, options = {}) {
@@ -283,12 +283,12 @@ async function waitForHttpHealth(url, daemon) {
     if (daemon.error()) {
       const output = daemon.output();
       throw new Error(
-        `Failed to start klo-daemon: ${daemon.error().message}\nstdout:\n${output.stdout}\nstderr:\n${output.stderr}`,
+        `Failed to start ktx-daemon: ${daemon.error().message}\nstdout:\n${output.stdout}\nstderr:\n${output.stderr}`,
       );
     }
     if (daemon.child.exitCode !== null || daemon.child.signalCode !== null) {
       const output = daemon.output();
-      throw new Error(`klo-daemon exited before health check passed\nstdout:\n${output.stdout}\nstderr:\n${output.stderr}`);
+      throw new Error(`ktx-daemon exited before health check passed\nstdout:\n${output.stdout}\nstderr:\n${output.stderr}`);
     }
     try {
       if (await httpGetOk(url)) {
@@ -306,7 +306,7 @@ async function waitForHttpHealth(url, daemon) {
 
 async function startDaemon(port, cleanInstallDir) {
   const daemon = spawnLogged(
-    'klo-daemon',
+    'ktx-daemon',
     ['serve-http', '--host', '127.0.0.1', '--port', String(port), '--log-level', 'warning'],
     { cwd: cleanInstallDir, env: npmSmokePythonEnv(cleanInstallDir) },
   );
@@ -337,8 +337,8 @@ async function assertPathExists(path, label) {
 
 async function prepareCleanInstall(layout, cleanInstallDir) {
   const pythonArtifacts = await findPythonArtifacts(layout.pythonDir);
-  await assertPathExists(layout.contextTarball, '@klo/context tarball');
-  await assertPathExists(layout.cliTarball, '@klo/cli tarball');
+  await assertPathExists(layout.contextTarball, '@ktx/context tarball');
+  await assertPathExists(layout.cliTarball, '@ktx/cli tarball');
   await mkdir(cleanInstallDir, { recursive: true });
   await writeFile(join(cleanInstallDir, 'package.json'), `${JSON.stringify(npmSmokePackageJson(layout), null, 2)}\n`);
   await run('pnpm', ['install'], { cwd: cleanInstallDir, timeout: 120_000 }).then((result) =>
@@ -362,7 +362,7 @@ async function prepareCleanInstall(layout, cleanInstallDir) {
 
 async function main() {
   const layout = packageArtifactLayout();
-  const root = await mkdtemp(join(tmpdir(), 'klo-live-db-artifact-smoke-'));
+  const root = await mkdtemp(join(tmpdir(), 'ktx-live-db-artifact-smoke-'));
   const containerName = smokeContainerName();
   let daemon;
   try {
@@ -379,12 +379,12 @@ async function main() {
     await prepareCleanInstall(layout, cleanInstallDir);
 
     await mkdir(projectDir, { recursive: true });
-    const init = await run('pnpm', ['exec', 'klo', 'init', projectDir, '--name', 'artifact-live-database'], {
+    const init = await run('pnpm', ['exec', 'ktx', 'init', projectDir, '--name', 'artifact-live-database'], {
       cwd: cleanInstallDir,
       timeout: 30_000,
     });
-    requireSuccess('klo init', init);
-    await writeFile(join(projectDir, 'klo.yaml'), buildKloYaml(postgresUrl), 'utf8');
+    requireSuccess('ktx init', init);
+    await writeFile(join(projectDir, 'ktx.yaml'), buildKtxYaml(postgresUrl), 'utf8');
 
     daemon = await startDaemon(daemonPort, cleanInstallDir);
 
@@ -393,12 +393,12 @@ async function main() {
       env: npmSmokePythonEnv(cleanInstallDir),
       timeout: 120_000,
     });
-    requireSuccess('klo dev ingest run live-database', ingestRun);
-    requireOutput('klo dev ingest run live-database', ingestRun, /Status: done/);
-    requireOutput('klo dev ingest run live-database', ingestRun, /Adapter: live-database/);
-    requireOutput('klo dev ingest run live-database', ingestRun, /Diff: \+4\/~0\/-0\/=0/);
-    requireOutput('klo dev ingest run live-database', ingestRun, /Raw files: 4/);
-    requireOutput('klo dev ingest run live-database', ingestRun, /Work units: 2/);
+    requireSuccess('ktx dev ingest run live-database', ingestRun);
+    requireOutput('ktx dev ingest run live-database', ingestRun, /Status: done/);
+    requireOutput('ktx dev ingest run live-database', ingestRun, /Adapter: live-database/);
+    requireOutput('ktx dev ingest run live-database', ingestRun, /Diff: \+4\/~0\/-0\/=0/);
+    requireOutput('ktx dev ingest run live-database', ingestRun, /Raw files: 4/);
+    requireOutput('ktx dev ingest run live-database', ingestRun, /Work units: 2/);
 
     const runId = getRunId(ingestRun.stdout);
     const ingestStatus = await run('pnpm', buildLiveDatabaseStatusArgs(projectDir, runId), {
@@ -406,12 +406,12 @@ async function main() {
       env: npmSmokePythonEnv(cleanInstallDir),
       timeout: 30_000,
     });
-    requireSuccess('klo ingest status live-database', ingestStatus);
-    requireOutput('klo ingest status live-database', ingestStatus, new RegExp(`Run: ${runId}`));
-    requireOutput('klo ingest status live-database', ingestStatus, /Status: done/);
-    requireOutput('klo ingest status live-database', ingestStatus, /Raw files: 4/);
-    requireOutput('klo ingest status live-database', ingestStatus, /Work units: 2/);
-    await assertPathExists(join(projectDir, '.klo', 'db.sqlite'), 'SQLite local ingest state');
+    requireSuccess('ktx ingest status live-database', ingestStatus);
+    requireOutput('ktx ingest status live-database', ingestStatus, new RegExp(`Run: ${runId}`));
+    requireOutput('ktx ingest status live-database', ingestStatus, /Status: done/);
+    requireOutput('ktx ingest status live-database', ingestStatus, /Raw files: 4/);
+    requireOutput('ktx ingest status live-database', ingestStatus, /Work units: 2/);
+    await assertPathExists(join(projectDir, '.ktx', 'db.sqlite'), 'SQLite local ingest state');
     process.stdout.write(`Installed live-database artifact smoke passed: ${runId}\n`);
   } finally {
     if (daemon) {

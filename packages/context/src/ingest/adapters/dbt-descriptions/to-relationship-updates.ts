@@ -1,9 +1,9 @@
-import type { KloJoinUpdate } from '../../../scan/enrichment-types.js';
+import type { KtxJoinUpdate } from '../../../scan/enrichment-types.js';
 import type { DbtHostTableLite } from './match-tables.js';
 import type { DbtSchemaParseResult } from './parse-schema.js';
 
 export interface DbtRelationshipUpdates {
-  joins: KloJoinUpdate[];
+  joins: KtxJoinUpdate[];
   skippedNoMatch: number;
 }
 
@@ -19,7 +19,7 @@ export function toRelationshipUpdates(input: {
     tablesByName.set(table.name.toLowerCase(), table);
   }
 
-  const joins: KloJoinUpdate[] = [];
+  const joins: KtxJoinUpdate[] = [];
   let skippedNoMatch = 0;
 
   for (const relationship of input.parseResult.relationships) {

@@ -1,6 +1,6 @@
-import { createDefaultLocalQueryExecutor, type KloSqlQueryExecutorPort } from '@klo/context/connections';
-import { createPythonSemanticLayerComputePort, type KloSemanticLayerComputePort } from '@klo/context/daemon';
-import { loadKloProject, type KloLocalProject } from '@klo/context/project';
+import { createDefaultLocalQueryExecutor, type KtxSqlQueryExecutorPort } from '@ktx/context/connections';
+import { createPythonSemanticLayerComputePort, type KtxSemanticLayerComputePort } from '@ktx/context/daemon';
+import { loadKtxProject, type KtxLocalProject } from '@ktx/context/project';
 import {
   compileLocalSlQuery,
   listLocalSlSources,
@@ -8,14 +8,14 @@ import {
   validateLocalSlSource,
   writeLocalSlSource,
   type SemanticLayerQueryInput,
-} from '@klo/context/sl';
+} from '@ktx/context/sl';
 import { profileMark } from './startup-profile.js';
 
 profileMark('module:sl');
 
 type SlQueryFormat = 'json' | 'sql';
 
-export type KloSlArgs =
+export type KtxSlArgs =
   | { command: 'list'; projectDir: string; connectionId?: string; output?: string; json?: boolean }
   | { command: 'read'; projectDir: string; connectionId: string; sourceName: string }
   | { command: 'validate'; projectDir: string; connectionId: string; sourceName: string }
@@ -30,20 +30,20 @@ export type KloSlArgs =
       maxRows?: number;
     };
 
-interface KloSlIo {
+interface KtxSlIo {
   stdout: { write(chunk: string): void };
   stderr: { write(chunk: string): void };
 }
 
-interface KloSlDeps {
-  loadProject?: typeof loadKloProject;
-  createSemanticLayerCompute?: () => KloSemanticLayerComputePort;
-  createQueryExecutor?: () => KloSqlQueryExecutorPort;
+interface KtxSlDeps {
+  loadProject?: typeof loadKtxProject;
+  createSemanticLayerCompute?: () => KtxSemanticLayerComputePort;
+  createQueryExecutor?: () => KtxSqlQueryExecutorPort;
 }
 
-export async function runKloSl(args: KloSlArgs, io: KloSlIo = process, deps: KloSlDeps = {}): Promise<number> {
+export async function runKtxSl(args: KtxSlArgs, io: KtxSlIo = process, deps: KtxSlDeps = {}): Promise<number> {
   try {
-    const project = await (deps.loadProject ?? loadKloProject)({ projectDir: args.projectDir });
+    const project = await (deps.loadProject ?? loadKtxProject)({ projectDir: args.projectDir });
     if (args.command === 'list') {
       const sources = await listLocalSlSources(project, { connectionId: args.connectionId });
       const { resolveOutputMode } = await import('./io/mode.js');
@@ -99,7 +99,7 @@ export async function runKloSl(args: KloSlArgs, io: KloSlIo = process, deps: Klo
     if (args.command === 'query') {
       const compute = (deps.createSemanticLayerCompute ?? createPythonSemanticLayerComputePort)();
       const queryExecutor = args.execute ? (deps.createQueryExecutor ?? createDefaultLocalQueryExecutor)() : undefined;
-      const result = await compileLocalSlQuery(project as KloLocalProject, {
+      const result = await compileLocalSlQuery(project as KtxLocalProject, {
         connectionId: args.connectionId,
         query: args.query,
         compute,

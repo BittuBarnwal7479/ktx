@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import Handlebars from 'handlebars';
-import { type KloLogger, noopLogger } from '../core/index.js';
+import { type KtxLogger, noopLogger } from '../core/index.js';
 
 export interface PromptContext {
   current_date?: string;
@@ -18,11 +18,11 @@ export interface PromptServiceOptions {
   additionalPromptDirs?: string[];
   defaultSettings?: Record<string, unknown>;
   partials?: string[];
-  logger?: KloLogger;
+  logger?: KtxLogger;
 }
 
 export class PromptService {
-  private readonly logger: KloLogger;
+  private readonly logger: KtxLogger;
   private readonly partials: string[];
   private partialsRegistered = false;
 

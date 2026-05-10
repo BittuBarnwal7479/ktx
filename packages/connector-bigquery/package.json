@@ -1,7 +1,7 @@
 {
-  "name": "@klo/connector-bigquery",
+  "name": "@ktx/connector-bigquery",
   "version": "0.0.0-private",
-  "description": "BigQuery connector package for KLO scan interfaces",
+  "description": "BigQuery connector package for KTX scan interfaces",
   "private": true,
   "type": "module",
   "engines": {
@@ -27,7 +27,7 @@
   },
   "dependencies": {
     "@google-cloud/bigquery": "^8.1.1",
-    "@klo/context": "workspace:*"
+    "@ktx/context": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^24.3.0",

@@ -9,7 +9,7 @@ import {
   projectParsedIdentifier,
   refreshLookerMappingPlaceholders,
   sqlglotDialectForConnectionType,
-  suggestKloConnectionForLookerConnection,
+  suggestKtxConnectionForLookerConnection,
   validateLookerMappings,
   validateLookerWarehouseTarget,
 } from './mapping.js';
@@ -69,7 +69,7 @@ describe('discoverLookerConnections', () => {
 });
 
 describe('looker dialect and target validation helpers', () => {
-  it('maps Looker dialect names to KLO connection types', () => {
+  it('maps Looker dialect names to KTX connection types', () => {
     expect(lookerDialectToConnectionType('bigquery_standard_sql')).toBe('BIGQUERY');
     expect(lookerDialectToConnectionType('postgres')).toBe('POSTGRESQL');
     expect(lookerDialectToConnectionType('mssql')).toBe('SQLSERVER');
@@ -90,10 +90,10 @@ describe('looker dialect and target validation helpers', () => {
   });
 });
 
-describe('suggestKloConnectionForLookerConnection', () => {
+describe('suggestKtxConnectionForLookerConnection', () => {
   it('returns the single deterministic target with matching type, host, and database', () => {
     expect(
-      suggestKloConnectionForLookerConnection({
+      suggestKtxConnectionForLookerConnection({
         lookerConnection: liveConnections[1],
         candidateConnections: [
           {
@@ -113,7 +113,7 @@ describe('suggestKloConnectionForLookerConnection', () => {
 
   it('returns null when more than one target matches', () => {
     expect(
-      suggestKloConnectionForLookerConnection({
+      suggestKtxConnectionForLookerConnection({
         lookerConnection: liveConnections[1],
         candidateConnections: [
           {
@@ -139,7 +139,7 @@ describe('refreshLookerMappingPlaceholders', () => {
         stored: [
           {
             lookerConnectionName: 'b2b_sandbox_bq',
-            kloConnectionId: 'warehouse',
+            ktxConnectionId: 'warehouse',
             lookerHost: null,
             lookerDatabase: null,
             lookerDialect: null,
@@ -152,14 +152,14 @@ describe('refreshLookerMappingPlaceholders', () => {
       mappings: [
         {
           lookerConnectionName: 'b2b_sandbox_bq',
-          kloConnectionId: 'warehouse',
+          ktxConnectionId: 'warehouse',
           lookerHost: 'warehouse.example.com',
           lookerDatabase: 'analytics',
           lookerDialect: 'bigquery_standard_sql',
         },
         {
           lookerConnectionName: 'pg_runtime',
-          kloConnectionId: null,
+          ktxConnectionId: null,
           lookerHost: 'pg.internal:5432',
           lookerDatabase: 'app',
           lookerDialect: 'postgres',
@@ -176,14 +176,14 @@ describe('computeLookerMappingDrift and validateLookerMappings', () => {
         storedMappings: [
           {
             lookerConnectionName: 'b2b_sandbox_bq',
-            kloConnectionId: 'warehouse',
+            ktxConnectionId: 'warehouse',
             lookerHost: null,
             lookerDatabase: null,
             lookerDialect: null,
           },
           {
             lookerConnectionName: 'stale_runtime',
-            kloConnectionId: 'warehouse',
+            ktxConnectionId: 'warehouse',
             lookerHost: null,
             lookerDatabase: null,
             lookerDialect: null,
@@ -194,7 +194,7 @@ describe('computeLookerMappingDrift and validateLookerMappings', () => {
     ).toEqual({
       unmappedDiscovered: [liveConnections[1]],
       staleMappings: [{ lookerConnectionName: 'stale_runtime', reason: 'looker_connection_not_found' }],
-      inSync: [{ lookerConnectionName: 'b2b_sandbox_bq', kloConnectionId: 'warehouse' }],
+      inSync: [{ lookerConnectionName: 'b2b_sandbox_bq', ktxConnectionId: 'warehouse' }],
     });
   });
 
@@ -204,26 +204,26 @@ describe('computeLookerMappingDrift and validateLookerMappings', () => {
         mappings: [
           {
             lookerConnectionName: 'b2b_sandbox_bq',
-            kloConnectionId: 'missing',
+            ktxConnectionId: 'missing',
             lookerHost: null,
             lookerDatabase: null,
             lookerDialect: null,
           },
           {
             lookerConnectionName: 'pg_runtime',
-            kloConnectionId: 'looker-target',
+            ktxConnectionId: 'looker-target',
             lookerHost: null,
             lookerDatabase: null,
             lookerDialect: null,
           },
         ],
-        knownKloConnectionIds: new Set(['looker-target']),
+        knownKtxConnectionIds: new Set(['looker-target']),
         knownConnectionTypes: new Map([['looker-target', 'LOOKER']]),
       }),
     ).toEqual({
       ok: false,
       errors: [
-        { key: 'b2b_sandbox_bq', reason: 'KLO connection missing does not exist' },
+        { key: 'b2b_sandbox_bq', reason: 'KTX connection missing does not exist' },
         {
           key: 'pg_runtime',
           reason: 'Connection type LOOKER cannot be used as a Looker warehouse mapping target',
@@ -258,7 +258,7 @@ describe('collectExploreParseItems and projectParsedIdentifier', () => {
     });
   });
 
-  it('projects successful and failed parser rows into KLO parsed target tables', () => {
+  it('projects successful and failed parser rows into KTX parsed target tables', () => {
     expect(
       projectParsedIdentifier({
         ok: true,
@@ -317,7 +317,7 @@ describe('buildLookerPullConfigFromInputs', () => {
         refreshedMappings: [
           {
             lookerConnectionName: 'b2b_sandbox_bq',
-            kloConnectionId: 'warehouse',
+            ktxConnectionId: 'warehouse',
             lookerHost: 'warehouse.example.com',
             lookerDatabase: 'analytics',
             lookerDialect: 'bigquery_standard_sql',
@@ -365,7 +365,7 @@ describe('buildLookerPullConfigFromInputs', () => {
       refreshedMappings: [
         {
           lookerConnectionName: 'b2b_sandbox_bq',
-          kloConnectionId: 'warehouse',
+          ktxConnectionId: 'warehouse',
           lookerHost: null,
           lookerDatabase: null,
           lookerDialect: null,

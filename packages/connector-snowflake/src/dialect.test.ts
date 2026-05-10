@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { KloSnowflakeDialect } from './dialect.js';
+import { KtxSnowflakeDialect } from './dialect.js';
 
-describe('KloSnowflakeDialect', () => {
-  const dialect = new KloSnowflakeDialect();
+describe('KtxSnowflakeDialect', () => {
+  const dialect = new KtxSnowflakeDialect();
 
   it('quotes identifiers and formats database.schema.table names', () => {
     expect(dialect.quoteIdentifier('order"items')).toBe('"order""items"');

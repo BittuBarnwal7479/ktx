@@ -1,7 +1,7 @@
 {
-  "name": "@klo/connector-postgres",
+  "name": "@ktx/connector-postgres",
   "version": "0.0.0-private",
-  "description": "PostgreSQL connector package for KLO scan interfaces",
+  "description": "PostgreSQL connector package for KTX scan interfaces",
   "private": true,
   "type": "module",
   "engines": {
@@ -26,7 +26,7 @@
     "type-check": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@klo/context": "workspace:*",
+    "@ktx/context": "workspace:*",
     "pg": "^8.19.0"
   },
   "devDependencies": {

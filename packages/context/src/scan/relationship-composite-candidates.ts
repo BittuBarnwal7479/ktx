@@ -1,29 +1,29 @@
-import type { KloEnrichedColumn, KloEnrichedSchema, KloEnrichedTable, KloRelationshipType } from './enrichment-types.js';
+import type { KtxEnrichedColumn, KtxEnrichedSchema, KtxEnrichedTable, KtxRelationshipType } from './enrichment-types.js';
 import {
-  formatKloRelationshipTableRef,
-  quoteKloRelationshipIdentifier,
-  type KloRelationshipProfileArtifact,
-  type KloRelationshipReadOnlyExecutor,
+  formatKtxRelationshipTableRef,
+  quoteKtxRelationshipIdentifier,
+  type KtxRelationshipProfileArtifact,
+  type KtxRelationshipReadOnlyExecutor,
 } from './relationship-profiling.js';
-import type { KloConnectionDriver, KloQueryResult, KloScanContext, KloTableRef } from './types.js';
+import type { KtxConnectionDriver, KtxQueryResult, KtxScanContext, KtxTableRef } from './types.js';
 
-export type KloCompositeRelationshipStatus = 'accepted' | 'review' | 'rejected';
+export type KtxCompositeRelationshipStatus = 'accepted' | 'review' | 'rejected';
 
-export interface KloCompositeRelationshipTupleEndpoint {
+export interface KtxCompositeRelationshipTupleEndpoint {
   tableId: string;
   columnIds: string[];
-  table: KloTableRef;
+  table: KtxTableRef;
   columns: string[];
 }
 
-export interface KloCompositePrimaryKeyCandidate {
+export interface KtxCompositePrimaryKeyCandidate {
   id: string;
   tableId: string;
-  table: KloTableRef;
+  table: KtxTableRef;
   columns: string[];
   columnIds: string[];
   score: number;
-  status: KloCompositeRelationshipStatus;
+  status: KtxCompositeRelationshipStatus;
   evidence: {
     rowCount: number;
     distinctCount: number;
@@ -33,7 +33,7 @@ export interface KloCompositePrimaryKeyCandidate {
   };
 }
 
-export interface KloCompositeRelationshipValidationEvidence {
+export interface KtxCompositeRelationshipValidationEvidence {
   targetUniqueness: number;
   sourceCoverage: number;
   violationCount: number;
@@ -44,24 +44,24 @@ export interface KloCompositeRelationshipValidationEvidence {
   reasons: string[];
 }
 
-export interface KloCompositeRelationshipCandidate {
+export interface KtxCompositeRelationshipCandidate {
   id: string;
-  from: KloCompositeRelationshipTupleEndpoint;
-  to: KloCompositeRelationshipTupleEndpoint;
-  relationshipType: KloRelationshipType;
+  from: KtxCompositeRelationshipTupleEndpoint;
+  to: KtxCompositeRelationshipTupleEndpoint;
+  relationshipType: KtxRelationshipType;
   confidence: number;
-  status: KloCompositeRelationshipStatus;
+  status: KtxCompositeRelationshipStatus;
   source: 'composite_profile_match';
-  validation: KloCompositeRelationshipValidationEvidence;
+  validation: KtxCompositeRelationshipValidationEvidence;
 }
 
-export interface DiscoverKloCompositeRelationshipsInput {
+export interface DiscoverKtxCompositeRelationshipsInput {
   connectionId: string;
-  driver: KloConnectionDriver;
-  schema: KloEnrichedSchema;
-  profiles: KloRelationshipProfileArtifact;
-  executor: KloRelationshipReadOnlyExecutor | null;
-  ctx: KloScanContext;
+  driver: KtxConnectionDriver;
+  schema: KtxEnrichedSchema;
+  profiles: KtxRelationshipProfileArtifact;
+  executor: KtxRelationshipReadOnlyExecutor | null;
+  ctx: KtxScanContext;
   maxCompositeWidth?: number;
   maxColumnsPerTable?: number;
   minPrimaryKeyUniqueness?: number;
@@ -69,9 +69,9 @@ export interface DiscoverKloCompositeRelationshipsInput {
   maxViolationRatio?: number;
 }
 
-export interface DiscoverKloCompositeRelationshipsResult {
-  primaryKeys: KloCompositePrimaryKeyCandidate[];
-  relationships: KloCompositeRelationshipCandidate[];
+export interface DiscoverKtxCompositeRelationshipsResult {
+  primaryKeys: KtxCompositePrimaryKeyCandidate[];
+  relationships: KtxCompositeRelationshipCandidate[];
   queryCount: number;
   warnings: string[];
 }
@@ -83,11 +83,11 @@ const DEFAULT_MIN_PRIMARY_KEY_UNIQUENESS = 0.98;
 const DEFAULT_MIN_SOURCE_COVERAGE = 0.9;
 const DEFAULT_MAX_VIOLATION_RATIO = 0.01;
 
-function enabledTables(schema: KloEnrichedSchema): KloEnrichedTable[] {
+function enabledTables(schema: KtxEnrichedSchema): KtxEnrichedTable[] {
   return schema.tables.filter((table) => table.enabled);
 }
 
-function tableRowCount(profiles: KloRelationshipProfileArtifact, tableName: string): number {
+function tableRowCount(profiles: KtxRelationshipProfileArtifact, tableName: string): number {
   return profiles.tables.find((item) => item.table.name === tableName)?.rowCount ?? 0;
 }
 
@@ -95,7 +95,7 @@ function profileKey(tableName: string, columnName: string): string {
   return `${tableName}.${columnName}`;
 }
 
-function profileNullRate(profiles: KloRelationshipProfileArtifact, tableName: string, columnName: string): number {
+function profileNullRate(profiles: KtxRelationshipProfileArtifact, tableName: string, columnName: string): number {
   return profiles.columns[profileKey(tableName, columnName)]?.nullRate ?? 1;
 }
 
@@ -106,7 +106,7 @@ function normalizedColumnName(name: string): string {
     .replace(/^_+|_+$/gu, '');
 }
 
-function columnNameScore(column: KloEnrichedColumn): number {
+function columnNameScore(column: KtxEnrichedColumn): number {
   const parts = normalizedColumnName(column.name).split('_').filter(Boolean);
   if (parts.some((part) => KEY_NAME_PARTS.has(part))) {
     return 1;
@@ -122,7 +122,7 @@ function keyLikeTableNameParts(tableName: string): Set<string> {
   return new Set(nameParts(tableName).filter((part) => KEY_NAME_PARTS.has(part)));
 }
 
-function tupleCoversTableNameKeyParts(tableName: string, columns: readonly KloEnrichedColumn[]): boolean {
+function tupleCoversTableNameKeyParts(tableName: string, columns: readonly KtxEnrichedColumn[]): boolean {
   const required = keyLikeTableNameParts(tableName);
   if (required.size === 0) {
     return true;
@@ -132,10 +132,10 @@ function tupleCoversTableNameKeyParts(tableName: string, columns: readonly KloEn
 }
 
 function candidateKeyColumns(input: {
-  table: KloEnrichedTable;
-  profiles: KloRelationshipProfileArtifact;
+  table: KtxEnrichedTable;
+  profiles: KtxRelationshipProfileArtifact;
   maxColumnsPerTable: number;
-}): KloEnrichedColumn[] {
+}): KtxEnrichedColumn[] {
   return input.table.columns
     .map((column, index) => ({ column, index }))
     .filter(({ column }) => {
@@ -154,8 +154,8 @@ function candidateKeyColumns(input: {
 }
 
 function hasStrongSingleColumnKey(input: {
-  table: KloEnrichedTable;
-  profiles: KloRelationshipProfileArtifact;
+  table: KtxEnrichedTable;
+  profiles: KtxRelationshipProfileArtifact;
   minPrimaryKeyUniqueness: number;
 }): boolean {
   return input.table.columns.some((column) => {
@@ -196,7 +196,7 @@ function relationshipKey(input: {
   return `${tupleKey(input.fromTable, input.fromColumns)}->${tupleKey(input.toTable, input.toColumns)}`;
 }
 
-function tupleEndpoint(table: KloEnrichedTable, columns: readonly KloEnrichedColumn[]): KloCompositeRelationshipTupleEndpoint {
+function tupleEndpoint(table: KtxEnrichedTable, columns: readonly KtxEnrichedColumn[]): KtxCompositeRelationshipTupleEndpoint {
   return {
     tableId: table.id,
     columnIds: columns.map((column) => column.id),
@@ -205,11 +205,11 @@ function tupleEndpoint(table: KloEnrichedTable, columns: readonly KloEnrichedCol
   };
 }
 
-function row(result: KloQueryResult): unknown[] {
+function row(result: KtxQueryResult): unknown[] {
   return result.rows[0] ?? [];
 }
 
-function numberAt(result: KloQueryResult, header: string): number {
+function numberAt(result: KtxQueryResult, header: string): number {
   const index = result.headers.findIndex((candidate) => candidate.toLowerCase() === header.toLowerCase());
   const value = row(result)[index];
   if (typeof value === 'number') {
@@ -224,28 +224,28 @@ function numberAt(result: KloQueryResult, header: string): number {
   return 0;
 }
 
-function topSql(driver: KloConnectionDriver, limit: number): string {
+function topSql(driver: KtxConnectionDriver, limit: number): string {
   if (driver === 'sqlserver') {
     return ` TOP (${Math.max(1, Math.floor(limit))})`;
   }
   return '';
 }
 
-function limitSql(driver: KloConnectionDriver, limit: number): string {
+function limitSql(driver: KtxConnectionDriver, limit: number): string {
   if (driver === 'sqlserver') {
     return '';
   }
   return ` LIMIT ${Math.max(1, Math.floor(limit))}`;
 }
 
-function aliasedTupleSelect(driver: KloConnectionDriver, columns: readonly string[]): string {
+function aliasedTupleSelect(driver: KtxConnectionDriver, columns: readonly string[]): string {
   return columns
-    .map((column, index) => `${quoteKloRelationshipIdentifier(driver, column)} AS c${index}`)
+    .map((column, index) => `${quoteKtxRelationshipIdentifier(driver, column)} AS c${index}`)
     .join(', ');
 }
 
-function nonNullPredicate(driver: KloConnectionDriver, columns: readonly string[]): string {
-  return columns.map((column) => `${quoteKloRelationshipIdentifier(driver, column)} IS NOT NULL`).join(' AND ');
+function nonNullPredicate(driver: KtxConnectionDriver, columns: readonly string[]): string {
+  return columns.map((column) => `${quoteKtxRelationshipIdentifier(driver, column)} IS NOT NULL`).join(' AND ');
 }
 
 function tupleEquality(columns: number): string {
@@ -255,11 +255,11 @@ function tupleEquality(columns: number): string {
 }
 
 function buildTupleDistinctSql(input: {
-  driver: KloConnectionDriver;
-  table: KloTableRef;
+  driver: KtxConnectionDriver;
+  table: KtxTableRef;
   columns: readonly string[];
 }): string {
-  const tableSql = formatKloRelationshipTableRef(input.driver, input.table);
+  const tableSql = formatKtxRelationshipTableRef(input.driver, input.table);
   return [
     'WITH tuple_values AS (',
     `SELECT DISTINCT ${aliasedTupleSelect(input.driver, input.columns)} FROM ${tableSql}`,
@@ -270,15 +270,15 @@ function buildTupleDistinctSql(input: {
 }
 
 function buildCompositeCoverageSql(input: {
-  driver: KloConnectionDriver;
-  childTable: KloTableRef;
+  driver: KtxConnectionDriver;
+  childTable: KtxTableRef;
   childColumns: readonly string[];
-  parentTable: KloTableRef;
+  parentTable: KtxTableRef;
   parentColumns: readonly string[];
   maxDistinctSourceValues: number;
 }): string {
-  const childTableSql = formatKloRelationshipTableRef(input.driver, input.childTable);
-  const parentTableSql = formatKloRelationshipTableRef(input.driver, input.parentTable);
+  const childTableSql = formatKtxRelationshipTableRef(input.driver, input.childTable);
+  const parentTableSql = formatKtxRelationshipTableRef(input.driver, input.parentTable);
   const top = topSql(input.driver, input.maxDistinctSourceValues);
   const limit = limitSql(input.driver, input.maxDistinctSourceValues);
   return [
@@ -305,7 +305,7 @@ function relationshipStatus(input: {
   violationRatio: number;
   minSourceCoverage: number;
   maxViolationRatio: number;
-}): KloCompositeRelationshipStatus {
+}): KtxCompositeRelationshipStatus {
   if (
     input.targetUniqueness >= DEFAULT_MIN_PRIMARY_KEY_UNIQUENESS &&
     input.sourceCoverage >= input.minSourceCoverage &&
@@ -320,7 +320,7 @@ function relationshipStatus(input: {
 }
 
 function hasAcceptedSubset(
-  accepted: readonly KloCompositePrimaryKeyCandidate[],
+  accepted: readonly KtxCompositePrimaryKeyCandidate[],
   tableName: string,
   columns: readonly string[],
 ): boolean {
@@ -335,15 +335,15 @@ function hasAcceptedSubset(
 
 async function detectCompositePrimaryKeys(input: {
   connectionId: string;
-  driver: KloConnectionDriver;
-  table: KloEnrichedTable;
-  profiles: KloRelationshipProfileArtifact;
-  executor: KloRelationshipReadOnlyExecutor;
-  ctx: KloScanContext;
+  driver: KtxConnectionDriver;
+  table: KtxEnrichedTable;
+  profiles: KtxRelationshipProfileArtifact;
+  executor: KtxRelationshipReadOnlyExecutor;
+  ctx: KtxScanContext;
   maxCompositeWidth: number;
   maxColumnsPerTable: number;
   minPrimaryKeyUniqueness: number;
-}): Promise<{ primaryKeys: KloCompositePrimaryKeyCandidate[]; queryCount: number }> {
+}): Promise<{ primaryKeys: KtxCompositePrimaryKeyCandidate[]; queryCount: number }> {
   const rowCount = tableRowCount(input.profiles, input.table.ref.name);
   if (rowCount === 0) {
     return { primaryKeys: [], queryCount: 0 };
@@ -363,7 +363,7 @@ async function detectCompositePrimaryKeys(input: {
     profiles: input.profiles,
     maxColumnsPerTable: input.maxColumnsPerTable,
   });
-  const primaryKeys: KloCompositePrimaryKeyCandidate[] = [];
+  const primaryKeys: KtxCompositePrimaryKeyCandidate[] = [];
   let queryCount = 0;
 
   for (let width = 2; width <= input.maxCompositeWidth; width += 1) {
@@ -423,11 +423,11 @@ async function detectCompositePrimaryKeys(input: {
   };
 }
 
-function columnsByName(table: KloEnrichedTable): Map<string, KloEnrichedColumn> {
+function columnsByName(table: KtxEnrichedTable): Map<string, KtxEnrichedColumn> {
   return new Map(table.columns.map((column) => [column.name, column]));
 }
 
-function compatibleTuple(sourceColumns: readonly KloEnrichedColumn[], targetColumns: readonly KloEnrichedColumn[]): boolean {
+function compatibleTuple(sourceColumns: readonly KtxEnrichedColumn[], targetColumns: readonly KtxEnrichedColumn[]): boolean {
   if (sourceColumns.length !== targetColumns.length) {
     return false;
   }
@@ -439,17 +439,17 @@ function compatibleTuple(sourceColumns: readonly KloEnrichedColumn[], targetColu
 
 async function validateCompositeRelationship(input: {
   connectionId: string;
-  driver: KloConnectionDriver;
-  sourceTable: KloEnrichedTable;
-  sourceColumns: readonly KloEnrichedColumn[];
-  targetKey: KloCompositePrimaryKeyCandidate;
-  targetTable: KloEnrichedTable;
-  targetColumns: readonly KloEnrichedColumn[];
-  executor: KloRelationshipReadOnlyExecutor;
-  ctx: KloScanContext;
+  driver: KtxConnectionDriver;
+  sourceTable: KtxEnrichedTable;
+  sourceColumns: readonly KtxEnrichedColumn[];
+  targetKey: KtxCompositePrimaryKeyCandidate;
+  targetTable: KtxEnrichedTable;
+  targetColumns: readonly KtxEnrichedColumn[];
+  executor: KtxRelationshipReadOnlyExecutor;
+  ctx: KtxScanContext;
   minSourceCoverage: number;
   maxViolationRatio: number;
-}): Promise<{ relationship: KloCompositeRelationshipCandidate; queryCount: number }> {
+}): Promise<{ relationship: KtxCompositeRelationshipCandidate; queryCount: number }> {
   const result = await input.executor.executeReadOnly(
     {
       connectionId: input.connectionId,
@@ -525,9 +525,9 @@ async function validateCompositeRelationship(input: {
   };
 }
 
-export async function discoverKloCompositeRelationships(
-  input: DiscoverKloCompositeRelationshipsInput,
-): Promise<DiscoverKloCompositeRelationshipsResult> {
+export async function discoverKtxCompositeRelationships(
+  input: DiscoverKtxCompositeRelationshipsInput,
+): Promise<DiscoverKtxCompositeRelationshipsResult> {
   if (!input.executor || !input.profiles.sqlAvailable) {
     return {
       primaryKeys: [],
@@ -546,7 +546,7 @@ export async function discoverKloCompositeRelationships(
   };
   const tables = enabledTables(input.schema);
   const tableByName = new Map(tables.map((table) => [table.ref.name, table]));
-  const primaryKeys: KloCompositePrimaryKeyCandidate[] = [];
+  const primaryKeys: KtxCompositePrimaryKeyCandidate[] = [];
   let queryCount = 0;
 
   for (const table of tables) {
@@ -565,7 +565,7 @@ export async function discoverKloCompositeRelationships(
     queryCount += result.queryCount;
   }
 
-  const relationships: KloCompositeRelationshipCandidate[] = [];
+  const relationships: KtxCompositeRelationshipCandidate[] = [];
   for (const targetKey of primaryKeys) {
     const targetTable = tableByName.get(targetKey.table.name);
     if (!targetTable) {

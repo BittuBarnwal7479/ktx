@@ -1,19 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import {
-  buildKloRelationshipBenchmarkReport,
-  formatKloRelationshipBenchmarkReportMarkdown,
+  buildKtxRelationshipBenchmarkReport,
+  formatKtxRelationshipBenchmarkReportMarkdown,
 } from './relationship-benchmark-report.js';
 import type {
-  KloRelationshipBenchmarkCaseResult,
-  KloRelationshipBenchmarkFixture,
-  KloRelationshipBenchmarkSuiteResult,
+  KtxRelationshipBenchmarkCaseResult,
+  KtxRelationshipBenchmarkFixture,
+  KtxRelationshipBenchmarkSuiteResult,
 } from './relationship-benchmarks.js';
 
-type CaseResultOverrides = Omit<Partial<KloRelationshipBenchmarkCaseResult>, 'metrics'> & {
-  metrics?: Partial<KloRelationshipBenchmarkCaseResult['metrics']>;
+type CaseResultOverrides = Omit<Partial<KtxRelationshipBenchmarkCaseResult>, 'metrics'> & {
+  metrics?: Partial<KtxRelationshipBenchmarkCaseResult['metrics']>;
 };
 
-function caseResult(overrides: CaseResultOverrides = {}): KloRelationshipBenchmarkCaseResult {
+function caseResult(overrides: CaseResultOverrides = {}): KtxRelationshipBenchmarkCaseResult {
   return {
     fixtureId: overrides.fixtureId ?? 'demo_b2b_no_declared_constraints',
     mode: overrides.mode ?? 'declared_pks_and_declared_fks_removed',
@@ -49,7 +49,7 @@ function caseResult(overrides: CaseResultOverrides = {}): KloRelationshipBenchma
   };
 }
 
-function fixture(overrides: Partial<KloRelationshipBenchmarkFixture> = {}): KloRelationshipBenchmarkFixture {
+function fixture(overrides: Partial<KtxRelationshipBenchmarkFixture> = {}): KtxRelationshipBenchmarkFixture {
   return {
     id: overrides.id ?? 'demo_b2b_no_declared_constraints',
     name: overrides.name ?? 'Packaged B2B demo with declared PK and FK metadata masked',
@@ -74,7 +74,7 @@ function fixture(overrides: Partial<KloRelationshipBenchmarkFixture> = {}): KloR
 
 describe('relationship benchmark report', () => {
   it('classifies run, validation-blocked, and not-run benchmark cases', () => {
-    const suite: KloRelationshipBenchmarkSuiteResult = {
+    const suite: KtxRelationshipBenchmarkSuiteResult = {
       cases: [
         caseResult(),
         caseResult({
@@ -102,7 +102,7 @@ describe('relationship benchmark report', () => {
       },
     };
 
-    const report = buildKloRelationshipBenchmarkReport({
+    const report = buildKtxRelationshipBenchmarkReport({
       fixtures: [fixture()],
       suite,
       modes: ['declared_pks_and_declared_fks_removed', 'validation_disabled', 'profiling_disabled'],
@@ -126,7 +126,7 @@ describe('relationship benchmark report', () => {
   });
 
   it('surfaces validation budget review candidates in the report reason', () => {
-    const suite: KloRelationshipBenchmarkSuiteResult = {
+    const suite: KtxRelationshipBenchmarkSuiteResult = {
       cases: [
         caseResult({
           fixtureId: 'scale_stress_no_declared_constraints',
@@ -155,7 +155,7 @@ describe('relationship benchmark report', () => {
       },
     };
 
-    const report = buildKloRelationshipBenchmarkReport({
+    const report = buildKtxRelationshipBenchmarkReport({
       fixtures: [
         fixture({
           id: 'scale_stress_no_declared_constraints',
@@ -170,7 +170,7 @@ describe('relationship benchmark report', () => {
     });
 
     expect(report.cases[0]?.reason).toBe('review candidate validation reasons: validation_unattempted (1)');
-    expect(formatKloRelationshipBenchmarkReportMarkdown(report)).toContain('validation_unattempted');
+    expect(formatKtxRelationshipBenchmarkReportMarkdown(report)).toContain('validation_unattempted');
   });
 
   it('uses benchmark suite eligibility for product and smoke report rows', () => {
@@ -182,7 +182,7 @@ describe('relationship benchmark report', () => {
       metrics: { fkRecall: 0, acceptedOrReviewRecall: 1, sqlQueries: 0 },
     });
     const smokeCase = caseResult({ fixtureId: 'smoke_even_if_marked' });
-    const suite: KloRelationshipBenchmarkSuiteResult = {
+    const suite: KtxRelationshipBenchmarkSuiteResult = {
       cases: [productCase, productBlocked, smokeCase],
       validationBlockedCases: ['product_curated:validation_disabled'],
       aggregate: {
@@ -197,7 +197,7 @@ describe('relationship benchmark report', () => {
       },
     };
 
-    const report = buildKloRelationshipBenchmarkReport({
+    const report = buildKtxRelationshipBenchmarkReport({
       fixtures: [
         fixture({
           id: 'product_curated',
@@ -224,13 +224,13 @@ describe('relationship benchmark report', () => {
       'smoke_even_if_marked:declared_pks_and_declared_fks_removed:false',
       'smoke_even_if_marked:validation_disabled:false',
     ]);
-    expect(formatKloRelationshipBenchmarkReportMarkdown(report)).toContain(
+    expect(formatKtxRelationshipBenchmarkReportMarkdown(report)).toContain(
       '| product_curated | product | declared_pks_and_declared_fks_removed | run | yes |',
     );
   });
 
   it('formats a compact Markdown report with false negatives and blocked modes', () => {
-    const suite: KloRelationshipBenchmarkSuiteResult = {
+    const suite: KtxRelationshipBenchmarkSuiteResult = {
       cases: [
         caseResult({
           metrics: { fkRecall: 0, acceptedOrReviewRecall: 0 },
@@ -250,15 +250,15 @@ describe('relationship benchmark report', () => {
       },
     };
 
-    const markdown = formatKloRelationshipBenchmarkReportMarkdown(
-      buildKloRelationshipBenchmarkReport({
+    const markdown = formatKtxRelationshipBenchmarkReportMarkdown(
+      buildKtxRelationshipBenchmarkReport({
         fixtures: [fixture()],
         suite,
         modes: ['declared_pks_and_declared_fks_removed'],
       }),
     );
 
-    expect(markdown).toContain('# KLO Relationship Discovery Benchmark Evidence');
+    expect(markdown).toContain('# KTX Relationship Discovery Benchmark Evidence');
     expect(markdown).toContain(
       '| demo_b2b_no_declared_constraints | smoke | declared_pks_and_declared_fks_removed | run | no | 0.500 | 0.000 | 0.000 | 0 |',
     );
@@ -271,7 +271,7 @@ describe('relationship benchmark report', () => {
   });
 
   it('keeps headline failures separate from non-headline failure details', () => {
-    const suite: KloRelationshipBenchmarkSuiteResult = {
+    const suite: KtxRelationshipBenchmarkSuiteResult = {
       cases: [
         caseResult({
           fixtureId: 'product_curated',
@@ -301,8 +301,8 @@ describe('relationship benchmark report', () => {
       },
     };
 
-    const markdown = formatKloRelationshipBenchmarkReportMarkdown(
-      buildKloRelationshipBenchmarkReport({
+    const markdown = formatKtxRelationshipBenchmarkReportMarkdown(
+      buildKtxRelationshipBenchmarkReport({
         fixtures: [
           fixture({
             id: 'product_curated',
@@ -326,7 +326,7 @@ describe('relationship benchmark report', () => {
   });
 
   it('formats headline failure context from remaining headline false negatives', () => {
-    const suite: KloRelationshipBenchmarkSuiteResult = {
+    const suite: KtxRelationshipBenchmarkSuiteResult = {
       cases: [
         caseResult({
           fixtureId: 'public_headline_fixture',
@@ -350,8 +350,8 @@ describe('relationship benchmark report', () => {
       },
     };
 
-    const markdown = formatKloRelationshipBenchmarkReportMarkdown(
-      buildKloRelationshipBenchmarkReport({
+    const markdown = formatKtxRelationshipBenchmarkReportMarkdown(
+      buildKtxRelationshipBenchmarkReport({
         fixtures: [
           fixture({
             id: 'public_headline_fixture',
@@ -380,7 +380,7 @@ describe('relationship benchmark report', () => {
   it('formats skipped composite ground truth separately from false-negative details', () => {
     const compositePk = 'order_lines.(order_id,line_number)';
     const compositeFk = 'order_line_allocations.(order_id,line_number)->order_lines.(order_id,line_number)';
-    const suite: KloRelationshipBenchmarkSuiteResult = {
+    const suite: KtxRelationshipBenchmarkSuiteResult = {
       cases: [
         caseResult({
           fixtureId: 'composite_keys_no_declared_constraints',
@@ -418,7 +418,7 @@ describe('relationship benchmark report', () => {
       },
     };
 
-    const report = buildKloRelationshipBenchmarkReport({
+    const report = buildKtxRelationshipBenchmarkReport({
       fixtures: [
         fixture({
           id: 'composite_keys_no_declared_constraints',
@@ -436,7 +436,7 @@ describe('relationship benchmark report', () => {
       fk: [compositeFk],
     });
 
-    const markdown = formatKloRelationshipBenchmarkReportMarkdown(report);
+    const markdown = formatKtxRelationshipBenchmarkReportMarkdown(report);
     expect(markdown).toContain('## Composite Ground Truth Skips');
     expect(markdown).toContain(
       '### Skipped Composite PKs\n\n- `composite_keys_no_declared_constraints` / `declared_pks_and_declared_fks_removed` / `run`: order_lines.(order_id,line_number)',

@@ -1,20 +1,20 @@
-export interface KloColumnEmbeddingForeignKeys {
+export interface KtxColumnEmbeddingForeignKeys {
   outgoing: Array<{ toTable: string; toColumn: string }>;
   incoming: Array<{ fromTable: string; fromColumn: string }>;
 }
 
-export interface KloColumnEmbeddingTextInput {
+export interface KtxColumnEmbeddingTextInput {
   tableName: string;
   columnName: string;
   columnType: string;
   resolvedDescription: string | null;
   sampleValues?: readonly string[] | null;
   resolvedTableDescription?: string | null;
-  foreignKeys?: KloColumnEmbeddingForeignKeys | null;
+  foreignKeys?: KtxColumnEmbeddingForeignKeys | null;
   maxSampleValues?: number;
 }
 
-export function buildKloColumnEmbeddingText(input: KloColumnEmbeddingTextInput): string {
+export function buildKtxColumnEmbeddingText(input: KtxColumnEmbeddingTextInput): string {
   const parts: string[] = [];
 
   parts.push(`${input.tableName}.${input.columnName} (${input.columnType})`);

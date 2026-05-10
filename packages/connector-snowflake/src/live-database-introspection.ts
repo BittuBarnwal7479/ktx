@@ -1,16 +1,16 @@
-import type { LiveDatabaseIntrospectionPort } from '@klo/context/ingest';
-import type { KloProjectConnectionConfig } from '@klo/context/project';
+import type { LiveDatabaseIntrospectionPort } from '@ktx/context/ingest';
+import type { KtxProjectConnectionConfig } from '@ktx/context/project';
 import {
-  KloSnowflakeScanConnector,
-  type KloSnowflakeConnectionConfig,
-  type KloSnowflakeDriverFactory,
-  type KloSnowflakeSdkOptionsProvider,
+  KtxSnowflakeScanConnector,
+  type KtxSnowflakeConnectionConfig,
+  type KtxSnowflakeDriverFactory,
+  type KtxSnowflakeSdkOptionsProvider,
 } from './connector.js';
 
 interface CreateSnowflakeLiveDatabaseIntrospectionOptions {
-  connections: Record<string, KloProjectConnectionConfig>;
-  driverFactory?: KloSnowflakeDriverFactory;
-  sdkOptionsProvider?: KloSnowflakeSdkOptionsProvider;
+  connections: Record<string, KtxProjectConnectionConfig>;
+  driverFactory?: KtxSnowflakeDriverFactory;
+  sdkOptionsProvider?: KtxSnowflakeSdkOptionsProvider;
   now?: () => Date;
 }
 
@@ -19,8 +19,8 @@ export function createSnowflakeLiveDatabaseIntrospection(
 ): LiveDatabaseIntrospectionPort {
   return {
     async extractSchema(connectionId: string) {
-      const connection = options.connections[connectionId] as KloSnowflakeConnectionConfig | undefined;
-      const connector = new KloSnowflakeScanConnector({
+      const connection = options.connections[connectionId] as KtxSnowflakeConnectionConfig | undefined;
+      const connector = new KtxSnowflakeScanConnector({
         connectionId,
         connection,
         driverFactory: options.driverFactory,

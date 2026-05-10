@@ -1,7 +1,7 @@
 import { InvalidArgumentError, type Command } from '@commander-js/extra-typings';
-import { type KloCliCommandContext, resolveCommandProjectDir } from '../cli-program.js';
+import { type KtxCliCommandContext, resolveCommandProjectDir } from '../cli-program.js';
 import { publicIngestReadCommandSchema, publicIngestRunCommandSchema } from '../command-schemas.js';
-import type { KloPublicIngestArgs, KloPublicIngestInputMode } from '../public-ingest.js';
+import type { KtxPublicIngestArgs, KtxPublicIngestInputMode } from '../public-ingest.js';
 import { profileMark } from '../startup-profile.js';
 
 profileMark('module:commands/public-ingest-commands');
@@ -12,26 +12,26 @@ interface PublicIngestOptions {
   input?: boolean;
 }
 
-function inputMode(options: { input?: boolean }): KloPublicIngestInputMode {
+function inputMode(options: { input?: boolean }): KtxPublicIngestInputMode {
   return options.input === false ? 'disabled' : 'auto';
 }
 
-async function runPublicIngestArgs(context: KloCliCommandContext, args: KloPublicIngestArgs): Promise<void> {
-  const runner = context.deps.publicIngest ?? (await import('../public-ingest.js')).runKloPublicIngest;
+async function runPublicIngestArgs(context: KtxCliCommandContext, args: KtxPublicIngestArgs): Promise<void> {
+  const runner = context.deps.publicIngest ?? (await import('../public-ingest.js')).runKtxPublicIngest;
   context.setExitCode(await runner(args, context.io));
 }
 
 function parsePublicIngestConnectionId(value: string): string {
   if (value === 'run') {
-    throw new InvalidArgumentError('run is reserved; use klo dev ingest run for low-level adapter syntax');
+    throw new InvalidArgumentError('run is reserved; use ktx dev ingest run for low-level adapter syntax');
   }
   return value;
 }
 
-export function registerPublicIngestCommands(program: Command, context: KloCliCommandContext): void {
+export function registerPublicIngestCommands(program: Command, context: KtxCliCommandContext): void {
   const ingest = program
     .command('ingest')
-    .description('Build and refresh KLO context from configured sources')
+    .description('Build and refresh KTX context from configured sources')
     .usage('[options] [connectionId]')
     .argument('[connectionId]', 'Connection id to ingest', parsePublicIngestConnectionId)
     .option('--all', 'Ingest every eligible configured source', false)
@@ -42,12 +42,12 @@ export function registerPublicIngestCommands(program: Command, context: KloCliCo
       [
         '',
         'Examples:',
-        '  klo ingest <connectionId> [options]',
-        '  klo ingest --all [options]',
-        '  klo ingest status [runId] [options]',
-        '  klo ingest watch [runId] [options]',
+        '  ktx ingest <connectionId> [options]',
+        '  ktx ingest --all [options]',
+        '  ktx ingest status [runId] [options]',
+        '  ktx ingest watch [runId] [options]',
         '',
-        'Project directory defaults to KLO_PROJECT_DIR when set, otherwise the current working directory.',
+        'Project directory defaults to KTX_PROJECT_DIR when set, otherwise the current working directory.',
         '',
       ].join('\n'),
     )
@@ -58,7 +58,7 @@ export function registerPublicIngestCommands(program: Command, context: KloCliCo
     .action(async (connectionId: string | undefined, _options: PublicIngestOptions, command) => {
       const options = command.opts();
       if (options.all === true && connectionId) {
-        throw new Error('klo ingest accepts either --all or <connectionId>, not both');
+        throw new Error('ktx ingest accepts either --all or <connectionId>, not both');
       }
       const args = publicIngestRunCommandSchema.parse({
         command: 'run',

@@ -9,14 +9,14 @@ import type {
   SqlAnalysisPort,
 } from './ports.js';
 
-export type KloSqlAnalysisHttpJsonRunner = (
+export type KtxSqlAnalysisHttpJsonRunner = (
   path: string,
   payload: Record<string, unknown>,
 ) => Promise<Record<string, unknown>>;
 
 export interface HttpSqlAnalysisPortOptions {
   baseUrl: string;
-  requestJson?: KloSqlAnalysisHttpJsonRunner;
+  requestJson?: KtxSqlAnalysisHttpJsonRunner;
 }
 
 function normalizedBaseUrl(baseUrl: string): string {
@@ -31,7 +31,7 @@ function parseJsonObject(raw: string, path: string): Record<string, unknown> {
   return parsed as Record<string, unknown>;
 }
 
-function postJson(baseUrl: string): KloSqlAnalysisHttpJsonRunner {
+function postJson(baseUrl: string): KtxSqlAnalysisHttpJsonRunner {
   return async (path, payload) =>
     new Promise((resolve, reject) => {
       const target = new URL(path.replace(/^\//, ''), normalizedBaseUrl(baseUrl));

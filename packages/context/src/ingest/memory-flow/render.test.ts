@@ -4,7 +4,7 @@ import { renderMemoryFlowReplay } from './render.js';
 
 function view(): MemoryFlowViewModel {
   return {
-    title: 'KLO memory flow  warehouse/metricflow  done',
+    title: 'KTX memory flow  warehouse/metricflow  done',
     subtitle: 'Run run-1  Sync sync-1',
     status: 'done',
     activeLine: 'active: complete',
@@ -79,7 +79,7 @@ describe('renderMemoryFlowReplay', () => {
       'OK SOURCE -> OK CHUNKS -> !! WORKUNITS -> OK ACTIONS -> !! GATES -> OK SAVED',
     );
     expect(renderMemoryFlowReplay(view(), { terminalWidth: 140 })).toMatchInlineSnapshot(`
-      "KLO memory flow  warehouse/metricflow  done
+      "KTX memory flow  warehouse/metricflow  done
       active: complete
       Run run-1  Sync sync-1
       OK SOURCE -> OK CHUNKS -> !! WORKUNITS -> OK ACTIONS -> !! GATES -> OK SAVED

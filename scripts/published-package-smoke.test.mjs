@@ -15,7 +15,7 @@ describe('published package smoke config', () => {
       enabled: false,
       requireConfig: false,
       reason:
-        'Set KLO_PUBLISHED_KLO_PACKAGE or release-policy.json publishedPackageSmoke.packageName to the published npm package name after the release decision.',
+        'Set KTX_PUBLISHED_KTX_PACKAGE or release-policy.json publishedPackageSmoke.packageName to the published npm package name after the release decision.',
     });
   });
 
@@ -24,7 +24,7 @@ describe('published package smoke config', () => {
       enabled: false,
       requireConfig: true,
       reason:
-        'Set KLO_PUBLISHED_KLO_PACKAGE or release-policy.json publishedPackageSmoke.packageName to the published npm package name after the release decision.',
+        'Set KTX_PUBLISHED_KTX_PACKAGE or release-policy.json publishedPackageSmoke.packageName to the published npm package name after the release decision.',
     });
   });
 
@@ -32,9 +32,9 @@ describe('published package smoke config', () => {
     assert.deepEqual(
       readPublishedPackageSmokeConfig(
         {
-          KLO_PUBLISHED_KLO_PACKAGE: '@klo/cli-public',
-          KLO_PUBLISHED_KLO_VERSION: 'latest',
-          KLO_PUBLISHED_KLO_REGISTRY: 'https://registry.npmjs.org/',
+          KTX_PUBLISHED_KTX_PACKAGE: '@ktx/cli-public',
+          KTX_PUBLISHED_KTX_VERSION: 'latest',
+          KTX_PUBLISHED_KTX_REGISTRY: 'https://registry.npmjs.org/',
         },
         [],
       ),
@@ -42,7 +42,7 @@ describe('published package smoke config', () => {
         enabled: true,
         requireConfig: false,
         configSource: 'environment',
-        packageName: '@klo/cli-public',
+        packageName: '@ktx/cli-public',
         packageVersion: 'latest',
         registry: 'https://registry.npmjs.org/',
       },
@@ -55,7 +55,7 @@ describe('published package smoke config', () => {
         {},
         [],
         {
-          packageName: '@klo/cli-public',
+          packageName: '@ktx/cli-public',
           version: '2026.5.8',
           registry: 'https://registry.npmjs.org/',
         },
@@ -64,7 +64,7 @@ describe('published package smoke config', () => {
         enabled: true,
         requireConfig: false,
         configSource: 'release-policy',
-        packageName: '@klo/cli-public',
+        packageName: '@ktx/cli-public',
         packageVersion: '2026.5.8',
         registry: 'https://registry.npmjs.org/',
       },
@@ -75,12 +75,12 @@ describe('published package smoke config', () => {
     assert.deepEqual(
       readPublishedPackageSmokeConfig(
         {
-          KLO_PUBLISHED_KLO_PACKAGE: '@klo/cli-from-env',
-          KLO_PUBLISHED_KLO_VERSION: 'latest',
+          KTX_PUBLISHED_KTX_PACKAGE: '@ktx/cli-from-env',
+          KTX_PUBLISHED_KTX_VERSION: 'latest',
         },
         [],
         {
-          packageName: '@klo/cli-from-policy',
+          packageName: '@ktx/cli-from-policy',
           version: '2026.5.8',
           registry: 'https://registry.npmjs.org/',
         },
@@ -89,7 +89,7 @@ describe('published package smoke config', () => {
         enabled: true,
         requireConfig: false,
         configSource: 'environment',
-        packageName: '@klo/cli-from-env',
+        packageName: '@ktx/cli-from-env',
         packageVersion: 'latest',
         registry: 'https://registry.npmjs.org/',
       },
@@ -98,12 +98,12 @@ describe('published package smoke config', () => {
 
   it('rejects package names that would be unsafe as npx package specs', () => {
     assert.throws(
-      () => readPublishedPackageSmokeConfig({ KLO_PUBLISHED_KLO_PACKAGE: '--package=@evil/pkg' }, []),
-      /Invalid KLO_PUBLISHED_KLO_PACKAGE/,
+      () => readPublishedPackageSmokeConfig({ KTX_PUBLISHED_KTX_PACKAGE: '--package=@evil/pkg' }, []),
+      /Invalid KTX_PUBLISHED_KTX_PACKAGE/,
     );
     assert.throws(
-      () => readPublishedPackageSmokeConfig({ KLO_PUBLISHED_KLO_PACKAGE: '@klo/cli public' }, []),
-      /Invalid KLO_PUBLISHED_KLO_PACKAGE/,
+      () => readPublishedPackageSmokeConfig({ KTX_PUBLISHED_KTX_PACKAGE: '@ktx/cli public' }, []),
+      /Invalid KTX_PUBLISHED_KTX_PACKAGE/,
     );
     assert.throws(
       () =>
@@ -111,7 +111,7 @@ describe('published package smoke config', () => {
           {},
           [],
           {
-            packageName: '@klo/cli public',
+            packageName: '@ktx/cli public',
             version: 'latest',
             registry: null,
           },
@@ -125,23 +125,23 @@ describe('published package smoke config', () => {
       () =>
         readPublishedPackageSmokeConfig(
           {
-            KLO_PUBLISHED_KLO_PACKAGE: '@klo/cli-public',
-            KLO_PUBLISHED_KLO_VERSION: '--tag latest',
+            KTX_PUBLISHED_KTX_PACKAGE: '@ktx/cli-public',
+            KTX_PUBLISHED_KTX_VERSION: '--tag latest',
           },
           [],
         ),
-      /Invalid KLO_PUBLISHED_KLO_VERSION/,
+      /Invalid KTX_PUBLISHED_KTX_VERSION/,
     );
     assert.throws(
       () =>
         readPublishedPackageSmokeConfig(
           {
-            KLO_PUBLISHED_KLO_PACKAGE: '@klo/cli-public',
-            KLO_PUBLISHED_KLO_REGISTRY: 'file:///tmp/npm',
+            KTX_PUBLISHED_KTX_PACKAGE: '@ktx/cli-public',
+            KTX_PUBLISHED_KTX_REGISTRY: 'file:///tmp/npm',
           },
           [],
         ),
-      /KLO_PUBLISHED_KLO_REGISTRY must be an http\(s\) URL/,
+      /KTX_PUBLISHED_KTX_REGISTRY must be an http\(s\) URL/,
     );
   });
 });
@@ -150,30 +150,30 @@ describe('published package smoke command construction', () => {
   const config = {
     enabled: true,
     requireConfig: false,
-    packageName: '@klo/cli-public',
+    packageName: '@ktx/cli-public',
     packageVersion: 'latest',
     registry: 'https://registry.npmjs.org/',
   };
 
   it('builds the npx package spec from package name and version tag', () => {
-    assert.equal(publishedPackageSpec(config), '@klo/cli-public@latest');
+    assert.equal(publishedPackageSpec(config), '@ktx/cli-public@latest');
   });
 
   it('builds npx commands with a registry env patch instead of shell interpolation', () => {
     assert.deepEqual(buildPublishedPackageNpxCommand(config, ['--version']), {
       label: 'published package command',
       command: 'npx',
-      args: ['--yes', '@klo/cli-public@latest', '--version'],
+      args: ['--yes', '@ktx/cli-public@latest', '--version'],
       env: { npm_config_registry: 'https://registry.npmjs.org/' },
     });
   });
 
   it('builds the full hybrid-search smoke command list', () => {
-    assert.deepEqual(buildPublishedPackageSmokeCommands(config, '/tmp/klo-smoke/demo', '/tmp/klo-smoke/empty'), [
+    assert.deepEqual(buildPublishedPackageSmokeCommands(config, '/tmp/ktx-smoke/demo', '/tmp/ktx-smoke/empty'), [
       {
         label: 'published package version',
         command: 'npx',
-        args: ['--yes', '@klo/cli-public@latest', '--version'],
+        args: ['--yes', '@ktx/cli-public@latest', '--version'],
         env: { npm_config_registry: 'https://registry.npmjs.org/' },
       },
       {
@@ -181,10 +181,10 @@ describe('published package smoke command construction', () => {
         command: 'npx',
         args: [
           '--yes',
-          '@klo/cli-public@latest',
+          '@ktx/cli-public@latest',
           'demo',
           '--project-dir',
-          '/tmp/klo-smoke/demo',
+          '/tmp/ktx-smoke/demo',
           '--no-input',
           '--plain',
         ],
@@ -195,7 +195,7 @@ describe('published package smoke command construction', () => {
         command: 'npx',
         args: [
           '--yes',
-          '@klo/cli-public@latest',
+          '@ktx/cli-public@latest',
           'agent',
           'wiki',
           'search',
@@ -204,7 +204,7 @@ describe('published package smoke command construction', () => {
           '--limit',
           '5',
           '--project-dir',
-          '/tmp/klo-smoke/demo',
+          '/tmp/ktx-smoke/demo',
         ],
         env: { npm_config_registry: 'https://registry.npmjs.org/' },
       },
@@ -213,7 +213,7 @@ describe('published package smoke command construction', () => {
         command: 'npx',
         args: [
           '--yes',
-          '@klo/cli-public@latest',
+          '@ktx/cli-public@latest',
           'agent',
           'sl',
           'list',
@@ -221,7 +221,7 @@ describe('published package smoke command construction', () => {
           '--query',
           'ARR',
           '--project-dir',
-          '/tmp/klo-smoke/demo',
+          '/tmp/ktx-smoke/demo',
         ],
         env: { npm_config_registry: 'https://registry.npmjs.org/' },
       },
@@ -230,7 +230,7 @@ describe('published package smoke command construction', () => {
         command: 'npx',
         args: [
           '--yes',
-          '@klo/cli-public@latest',
+          '@ktx/cli-public@latest',
           'agent',
           'sl',
           'list',
@@ -238,7 +238,7 @@ describe('published package smoke command construction', () => {
           '--query',
           'revenue',
           '--project-dir',
-          '/tmp/klo-smoke/empty',
+          '/tmp/ktx-smoke/empty',
         ],
         env: { npm_config_registry: 'https://registry.npmjs.org/' },
       },

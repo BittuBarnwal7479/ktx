@@ -64,7 +64,7 @@ describe('computeMetabaseMappingDrift', () => {
         { id: 3, name: 'Warehouse', engine: 'mysql', host: 'mysql.internal', dbName: 'warehouse' },
       ],
       staleMappings: [{ id: '9', reason: 'database_not_found' }],
-      inSync: [{ id: 2, kloConnectionId: 'target-postgres' }],
+      inSync: [{ id: 2, ktxConnectionId: 'target-postgres' }],
     });
   });
 });
@@ -74,7 +74,7 @@ describe('validateMetabaseMappings', () => {
     expect(
       validateMetabaseMappings({
         mappings: { '2': 'target-postgres' },
-        knownKloConnectionIds: new Set(['target-postgres']),
+        knownKtxConnectionIds: new Set(['target-postgres']),
       }),
     ).toEqual({ ok: true });
   });
@@ -83,11 +83,11 @@ describe('validateMetabaseMappings', () => {
     expect(
       validateMetabaseMappings({
         mappings: { '2': 'missing-target', '3': 'target-mysql' },
-        knownKloConnectionIds: new Set(['target-mysql']),
+        knownKtxConnectionIds: new Set(['target-mysql']),
       }),
     ).toEqual({
       ok: false,
-      errors: [{ key: '2', reason: 'KLO connection missing-target does not exist' }],
+      errors: [{ key: '2', reason: 'KTX connection missing-target does not exist' }],
     });
   });
 });
@@ -149,7 +149,7 @@ describe('validateMappingPhysicalMatch', () => {
     ).toBeNull();
   });
 
-  it('returns null for unknown engines because KLO cannot validate them', () => {
+  it('returns null for unknown engines because KTX cannot validate them', () => {
     expect(
       validateMappingPhysicalMatch(
         { metabaseEngine: 'unknown-engine', metabaseDbName: 'X', metabaseHost: 'host' },
@@ -177,7 +177,7 @@ describe('computeMetabaseMappingPhysicalMismatches', () => {
     ).toEqual([
       {
         mappingId: 'mapping-bad',
-        reason: "Metabase database 'app' does not match KLO connection database 'other_app'",
+        reason: "Metabase database 'app' does not match KTX connection database 'other_app'",
       },
     ]);
   });
@@ -201,7 +201,7 @@ describe('refreshMetabaseMapping', () => {
       refreshMetabaseMapping({
         client,
         currentMappings: { '2': 'target-postgres' },
-        resolveKloConnectionPhysicalInfo: vi.fn().mockResolvedValue({
+        resolveKtxConnectionPhysicalInfo: vi.fn().mockResolvedValue({
           connection_type: 'POSTGRESQL',
           host: 'pg.internal',
           database: 'wrong_database',
@@ -211,12 +211,12 @@ describe('refreshMetabaseMapping', () => {
       drift: {
         unmappedDiscovered: [],
         staleMappings: [],
-        inSync: [{ id: 2, kloConnectionId: 'target-postgres' }],
+        inSync: [{ id: 2, ktxConnectionId: 'target-postgres' }],
       },
       physicalMismatches: [
         {
           mappingId: '2',
-          reason: "Metabase database 'analytics' does not match KLO connection database 'wrong_database'",
+          reason: "Metabase database 'analytics' does not match KTX connection database 'wrong_database'",
         },
       ],
     });
@@ -282,7 +282,7 @@ describe('findBestMatch', () => {
 });
 
 describe('METABASE_ENGINE_TO_CONNECTION_TYPE', () => {
-  it('keeps the server-supported Metabase engine table in KLO', () => {
+  it('keeps the server-supported Metabase engine table in KTX', () => {
     expect(METABASE_ENGINE_TO_CONNECTION_TYPE).toMatchObject({
       postgres: 'POSTGRESQL',
       bigquery: 'BIGQUERY',

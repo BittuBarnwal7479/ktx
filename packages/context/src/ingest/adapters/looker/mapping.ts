@@ -26,7 +26,7 @@ export type LookerWarehouseTargetConnectionType =
 
 export interface LookerConnectionMapping {
   lookerConnectionName: string;
-  kloConnectionId: string | null;
+  ktxConnectionId: string | null;
   lookerHost: string | null;
   lookerDatabase: string | null;
   lookerDialect: string | null;
@@ -43,7 +43,7 @@ export interface LookerMappingCandidateConnection extends LookerTargetConnection
 export interface LookerMappingDrift {
   unmappedDiscovered: LookerWarehouseConnectionInfo[];
   staleMappings: Array<{ lookerConnectionName: string; reason: 'looker_connection_not_found' }>;
-  inSync: Array<{ lookerConnectionName: string; kloConnectionId: string }>;
+  inSync: Array<{ lookerConnectionName: string; ktxConnectionId: string }>;
 }
 
 export type LookerMappingValidationResult =
@@ -155,7 +155,7 @@ export function normalizeName(value: string | null): string | null {
   return value ? value.toLowerCase() : null;
 }
 
-export function suggestKloConnectionForLookerConnection(args: {
+export function suggestKtxConnectionForLookerConnection(args: {
   lookerConnection: LookerWarehouseConnectionInfo;
   candidateConnections: LookerMappingCandidateConnection[];
 }): string | null {
@@ -187,7 +187,7 @@ export function computeLookerMappingDrift(args: {
   const storedByName = new Map(args.storedMappings.map((mapping) => [mapping.lookerConnectionName, mapping]));
 
   return {
-    unmappedDiscovered: args.discovered.filter((connection) => !storedByName.get(connection.name)?.kloConnectionId),
+    unmappedDiscovered: args.discovered.filter((connection) => !storedByName.get(connection.name)?.ktxConnectionId),
     staleMappings: args.storedMappings
       .filter((mapping) => !discoveredByName.has(mapping.lookerConnectionName))
       .map((mapping) => ({
@@ -195,32 +195,32 @@ export function computeLookerMappingDrift(args: {
         reason: 'looker_connection_not_found' as const,
       })),
     inSync: args.storedMappings
-      .filter((mapping) => discoveredByName.has(mapping.lookerConnectionName) && mapping.kloConnectionId)
+      .filter((mapping) => discoveredByName.has(mapping.lookerConnectionName) && mapping.ktxConnectionId)
       .map((mapping) => ({
         lookerConnectionName: mapping.lookerConnectionName,
-        kloConnectionId: mapping.kloConnectionId as string,
+        ktxConnectionId: mapping.ktxConnectionId as string,
       })),
   };
 }
 
 export function validateLookerMappings(args: {
   mappings: LookerConnectionMapping[];
-  knownKloConnectionIds: Set<string>;
+  knownKtxConnectionIds: Set<string>;
   knownConnectionTypes: ReadonlyMap<string, string>;
 }): LookerMappingValidationResult {
   const errors: Array<{ key: string; reason: string }> = [];
   for (const mapping of args.mappings) {
-    if (!mapping.kloConnectionId) {
+    if (!mapping.ktxConnectionId) {
       continue;
     }
-    if (!args.knownKloConnectionIds.has(mapping.kloConnectionId)) {
+    if (!args.knownKtxConnectionIds.has(mapping.ktxConnectionId)) {
       errors.push({
         key: mapping.lookerConnectionName,
-        reason: `KLO connection ${mapping.kloConnectionId} does not exist`,
+        reason: `KTX connection ${mapping.ktxConnectionId} does not exist`,
       });
       continue;
     }
-    const connectionType = args.knownConnectionTypes.get(mapping.kloConnectionId);
+    const connectionType = args.knownConnectionTypes.get(mapping.ktxConnectionId);
     const validation = validateLookerWarehouseTarget(connectionType ?? 'unknown');
     if (!validation.ok) {
       errors.push({ key: mapping.lookerConnectionName, reason: validation.reason });
@@ -241,7 +241,7 @@ export function refreshLookerMappingPlaceholders(args: {
     if (!existing) {
       byName.set(live.name, {
         lookerConnectionName: live.name,
-        kloConnectionId: null,
+        ktxConnectionId: null,
         lookerHost: live.host,
         lookerDatabase: live.database,
         lookerDialect: live.dialect,
@@ -346,14 +346,14 @@ export async function buildLookerPullConfigFromInputs(args: {
   const connectionTypes: Record<string, LookerWarehouseTargetConnectionType> = {};
 
   for (const mapping of args.refreshedMappings) {
-    if (!mapping.kloConnectionId) {
+    if (!mapping.ktxConnectionId) {
       continue;
     }
-    const target = args.targetConnections.get(mapping.kloConnectionId);
+    const target = args.targetConnections.get(mapping.ktxConnectionId);
     if (!target || !validateLookerWarehouseTarget(target.connection_type).ok) {
       continue;
     }
-    connectionMappings[mapping.lookerConnectionName] = mapping.kloConnectionId;
+    connectionMappings[mapping.lookerConnectionName] = mapping.ktxConnectionId;
     connectionTypes[mapping.lookerConnectionName] = target.connection_type as LookerWarehouseTargetConnectionType;
   }
 

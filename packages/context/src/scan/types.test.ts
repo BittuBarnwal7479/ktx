@@ -1,25 +1,25 @@
 import { describe, expect, it } from 'vitest';
 import {
-  createKloConnectorCapabilities,
-  type KloEventPropertyDiscovery,
-  type KloEventPropertyDiscoveryInput,
-  type KloEventPropertyValuesInput,
-  type KloEventPropertyValuesResult,
-  type KloEventStreamDiscoveryPort,
-  type KloEventTypeDiscovery,
-  type KloEventTypeDiscoveryInput,
-  type KloNetworkEndpoint,
-  type KloNetworkTunnelPort,
-  type KloQueryResult,
-  type KloScanConnector,
-  type KloScanContext,
-  type KloScanInput,
-  type KloSchemaSnapshot,
+  createKtxConnectorCapabilities,
+  type KtxEventPropertyDiscovery,
+  type KtxEventPropertyDiscoveryInput,
+  type KtxEventPropertyValuesInput,
+  type KtxEventPropertyValuesResult,
+  type KtxEventStreamDiscoveryPort,
+  type KtxEventTypeDiscovery,
+  type KtxEventTypeDiscoveryInput,
+  type KtxNetworkEndpoint,
+  type KtxNetworkTunnelPort,
+  type KtxQueryResult,
+  type KtxScanConnector,
+  type KtxScanContext,
+  type KtxScanInput,
+  type KtxSchemaSnapshot,
 } from './types.js';
 
-describe('KLO scan contract types', () => {
+describe('KTX scan contract types', () => {
   it('defaults to structural-only connector capabilities', () => {
-    expect(createKloConnectorCapabilities()).toEqual({
+    expect(createKtxConnectorCapabilities()).toEqual({
       structuralIntrospection: true,
       tableSampling: false,
       columnSampling: false,
@@ -34,7 +34,7 @@ describe('KLO scan contract types', () => {
 
   it('keeps structural introspection mandatory when optional capabilities are enabled', () => {
     expect(
-      createKloConnectorCapabilities({
+      createKtxConnectorCapabilities({
         tableSampling: true,
         readOnlySql: true,
         eventStreamDiscovery: true,
@@ -54,7 +54,7 @@ describe('KLO scan contract types', () => {
   });
 
   it('describes the connector surface without requiring enrichment methods', async () => {
-    const snapshot: KloSchemaSnapshot = {
+    const snapshot: KtxSchemaSnapshot = {
       connectionId: 'warehouse',
       driver: 'postgres',
       extractedAt: '2026-04-29T00:00:00.000Z',
@@ -84,11 +84,11 @@ describe('KLO scan contract types', () => {
       ],
     };
 
-    const connector: KloScanConnector = {
+    const connector: KtxScanConnector = {
       id: 'test-postgres',
       driver: 'postgres',
-      capabilities: createKloConnectorCapabilities({ estimatedRowCounts: true }),
-      async introspect(input: KloScanInput, ctx: KloScanContext) {
+      capabilities: createKtxConnectorCapabilities({ estimatedRowCounts: true }),
+      async introspect(input: KtxScanInput, ctx: KtxScanContext) {
         expect(input.connectionId).toBe('warehouse');
         expect(ctx.runId).toBe('scan-run-1');
         return snapshot;
@@ -109,11 +109,11 @@ describe('KLO scan contract types', () => {
   });
 
   it('models optional event-stream discovery as a connector capability and port', async () => {
-    const eventTypes: KloEventTypeDiscovery[] = [{ value: '$pageview', count: 42 }];
-    const propertyKeys: KloEventPropertyDiscovery[] = [{ key: '$browser', count: 31 }];
-    const propertyValues: KloEventPropertyValuesResult = { values: ['Chrome', 'Safari'], cardinality: 2 };
-    const discovery: KloEventStreamDiscoveryPort = {
-      async listEventTypes(input: KloEventTypeDiscoveryInput) {
+    const eventTypes: KtxEventTypeDiscovery[] = [{ value: '$pageview', count: 42 }];
+    const propertyKeys: KtxEventPropertyDiscovery[] = [{ key: '$browser', count: 31 }];
+    const propertyValues: KtxEventPropertyValuesResult = { values: ['Chrome', 'Safari'], cardinality: 2 };
+    const discovery: KtxEventStreamDiscoveryPort = {
+      async listEventTypes(input: KtxEventTypeDiscoveryInput) {
         expect(input).toEqual({
           connectionId: 'product',
           table: { catalog: '157881', db: null, name: 'events' },
@@ -124,7 +124,7 @@ describe('KLO scan contract types', () => {
         });
         return eventTypes;
       },
-      async listPropertyKeys(input: KloEventPropertyDiscoveryInput) {
+      async listPropertyKeys(input: KtxEventPropertyDiscoveryInput) {
         expect(input).toEqual({
           connectionId: 'product',
           table: { catalog: '157881', db: null, name: 'events' },
@@ -135,7 +135,7 @@ describe('KLO scan contract types', () => {
         });
         return propertyKeys;
       },
-      async listPropertyValues(input: KloEventPropertyValuesInput) {
+      async listPropertyValues(input: KtxEventPropertyValuesInput) {
         expect(input).toEqual({
           connectionId: 'product',
           table: { catalog: '157881', db: null, name: 'events' },
@@ -149,10 +149,10 @@ describe('KLO scan contract types', () => {
       },
     };
 
-    const connector: KloScanConnector = {
+    const connector: KtxScanConnector = {
       id: 'posthog:product',
       driver: 'posthog',
-      capabilities: createKloConnectorCapabilities({ eventStreamDiscovery: true }),
+      capabilities: createKtxConnectorCapabilities({ eventStreamDiscovery: true }),
       eventStreamDiscovery: discovery,
       async introspect() {
         return {
@@ -209,7 +209,7 @@ describe('KLO scan contract types', () => {
   });
 
   it('keeps read-only query results separate from schema snapshots', () => {
-    const result: KloQueryResult = {
+    const result: KtxQueryResult = {
       headers: ['id', 'amount'],
       headerTypes: ['integer', 'numeric'],
       rows: [[1, 10.5]],
@@ -227,12 +227,12 @@ describe('KLO scan contract types', () => {
   });
 
   it('models host-provided network tunnel endpoint resolution without app imports', async () => {
-    const endpoint: KloNetworkEndpoint = {
+    const endpoint: KtxNetworkEndpoint = {
       host: '127.0.0.1',
       port: 15432,
       close: async () => undefined,
     };
-    const tunnelPort: KloNetworkTunnelPort<{ networkProxy?: { type: 'ssh_tunnel' } }> = {
+    const tunnelPort: KtxNetworkTunnelPort<{ networkProxy?: { type: 'ssh_tunnel' } }> = {
       async resolveEndpoint(input) {
         expect(input).toEqual({
           connectionId: 'warehouse',

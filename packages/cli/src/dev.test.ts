@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { runKloCli } from './index.js';
+import { runKtxCli } from './index.js';
 
 function makeIo() {
   let stdout = '';
@@ -26,9 +26,9 @@ describe('dev Commander tree', () => {
   it('prints visible dev help with only supported low-level command groups', async () => {
     const testIo = makeIo();
 
-    await expect(runKloCli(['dev', '--help'], testIo.io)).resolves.toBe(0);
+    await expect(runKtxCli(['dev', '--help'], testIo.io)).resolves.toBe(0);
 
-    expect(testIo.stdout()).toContain('Usage: klo dev [options] [command]');
+    expect(testIo.stdout()).toContain('Usage: ktx dev [options] [command]');
     for (const command of ['init', 'doctor', 'scan', 'ingest', 'mapping']) {
       expect(testIo.stdout()).toContain(command);
     }
@@ -51,10 +51,10 @@ describe('dev Commander tree', () => {
   it('keeps dev callable while hiding it from root command rows', async () => {
     const testIo = makeIo();
 
-    await expect(runKloCli(['--help'], testIo.io)).resolves.toBe(0);
+    await expect(runKtxCli(['--help'], testIo.io)).resolves.toBe(0);
 
     expect(testIo.stdout()).toContain('Advanced:');
-    expect(testIo.stdout()).toContain('klo dev');
+    expect(testIo.stdout()).toContain('ktx dev');
     expect(testIo.stdout()).not.toContain('dev                              Low-level diagnostics');
     expect(testIo.stderr()).toBe('');
   });
@@ -63,15 +63,15 @@ describe('dev Commander tree', () => {
     const { mkdtemp, readFile, rm } = await import('node:fs/promises');
     const { tmpdir } = await import('node:os');
     const { join } = await import('node:path');
-    const tempDir = await mkdtemp(join(tmpdir(), 'klo-dev-init-'));
+    const tempDir = await mkdtemp(join(tmpdir(), 'ktx-dev-init-'));
     const projectDir = join(tempDir, 'warehouse');
     const testIo = makeIo();
 
     try {
-      await expect(runKloCli(['dev', 'init', projectDir, '--name', 'warehouse'], testIo.io)).resolves.toBe(0);
+      await expect(runKtxCli(['dev', 'init', projectDir, '--name', 'warehouse'], testIo.io)).resolves.toBe(0);
 
-      expect(testIo.stdout()).toContain(`Initialized KLO project at ${projectDir}`);
-      await expect(readFile(join(projectDir, 'klo.yaml'), 'utf-8')).resolves.toContain('project: warehouse');
+      expect(testIo.stdout()).toContain(`Initialized KTX project at ${projectDir}`);
+      await expect(readFile(join(projectDir, 'ktx.yaml'), 'utf-8')).resolves.toContain('project: warehouse');
       expect(testIo.stderr()).toBe('');
     } finally {
       await rm(tempDir, { recursive: true, force: true });
@@ -82,16 +82,16 @@ describe('dev Commander tree', () => {
     const { mkdtemp, rm } = await import('node:fs/promises');
     const { tmpdir } = await import('node:os');
     const { join } = await import('node:path');
-    const tempDir = await mkdtemp(join(tmpdir(), 'klo-dev-init-global-'));
+    const tempDir = await mkdtemp(join(tmpdir(), 'ktx-dev-init-global-'));
     const projectDir = join(tempDir, 'global-init');
     const testIo = makeIo();
 
     try {
       await expect(
-        runKloCli(['--project-dir', projectDir, 'dev', 'init', '--name', 'global-init'], testIo.io),
+        runKtxCli(['--project-dir', projectDir, 'dev', 'init', '--name', 'global-init'], testIo.io),
       ).resolves.toBe(0);
 
-      expect(testIo.stdout()).toContain(`Initialized KLO project at ${projectDir}`);
+      expect(testIo.stdout()).toContain(`Initialized KTX project at ${projectDir}`);
       expect(testIo.stderr()).toBe('');
     } finally {
       await rm(tempDir, { recursive: true, force: true });
@@ -106,7 +106,7 @@ describe('dev Commander tree', () => {
     ]) {
       const testIo = makeIo();
 
-      await expect(runKloCli(argv, testIo.io)).resolves.toBe(1);
+      await expect(runKtxCli(argv, testIo.io)).resolves.toBe(1);
 
       expect(testIo.stderr()).toMatch(/unknown command|error:/);
     }
@@ -115,12 +115,12 @@ describe('dev Commander tree', () => {
   it.each([
     {
       argv: ['dev', 'doctor', '--help'],
-      expected: ['Usage: klo dev doctor', '--json', '--no-input'],
+      expected: ['Usage: ktx dev doctor', '--json', '--no-input'],
     },
     {
       argv: ['dev', 'scan', '--help'],
       expected: [
-        'Usage: klo dev scan',
+        'Usage: ktx dev scan',
         '--mode <mode>',
         'structural',
         'relationships',
@@ -136,12 +136,12 @@ describe('dev Commander tree', () => {
     },
     {
       argv: ['dev', 'scan', 'report', '--help'],
-      expected: ['Usage: klo dev scan report [options] <runId>', '<runId>', '--json'],
+      expected: ['Usage: ktx dev scan report [options] <runId>', '<runId>', '--json'],
     },
     {
       argv: ['dev', 'scan', 'relationships', '--help'],
       expected: [
-        'Usage: klo dev scan relationships [options] <runId>',
+        'Usage: ktx dev scan relationships [options] <runId>',
         '--status <status>',
         '--limit <count>',
         '--accept <candidateId>',
@@ -154,7 +154,7 @@ describe('dev Commander tree', () => {
     {
       argv: ['dev', 'scan', 'relationship-apply', '--help'],
       expected: [
-        'Usage: klo dev scan relationship-apply [options] <runId>',
+        'Usage: ktx dev scan relationship-apply [options] <runId>',
         '--all-accepted',
         '--candidate <candidateId>',
         '--dry-run',
@@ -163,7 +163,7 @@ describe('dev Commander tree', () => {
     {
       argv: ['dev', 'scan', 'relationship-thresholds', '--help'],
       expected: [
-        'Usage: klo dev scan relationship-thresholds [options]',
+        'Usage: ktx dev scan relationship-thresholds [options]',
         '--connection <connectionId>',
         '--min-total-labels <count>',
         '--min-accepted-labels <count>',
@@ -174,7 +174,7 @@ describe('dev Commander tree', () => {
     {
       argv: ['dev', 'scan', 'relationship-feedback', '--help'],
       expected: [
-        'Usage: klo dev scan relationship-feedback [options]',
+        'Usage: ktx dev scan relationship-feedback [options]',
         '--connection <connectionId>',
         '--decision <decision>',
         '--json',
@@ -184,7 +184,7 @@ describe('dev Commander tree', () => {
     {
       argv: ['dev', 'scan', 'relationship-calibration', '--help'],
       expected: [
-        'Usage: klo dev scan relationship-calibration [options]',
+        'Usage: ktx dev scan relationship-calibration [options]',
         '--connection <connectionId>',
         '--decision <decision>',
         '--accept-threshold <value>',
@@ -194,11 +194,11 @@ describe('dev Commander tree', () => {
     },
     {
       argv: ['dev', 'ingest', 'run', '--help'],
-      expected: ['Usage: klo dev ingest run [options]', '--connection-id <connectionId>', '--adapter <adapter>'],
+      expected: ['Usage: ktx dev ingest run [options]', '--connection-id <connectionId>', '--adapter <adapter>'],
     },
     {
       argv: ['dev', 'mapping', 'sync-state', 'set', '--help'],
-      expected: ['Usage: klo dev mapping sync-state set [options] <connectionId>', '--mode <mode>'],
+      expected: ['Usage: ktx dev mapping sync-state set [options] <connectionId>', '--mode <mode>'],
     },
   ])('prints generated nested help for $argv', async ({ argv, expected }) => {
     const io = makeIo();
@@ -206,7 +206,7 @@ describe('dev Commander tree', () => {
     const ingest = vi.fn(async () => 0);
     const scan = vi.fn(async () => 0);
 
-    await expect(runKloCli(argv, io.io, { doctor, ingest, scan })).resolves.toBe(0);
+    await expect(runKtxCli(argv, io.io, { doctor, ingest, scan })).resolves.toBe(0);
 
     for (const text of expected) {
       expect(io.stdout()).toContain(text);
@@ -222,7 +222,7 @@ describe('dev Commander tree', () => {
     const scan = vi.fn(async () => 0);
 
     await expect(
-      runKloCli(['dev', 'scan', 'warehouse', '--project-dir', '/tmp/project', '--dry-run'], scanIo.io, { scan }),
+      runKtxCli(['dev', 'scan', 'warehouse', '--project-dir', '/tmp/project', '--dry-run'], scanIo.io, { scan }),
     ).resolves.toBe(0);
 
     expect(scan).toHaveBeenCalledWith(
@@ -245,7 +245,7 @@ describe('dev Commander tree', () => {
     const scan = vi.fn(async () => 0);
 
     await expect(
-      runKloCli(['dev', 'scan', 'warehouse', '--project-dir', '/tmp/project', '--mode', 'relationships'], io.io, {
+      runKtxCli(['dev', 'scan', 'warehouse', '--project-dir', '/tmp/project', '--mode', 'relationships'], io.io, {
         scan,
       }),
     ).resolves.toBe(0);
@@ -269,7 +269,7 @@ describe('dev Commander tree', () => {
     const io = makeIo();
     const scan = vi.fn(async () => 0);
 
-    await expect(runKloCli(['dev', 'scan', 'warehouse', option], io.io, { scan })).resolves.toBe(1);
+    await expect(runKtxCli(['dev', 'scan', 'warehouse', option], io.io, { scan })).resolves.toBe(1);
 
     expect(scan).not.toHaveBeenCalled();
     expect(io.stderr()).toContain(`unknown option '${option}'`);
@@ -279,18 +279,18 @@ describe('dev Commander tree', () => {
     const io = makeIo();
     const scan = vi.fn(async () => 0);
 
-    await expect(runKloCli(['dev', 'scan', '--dry-run'], io.io, { scan })).resolves.toBe(1);
+    await expect(runKtxCli(['dev', 'scan', '--dry-run'], io.io, { scan })).resolves.toBe(1);
 
     expect(scan).not.toHaveBeenCalled();
-    expect(io.stdout()).toContain('Usage: klo dev scan');
-    expect(io.stderr()).toContain('klo dev scan requires <connectionId> or a subcommand');
+    expect(io.stdout()).toContain('Usage: ktx dev scan');
+    expect(io.stderr()).toContain('ktx dev scan requires <connectionId> or a subcommand');
   });
 
   it('rejects invalid scan modes before dispatch', async () => {
     const io = makeIo();
     const scan = vi.fn(async () => 0);
 
-    await expect(runKloCli(['dev', 'scan', 'warehouse', '--mode', 'deep'], io.io, { scan })).resolves.toBe(1);
+    await expect(runKtxCli(['dev', 'scan', 'warehouse', '--mode', 'deep'], io.io, { scan })).resolves.toBe(1);
 
     expect(scan).not.toHaveBeenCalled();
     expect(io.stderr()).toContain("argument 'deep' is invalid");
@@ -301,10 +301,10 @@ describe('dev Commander tree', () => {
     const io = makeIo();
     const scan = vi.fn(async () => 0);
 
-    await expect(runKloCli(['dev', 'scan', 'report', '--help'], io.io, { scan })).resolves.toBe(0);
+    await expect(runKtxCli(['dev', 'scan', 'report', '--help'], io.io, { scan })).resolves.toBe(0);
 
-    expect(io.stdout()).toContain('--project-dir is inherited from `klo dev scan`');
-    expect(io.stdout()).not.toContain('--project-dir is inherited from `klo scan`');
+    expect(io.stdout()).toContain('--project-dir is inherited from `ktx dev scan`');
+    expect(io.stdout()).not.toContain('--project-dir is inherited from `ktx scan`');
     expect(scan).not.toHaveBeenCalled();
   });
 
@@ -314,10 +314,10 @@ describe('dev Commander tree', () => {
     const scan = vi.fn(async () => 0);
 
     await expect(
-      runKloCli(['dev', 'scan', 'report', 'scan-run-1', '--project-dir', '/tmp/project'], humanIo.io, { scan }),
+      runKtxCli(['dev', 'scan', 'report', 'scan-run-1', '--project-dir', '/tmp/project'], humanIo.io, { scan }),
     ).resolves.toBe(0);
     await expect(
-      runKloCli(['dev', 'scan', 'report', 'scan-run-2', '--project-dir', '/tmp/project', '--json'], jsonIo.io, {
+      runKtxCli(['dev', 'scan', 'report', 'scan-run-2', '--project-dir', '/tmp/project', '--json'], jsonIo.io, {
         scan,
       }),
     ).resolves.toBe(0);
@@ -339,7 +339,7 @@ describe('dev Commander tree', () => {
     const scan = vi.fn(async () => 0);
 
     await expect(
-      runKloCli(
+      runKtxCli(
         [
           'dev',
           'scan',
@@ -377,7 +377,7 @@ describe('dev Commander tree', () => {
     const scan = vi.fn(async () => 0);
 
     await expect(
-      runKloCli(
+      runKtxCli(
         [
           'dev',
           'scan',
@@ -419,7 +419,7 @@ describe('dev Commander tree', () => {
     const scan = vi.fn(async () => 0);
 
     await expect(
-      runKloCli(['dev', 'scan', 'relationships', 'scan-run-review', option, ''], io.io, { scan }),
+      runKtxCli(['dev', 'scan', 'relationships', 'scan-run-review', option, ''], io.io, { scan }),
     ).resolves.toBe(1);
 
     expect(scan).not.toHaveBeenCalled();
@@ -431,7 +431,7 @@ describe('dev Commander tree', () => {
     const scan = vi.fn(async () => 0);
 
     await expect(
-      runKloCli(['dev', 'scan', 'relationship-feedback', '--json', '--jsonl'], io.io, { scan }),
+      runKtxCli(['dev', 'scan', 'relationship-feedback', '--json', '--jsonl'], io.io, { scan }),
     ).resolves.toBe(1);
 
     expect(scan).not.toHaveBeenCalled();
@@ -443,7 +443,7 @@ describe('dev Commander tree', () => {
     const scan = vi.fn(async () => 0);
 
     await expect(
-      runKloCli(
+      runKtxCli(
         [
           'dev',
           'scan',
@@ -480,7 +480,7 @@ describe('dev Commander tree', () => {
     const scan = vi.fn(async () => 0);
 
     await expect(
-      runKloCli(
+      runKtxCli(
         [
           'dev',
           'scan',
@@ -516,7 +516,7 @@ describe('dev Commander tree', () => {
     const scan = vi.fn(async () => 0);
 
     await expect(
-      runKloCli(
+      runKtxCli(
         [
           'dev',
           'scan',
@@ -557,7 +557,7 @@ describe('dev Commander tree', () => {
     const scan = vi.fn(async () => 0);
 
     await expect(
-      runKloCli(
+      runKtxCli(
         [
           'dev',
           'scan',
@@ -598,7 +598,7 @@ describe('dev Commander tree', () => {
     const scan = vi.fn(async () => 0);
 
     await expect(
-      runKloCli(['dev', 'scan', 'relationship-calibration', '--accept-threshold', '1.5'], io.io, { scan }),
+      runKtxCli(['dev', 'scan', 'relationship-calibration', '--accept-threshold', '1.5'], io.io, { scan }),
     ).resolves.toBe(1);
 
     expect(scan).not.toHaveBeenCalled();
@@ -610,7 +610,7 @@ describe('dev Commander tree', () => {
     const scan = vi.fn(async () => 0);
 
     await expect(
-      runKloCli(
+      runKtxCli(
         [
           'dev',
           'scan',
@@ -635,7 +635,7 @@ describe('dev Commander tree', () => {
     const ingest = vi.fn(async () => 0);
 
     await expect(
-      runKloCli(
+      runKtxCli(
         [
           'dev',
           'ingest',

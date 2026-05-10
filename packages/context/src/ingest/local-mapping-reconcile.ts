@@ -1,7 +1,7 @@
 import {
-  kloLocalStateDbPath,
+  ktxLocalStateDbPath,
   parseConnectionMappingBootstrap,
-  type KloLocalProject,
+  type KtxLocalProject,
   type LookerMappingBootstrap,
   type MetabaseMappingBootstrap,
 } from '../project/index.js';
@@ -30,10 +30,10 @@ function metabaseMappings(bootstrap: MetabaseMappingBootstrap) {
 function lookerMappings(bootstrap: LookerMappingBootstrap) {
   return Object.entries(bootstrap.connectionMappings)
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([lookerConnectionName, kloConnectionId]) => ({ lookerConnectionName, kloConnectionId }));
+    .map(([lookerConnectionName, ktxConnectionId]) => ({ lookerConnectionName, ktxConnectionId }));
 }
 
-export async function seedLocalMappingStateFromKloYaml(project: KloLocalProject, connectionId: string): Promise<void> {
+export async function seedLocalMappingStateFromKtxYaml(project: KtxLocalProject, connectionId: string): Promise<void> {
   const connection = project.config.connections[connectionId];
   if (!connection) {
     return;
@@ -44,7 +44,7 @@ export async function seedLocalMappingStateFromKloYaml(project: KloLocalProject,
     return;
   }
 
-  const dbPath = kloLocalStateDbPath(project);
+  const dbPath = ktxLocalStateDbPath(project);
   if (bootstrap.adapter === 'metabase') {
     await new LocalMetabaseSourceStateReader({ dbPath }).applyYamlBootstrap({
       connectionId,

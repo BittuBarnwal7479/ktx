@@ -3,13 +3,13 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
-  createJsonlKloLlmDebugRequestRecorder,
-  summarizeKloLlmDebugRequest,
+  createJsonlKtxLlmDebugRequestRecorder,
+  summarizeKtxLlmDebugRequest,
 } from './debug-request-recorder.js';
 
-describe('summarizeKloLlmDebugRequest', () => {
+describe('summarizeKtxLlmDebugRequest', () => {
   it('records providerOptions positions without message text or tool schemas', () => {
-    const summary = summarizeKloLlmDebugRequest({
+    const summary = summarizeKtxLlmDebugRequest({
       operationName: 'ingest-bundle-wu',
       source: 'metabase',
       jobId: 'job-1',
@@ -81,7 +81,7 @@ describe('summarizeKloLlmDebugRequest', () => {
   });
 });
 
-describe('createJsonlKloLlmDebugRequestRecorder', () => {
+describe('createJsonlKtxLlmDebugRequestRecorder', () => {
   let tempDir: string | undefined;
 
   afterEach(async () => {
@@ -92,9 +92,9 @@ describe('createJsonlKloLlmDebugRequestRecorder', () => {
   });
 
   it('appends one JSON object per recorded request', async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-llm-debug-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-llm-debug-'));
     const filePath = join(tempDir, 'nested', 'llm-debug.jsonl');
-    const recorder = createJsonlKloLlmDebugRequestRecorder(filePath);
+    const recorder = createJsonlKtxLlmDebugRequestRecorder(filePath);
 
     await recorder.record({
       timestamp: '2026-05-04T00:00:00.000Z',

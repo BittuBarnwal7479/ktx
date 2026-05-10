@@ -3,8 +3,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  KLO_AGENT_MAX_ROWS_CAP,
-  createKloAgentRuntime,
+  KTX_AGENT_MAX_ROWS_CAP,
+  createKtxAgentRuntime,
   parseAgentMaxRows,
   readAgentJsonFile,
   writeAgentJson,
@@ -28,7 +28,7 @@ describe('agent runtime helpers', () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-agent-runtime-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-agent-runtime-'));
   });
 
   afterEach(async () => {
@@ -69,13 +69,13 @@ describe('agent runtime helpers', () => {
     expect(parseAgentMaxRows(100)).toBe(100);
     expect(() => parseAgentMaxRows(undefined)).toThrow('maxRows is required');
     expect(() => parseAgentMaxRows(0)).toThrow('positive integer');
-    expect(() => parseAgentMaxRows(KLO_AGENT_MAX_ROWS_CAP + 1)).toThrow(String(KLO_AGENT_MAX_ROWS_CAP));
+    expect(() => parseAgentMaxRows(KTX_AGENT_MAX_ROWS_CAP + 1)).toThrow(String(KTX_AGENT_MAX_ROWS_CAP));
   });
 
   it('constructs local context ports with semantic compute and query executor', async () => {
     const project = {
       projectDir: tempDir,
-      configPath: join(tempDir, 'klo.yaml'),
+      configPath: join(tempDir, 'ktx.yaml'),
       config: { project: 'revenue', connections: {} },
       coreConfig: {},
       git: {},
@@ -88,7 +88,7 @@ describe('agent runtime helpers', () => {
     const createContextTools = vi.fn(() => ports);
 
     await expect(
-      createKloAgentRuntime(
+      createKtxAgentRuntime(
         { projectDir: tempDir, enableSemanticCompute: true, enableQueryExecution: true },
         {
           loadProject,

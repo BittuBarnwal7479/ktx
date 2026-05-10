@@ -1,6 +1,6 @@
 import { readFile, readdir, stat } from 'node:fs/promises';
 import { join } from 'node:path';
-import { noopLogger, type KloLogger } from '../core/index.js';
+import { noopLogger, type KtxLogger } from '../core/index.js';
 
 export type SkillCaller = 'research' | 'memory_agent';
 
@@ -20,14 +20,14 @@ export interface FrontmatterFields {
 export interface SkillsRegistryServiceOptions {
   skillsDir: string;
   additionalSkillDirs?: string[];
-  logger?: KloLogger;
+  logger?: KtxLogger;
 }
 
 const SKILL_FILENAME = 'SKILL.md';
 const VALID_CALLERS: ReadonlySet<SkillCaller> = new Set(['research', 'memory_agent']);
 
 export class SkillsRegistryService {
-  private readonly logger: KloLogger;
+  private readonly logger: KtxLogger;
   private readonly skillsDir: string;
   private readonly additionalSkillDirs: string[];
   private catalogPromise: Promise<Map<string, SkillMetadata>> | null = null;

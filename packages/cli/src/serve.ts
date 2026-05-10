@@ -1,27 +1,27 @@
-import { createLocalKloLlmProviderFromConfig } from '@klo/context';
-import { createDefaultLocalQueryExecutor, type KloSqlQueryExecutorPort } from '@klo/context/connections';
+import { createLocalKtxLlmProviderFromConfig } from '@ktx/context';
+import { createDefaultLocalQueryExecutor, type KtxSqlQueryExecutorPort } from '@ktx/context/connections';
 import {
   createHttpSemanticLayerComputePort,
   createPythonSemanticLayerComputePort,
-  type KloSemanticLayerComputePort,
-} from '@klo/context/daemon';
-import { createDefaultLocalIngestAdapters, type LocalIngestMcpOptions } from '@klo/context/ingest';
+  type KtxSemanticLayerComputePort,
+} from '@ktx/context/daemon';
+import { createDefaultLocalIngestAdapters, type LocalIngestMcpOptions } from '@ktx/context/ingest';
 import {
-  createDefaultKloMcpServer,
+  createDefaultKtxMcpServer,
   createLocalProjectMcpContextPorts,
-  type KloMcpContextPorts,
-} from '@klo/context/mcp';
-import { createLocalProjectMemoryCapture, type MemoryCaptureService } from '@klo/context/memory';
-import { type KloLocalProject, loadKloProject } from '@klo/context/project';
-import type { LocalScanMcpOptions } from '@klo/context/scan';
+  type KtxMcpContextPorts,
+} from '@ktx/context/mcp';
+import { createLocalProjectMemoryCapture, type MemoryCaptureService } from '@ktx/context/memory';
+import { type KtxLocalProject, loadKtxProject } from '@ktx/context/project';
+import type { LocalScanMcpOptions } from '@ktx/context/scan';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { createKloCliLocalIngestAdapters } from './local-adapters.js';
-import { createKloCliScanConnector } from './local-scan-connectors.js';
+import { createKtxCliLocalIngestAdapters } from './local-adapters.js';
+import { createKtxCliScanConnector } from './local-scan-connectors.js';
 import { profileMark } from './startup-profile.js';
 
 profileMark('module:serve');
 
-export interface KloServeArgs {
+export interface KtxServeArgs {
   mcp: 'stdio';
   projectDir: string;
   userId: string;
@@ -33,34 +33,34 @@ export interface KloServeArgs {
   memoryModel?: string;
 }
 
-interface KloServeIo {
+interface KtxServeIo {
   stderr: { write(chunk: string): void };
 }
 
 interface LocalProjectContextToolOptions {
-  semanticLayerCompute?: KloSemanticLayerComputePort;
-  queryExecutor?: KloSqlQueryExecutorPort;
+  semanticLayerCompute?: KtxSemanticLayerComputePort;
+  queryExecutor?: KtxSqlQueryExecutorPort;
   localIngest?: LocalIngestMcpOptions;
   localScan?: LocalScanMcpOptions;
 }
 
-interface KloServeDeps {
-  loadProject?: typeof loadKloProject;
-  createContextTools?: (project: KloLocalProject, options?: LocalProjectContextToolOptions) => KloMcpContextPorts;
-  createSemanticLayerCompute?: () => KloSemanticLayerComputePort;
-  createHttpSemanticLayerCompute?: (baseUrl: string) => KloSemanticLayerComputePort;
+interface KtxServeDeps {
+  loadProject?: typeof loadKtxProject;
+  createContextTools?: (project: KtxLocalProject, options?: LocalProjectContextToolOptions) => KtxMcpContextPorts;
+  createSemanticLayerCompute?: () => KtxSemanticLayerComputePort;
+  createHttpSemanticLayerCompute?: (baseUrl: string) => KtxSemanticLayerComputePort;
   createIngestAdapters?: typeof createDefaultLocalIngestAdapters;
-  createQueryExecutor?: () => KloSqlQueryExecutorPort;
+  createQueryExecutor?: () => KtxSqlQueryExecutorPort;
   createMemoryCapture?: typeof createLocalProjectMemoryCapture;
-  createServer?: typeof createDefaultKloMcpServer;
+  createServer?: typeof createDefaultKtxMcpServer;
   createTransport?: () => StdioServerTransport;
-  stderr?: KloServeIo['stderr'];
+  stderr?: KtxServeIo['stderr'];
 }
 
-export async function runKloServeStdio(args: KloServeArgs, deps: KloServeDeps = {}): Promise<number> {
-  const loadProjectFn = deps.loadProject ?? loadKloProject;
+export async function runKtxServeStdio(args: KtxServeArgs, deps: KtxServeDeps = {}): Promise<number> {
+  const loadProjectFn = deps.loadProject ?? loadKtxProject;
   const createContextToolsFn = deps.createContextTools ?? createLocalProjectMcpContextPorts;
-  const createServerFn = deps.createServer ?? createDefaultKloMcpServer;
+  const createServerFn = deps.createServer ?? createDefaultKtxMcpServer;
   const createTransportFn = deps.createTransport ?? (() => new StdioServerTransport());
   const stderr = deps.stderr ?? process.stderr;
 
@@ -75,12 +75,12 @@ export async function runKloServeStdio(args: KloServeArgs, deps: KloServeDeps = 
   const queryExecutor = args.executeQueries
     ? (deps.createQueryExecutor ?? createDefaultLocalQueryExecutor)()
     : undefined;
-  const createIngestAdapters = deps.createIngestAdapters ?? createKloCliLocalIngestAdapters;
+  const createIngestAdapters = deps.createIngestAdapters ?? createKtxCliLocalIngestAdapters;
   const localAdapters = createIngestAdapters(project, {
     databaseIntrospectionUrl: args.databaseIntrospectionUrl,
   });
   const llmProvider = args.memoryCapture
-    ? (createLocalKloLlmProviderFromConfig(project.config.llm) ?? undefined)
+    ? (createLocalKtxLlmProviderFromConfig(project.config.llm) ?? undefined)
     : undefined;
   const memoryCapture: MemoryCaptureService | undefined = args.memoryCapture
     ? (deps.createMemoryCapture ?? createLocalProjectMemoryCapture)(project, {
@@ -96,7 +96,7 @@ export async function runKloServeStdio(args: KloServeArgs, deps: KloServeDeps = 
   const localScan: LocalScanMcpOptions = {
     adapters: localAdapters,
     databaseIntrospectionUrl: args.databaseIntrospectionUrl,
-    createConnector: (connectionId) => createKloCliScanConnector(project, connectionId),
+    createConnector: (connectionId) => createKtxCliScanConnector(project, connectionId),
   };
   const contextToolOptions: LocalProjectContextToolOptions = {
     localIngest,
@@ -106,7 +106,7 @@ export async function runKloServeStdio(args: KloServeArgs, deps: KloServeDeps = 
   };
   const contextTools = createContextToolsFn(project, contextToolOptions);
   const server = createServerFn({
-    name: 'klo',
+    name: 'ktx',
     version: '0.0.0-private',
     userContext: { userId: args.userId },
     contextTools,
@@ -114,6 +114,6 @@ export async function runKloServeStdio(args: KloServeArgs, deps: KloServeDeps = 
   });
   const transport = createTransportFn();
   await server.connect(transport);
-  stderr.write(`klo MCP server running on stdio for ${project.projectDir}\n`);
+  stderr.write(`ktx MCP server running on stdio for ${project.projectDir}\n`);
   return 0;
 }

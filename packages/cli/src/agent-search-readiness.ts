@@ -1,11 +1,11 @@
-export type KloAgentSlSearchReadinessCode =
+export type KtxAgentSlSearchReadinessCode =
   | 'agent_sl_search_missing_project'
   | 'agent_sl_search_no_connections'
   | 'agent_sl_search_unknown_connection'
   | 'agent_sl_search_no_indexed_sources';
 
-export interface KloAgentSlSearchReadinessDetail {
-  code: KloAgentSlSearchReadinessCode;
+export interface KtxAgentSlSearchReadinessDetail {
+  code: KtxAgentSlSearchReadinessCode;
   message: string;
   nextSteps: string[];
 }
@@ -16,14 +16,14 @@ function queryForCommand(query: string | undefined): string {
 }
 
 function projectSearchCommand(projectDir: string, query: string | undefined): string {
-  return `klo agent sl list --json --query ${JSON.stringify(queryForCommand(query))} --project-dir ${projectDir}`;
+  return `ktx agent sl list --json --query ${JSON.stringify(queryForCommand(query))} --project-dir ${projectDir}`;
 }
 
 function baseNextSteps(projectDir: string, query: string | undefined): string[] {
   return [
-    'klo demo',
-    `klo setup --project-dir ${projectDir}`,
-    'klo ingest <connection>',
+    'ktx demo',
+    `ktx setup --project-dir ${projectDir}`,
+    'ktx ingest <connection>',
     projectSearchCommand(projectDir, query),
   ];
 }
@@ -31,10 +31,10 @@ function baseNextSteps(projectDir: string, query: string | undefined): string[] 
 export function missingProjectSlSearchReadiness(
   projectDir: string,
   query: string | undefined,
-): KloAgentSlSearchReadinessDetail {
+): KtxAgentSlSearchReadinessDetail {
   return {
     code: 'agent_sl_search_missing_project',
-    message: `Semantic-layer search needs an initialized KLO project at ${projectDir}.`,
+    message: `Semantic-layer search needs an initialized KTX project at ${projectDir}.`,
     nextSteps: baseNextSteps(projectDir, query),
   };
 }
@@ -42,7 +42,7 @@ export function missingProjectSlSearchReadiness(
 export function noConnectionsSlSearchReadiness(
   projectDir: string,
   query: string | undefined,
-): KloAgentSlSearchReadinessDetail {
+): KtxAgentSlSearchReadinessDetail {
   return {
     code: 'agent_sl_search_no_connections',
     message: `Semantic-layer search found no configured connections in ${projectDir}.`,
@@ -54,7 +54,7 @@ export function missingConnectionSlSearchReadiness(
   projectDir: string,
   connectionId: string,
   query: string | undefined,
-): KloAgentSlSearchReadinessDetail {
+): KtxAgentSlSearchReadinessDetail {
   return {
     code: 'agent_sl_search_unknown_connection',
     message: `Semantic-layer search connection "${connectionId}" is not configured in ${projectDir}.`,
@@ -65,7 +65,7 @@ export function missingConnectionSlSearchReadiness(
 export function noIndexedSourcesSlSearchReadiness(
   projectDir: string,
   query: string | undefined,
-): KloAgentSlSearchReadinessDetail {
+): KtxAgentSlSearchReadinessDetail {
   return {
     code: 'agent_sl_search_no_indexed_sources',
     message: `Semantic-layer search found no indexed semantic-layer sources in ${projectDir}.`,
@@ -90,5 +90,5 @@ function errorPath(error: unknown): string | undefined {
 }
 
 export function isMissingProjectConfigError(error: unknown): boolean {
-  return errorCode(error) === 'ENOENT' && (errorPath(error)?.endsWith('klo.yaml') ?? false);
+  return errorCode(error) === 'ENOENT' && (errorPath(error)?.endsWith('ktx.yaml') ?? false);
 }

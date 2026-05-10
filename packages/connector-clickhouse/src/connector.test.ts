@@ -2,9 +2,9 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   clickHouseClientConfigFromConfig,
   createClickHouseLiveDatabaseIntrospection,
-  isKloClickHouseConnectionConfig,
-  KloClickHouseScanConnector,
-  type KloClickHouseClientFactory,
+  isKtxClickHouseConnectionConfig,
+  KtxClickHouseScanConnector,
+  type KtxClickHouseClientFactory,
 } from './index.js';
 
 function result<T>(payload: T) {
@@ -15,7 +15,7 @@ function result<T>(payload: T) {
   };
 }
 
-function fakeClientFactory(): KloClickHouseClientFactory {
+function fakeClientFactory(): KtxClickHouseClientFactory {
   const query = vi.fn(async (input: { query: string; format: string; query_params?: Record<string, unknown> }) => {
     if (input.query.includes('FROM system.tables')) {
       return result([
@@ -77,7 +77,7 @@ function fakeClientFactory(): KloClickHouseClientFactory {
     if (input.query.trim() === 'SELECT 1') {
       return result({ meta: [{ name: '1', type: 'UInt8' }], data: [[1]], rows: 1 });
     }
-    if (input.query.includes('select * from (select id, event_name from analytics.events) as klo_query_result limit 1')) {
+    if (input.query.includes('select * from (select id, event_name from analytics.events) as ktx_query_result limit 1')) {
       return result({
         meta: [
           { name: 'id', type: 'UInt64' },
@@ -95,12 +95,12 @@ function fakeClientFactory(): KloClickHouseClientFactory {
   };
 }
 
-describe('KloClickHouseScanConnector', () => {
+describe('KtxClickHouseScanConnector', () => {
   it('resolves ClickHouse connection configuration safely', () => {
-    expect(isKloClickHouseConnectionConfig({ driver: 'clickhouse', host: 'localhost', database: 'analytics' })).toBe(
+    expect(isKtxClickHouseConnectionConfig({ driver: 'clickhouse', host: 'localhost', database: 'analytics' })).toBe(
       true,
     );
-    expect(isKloClickHouseConnectionConfig({ driver: 'mysql', host: 'localhost', database: 'analytics' })).toBe(false);
+    expect(isKtxClickHouseConnectionConfig({ driver: 'mysql', host: 'localhost', database: 'analytics' })).toBe(false);
     expect(
       clickHouseClientConfigFromConfig({
         connectionId: 'warehouse',
@@ -132,7 +132,7 @@ describe('KloClickHouseScanConnector', () => {
   });
 
   it('introspects schema, primary keys, comments, row counts, and views', async () => {
-    const connector = new KloClickHouseScanConnector({
+    const connector = new KtxClickHouseScanConnector({
       connectionId: 'warehouse',
       connection: {
         driver: 'clickhouse',
@@ -181,7 +181,7 @@ describe('KloClickHouseScanConnector', () => {
 
   it('runs samples, distinct values, read-only SQL, row count, schema list, and cleanup', async () => {
     const clientFactory = fakeClientFactory();
-    const connector = new KloClickHouseScanConnector({
+    const connector = new KtxClickHouseScanConnector({
       connectionId: 'warehouse',
       connection: {
         driver: 'clickhouse',

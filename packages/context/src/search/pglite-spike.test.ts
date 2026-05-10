@@ -120,7 +120,7 @@ describe('PGlite hybrid search spike', () => {
   let dataDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-pglite-search-spike-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-pglite-search-spike-'));
     dataDir = join(tempDir, 'pgdata');
   });
 

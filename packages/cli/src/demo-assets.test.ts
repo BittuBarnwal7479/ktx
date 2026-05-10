@@ -28,7 +28,7 @@ async function readPackagedJson<T>(relativePath: string): Promise<T> {
 }
 
 describe('demo assets', () => {
-  const projectDir = join(tmpdir(), `klo-demo-assets-${process.pid}`);
+  const projectDir = join(tmpdir(), `ktx-demo-assets-${process.pid}`);
 
   afterEach(async () => {
     await rm(projectDir, { recursive: true, force: true });
@@ -36,8 +36,8 @@ describe('demo assets', () => {
 
   it('resolves the default demo root under the OS temp directory', () => {
     const dir = defaultDemoProjectDir();
-    expect(dir.startsWith(join(tmpdir(), 'klo-demo-'))).toBe(true);
-    expect(dir).toMatch(/klo-demo-[a-f0-9]{8}$/);
+    expect(dir.startsWith(join(tmpdir(), 'ktx-demo-'))).toBe(true);
+    expect(dir).toMatch(/ktx-demo-[a-f0-9]{8}$/);
   });
 
   it('exports the packaged Orbit demo identity', () => {
@@ -124,7 +124,7 @@ describe('demo assets', () => {
     await expect(access(join(projectDir, 'raw-sources'))).resolves.toBeUndefined();
     await expect(access(join(projectDir, '_schema'))).rejects.toMatchObject({ code: 'ENOENT' });
 
-    const config = await readFile(join(projectDir, 'klo.yaml'), 'utf-8');
+    const config = await readFile(join(projectDir, 'ktx.yaml'), 'utf-8');
     expect(config).toContain('backend: anthropic');
     expect(config).toContain('api_key: env:ANTHROPIC_API_KEY');
     expect(config).not.toContain('sk-ant-');
@@ -187,7 +187,7 @@ describe('demo assets', () => {
     await expect(inspectDemoProjectState(projectDir)).resolves.toEqual({
       status: 'missing',
       projectDir,
-      missing: ['klo.yaml', 'demo.db', 'state.sqlite', 'replays/replay.memory-flow.v1.json'],
+      missing: ['ktx.yaml', 'demo.db', 'state.sqlite', 'replays/replay.memory-flow.v1.json'],
     });
 
     await ensureDemoProject({ projectDir, force: false });
@@ -210,7 +210,7 @@ describe('demo assets', () => {
     await rm(join(projectDir, 'demo.db'), { force: true });
 
     await expect(resetDemoProject({ projectDir, force: false })).rejects.toThrow(
-      `klo setup demo reset is destructive; pass --force to recreate ${projectDir}`,
+      `ktx setup demo reset is destructive; pass --force to recreate ${projectDir}`,
     );
 
     await expect(resetDemoProject({ projectDir, force: true })).resolves.toMatchObject({ projectDir });
@@ -218,10 +218,10 @@ describe('demo assets', () => {
     await expect(inspectDemoProjectState(projectDir)).resolves.toMatchObject({ status: 'ready' });
   });
 
-  it('preserves a user-edited klo.yaml across reset --force', async () => {
+  it('preserves a user-edited ktx.yaml across reset --force', async () => {
     await ensureDemoProject({ projectDir, force: false });
     const customConfig = [
-      'project: klo-demo-orbit',
+      'project: ktx-demo-orbit',
       'connections:',
       `  ${DEMO_CONNECTION_ID}:`,
       '    driver: sqlite',
@@ -232,7 +232,7 @@ describe('demo assets', () => {
       '  search: sqlite-fts5',
       '  git:',
       '    auto_commit: true',
-      '    author: klo <klo@example.com>',
+      '    author: ktx <ktx@example.com>',
       'llm:',
       '  provider:',
       '    backend: vertex',
@@ -253,20 +253,20 @@ describe('demo assets', () => {
       '    failureMode: continue',
       '',
     ].join('\n');
-    await writeFile(join(projectDir, 'klo.yaml'), customConfig, 'utf-8');
+    await writeFile(join(projectDir, 'ktx.yaml'), customConfig, 'utf-8');
 
     await resetDemoProject({ projectDir, force: true });
 
-    const preserved = await readFile(join(projectDir, 'klo.yaml'), 'utf-8');
+    const preserved = await readFile(join(projectDir, 'ktx.yaml'), 'utf-8');
     expect(preserved).toBe(customConfig);
     expect(preserved).toContain('backend: vertex');
     expect(preserved).not.toContain('backend: anthropic');
     await expect(inspectDemoProjectState(projectDir)).resolves.toMatchObject({ status: 'ready' });
   });
 
-  it('still writes the default klo.yaml on reset when none exists', async () => {
+  it('still writes the default ktx.yaml on reset when none exists', async () => {
     await resetDemoProject({ projectDir, force: true });
-    const config = await readFile(join(projectDir, 'klo.yaml'), 'utf-8');
+    const config = await readFile(join(projectDir, 'ktx.yaml'), 'utf-8');
     expect(config).toContain('backend: anthropic');
   });
 });

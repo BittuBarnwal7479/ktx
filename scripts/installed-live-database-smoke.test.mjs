@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 
 import {
   buildDockerRunArgs,
-  buildKloYaml,
+  buildKtxYaml,
   buildLiveDatabaseIngestArgs,
   buildLiveDatabaseStatusArgs,
   buildPostgresUrl,
@@ -16,7 +16,7 @@ describe('installed live-database artifact smoke helpers', () => {
   it('builds a deterministic disposable Postgres container command', () => {
     assert.deepEqual(
       buildDockerRunArgs({
-        containerName: 'klo-live-db-smoke-test',
+        containerName: 'ktx-live-db-smoke-test',
         hostPort: 15432,
         image: 'postgres:16-alpine',
       }),
@@ -25,11 +25,11 @@ describe('installed live-database artifact smoke helpers', () => {
         '--rm',
         '-d',
         '--name',
-        'klo-live-db-smoke-test',
+        'ktx-live-db-smoke-test',
         '-e',
         'POSTGRES_PASSWORD=postgres', // pragma: allowlist secret
         '-e',
-        'POSTGRES_USER=klo',
+        'POSTGRES_USER=ktx',
         '-e',
         'POSTGRES_DB=warehouse',
         '-p',
@@ -40,25 +40,25 @@ describe('installed live-database artifact smoke helpers', () => {
   });
 
   it('uses a collision-resistant Docker container name prefix', () => {
-    assert.match(smokeContainerName(1234, 5678), /^klo-live-db-smoke-1234-5678$/);
+    assert.match(smokeContainerName(1234, 5678), /^ktx-live-db-smoke-1234-5678$/);
   });
 
-  it('builds the Postgres URL used by klo.yaml and daemon introspection', () => {
+  it('builds the Postgres URL used by ktx.yaml and daemon introspection', () => {
     assert.equal(
       buildPostgresUrl(15432),
-      'postgresql://klo:postgres@127.0.0.1:15432/warehouse', // pragma: allowlist secret
+      'postgresql://ktx:postgres@127.0.0.1:15432/warehouse', // pragma: allowlist secret
     );
   });
 
-  it('writes a live-database-only KLO project config with SQLite local state', () => {
+  it('writes a live-database-only KTX project config with SQLite local state', () => {
     assert.equal(
-      buildKloYaml('postgresql://klo:postgres@127.0.0.1:15432/warehouse'), // pragma: allowlist secret
+      buildKtxYaml('postgresql://ktx:postgres@127.0.0.1:15432/warehouse'), // pragma: allowlist secret
       [
         'project: artifact-live-database',
         'connections:',
         '  warehouse:',
         '    driver: postgres',
-        '    url: "postgresql://klo:postgres@127.0.0.1:15432/warehouse"', // pragma: allowlist secret
+        '    url: "postgresql://ktx:postgres@127.0.0.1:15432/warehouse"', // pragma: allowlist secret
         '    readonly: true',
         'storage:',
         '  state: sqlite',
@@ -83,12 +83,12 @@ describe('installed live-database artifact smoke helpers', () => {
   });
 
   it('waits for a real SQL connection to the target Postgres database', () => {
-    assert.deepEqual(buildPostgresReadyArgs('klo-live-db-smoke-test'), [
+    assert.deepEqual(buildPostgresReadyArgs('ktx-live-db-smoke-test'), [
       'exec',
-      'klo-live-db-smoke-test',
+      'ktx-live-db-smoke-test',
       'psql',
       '-U',
-      'klo',
+      'ktx',
       '-d',
       'warehouse',
       '-v',
@@ -101,7 +101,7 @@ describe('installed live-database artifact smoke helpers', () => {
   it('builds installed CLI live-database ingest and status commands', () => {
     assert.deepEqual(buildLiveDatabaseIngestArgs('/tmp/project', 'http://127.0.0.1:8765'), [
       'exec',
-      'klo',
+      'ktx',
       'dev',
       'ingest',
       'run',
@@ -117,7 +117,7 @@ describe('installed live-database artifact smoke helpers', () => {
 
     assert.deepEqual(buildLiveDatabaseStatusArgs('/tmp/project', 'local-run-1'), [
       'exec',
-      'klo',
+      'ktx',
       'ingest',
       'status',
       '--project-dir',

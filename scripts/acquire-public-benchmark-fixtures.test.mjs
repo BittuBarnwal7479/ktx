@@ -6,7 +6,7 @@ import { describe, it } from 'node:test';
 import { acquirePublicBenchmarkFixtures } from './acquire-public-benchmark-fixtures.mjs';
 
 function tempRoot() {
-  return mkdtempSync(path.join(tmpdir(), 'klo-acquire-'));
+  return mkdtempSync(path.join(tmpdir(), 'ktx-acquire-'));
 }
 
 function writeManifest(dir, fixtures) {

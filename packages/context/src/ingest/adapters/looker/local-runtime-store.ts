@@ -5,7 +5,7 @@ import type { LookerWarehouseConnectionInfo } from './client.js';
 import type { LookerConnectionMapping } from './mapping.js';
 import type { LookerRuntimeCursors } from './types.js';
 
-export type LocalLookerMappingSource = 'klo.yaml' | 'cli' | 'refresh';
+export type LocalLookerMappingSource = 'ktx.yaml' | 'cli' | 'refresh';
 
 interface LocalLookerRuntimeStoreOptions {
   dbPath: string;
@@ -19,7 +19,7 @@ export interface LocalLookerConnectionMappingListRow extends LookerConnectionMap
 export interface UpsertLocalLookerConnectionMappingInput {
   lookerConnectionId: string;
   lookerConnectionName: string;
-  kloConnectionId: string | null;
+  ktxConnectionId: string | null;
   source: LocalLookerMappingSource;
 }
 
@@ -27,7 +27,7 @@ interface ApplyLocalLookerYamlBootstrapInput {
   lookerConnectionId: string;
   mappings: Array<{
     lookerConnectionName: string;
-    kloConnectionId: string | null;
+    ktxConnectionId: string | null;
   }>;
 }
 
@@ -67,7 +67,7 @@ export class LocalLookerRuntimeStore implements LookerSourceStateReader {
       CREATE TABLE IF NOT EXISTS local_looker_connection_mappings (
         looker_connection_id TEXT NOT NULL,
         looker_connection_name TEXT NOT NULL,
-        klo_connection_id TEXT,
+        ktx_connection_id TEXT,
         looker_host TEXT,
         looker_database TEXT,
         looker_dialect TEXT,
@@ -82,7 +82,7 @@ export class LocalLookerRuntimeStore implements LookerSourceStateReader {
     const timestamp = this.now().toISOString();
     const apply = this.db.transaction(() => {
       const existing = this.db.prepare(`
-        SELECT klo_connection_id, source
+        SELECT ktx_connection_id, source
         FROM local_looker_connection_mappings
         WHERE looker_connection_id = ? AND looker_connection_name = ?
       `);
@@ -90,36 +90,36 @@ export class LocalLookerRuntimeStore implements LookerSourceStateReader {
         INSERT INTO local_looker_connection_mappings (
           looker_connection_id,
           looker_connection_name,
-          klo_connection_id,
+          ktx_connection_id,
           looker_host,
           looker_database,
           looker_dialect,
           source,
           updated_at
         )
-        VALUES (?, ?, ?, NULL, NULL, NULL, 'klo.yaml', ?)
+        VALUES (?, ?, ?, NULL, NULL, NULL, 'ktx.yaml', ?)
       `);
       const updateRefreshRow = this.db.prepare(`
         UPDATE local_looker_connection_mappings
-        SET klo_connection_id = ?,
-            source = 'klo.yaml',
+        SET ktx_connection_id = ?,
+            source = 'ktx.yaml',
             updated_at = ?
         WHERE looker_connection_id = ?
           AND looker_connection_name = ?
           AND source = 'refresh'
-          AND klo_connection_id IS NULL
+          AND ktx_connection_id IS NULL
       `);
 
       for (const mapping of input.mappings) {
         const row = existing.get(input.lookerConnectionId, mapping.lookerConnectionName) as
-          | { klo_connection_id: string | null; source: LocalLookerMappingSource }
+          | { ktx_connection_id: string | null; source: LocalLookerMappingSource }
           | undefined;
         if (!row) {
-          insert.run(input.lookerConnectionId, mapping.lookerConnectionName, mapping.kloConnectionId, timestamp);
+          insert.run(input.lookerConnectionId, mapping.lookerConnectionName, mapping.ktxConnectionId, timestamp);
           continue;
         }
-        if (row.source === 'refresh' && row.klo_connection_id === null) {
-          updateRefreshRow.run(mapping.kloConnectionId, timestamp, input.lookerConnectionId, mapping.lookerConnectionName);
+        if (row.source === 'refresh' && row.ktx_connection_id === null) {
+          updateRefreshRow.run(mapping.ktxConnectionId, timestamp, input.lookerConnectionId, mapping.lookerConnectionName);
         }
       }
     });
@@ -174,7 +174,7 @@ export class LocalLookerRuntimeStore implements LookerSourceStateReader {
         `
         SELECT
           looker_connection_name,
-          klo_connection_id,
+          ktx_connection_id,
           looker_host,
           looker_database,
           looker_dialect,
@@ -186,7 +186,7 @@ export class LocalLookerRuntimeStore implements LookerSourceStateReader {
       )
       .all(lookerConnectionId) as Array<{
       looker_connection_name: string;
-      klo_connection_id: string | null;
+      ktx_connection_id: string | null;
       looker_host: string | null;
       looker_database: string | null;
       looker_dialect: string | null;
@@ -195,7 +195,7 @@ export class LocalLookerRuntimeStore implements LookerSourceStateReader {
 
     return rows.map((row) => ({
       lookerConnectionName: row.looker_connection_name,
-      kloConnectionId: row.klo_connection_id,
+      ktxConnectionId: row.ktx_connection_id,
       lookerHost: row.looker_host,
       lookerDatabase: row.looker_database,
       lookerDialect: row.looker_dialect,
@@ -210,7 +210,7 @@ export class LocalLookerRuntimeStore implements LookerSourceStateReader {
         INSERT INTO local_looker_connection_mappings (
           looker_connection_id,
           looker_connection_name,
-          klo_connection_id,
+          ktx_connection_id,
           looker_host,
           looker_database,
           looker_dialect,
@@ -219,12 +219,12 @@ export class LocalLookerRuntimeStore implements LookerSourceStateReader {
         )
         VALUES (?, ?, ?, NULL, NULL, NULL, ?, ?)
         ON CONFLICT(looker_connection_id, looker_connection_name) DO UPDATE SET
-          klo_connection_id = excluded.klo_connection_id,
+          ktx_connection_id = excluded.ktx_connection_id,
           source = excluded.source,
           updated_at = excluded.updated_at
       `,
       )
-      .run(input.lookerConnectionId, input.lookerConnectionName, input.kloConnectionId, input.source, this.now().toISOString());
+      .run(input.lookerConnectionId, input.lookerConnectionName, input.ktxConnectionId, input.source, this.now().toISOString());
   }
 
   async refreshDiscoveredConnections(input: RefreshLocalLookerDiscoveredConnectionsInput): Promise<void> {
@@ -234,7 +234,7 @@ export class LocalLookerRuntimeStore implements LookerSourceStateReader {
         INSERT INTO local_looker_connection_mappings (
           looker_connection_id,
           looker_connection_name,
-          klo_connection_id,
+          ktx_connection_id,
           looker_host,
           looker_database,
           looker_dialect,

@@ -1,10 +1,10 @@
 import { Option, type Command } from '@commander-js/extra-typings';
-import type { KloAgentArgs } from '../agent.js';
-import type { KloCliCommandContext } from '../cli-program.js';
+import type { KtxAgentArgs } from '../agent.js';
+import type { KtxCliCommandContext } from '../cli-program.js';
 import { parsePositiveIntegerOption, resolveCommandProjectDir } from '../cli-program.js';
 
-async function runAgent(context: KloCliCommandContext, args: KloAgentArgs): Promise<void> {
-  const runner = context.deps.agent ?? (await import('../agent.js')).runKloAgent;
+async function runAgent(context: KtxCliCommandContext, args: KtxAgentArgs): Promise<void> {
+  const runner = context.deps.agent ?? (await import('../agent.js')).runKtxAgent;
   context.setExitCode(await runner(args, context.io));
 }
 
@@ -12,10 +12,10 @@ function jsonOption(): Option {
   return new Option('--json', 'Print JSON output').makeOptionMandatory();
 }
 
-export function registerAgentCommands(program: Command, context: KloCliCommandContext): void {
+export function registerAgentCommands(program: Command, context: KtxCliCommandContext): void {
   const agent = program
     .command('agent', { hidden: true })
-    .description('Machine-readable KLO commands for coding agents')
+    .description('Machine-readable KTX commands for coding agents')
     .showHelpAfterError();
 
   agent.hook('preAction', (_thisCommand, actionCommand) => {
@@ -24,7 +24,7 @@ export function registerAgentCommands(program: Command, context: KloCliCommandCo
 
   agent
     .command('tools')
-    .description('Print available agent-facing KLO tools')
+    .description('Print available agent-facing KTX tools')
     .addOption(jsonOption())
     .action(async (_options, command) => {
       await runAgent(context, { command: 'tools', projectDir: resolveCommandProjectDir(command), json: true });
@@ -91,10 +91,10 @@ export function registerAgentCommands(program: Command, context: KloCliCommandCo
       },
     );
 
-  const wiki = agent.command('wiki').description('KLO wiki agent commands');
+  const wiki = agent.command('wiki').description('KTX wiki agent commands');
   wiki
     .command('search')
-    .description('Search KLO wiki pages')
+    .description('Search KTX wiki pages')
     .argument('<query>')
     .addOption(jsonOption())
     .option('--limit <number>', 'Maximum search results', parsePositiveIntegerOption, 10)
@@ -109,7 +109,7 @@ export function registerAgentCommands(program: Command, context: KloCliCommandCo
     });
   wiki
     .command('read')
-    .description('Read one KLO wiki page')
+    .description('Read one KTX wiki page')
     .argument('<pageId>')
     .addOption(jsonOption())
     .action(async (pageId: string, _options, command) => {

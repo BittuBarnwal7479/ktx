@@ -8,7 +8,7 @@ describe('setup secrets', () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-setup-secrets-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-setup-secrets-'));
   });
 
   afterEach(async () => {
@@ -26,11 +26,11 @@ describe('setup secrets', () => {
       value: 'sk-ant-test',
     });
 
-    expect(result).toBe(`file:${resolve(tempDir, '.klo/secrets/anthropic-api-key')}`);
-    await expect(readFile(join(tempDir, '.klo/secrets/anthropic-api-key'), 'utf-8')).resolves.toBe('sk-ant-test\n');
+    expect(result).toBe(`file:${resolve(tempDir, '.ktx/secrets/anthropic-api-key')}`);
+    await expect(readFile(join(tempDir, '.ktx/secrets/anthropic-api-key'), 'utf-8')).resolves.toBe('sk-ant-test\n');
 
     if (process.platform !== 'win32') {
-      const mode = (await stat(join(tempDir, '.klo/secrets/anthropic-api-key'))).mode & 0o777;
+      const mode = (await stat(join(tempDir, '.ktx/secrets/anthropic-api-key'))).mode & 0o777;
       expect(mode).toBe(0o600);
     }
   });

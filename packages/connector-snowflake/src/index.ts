@@ -1,18 +1,18 @@
-export { KloSnowflakeDialect } from './dialect.js';
+export { KtxSnowflakeDialect } from './dialect.js';
 export {
-  isKloSnowflakeConnectionConfig,
-  KloSnowflakeScanConnector,
+  isKtxSnowflakeConnectionConfig,
+  KtxSnowflakeScanConnector,
   snowflakeConnectionConfigFromConfig,
-  type KloSnowflakeColumnDistinctValuesOptions,
-  type KloSnowflakeColumnDistinctValuesResult,
-  type KloSnowflakeConnectionConfig,
-  type KloSnowflakeDriver,
-  type KloSnowflakeDriverFactory,
-  type KloSnowflakeRawColumnMetadata,
-  type KloSnowflakeRawTableMetadata,
-  type KloSnowflakeReadOnlyQueryInput,
-  type KloSnowflakeResolvedConnectionConfig,
-  type KloSnowflakeScanConnectorOptions,
-  type KloSnowflakeSdkOptionsProvider,
+  type KtxSnowflakeColumnDistinctValuesOptions,
+  type KtxSnowflakeColumnDistinctValuesResult,
+  type KtxSnowflakeConnectionConfig,
+  type KtxSnowflakeDriver,
+  type KtxSnowflakeDriverFactory,
+  type KtxSnowflakeRawColumnMetadata,
+  type KtxSnowflakeRawTableMetadata,
+  type KtxSnowflakeReadOnlyQueryInput,
+  type KtxSnowflakeResolvedConnectionConfig,
+  type KtxSnowflakeScanConnectorOptions,
+  type KtxSnowflakeSdkOptionsProvider,
 } from './connector.js';
 export { createSnowflakeLiveDatabaseIntrospection } from './live-database-introspection.js';

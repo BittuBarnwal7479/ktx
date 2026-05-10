@@ -3,9 +3,9 @@ import {
   formatMemoryFlowFinalSummary,
   renderMemoryFlowReplay,
   type MemoryFlowReplayInput,
-} from '@klo/context/ingest/memory-flow';
-import { resolveKloConfigReference } from '@klo/context/core';
-import { loadKloProject } from '@klo/context/project';
+} from '@ktx/context/ingest/memory-flow';
+import { resolveKtxConfigReference } from '@ktx/context/core';
+import { loadKtxProject } from '@ktx/context/project';
 import {
   DEMO_ADAPTER,
   DEMO_CONNECTION_ID,
@@ -34,11 +34,11 @@ import {
   resolveFullCredentialDecision,
   type DemoPromptAdapter,
 } from './demo-interaction.js';
-import type { KloDoctorArgs } from './doctor.js';
+import type { KtxDoctorArgs } from './doctor.js';
 import {
   renderMemoryFlowTui,
   startLiveMemoryFlowTui,
-  type KloMemoryFlowTuiIo,
+  type KtxMemoryFlowTuiIo,
   type MemoryFlowTuiLiveSession,
 } from './memory-flow-tui.js';
 import {
@@ -51,36 +51,36 @@ import { formatNextStepLines } from './next-steps.js';
 
 profileMark('module:demo');
 
-export type KloDemoOutputMode = 'plain' | 'json' | 'viz';
-export type KloDemoInputMode = 'auto' | 'disabled';
-export type KloDemoMode = 'full' | 'seeded';
+export type KtxDemoOutputMode = 'plain' | 'json' | 'viz';
+export type KtxDemoInputMode = 'auto' | 'disabled';
+export type KtxDemoMode = 'full' | 'seeded';
 
-export type KloDemoArgs =
-  | { command: 'init'; projectDir: string; force: boolean; inputMode?: KloDemoInputMode }
-  | { command: 'reset'; projectDir: string; force: boolean; inputMode?: KloDemoInputMode }
-  | { command: 'replay'; projectDir: string; outputMode: KloDemoOutputMode; inputMode?: KloDemoInputMode }
-  | { command: 'scan'; projectDir: string; inputMode?: KloDemoInputMode }
-  | { command: 'inspect'; projectDir: string; outputMode: KloDemoOutputMode; inputMode?: KloDemoInputMode }
-  | { command: 'doctor'; projectDir: string; outputMode: Exclude<KloDemoOutputMode, 'viz'>; inputMode?: KloDemoInputMode }
-  | { command: 'seeded'; projectDir: string; outputMode: KloDemoOutputMode; inputMode?: KloDemoInputMode }
-  | { command: 'full'; projectDir: string; outputMode: KloDemoOutputMode; inputMode?: KloDemoInputMode }
+export type KtxDemoArgs =
+  | { command: 'init'; projectDir: string; force: boolean; inputMode?: KtxDemoInputMode }
+  | { command: 'reset'; projectDir: string; force: boolean; inputMode?: KtxDemoInputMode }
+  | { command: 'replay'; projectDir: string; outputMode: KtxDemoOutputMode; inputMode?: KtxDemoInputMode }
+  | { command: 'scan'; projectDir: string; inputMode?: KtxDemoInputMode }
+  | { command: 'inspect'; projectDir: string; outputMode: KtxDemoOutputMode; inputMode?: KtxDemoInputMode }
+  | { command: 'doctor'; projectDir: string; outputMode: Exclude<KtxDemoOutputMode, 'viz'>; inputMode?: KtxDemoInputMode }
+  | { command: 'seeded'; projectDir: string; outputMode: KtxDemoOutputMode; inputMode?: KtxDemoInputMode }
+  | { command: 'full'; projectDir: string; outputMode: KtxDemoOutputMode; inputMode?: KtxDemoInputMode }
   | {
       command: 'ingest';
-      mode: KloDemoMode;
+      mode: KtxDemoMode;
       projectDir: string;
-      outputMode: KloDemoOutputMode;
-      inputMode?: KloDemoInputMode;
+      outputMode: KtxDemoOutputMode;
+      inputMode?: KtxDemoInputMode;
     };
 
-export interface KloDemoIo {
-  stdin?: KloMemoryFlowTuiIo['stdin'];
+export interface KtxDemoIo {
+  stdin?: KtxMemoryFlowTuiIo['stdin'];
   stdout: { isTTY?: boolean; columns?: number; write(chunk: string): void };
   stderr: { write(chunk: string): void };
 }
 
-interface KloDemoDeps {
+interface KtxDemoDeps {
   runFullDemo?: typeof runDemoFull;
-  runDoctor?: (args: KloDoctorArgs, io: KloDemoIo) => Promise<number>;
+  runDoctor?: (args: KtxDoctorArgs, io: KtxDemoIo) => Promise<number>;
   renderStoredMemoryFlow?: typeof renderMemoryFlowTui;
   startLiveMemoryFlow?: typeof startLiveMemoryFlowTui;
   env?: NodeJS.ProcessEnv;
@@ -127,7 +127,7 @@ function formatReplaySummary(input: MemoryFlowReplayInput): string {
     }
   }
 
-  const lines: string[] = ['', '★ KLO finished ingesting your data', ''];
+  const lines: string[] = ['', '★ KTX finished ingesting your data', ''];
 
   if (chunkCount > 0) {
     lines.push(`  ✓ Analyzed ${chunkCount} business area${chunkCount === 1 ? '' : 's'}`);
@@ -137,7 +137,7 @@ function formatReplaySummary(input: MemoryFlowReplayInput): string {
   lines.push('');
 
   if (slCount > 0 || wikiCount > 0) {
-    lines.push('  KLO created:');
+    lines.push('  KTX created:');
     if (slCount > 0) lines.push(`    📊 ${slCount} query definition${slCount === 1 ? '' : 's'} — so agents can write accurate SQL for your data`);
     if (wikiCount > 0) lines.push(`    📝 ${wikiCount} knowledge page${wikiCount === 1 ? '' : 's'} — so agents understand your business context`);
     lines.push('');
@@ -153,7 +153,7 @@ function formatReplaySummary(input: MemoryFlowReplayInput): string {
   lines.push(...formatNextStepLines());
   if (input.sourceDir) {
     lines.push('');
-    lines.push(`  Your KLO project files are at: ${input.sourceDir}`);
+    lines.push(`  Your KTX project files are at: ${input.sourceDir}`);
   }
   lines.push('');
 
@@ -164,7 +164,7 @@ function formatPlainReplaySummary(input: MemoryFlowReplayInput): string {
   return [formatMemoryFlowFinalSummary(input).trimEnd(), '', 'What to do next:', ...formatNextStepLines(), ''].join('\n');
 }
 
-function writeReplay(input: MemoryFlowReplayInput, outputMode: KloDemoOutputMode, io: KloDemoIo): void {
+function writeReplay(input: MemoryFlowReplayInput, outputMode: KtxDemoOutputMode, io: KtxDemoIo): void {
   if (outputMode === 'json') {
     io.stdout.write(`${JSON.stringify(input, null, 2)}\n`);
     return;
@@ -181,10 +181,10 @@ function writeReplay(input: MemoryFlowReplayInput, outputMode: KloDemoOutputMode
 
 async function writeStoredReplay(
   input: MemoryFlowReplayInput,
-  outputMode: KloDemoOutputMode,
-  inputMode: KloDemoArgs['inputMode'],
-  io: KloDemoIo,
-  deps: KloDemoDeps,
+  outputMode: KtxDemoOutputMode,
+  inputMode: KtxDemoArgs['inputMode'],
+  io: KtxDemoIo,
+  deps: KtxDemoDeps,
   env: NodeJS.ProcessEnv,
 ): Promise<void> {
   const resolvedOutputMode = effectiveDemoOutputMode(outputMode, io, env, {
@@ -211,8 +211,8 @@ async function writeStoredReplay(
 
 function writeInspect(
   summary: Awaited<ReturnType<typeof inspectDemoProject>>,
-  outputMode: KloDemoOutputMode,
-  io: KloDemoIo,
+  outputMode: KtxDemoOutputMode,
+  io: KtxDemoIo,
 ): void {
   if (outputMode === 'json') {
     io.stdout.write(`${JSON.stringify(summary, null, 2)}\n`);
@@ -224,8 +224,8 @@ function writeInspect(
 
 function writeFullDemo(
   result: Awaited<ReturnType<typeof runDemoFull>>,
-  outputMode: KloDemoOutputMode,
-  io: KloDemoIo,
+  outputMode: KtxDemoOutputMode,
+  io: KtxDemoIo,
   options: { liveWasRendered?: boolean; projectDir?: string } = {},
 ): void {
   if (outputMode === 'json') {
@@ -274,8 +274,8 @@ function replayWithFullMetadata(result: Awaited<ReturnType<typeof runDemoFull>>)
 
 function pickMemoryFlowProgress(
   liveSession: MemoryFlowTuiLiveSession | null,
-  outputMode: KloDemoOutputMode,
-  io: KloDemoIo,
+  outputMode: KtxDemoOutputMode,
+  io: KtxDemoIo,
 ): ((snapshot: MemoryFlowReplayInput) => void) | undefined {
   if (liveSession) {
     return (snapshot: MemoryFlowReplayInput) => {
@@ -290,7 +290,7 @@ function pickMemoryFlowProgress(
   return createPlainProgressEmitter(io);
 }
 
-function isTuiCapableDemoIo(io: KloDemoIo): io is KloDemoIo & KloMemoryFlowTuiIo {
+function isTuiCapableDemoIo(io: KtxDemoIo): io is KtxDemoIo & KtxMemoryFlowTuiIo {
   return (
     io.stdin?.isTTY === true &&
     io.stdout.isTTY === true &&
@@ -304,11 +304,11 @@ interface EffectiveDemoOutputModeOptions {
 }
 
 function effectiveDemoOutputMode(
-  outputMode: KloDemoOutputMode,
-  io: KloDemoIo,
+  outputMode: KtxDemoOutputMode,
+  io: KtxDemoIo,
   env: NodeJS.ProcessEnv,
   options: EffectiveDemoOutputModeOptions = {},
-): KloDemoOutputMode {
+): KtxDemoOutputMode {
   if (outputMode !== 'viz') {
     return outputMode;
   }
@@ -346,7 +346,7 @@ async function ensureDemoProjectForCommand(projectDir: string): Promise<void> {
   });
 }
 
-async function prepareProjectForDemoCommand(args: KloDemoArgs, io: KloDemoIo, deps: KloDemoDeps): Promise<string | null> {
+async function prepareProjectForDemoCommand(args: KtxDemoArgs, io: KtxDemoIo, deps: KtxDemoDeps): Promise<string | null> {
   if (args.command === 'init' || args.command === 'reset' || args.command === 'doctor') {
     return args.projectDir;
   }
@@ -372,10 +372,10 @@ async function prepareProjectForDemoCommand(args: KloDemoArgs, io: KloDemoIo, de
 
 async function runReplayDemo(
   projectDir: string,
-  outputMode: KloDemoOutputMode,
-  inputMode: KloDemoArgs['inputMode'],
-  io: KloDemoIo,
-  deps: KloDemoDeps,
+  outputMode: KtxDemoOutputMode,
+  inputMode: KtxDemoArgs['inputMode'],
+  io: KtxDemoIo,
+  deps: KtxDemoDeps,
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<number> {
   await ensureDemoProjectForCommand(projectDir);
@@ -385,10 +385,10 @@ async function runReplayDemo(
 
 async function runSeededDemo(
   projectDir: string,
-  outputMode: KloDemoOutputMode,
-  inputMode: KloDemoArgs['inputMode'],
-  io: KloDemoIo,
-  deps: KloDemoDeps,
+  outputMode: KtxDemoOutputMode,
+  inputMode: KtxDemoArgs['inputMode'],
+  io: KtxDemoIo,
+  deps: KtxDemoDeps,
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<number> {
   const result = await runDemoSeeded({ projectDir });
@@ -411,7 +411,7 @@ async function runSeededDemo(
   return 0;
 }
 
-export async function runKloDemo(args: KloDemoArgs, io: KloDemoIo = process, deps: KloDemoDeps = {}): Promise<number> {
+export async function runKtxDemo(args: KtxDemoArgs, io: KtxDemoIo = process, deps: KtxDemoDeps = {}): Promise<number> {
   try {
     if (args.command === 'init') {
       const result = await ensureDemoProject({ projectDir: args.projectDir, force: args.force });
@@ -419,7 +419,7 @@ export async function runKloDemo(args: KloDemoArgs, io: KloDemoIo = process, dep
       io.stdout.write(`Config: ${result.configPath}\n`);
       io.stdout.write(`Database: ${result.databasePath}\n`);
       io.stdout.write(`Replay: ${result.replayPath}\n`);
-      io.stdout.write('Next: klo setup demo --no-input\n');
+      io.stdout.write('Next: ktx setup demo --no-input\n');
       io.stdout.write('  Runs the pre-seeded demo without calling the LLM.\n');
       return 0;
     }
@@ -430,7 +430,7 @@ export async function runKloDemo(args: KloDemoArgs, io: KloDemoIo = process, dep
       io.stdout.write(`Config: ${result.configPath}\n`);
       io.stdout.write(`Database: ${result.databasePath}\n`);
       io.stdout.write(`Replay: ${result.replayPath}\n`);
-      io.stdout.write('Next: klo setup demo --mode full\n');
+      io.stdout.write('Next: ktx setup demo --mode full\n');
       io.stdout.write('  Runs the full AI-backed pass with your LLM provider.\n');
       return 0;
     }
@@ -454,13 +454,13 @@ export async function runKloDemo(args: KloDemoArgs, io: KloDemoIo = process, dep
     if (args.command === 'full' || (args.command === 'ingest' && args.mode === 'full')) {
       const executeFullDemo = deps.runFullDemo ?? runDemoFull;
       await ensureDemoProjectForCommand(preparedProjectDir);
-      const project = await loadKloProject({ projectDir: preparedProjectDir });
+      const project = await loadKtxProject({ projectDir: preparedProjectDir });
       const credentialStatus = fullDemoCredentialStatus(project, env);
       const credentialDecision = await resolveFullCredentialDecision({
         needsAnthropicKey:
           credentialStatus.status === 'missing-anthropic-key' &&
           project.config.llm.provider.backend === 'anthropic' &&
-          !resolveKloConfigReference(project.config.llm.provider.anthropic?.api_key, env),
+          !resolveKtxConfigReference(project.config.llm.provider.anthropic?.api_key, env),
         inputMode: args.inputMode,
         io,
         env,
@@ -523,8 +523,8 @@ export async function runKloDemo(args: KloDemoArgs, io: KloDemoIo = process, dep
     }
 
     if (args.command === 'doctor') {
-      const { runKloDoctor } = await import('./doctor.js');
-      const executeDoctor = deps.runDoctor ?? runKloDoctor;
+      const { runKtxDoctor } = await import('./doctor.js');
+      const executeDoctor = deps.runDoctor ?? runKtxDoctor;
       return await executeDoctor(
         {
           command: 'demo',

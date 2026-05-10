@@ -12,8 +12,8 @@ import { Client } from 'pg';
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const contextDir = resolve(scriptDir, '..');
-const kloRoot = resolve(contextDir, '../..');
-const reportPath = join(kloRoot, 'docs', 'hybrid-search-pglite-sl-adapter-prototype.md');
+const ktxRoot = resolve(contextDir, '../..');
+const reportPath = join(ktxRoot, 'docs', 'hybrid-search-pglite-sl-adapter-prototype.md');
 
 async function timed(label, fn) {
   const started = performance.now();
@@ -91,7 +91,7 @@ async function createOwner(dataDir, port) {
       port,
       user: 'postgres',
       database: 'postgres',
-      application_name: 'klo-pglite-sl-prototype-report',
+      application_name: 'ktx-pglite-sl-prototype-report',
       connectionTimeoutMillis: 5_000,
     },
   };
@@ -193,7 +193,7 @@ async function stopOwner(owner) {
 }
 
 async function main() {
-  const tempDir = await mkdtemp(join(tmpdir(), 'klo-pglite-sl-prototype-report-'));
+  const tempDir = await mkdtemp(join(tmpdir(), 'ktx-pglite-sl-prototype-report-'));
   const dataDir = join(tempDir, 'pgdata');
   const port = await allocatePort();
   let owner;

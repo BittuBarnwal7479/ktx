@@ -216,16 +216,16 @@ export async function buildAdventureWorksOltpFixture(input) {
 }
 
 async function main() {
-  const url = process.env.KLO_ADVENTUREWORKS_SQLSERVER_URL;
+  const url = process.env.KTX_ADVENTUREWORKS_SQLSERVER_URL;
   if (!url) {
     throw new Error(
-      'Set KLO_ADVENTUREWORKS_SQLSERVER_URL to a read-only SQL Server URL for a full AdventureWorks OLTP database before running this script.',
+      'Set KTX_ADVENTUREWORKS_SQLSERVER_URL to a read-only SQL Server URL for a full AdventureWorks OLTP database before running this script.',
     );
   }
 
   const source = JSON.parse(readFileSync(path.join(scriptDir, 'adventureworks-oltp-source.json'), 'utf8'));
-  const { KloSqlServerScanConnector } = await import('../packages/connector-sqlserver/dist/index.js');
-  const connector = new KloSqlServerScanConnector({
+  const { KtxSqlServerScanConnector } = await import('../packages/connector-sqlserver/dist/index.js');
+  const connector = new KtxSqlServerScanConnector({
     connectionId: fixtureId,
     connection: {
       driver: 'sqlserver',

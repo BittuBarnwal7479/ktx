@@ -5,8 +5,8 @@ import { dirname, join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const scriptPath = fileURLToPath(import.meta.url);
-const kloRoot = dirname(dirname(scriptPath));
-const repoRoot = dirname(kloRoot);
+const ktxRoot = dirname(dirname(scriptPath));
+const repoRoot = dirname(ktxRoot);
 
 const packageNameByDir = new Map(
   [
@@ -22,7 +22,7 @@ const packageNameByDir = new Map(
     'context',
     'llm',
   ].map((packageDir) => {
-    const manifestPath = join(kloRoot, 'packages', packageDir, 'package.json');
+    const manifestPath = join(ktxRoot, 'packages', packageDir, 'package.json');
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
     return [packageDir, manifest.name];
   }),
@@ -31,8 +31,8 @@ const packageNameByDir = new Map(
 const packageCodePattern = /\.(?:ts|tsx|js|jsx|json)$/;
 const scriptPattern = /\.(?:mjs|js|json)$/;
 const pythonPackageTests = new Map([
-  ['klo-sl', 'python/klo-sl/tests'],
-  ['klo-daemon', 'python/klo-daemon/tests'],
+  ['ktx-sl', 'python/ktx-sl/tests'],
+  ['ktx-daemon', 'python/ktx-daemon/tests'],
 ]);
 
 function normalizeFilePath(filePath) {
@@ -57,7 +57,7 @@ function maybeScriptTest(scriptFile) {
   }
 
   const testFile = scriptFile.replace(/\.mjs$/, '.test.mjs');
-  return existsSync(join(kloRoot, testFile)) ? testFile : null;
+  return existsSync(join(ktxRoot, testFile)) ? testFile : null;
 }
 
 export function planChecks(files) {
@@ -71,14 +71,14 @@ export function planChecks(files) {
   for (const rawFile of files) {
     const file = normalizeFilePath(rawFile);
 
-    if (!file.startsWith('klo/')) {
+    if (!file.startsWith('ktx/')) {
       continue;
     }
 
-    const kloFile = file.slice('klo/'.length);
+    const ktxFile = file.slice('ktx/'.length);
 
-    if (kloFile.startsWith('packages/')) {
-      const [, packageDir, ...rest] = kloFile.split('/');
+    if (ktxFile.startsWith('packages/')) {
+      const [, packageDir, ...rest] = ktxFile.split('/');
       const packageName = packageNameByDir.get(packageDir);
       const packageFile = rest.join('/');
 
@@ -90,8 +90,8 @@ export function planChecks(files) {
       continue;
     }
 
-    if (kloFile.startsWith('scripts/') && scriptPattern.test(kloFile)) {
-      const testFile = maybeScriptTest(kloFile);
+    if (ktxFile.startsWith('scripts/') && scriptPattern.test(ktxFile)) {
+      const testFile = maybeScriptTest(ktxFile);
 
       if (testFile) {
         stablePush(commands, `script-test:${testFile}`, 'node', ['--test', testFile]);
@@ -100,8 +100,8 @@ export function planChecks(files) {
       continue;
     }
 
-    if (kloFile.startsWith('python/')) {
-      const [, packageDir] = kloFile.split('/');
+    if (ktxFile.startsWith('python/')) {
+      const [, packageDir] = ktxFile.split('/');
 
       if (pythonPackageTests.has(packageDir)) {
         pythonPackages.add(packageDir);
@@ -112,7 +112,7 @@ export function planChecks(files) {
 
     if (
       ['package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'release-policy.json', 'tsconfig.base.json'].includes(
-        kloFile,
+        ktxFile,
       )
     ) {
       runBoundaryCheck = true;
@@ -120,7 +120,7 @@ export function planChecks(files) {
       continue;
     }
 
-    if (['pyproject.toml', 'uv.lock', 'uv.toml'].includes(kloFile)) {
+    if (['pyproject.toml', 'uv.lock', 'uv.toml'].includes(ktxFile)) {
       runAllPythonTests = true;
     }
   }
@@ -164,7 +164,7 @@ export function runChecks(files) {
   const commands = planChecks(files);
 
   if (commands.length === 0) {
-    console.log('No KLO package checks needed for these files.');
+    console.log('No KTX package checks needed for these files.');
     return 0;
   }
 
@@ -172,7 +172,7 @@ export function runChecks(files) {
     printCommand(command);
 
     const result = spawnSync(command.cmd, command.args, {
-      cwd: kloRoot,
+      cwd: ktxRoot,
       stdio: 'inherit',
       env: process.env,
     });
@@ -190,6 +190,6 @@ export function runChecks(files) {
   return 0;
 }
 
-if (process.argv[1] && relative(repoRoot, process.argv[1]).split(sep).join('/') === 'klo/scripts/precommit-check.mjs') {
+if (process.argv[1] && relative(repoRoot, process.argv[1]).split(sep).join('/') === 'ktx/scripts/precommit-check.mjs') {
   process.exitCode = runChecks(process.argv.slice(2));
 }

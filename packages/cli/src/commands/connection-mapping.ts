@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises';
-import { localConnectionToWarehouseDescriptor } from '@klo/context/connections';
+import { localConnectionToWarehouseDescriptor } from '@ktx/context/connections';
 import {
   DEFAULT_METABASE_CLIENT_CONFIG,
   DefaultLookerConnectionClientFactory,
@@ -12,20 +12,20 @@ import {
   discoverMetabaseDatabases,
   lookerCredentialsFromLocalConnection,
   metabaseRuntimeConfigFromLocalConnection,
-  seedLocalMappingStateFromKloYaml,
+  seedLocalMappingStateFromKtxYaml,
   validateLookerMappings,
   validateMappingPhysicalMatch,
   type LookerMappingClient,
   type MetabaseRuntimeClient,
   type MetabaseSyncMode,
-} from '@klo/context/ingest';
-import { type KloLocalProject, kloLocalStateDbPath, loadKloProject } from '@klo/context/project';
-import type { KloCliIo } from '../index.js';
+} from '@ktx/context/ingest';
+import { type KtxLocalProject, ktxLocalStateDbPath, loadKtxProject } from '@ktx/context/project';
+import type { KtxCliIo } from '../index.js';
 import { profileMark } from '../startup-profile.js';
 
 profileMark('module:commands/connection-mapping');
 
-export type KloConnectionMappingArgs =
+export type KtxConnectionMappingArgs =
   | { command: 'list'; projectDir: string; connectionId: string; json: boolean }
   | {
       command: 'set';
@@ -57,13 +57,13 @@ export type KloConnectionMappingArgs =
   | { command: 'validate'; projectDir: string; connectionId: string }
   | { command: 'clear'; projectDir: string; connectionId: string; metabaseDatabaseId?: number; mappingKey?: string };
 
-interface KloConnectionMappingDeps {
+interface KtxConnectionMappingDeps {
   createMetabaseClient?: (
-    project: KloLocalProject,
+    project: KtxLocalProject,
     connectionId: string,
   ) => Promise<Pick<MetabaseRuntimeClient, 'getDatabases' | 'cleanup'>>;
   createLookerClient?: (
-    project: KloLocalProject,
+    project: KtxLocalProject,
     connectionId: string,
   ) => Promise<Pick<LookerMappingClient, 'listLookerConnections'> & { cleanup?(): Promise<void> }>;
 }
@@ -85,7 +85,7 @@ function parseId(value: string, label: string): number {
 }
 
 async function createDefaultMetabaseClient(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   connectionId: string,
 ): Promise<Pick<MetabaseRuntimeClient, 'getDatabases' | 'cleanup'>> {
   const factory = new DefaultMetabaseConnectionClientFactory(
@@ -97,7 +97,7 @@ async function createDefaultMetabaseClient(
 }
 
 async function createDefaultLookerClient(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   connectionId: string,
 ): Promise<Pick<LookerMappingClient, 'listLookerConnections'> & { cleanup?(): Promise<void> }> {
   const factory = new DefaultLookerConnectionClientFactory({
@@ -110,30 +110,30 @@ async function createDefaultLookerClient(
   };
 }
 
-function isLookerConnection(project: KloLocalProject, connectionId: string): boolean {
+function isLookerConnection(project: KtxLocalProject, connectionId: string): boolean {
   return String(project.config.connections[connectionId]?.driver ?? '').toLowerCase() === 'looker';
 }
 
-function assertLookerConnection(project: KloLocalProject, connectionId: string): void {
+function assertLookerConnection(project: KtxLocalProject, connectionId: string): void {
   if (!isLookerConnection(project, connectionId)) {
     throw new Error(`Connection "${connectionId}" is not a Looker connection`);
   }
 }
 
-function assertMetabaseConnection(project: KloLocalProject, connectionId: string): void {
+function assertMetabaseConnection(project: KtxLocalProject, connectionId: string): void {
   const connection = project.config.connections[connectionId];
   if (!connection || String(connection.driver).toLowerCase() !== 'metabase') {
     throw new Error(`Connection "${connectionId}" is not a Metabase connection`);
   }
 }
 
-function assertTargetConnection(project: KloLocalProject, connectionId: string): void {
+function assertTargetConnection(project: KtxLocalProject, connectionId: string): void {
   if (!project.config.connections[connectionId]) {
     throw new Error(`Target connection "${connectionId}" does not exist`);
   }
 }
 
-function targetPhysicalInfo(project: KloLocalProject, connectionId: string) {
+function targetPhysicalInfo(project: KtxLocalProject, connectionId: string) {
   const descriptor = localConnectionToWarehouseDescriptor(connectionId, project.config.connections[connectionId]);
   if (!descriptor) {
     return { connection_type: 'UNKNOWN' };
@@ -160,22 +160,22 @@ function renderMapping(
 }
 
 function renderLookerMapping(row: Awaited<ReturnType<LocalLookerRuntimeStore['listConnectionMappings']>>[number]): string {
-  const target = row.kloConnectionId ?? '[unmapped]';
+  const target = row.ktxConnectionId ?? '[unmapped]';
   const metadata = [row.lookerDialect, row.lookerHost, row.lookerDatabase].filter(Boolean).join(', ');
   return `${row.lookerConnectionName} -> ${target}${metadata ? ` (${metadata}, source: ${row.source})` : ` (source: ${row.source})`}`;
 }
 
-export async function runKloConnectionMapping(
-  args: KloConnectionMappingArgs,
-  io: KloCliIo = process,
-  deps: KloConnectionMappingDeps = {},
+export async function runKtxConnectionMapping(
+  args: KtxConnectionMappingArgs,
+  io: KtxCliIo = process,
+  deps: KtxConnectionMappingDeps = {},
 ): Promise<number> {
   try {
-    const project = await loadKloProject({ projectDir: args.projectDir });
-    await seedLocalMappingStateFromKloYaml(project, args.connectionId);
+    const project = await loadKtxProject({ projectDir: args.projectDir });
+    await seedLocalMappingStateFromKtxYaml(project, args.connectionId);
     if (isLookerConnection(project, args.connectionId)) {
       assertLookerConnection(project, args.connectionId);
-      const store = new LocalLookerRuntimeStore({ dbPath: kloLocalStateDbPath(project) });
+      const store = new LocalLookerRuntimeStore({ dbPath: ktxLocalStateDbPath(project) });
 
       if (args.command === 'list') {
         const rows = await store.listConnectionMappings(args.connectionId);
@@ -191,7 +191,7 @@ export async function runKloConnectionMapping(
         await store.upsertConnectionMapping({
           lookerConnectionId: args.connectionId,
           lookerConnectionName: args.key,
-          kloConnectionId: args.value,
+          ktxConnectionId: args.value,
           source: 'cli',
         });
         io.stdout.write(`Set connectionMappings.${args.key} = ${args.value}\n`);
@@ -219,13 +219,13 @@ export async function runKloConnectionMapping(
       }
 
       if (args.command === 'validate') {
-        const knownKloConnectionIds = new Set(Object.keys(project.config.connections));
+        const knownKtxConnectionIds = new Set(Object.keys(project.config.connections));
         const knownConnectionTypes = new Map(
           Object.entries(project.config.connections).map(([id, _config]) => [id, targetPhysicalInfo(project, id).connection_type]),
         );
         const validation = validateLookerMappings({
           mappings: await store.readMappings(args.connectionId),
-          knownKloConnectionIds,
+          knownKtxConnectionIds,
           knownConnectionTypes,
         });
         if (!validation.ok) {
@@ -255,7 +255,7 @@ export async function runKloConnectionMapping(
     }
 
     assertMetabaseConnection(project, args.connectionId);
-    const store = new LocalMetabaseSourceStateReader({ dbPath: kloLocalStateDbPath(project) });
+    const store = new LocalMetabaseSourceStateReader({ dbPath: ktxLocalStateDbPath(project) });
 
     if (args.command === 'list') {
       const rows = await store.listDatabaseMappings(args.connectionId);

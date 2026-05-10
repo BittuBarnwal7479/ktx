@@ -1,11 +1,11 @@
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { initKloProject, parseKloProjectConfig } from '@klo/context/project';
-import type { KloConnectionDriver, KloScanConnector, KloSchemaSnapshot } from '@klo/context/scan';
+import { initKtxProject, parseKtxProjectConfig } from '@ktx/context/project';
+import type { KtxConnectionDriver, KtxScanConnector, KtxSchemaSnapshot } from '@ktx/context/scan';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { runKloConnection } from './connection.js';
-import { runKloCli, type KloCliIo } from './index.js';
+import { runKtxConnection } from './connection.js';
+import { runKtxCli, type KtxCliIo } from './index.js';
 
 function makeIo(options: { stdoutIsTty?: boolean; stdinIsTty?: boolean } = {}) {
   let stdout = '';
@@ -32,7 +32,7 @@ function makeIo(options: { stdoutIsTty?: boolean; stdinIsTty?: boolean } = {}) {
   };
 }
 
-function snapshotFor(driver: KloConnectionDriver, tableNames: string[]): KloSchemaSnapshot {
+function snapshotFor(driver: KtxConnectionDriver, tableNames: string[]): KtxSchemaSnapshot {
   return {
     connectionId: 'warehouse',
     driver,
@@ -52,10 +52,10 @@ function snapshotFor(driver: KloConnectionDriver, tableNames: string[]): KloSche
   };
 }
 
-function nativeConnector(driver: KloConnectionDriver, tableNames: string[]) {
+function nativeConnector(driver: KtxConnectionDriver, tableNames: string[]) {
   const introspect = vi.fn(async () => snapshotFor(driver, tableNames));
   const cleanup = vi.fn(async () => undefined);
-  const connector: KloScanConnector = {
+  const connector: KtxScanConnector = {
     id: `${driver}:warehouse`,
     driver,
     capabilities: {
@@ -75,11 +75,11 @@ function nativeConnector(driver: KloConnectionDriver, tableNames: string[]) {
   return { connector, introspect, cleanup };
 }
 
-describe('runKloConnection', () => {
+describe('runKtxConnection', () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-cli-connection-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-cli-connection-'));
   });
 
   afterEach(async () => {
@@ -88,11 +88,11 @@ describe('runKloConnection', () => {
 
   it('adds and lists env-referenced connections without resolving secrets', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     const io = makeIo();
 
     await expect(
-      runKloConnection(
+      runKtxConnection(
         {
           command: 'add',
           projectDir,
@@ -109,18 +109,18 @@ describe('runKloConnection', () => {
     ).resolves.toBe(0);
 
     expect(io.stdout()).toContain('Connection: warehouse');
-    await expect(readFile(join(projectDir, 'klo.yaml'), 'utf-8')).resolves.toContain('url: env:DATABASE_URL');
+    await expect(readFile(join(projectDir, 'ktx.yaml'), 'utf-8')).resolves.toContain('url: env:DATABASE_URL');
 
     const listIo = makeIo();
-    await expect(runKloConnection({ command: 'list', projectDir }, listIo.io)).resolves.toBe(0);
+    await expect(runKtxConnection({ command: 'list', projectDir }, listIo.io)).resolves.toBe(0);
     expect(listIo.stdout()).toContain('warehouse');
     expect(listIo.stdout()).toContain('postgres');
   });
 
-  it('removes a configured connection from klo.yaml without deleting local artifacts when forced', async () => {
+  it('removes a configured connection from ktx.yaml without deleting local artifacts when forced', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
-    await runKloConnection(
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
+    await runKtxConnection(
       {
         command: 'add',
         projectDir,
@@ -134,14 +134,14 @@ describe('runKloConnection', () => {
       },
       makeIo().io,
     );
-    const artifactPath = join(projectDir, '.klo', 'artifacts', 'warehouse.txt');
-    await mkdir(join(projectDir, '.klo', 'artifacts'), { recursive: true });
+    const artifactPath = join(projectDir, '.ktx', 'artifacts', 'warehouse.txt');
+    await mkdir(join(projectDir, '.ktx', 'artifacts'), { recursive: true });
     await writeFile(artifactPath, 'keep me', 'utf-8');
 
     const io = makeIo();
 
     await expect(
-      runKloConnection(
+      runKtxConnection(
         {
           command: 'remove',
           projectDir,
@@ -153,20 +153,20 @@ describe('runKloConnection', () => {
       ),
     ).resolves.toBe(0);
 
-    const parsed = parseKloProjectConfig(await readFile(join(projectDir, 'klo.yaml'), 'utf-8'));
+    const parsed = parseKtxProjectConfig(await readFile(join(projectDir, 'ktx.yaml'), 'utf-8'));
     expect(parsed.connections.warehouse).toBeUndefined();
     await expect(readFile(artifactPath, 'utf-8')).resolves.toBe('keep me');
-    expect(io.stdout()).toContain('Connection removed from klo.yaml.');
+    expect(io.stdout()).toContain('Connection removed from ktx.yaml.');
     expect(io.stdout()).toContain(
-      'Ingested artifacts from this connection remain in .klo/. Run klo dev artifacts to inspect.',
+      'Ingested artifacts from this connection remain in .ktx/. Run ktx dev artifacts to inspect.',
     );
     expect(io.stderr()).toBe('');
   });
 
   it('requires --force when removing in non-interactive mode', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
-    await runKloConnection(
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
+    await runKtxConnection(
       {
         command: 'add',
         projectDir,
@@ -183,7 +183,7 @@ describe('runKloConnection', () => {
     const io = makeIo();
 
     await expect(
-      runKloConnection(
+      runKtxConnection(
         {
           command: 'remove',
           projectDir,
@@ -200,11 +200,11 @@ describe('runKloConnection', () => {
 
   it('returns a clear error when removing an unknown connection', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     const io = makeIo();
 
     await expect(
-      runKloConnection(
+      runKtxConnection(
         {
           command: 'remove',
           projectDir,
@@ -216,13 +216,13 @@ describe('runKloConnection', () => {
       ),
     ).resolves.toBe(1);
 
-    expect(io.stderr()).toContain('Connection "missing" is not configured in klo.yaml');
+    expect(io.stderr()).toContain('Connection "missing" is not configured in ktx.yaml');
   });
 
   it('asks for confirmation before removing in an interactive terminal', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
-    await runKloConnection(
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
+    await runKtxConnection(
       {
         command: 'add',
         projectDir,
@@ -243,7 +243,7 @@ describe('runKloConnection', () => {
     };
 
     await expect(
-      runKloConnection(
+      runKtxConnection(
         {
           command: 'remove',
           projectDir,
@@ -256,14 +256,14 @@ describe('runKloConnection', () => {
     ).resolves.toBe(0);
 
     expect(prompts.confirm).toHaveBeenCalledWith({
-      message: 'Remove connection "warehouse" from klo.yaml? Ingested artifacts will remain in .klo/.',
+      message: 'Remove connection "warehouse" from ktx.yaml? Ingested artifacts will remain in .ktx/.',
       initialValue: false,
     });
   });
 
   it('runs public connect map as refresh, validate, and list over the low-level mapping runner', async () => {
     const io = makeIo();
-    const runMapping = vi.fn(async (argv: string[], mappingIo: KloCliIo) => {
+    const runMapping = vi.fn(async (argv: string[], mappingIo: KtxCliIo) => {
       if (argv[0] === 'refresh') {
         mappingIo.stdout.write('Discovery: 1 database\n');
         mappingIo.stdout.write('Unmapped discovered: 1\n');
@@ -282,7 +282,7 @@ describe('runKloConnection', () => {
     });
 
     await expect(
-      runKloConnection(
+      runKtxConnection(
         { command: 'map', projectDir: '/tmp/project', sourceConnectionId: 'prod-metabase', json: false },
         io.io,
         { runMapping },
@@ -309,14 +309,14 @@ describe('runKloConnection', () => {
     expect(io.stdout()).toContain('Mappings:');
     expect(io.stdout()).toContain('1 -> [unmapped]');
     expect(io.stdout()).toContain('Next:');
-    expect(io.stdout()).toContain('klo ingest prod-metabase');
-    expect(io.stdout()).toContain('klo dev mapping');
+    expect(io.stdout()).toContain('ktx ingest prod-metabase');
+    expect(io.stdout()).toContain('ktx dev mapping');
     expect(io.stderr()).toBe('');
   });
 
   it('prints stable JSON for public connect map without leaking low-level stdout', async () => {
     const io = makeIo();
-    const runMapping = vi.fn(async (argv: string[], mappingIo: KloCliIo) => {
+    const runMapping = vi.fn(async (argv: string[], mappingIo: KtxCliIo) => {
       if (argv[0] === 'refresh') {
         mappingIo.stdout.write('Discovery: 1 connection\nUnmapped discovered: 0\nStale mappings: 0\n');
         return 0;
@@ -332,8 +332,8 @@ describe('runKloConnection', () => {
             [
               {
                 lookerConnectionName: 'analytics',
-                kloConnectionId: 'prod-warehouse',
-                source: 'klo.yaml',
+                ktxConnectionId: 'prod-warehouse',
+                source: 'ktx.yaml',
               },
             ],
             null,
@@ -346,7 +346,7 @@ describe('runKloConnection', () => {
     });
 
     await expect(
-      runKloConnection(
+      runKtxConnection(
         { command: 'map', projectDir: '/tmp/project', sourceConnectionId: 'prod-looker', json: true },
         io.io,
         { runMapping },
@@ -357,7 +357,7 @@ describe('runKloConnection', () => {
       connectionId: string;
       refresh: { ok: boolean; output: string[] };
       validation: { ok: boolean; output: string[] };
-      mappings: Array<{ lookerConnectionName: string; kloConnectionId: string; source: string }>;
+      mappings: Array<{ lookerConnectionName: string; ktxConnectionId: string; source: string }>;
     };
     expect(parsed).toEqual({
       connectionId: 'prod-looker',
@@ -372,8 +372,8 @@ describe('runKloConnection', () => {
       mappings: [
         {
           lookerConnectionName: 'analytics',
-          kloConnectionId: 'prod-warehouse',
-          source: 'klo.yaml',
+          ktxConnectionId: 'prod-warehouse',
+          source: 'ktx.yaml',
         },
       ],
     });
@@ -382,7 +382,7 @@ describe('runKloConnection', () => {
 
   it('returns the refresh failure when public connect map cannot discover source metadata', async () => {
     const io = makeIo();
-    const runMapping = vi.fn(async (argv: string[], mappingIo: KloCliIo) => {
+    const runMapping = vi.fn(async (argv: string[], mappingIo: KtxCliIo) => {
       if (argv[0] === 'refresh') {
         mappingIo.stderr.write('Metabase API key is not configured\n');
         return 1;
@@ -391,7 +391,7 @@ describe('runKloConnection', () => {
     });
 
     await expect(
-      runKloConnection(
+      runKtxConnection(
         { command: 'map', projectDir: '/tmp/project', sourceConnectionId: 'prod-metabase', json: false },
         io.io,
         { runMapping },
@@ -405,11 +405,11 @@ describe('runKloConnection', () => {
 
   it('rejects literal credential URLs unless explicitly allowed', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     const io = makeIo();
 
     await expect(
-      runKloConnection(
+      runKtxConnection(
         {
           command: 'add',
           projectDir,
@@ -430,12 +430,12 @@ describe('runKloConnection', () => {
 
   it('warns before writing explicitly allowed literal credential URLs without echoing the URL', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     const io = makeIo();
     const literalUrl = 'postgres://localhost:5432/warehouse';
 
     await expect(
-      runKloConnection(
+      runKtxConnection(
         {
           command: 'add',
           projectDir,
@@ -452,19 +452,19 @@ describe('runKloConnection', () => {
     ).resolves.toBe(0);
 
     expect(io.stderr()).toContain(
-      'Warning: writing a literal credential URL to klo.yaml for connection "warehouse". Prefer env:NAME or file:/path references.',
+      'Warning: writing a literal credential URL to ktx.yaml for connection "warehouse". Prefer env:NAME or file:/path references.',
     );
     expect(io.stderr()).not.toContain(literalUrl);
-    await expect(readFile(join(projectDir, 'klo.yaml'), 'utf-8')).resolves.toContain(literalUrl);
+    await expect(readFile(join(projectDir, 'ktx.yaml'), 'utf-8')).resolves.toContain(literalUrl);
   });
 
   it('adds a Notion connection without writing token values', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     const io = makeIo();
 
     await expect(
-      runKloConnection(
+      runKtxConnection(
         {
           command: 'add',
           projectDir,
@@ -490,7 +490,7 @@ describe('runKloConnection', () => {
       ),
     ).resolves.toBe(0);
 
-    const yaml = await readFile(join(projectDir, 'klo.yaml'), 'utf-8');
+    const yaml = await readFile(join(projectDir, 'ktx.yaml'), 'utf-8');
     expect(yaml).toContain('driver: notion');
     expect(yaml).toContain('auth_token_ref: env:NOTION_AUTH_TOKEN');
     expect(yaml).toContain('crawl_mode: all_accessible');
@@ -502,8 +502,8 @@ describe('runKloConnection', () => {
 
   it('runs connection notion pick --no-input through the public connection entrypoint', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
-    await runKloConnection(
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
+    await runKtxConnection(
       {
         command: 'add',
         projectDir,
@@ -530,7 +530,7 @@ describe('runKloConnection', () => {
     const io = makeIo();
 
     await expect(
-      runKloCli(
+      runKtxCli(
         [
           'connection',
           'notion',
@@ -546,7 +546,7 @@ describe('runKloConnection', () => {
       ),
     ).resolves.toBe(0);
 
-    const yaml = await readFile(join(projectDir, 'klo.yaml'), 'utf-8');
+    const yaml = await readFile(join(projectDir, 'ktx.yaml'), 'utf-8');
     expect(yaml).toContain('crawl_mode: selected_roots');
     expect(yaml).toContain('11111111-2222-3333-4444-555555555555');
     expect(yaml).toContain('database-1');
@@ -556,8 +556,8 @@ describe('runKloConnection', () => {
 
   it('tests a configured connection through the native scan connector', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
-    await runKloConnection(
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
+    await runKtxConnection(
       {
         command: 'add',
         projectDir,
@@ -576,7 +576,7 @@ describe('runKloConnection', () => {
     const io = makeIo();
 
     await expect(
-      runKloConnection({ command: 'test', projectDir, connectionId: 'warehouse' }, io.io, {
+      runKtxConnection({ command: 'test', projectDir, connectionId: 'warehouse' }, io.io, {
         createScanConnector,
       }),
     ).resolves.toBe(0);
@@ -600,8 +600,8 @@ describe('runKloConnection', () => {
 
   it('cleans up the native scan connector when connection testing fails', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
-    await runKloConnection(
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
+    await runKtxConnection(
       {
         command: 'add',
         projectDir,
@@ -616,7 +616,7 @@ describe('runKloConnection', () => {
       makeIo().io,
     );
     const cleanup = vi.fn(async () => undefined);
-    const connector: KloScanConnector = {
+    const connector: KtxScanConnector = {
       id: 'sqlite:warehouse',
       driver: 'sqlite',
       capabilities: {
@@ -638,7 +638,7 @@ describe('runKloConnection', () => {
     const io = makeIo();
 
     await expect(
-      runKloConnection({ command: 'test', projectDir, connectionId: 'warehouse' }, io.io, {
+      runKtxConnection({ command: 'test', projectDir, connectionId: 'warehouse' }, io.io, {
         createScanConnector: vi.fn(async () => connector),
       }),
     ).resolves.toBe(1);

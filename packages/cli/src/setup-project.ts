@@ -4,44 +4,44 @@ import { homedir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
 import { cancel, isCancel, select, text } from '@clack/prompts';
 import {
-  initKloProject,
-  type KloLocalProject,
-  loadKloProject,
-  markKloSetupStepComplete,
-  mergeKloSetupGitignoreEntries,
-  serializeKloProjectConfig,
-} from '@klo/context/project';
-import type { KloCliIo } from './cli-runtime.js';
+  initKtxProject,
+  type KtxLocalProject,
+  loadKtxProject,
+  markKtxSetupStepComplete,
+  mergeKtxSetupGitignoreEntries,
+  serializeKtxProjectConfig,
+} from '@ktx/context/project';
+import type { KtxCliIo } from './cli-runtime.js';
 import { withMenuOptionsSpacing, withTextInputNavigation } from './prompt-navigation.js';
 import { withSetupInterruptConfirmation } from './setup-interrupt.js';
 
-export type KloSetupProjectMode = 'auto' | 'new' | 'existing' | 'prompt-new';
-export type KloSetupInputMode = 'auto' | 'disabled';
+export type KtxSetupProjectMode = 'auto' | 'new' | 'existing' | 'prompt-new';
+export type KtxSetupInputMode = 'auto' | 'disabled';
 
-export interface KloSetupProjectArgs {
+export interface KtxSetupProjectArgs {
   projectDir: string;
-  mode: KloSetupProjectMode;
-  inputMode: KloSetupInputMode;
+  mode: KtxSetupProjectMode;
+  inputMode: KtxSetupInputMode;
   yes: boolean;
   allowBack?: boolean;
 }
 
-export type KloSetupProjectResult =
-  | { status: 'ready'; projectDir: string; project: KloLocalProject; confirmedCreation?: boolean }
+export type KtxSetupProjectResult =
+  | { status: 'ready'; projectDir: string; project: KtxLocalProject; confirmedCreation?: boolean }
   | { status: 'back'; projectDir: string }
   | { status: 'cancelled'; projectDir: string }
   | { status: 'missing-input'; projectDir: string };
 
-export interface KloSetupProjectPromptAdapter {
+export interface KtxSetupProjectPromptAdapter {
   select(options: { message: string; options: Array<{ value: string; label: string }> }): Promise<string>;
   text(options: { message: string; placeholder?: string }): Promise<string | undefined>;
   cancel(message: string): void;
 }
 
-export interface KloSetupProjectDeps {
-  prompts?: KloSetupProjectPromptAdapter;
-  initProject?: typeof initKloProject;
-  loadProject?: typeof loadKloProject;
+export interface KtxSetupProjectDeps {
+  prompts?: KtxSetupProjectPromptAdapter;
+  initProject?: typeof initKtxProject;
+  loadProject?: typeof loadKtxProject;
   homeDir?: string;
 }
 
@@ -51,9 +51,9 @@ type PromptProjectDirResult =
   | { status: 'missing-input'; projectDir: string }
   | { status: 'back'; projectDir: string };
 
-const DEFAULT_NEW_PROJECT_FOLDER_NAME = 'klo-project';
+const DEFAULT_NEW_PROJECT_FOLDER_NAME = 'ktx-project';
 
-function createClackSetupProjectPromptAdapter(): KloSetupProjectPromptAdapter {
+function createClackSetupProjectPromptAdapter(): KtxSetupProjectPromptAdapter {
   return {
     async select(options) {
       const value = await withSetupInterruptConfirmation(() => select(withMenuOptionsSpacing(options)));
@@ -79,7 +79,7 @@ function createClackSetupProjectPromptAdapter(): KloSetupProjectPromptAdapter {
 }
 
 function hasProjectConfig(projectDir: string): boolean {
-  return existsSync(join(projectDir, 'klo.yaml'));
+  return existsSync(join(projectDir, 'ktx.yaml'));
 }
 
 function resolveFromProjectDir(projectDir: string, input: string, homeDir: string): string {
@@ -110,40 +110,40 @@ async function existingFolderState(
 }
 
 async function normalizeSetupGitignore(projectDir: string): Promise<void> {
-  const gitignorePath = join(projectDir, '.klo/.gitignore');
-  await mkdir(join(projectDir, '.klo'), { recursive: true });
+  const gitignorePath = join(projectDir, '.ktx/.gitignore');
+  await mkdir(join(projectDir, '.ktx'), { recursive: true });
   const current = existsSync(gitignorePath) ? await readFile(gitignorePath, 'utf-8') : '';
-  await writeFile(gitignorePath, mergeKloSetupGitignoreEntries(current), 'utf-8');
+  await writeFile(gitignorePath, mergeKtxSetupGitignoreEntries(current), 'utf-8');
 }
 
-async function persistProjectStep(project: KloLocalProject): Promise<KloLocalProject> {
-  const config = markKloSetupStepComplete(project.config, 'project');
-  await writeFile(project.configPath, serializeKloProjectConfig(config), 'utf-8');
+async function persistProjectStep(project: KtxLocalProject): Promise<KtxLocalProject> {
+  const config = markKtxSetupStepComplete(project.config, 'project');
+  await writeFile(project.configPath, serializeKtxProjectConfig(config), 'utf-8');
   await normalizeSetupGitignore(project.projectDir);
-  return await loadKloProject({ projectDir: project.projectDir });
+  return await loadKtxProject({ projectDir: project.projectDir });
 }
 
-async function createProject(projectDir: string, deps: KloSetupProjectDeps): Promise<KloLocalProject> {
-  const initProject = deps.initProject ?? initKloProject;
-  const initialized = await initProject({ projectDir, projectName: basename(projectDir) || 'klo-project' });
+async function createProject(projectDir: string, deps: KtxSetupProjectDeps): Promise<KtxLocalProject> {
+  const initProject = deps.initProject ?? initKtxProject;
+  const initialized = await initProject({ projectDir, projectName: basename(projectDir) || 'ktx-project' });
   return await persistProjectStep(initialized);
 }
 
-async function loadExistingProject(projectDir: string, deps: KloSetupProjectDeps): Promise<KloLocalProject> {
-  const loadProject = deps.loadProject ?? loadKloProject;
+async function loadExistingProject(projectDir: string, deps: KtxSetupProjectDeps): Promise<KtxLocalProject> {
+  const loadProject = deps.loadProject ?? loadKtxProject;
   const project = await loadProject({ projectDir });
   return await persistProjectStep(project);
 }
 
-function printProjectSummary(io: KloCliIo, projectDir: string): void {
+function printProjectSummary(io: KtxCliIo, projectDir: string): void {
   io.stdout.write(`Project: ${projectDir}\n`);
 }
 
 async function promptForNewProjectDir(
   projectDir: string,
   homeDir: string,
-  io: KloCliIo,
-  prompts: KloSetupProjectPromptAdapter,
+  io: KtxCliIo,
+  prompts: KtxSetupProjectPromptAdapter,
 ): Promise<PromptProjectDirResult> {
   const defaultProjectDir = join(projectDir, DEFAULT_NEW_PROJECT_FOLDER_NAME);
 
@@ -151,7 +151,7 @@ async function promptForNewProjectDir(
     io.stdout.write(`Relative paths are resolved from:\n  ${projectDir}\n`);
     io.stdout.write(`Home paths are resolved from:\n  ${homeDir}\n`);
     const destinationChoice = await prompts.select({
-      message: 'Where should KLO create the project?',
+      message: 'Where should KTX create the project?',
       options: [
         { value: 'default', label: `Create the default project folder: ${defaultProjectDir}` },
         { value: 'custom', label: 'Enter a custom path' },
@@ -169,7 +169,7 @@ async function promptForNewProjectDir(
     } else if (destinationChoice === 'custom') {
       const rawSelectedDir = await prompts.text({
         message: withTextInputNavigation('Project folder path'),
-        placeholder: './analytics-klo, ~/analytics-klo, or /Users/you/projects/analytics-klo',
+        placeholder: './analytics-ktx, ~/analytics-ktx, or /Users/you/projects/analytics-ktx',
       });
       if (rawSelectedDir === undefined) {
         continue;
@@ -177,7 +177,7 @@ async function promptForNewProjectDir(
       const trimmedSelectedDir = rawSelectedDir.trim();
       if (trimmedSelectedDir.length === 0) {
         io.stderr.write(
-          'Enter a relative path like ./analytics-klo, a home path like ~/analytics-klo, or an absolute path.\n',
+          'Enter a relative path like ./analytics-ktx, a home path like ~/analytics-ktx, or an absolute path.\n',
         );
         return { status: 'missing-input', projectDir };
       }
@@ -196,7 +196,7 @@ async function promptForNewProjectDir(
       const existingAction = await prompts.select({
         message: `That folder already exists and is not empty: ${selectedDir}`,
         options: [
-          { value: 'use-existing', label: 'Yes, create KLO files there' },
+          { value: 'use-existing', label: 'Yes, create KTX files there' },
           { value: 'choose-another', label: 'Choose another folder' },
           { value: 'back', label: 'Back' },
         ],
@@ -213,10 +213,10 @@ async function promptForNewProjectDir(
       confirmedCreation = true;
     }
 
-    io.stdout.write(`KLO will create:\n  ${selectedDir}\n`);
+    io.stdout.write(`KTX will create:\n  ${selectedDir}\n`);
     if (state !== 'non-empty-directory') {
       const createAction = await prompts.select({
-        message: `Create KLO project at ${selectedDir}?`,
+        message: `Create KTX project at ${selectedDir}?`,
         options: [
           { value: 'create', label: 'Create project' },
           { value: 'choose-another', label: 'Choose another folder' },
@@ -238,18 +238,18 @@ async function promptForNewProjectDir(
   }
 }
 
-export async function runKloSetupProjectStep(
-  args: KloSetupProjectArgs,
-  io: KloCliIo,
-  deps: KloSetupProjectDeps = {},
-): Promise<KloSetupProjectResult> {
+export async function runKtxSetupProjectStep(
+  args: KtxSetupProjectArgs,
+  io: KtxCliIo,
+  deps: KtxSetupProjectDeps = {},
+): Promise<KtxSetupProjectResult> {
   const projectDir = resolve(args.projectDir);
   const homeDir = deps.homeDir ?? homedir();
   const exists = hasProjectConfig(projectDir);
 
   if (args.mode === 'existing') {
     if (!exists) {
-      io.stderr.write(`No existing KLO project found at ${projectDir}. Pass --new to create it.\n`);
+      io.stderr.write(`No existing KTX project found at ${projectDir}. Pass --new to create it.\n`);
       return { status: 'missing-input', projectDir };
     }
     const project = await loadExistingProject(projectDir, deps);
@@ -321,7 +321,7 @@ export async function runKloSetupProjectStep(
   );
   while (true) {
     const choice = await prompts.select({
-      message: 'Which KLO project should setup use?',
+      message: 'Which KTX project should setup use?',
       options: [
         { value: 'current', label: 'Use current directory' },
         { value: 'new', label: 'Create a new project folder' },

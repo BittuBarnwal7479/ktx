@@ -12,11 +12,11 @@ function assertIncludesAll(text, values) {
   }
 }
 
-describe('standalone KLO CI workflow', () => {
+describe('standalone KTX CI workflow', () => {
   it('runs the package checks from a filtered repository root', async () => {
     const workflow = await readText('.github/workflows/ci.yml');
 
-    assert.match(workflow, /^name: KLO CI/m);
+    assert.match(workflow, /^name: KTX CI/m);
     assertIncludesAll(workflow, [
       'permissions:',
       'contents: read',
@@ -37,9 +37,9 @@ describe('standalone KLO CI workflow', () => {
     ]);
 
     assert.doesNotMatch(workflow, /sparse-checkout/);
-    assert.doesNotMatch(workflow, /cd klo/);
-    assert.doesNotMatch(workflow, /klo\/pnpm-lock\.yaml/);
-    assert.doesNotMatch(workflow, /klo\/uv\.lock/);
+    assert.doesNotMatch(workflow, /cd ktx/);
+    assert.doesNotMatch(workflow, /ktx\/pnpm-lock\.yaml/);
+    assert.doesNotMatch(workflow, /ktx\/uv\.lock/);
   });
 
   it('uploads verified artifacts from root-relative paths', async () => {
@@ -47,7 +47,7 @@ describe('standalone KLO CI workflow', () => {
 
     assertIncludesAll(workflow, [
       'actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f',
-      'name: klo-package-artifacts-${{ github.sha }}',
+      'name: ktx-package-artifacts-${{ github.sha }}',
       'dist/artifacts/manifest.json',
       'dist/artifacts/npm/*.tgz',
       'dist/artifacts/python/*.whl',
@@ -56,7 +56,7 @@ describe('standalone KLO CI workflow', () => {
       'retention-days: 7',
     ]);
 
-    assert.doesNotMatch(workflow, /klo\/dist\/artifacts/);
+    assert.doesNotMatch(workflow, /ktx\/dist\/artifacts/);
   });
 
   it('syncs injected workspace packages after package builds', async () => {

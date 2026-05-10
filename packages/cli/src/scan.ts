@@ -1,4 +1,4 @@
-import { loadKloProject } from '@klo/context/project';
+import { loadKtxProject } from '@ktx/context/project';
 import {
   type ApplyLocalScanRelationshipReviewDecisionsResult,
   adviseLocalRelationshipFeedbackThresholds,
@@ -6,43 +6,43 @@ import {
   calibrateLocalRelationshipFeedbackLabels,
   type ExportLocalRelationshipFeedbackLabelsResult,
   exportLocalRelationshipFeedbackLabels,
-  formatKloRelationshipFeedbackCalibrationMarkdown,
-  formatKloRelationshipFeedbackLabelsJsonl,
-  formatKloRelationshipThresholdAdviceMarkdown,
+  formatKtxRelationshipFeedbackCalibrationMarkdown,
+  formatKtxRelationshipFeedbackLabelsJsonl,
+  formatKtxRelationshipThresholdAdviceMarkdown,
   getLocalScanReport,
   getLocalScanStatus,
-  type KloProgressPort,
-  type KloRelationshipArtifact,
-  type KloRelationshipArtifactEdge,
-  type KloRelationshipArtifactStatus,
-  type KloRelationshipDiagnosticsArtifact,
-  type KloRelationshipFeedbackCalibrationReport,
-  type KloRelationshipFeedbackDecisionFilter,
-  type KloRelationshipFeedbackLabel,
-  type KloRelationshipReviewDecisionValue,
-  type KloRelationshipThresholdAdviceReport,
-  type KloScanMode,
-  type KloScanReport,
-  type KloScanWarning,
+  type KtxProgressPort,
+  type KtxRelationshipArtifact,
+  type KtxRelationshipArtifactEdge,
+  type KtxRelationshipArtifactStatus,
+  type KtxRelationshipDiagnosticsArtifact,
+  type KtxRelationshipFeedbackCalibrationReport,
+  type KtxRelationshipFeedbackDecisionFilter,
+  type KtxRelationshipFeedbackLabel,
+  type KtxRelationshipReviewDecisionValue,
+  type KtxRelationshipThresholdAdviceReport,
+  type KtxScanMode,
+  type KtxScanReport,
+  type KtxScanWarning,
   type LocalScanStatusResponse,
   readLocalScanRelationshipArtifacts,
   runLocalScan,
   type WriteLocalScanRelationshipReviewDecisionResult,
   writeLocalScanRelationshipReviewDecision,
-} from '@klo/context/scan';
-import type { KloCliIo } from './index.js';
-import { createKloCliLocalIngestAdapters } from './local-adapters.js';
-import { createKloCliScanConnector } from './local-scan-connectors.js';
+} from '@ktx/context/scan';
+import type { KtxCliIo } from './index.js';
+import { createKtxCliLocalIngestAdapters } from './local-adapters.js';
+import { createKtxCliScanConnector } from './local-scan-connectors.js';
 import { profileMark } from './startup-profile.js';
 
 profileMark('module:scan');
 
-export type KloScanArgs =
+export type KtxScanArgs =
   | {
       command: 'run';
       projectDir: string;
       connectionId: string;
-      mode: KloScanMode;
+      mode: KtxScanMode;
       detectRelationships: boolean;
       dryRun: boolean;
       databaseIntrospectionUrl?: string;
@@ -53,7 +53,7 @@ export type KloScanArgs =
       command: 'relationships';
       projectDir: string;
       runId: string;
-      status: KloRelationshipArtifactStatus;
+      status: KtxRelationshipArtifactStatus;
       json: boolean;
       limit: number;
     }
@@ -62,7 +62,7 @@ export type KloScanArgs =
       projectDir: string;
       runId: string;
       candidateId: string;
-      decision: KloRelationshipReviewDecisionValue;
+      decision: KtxRelationshipReviewDecisionValue;
       reviewer: string;
       note: string | null;
       json: boolean;
@@ -80,7 +80,7 @@ export type KloScanArgs =
       command: 'relationshipFeedback';
       projectDir: string;
       connectionId: string | null;
-      decision: KloRelationshipFeedbackDecisionFilter;
+      decision: KtxRelationshipFeedbackDecisionFilter;
       json: boolean;
       jsonl: boolean;
     }
@@ -88,7 +88,7 @@ export type KloScanArgs =
       command: 'relationshipCalibration';
       projectDir: string;
       connectionId: string | null;
-      decision: KloRelationshipFeedbackDecisionFilter;
+      decision: KtxRelationshipFeedbackDecisionFilter;
       acceptThreshold: number;
       reviewThreshold: number;
       json: boolean;
@@ -103,23 +103,23 @@ export type KloScanArgs =
       json: boolean;
     };
 
-interface KloScanDeps {
+interface KtxScanDeps {
   runLocalScan?: typeof runLocalScan;
-  createLocalIngestAdapters?: typeof createKloCliLocalIngestAdapters;
+  createLocalIngestAdapters?: typeof createKtxCliLocalIngestAdapters;
   getLocalScanStatus?: typeof getLocalScanStatus;
   getLocalScanReport?: typeof getLocalScanReport;
   readLocalScanRelationshipArtifacts?: typeof readLocalScanRelationshipArtifacts;
   writeLocalScanRelationshipReviewDecision?: typeof writeLocalScanRelationshipReviewDecision;
   applyLocalScanRelationshipReviewDecisions?: typeof applyLocalScanRelationshipReviewDecisions;
   exportLocalRelationshipFeedbackLabels?: typeof exportLocalRelationshipFeedbackLabels;
-  formatKloRelationshipFeedbackLabelsJsonl?: typeof formatKloRelationshipFeedbackLabelsJsonl;
+  formatKtxRelationshipFeedbackLabelsJsonl?: typeof formatKtxRelationshipFeedbackLabelsJsonl;
   calibrateLocalRelationshipFeedbackLabels?: typeof calibrateLocalRelationshipFeedbackLabels;
-  formatKloRelationshipFeedbackCalibrationMarkdown?: typeof formatKloRelationshipFeedbackCalibrationMarkdown;
+  formatKtxRelationshipFeedbackCalibrationMarkdown?: typeof formatKtxRelationshipFeedbackCalibrationMarkdown;
   adviseLocalRelationshipFeedbackThresholds?: typeof adviseLocalRelationshipFeedbackThresholds;
-  formatKloRelationshipThresholdAdviceMarkdown?: typeof formatKloRelationshipThresholdAdviceMarkdown;
+  formatKtxRelationshipThresholdAdviceMarkdown?: typeof formatKtxRelationshipThresholdAdviceMarkdown;
 }
 
-function shouldUseStyledOutput(io: KloCliIo): boolean {
+function shouldUseStyledOutput(io: KtxCliIo): boolean {
   return io.stdout.isTTY === true && !process.env.NO_COLOR && process.env.TERM !== 'dumb' && !process.env.CI;
 }
 
@@ -142,15 +142,15 @@ function plural(count: number, singular: string, pluralValue = `${singular}s`): 
   return count === 1 ? singular : pluralValue;
 }
 
-function tableChangeCount(report: KloScanReport): number {
+function tableChangeCount(report: KtxScanReport): number {
   return report.diffSummary.tablesAdded + report.diffSummary.tablesModified + report.diffSummary.tablesDeleted;
 }
 
-function totalTableCount(report: KloScanReport): number {
+function totalTableCount(report: KtxScanReport): number {
   return tableChangeCount(report) + report.diffSummary.tablesUnchanged;
 }
 
-function writeScanIdentity(report: KloScanReport, io: KloCliIo): void {
+function writeScanIdentity(report: KtxScanReport, io: KtxCliIo): void {
   io.stdout.write(`Run: ${report.runId}\n`);
   io.stdout.write(`Connection: ${report.connectionId}\n`);
   io.stdout.write(`Mode: ${report.mode}\n`);
@@ -158,7 +158,7 @@ function writeScanIdentity(report: KloScanReport, io: KloCliIo): void {
   io.stdout.write(`Dry run: ${report.dryRun ? 'yes' : 'no'}\n`);
 }
 
-function writeWhatChanged(report: KloScanReport, io: KloCliIo): void {
+function writeWhatChanged(report: KtxScanReport, io: KtxCliIo): void {
   const changedTables = tableChangeCount(report);
   const totalTables = totalTableCount(report);
   io.stdout.write('\nWhat changed\n');
@@ -182,7 +182,7 @@ function writeWhatChanged(report: KloScanReport, io: KloCliIo): void {
   }
 }
 
-function hasRelationshipResults(report: KloScanReport): boolean {
+function hasRelationshipResults(report: KtxScanReport): boolean {
   return (
     report.relationships.accepted > 0 ||
     report.relationships.review > 0 ||
@@ -191,7 +191,7 @@ function hasRelationshipResults(report: KloScanReport): boolean {
   );
 }
 
-function writeRelationships(report: KloScanReport, io: KloCliIo): void {
+function writeRelationships(report: KtxScanReport, io: KtxCliIo): void {
   if (!hasRelationshipResults(report)) {
     return;
   }
@@ -215,12 +215,12 @@ function capabilityGapMessage(gap: string): string {
   return `${gap} is unavailable; scan results may be less complete.`;
 }
 
-function warningLine(warning: KloScanWarning): string {
+function warningLine(warning: KtxScanWarning): string {
   const location = warning.table ? `${warning.table}${warning.column ? `.${warning.column}` : ''}: ` : '';
   return `${warning.code}: ${location}${warning.message}`;
 }
 
-function writeNeedsAttention(report: KloScanReport, io: KloCliIo): void {
+function writeNeedsAttention(report: KtxScanReport, io: KtxCliIo): void {
   io.stdout.write('\nNeeds attention\n');
   if (report.warnings.length === 0 && report.capabilityGaps.length === 0) {
     io.stdout.write('  None\n');
@@ -243,7 +243,7 @@ function writeNeedsAttention(report: KloScanReport, io: KloCliIo): void {
   }
 }
 
-function writeArtifacts(report: KloScanReport, io: KloCliIo): void {
+function writeArtifacts(report: KtxScanReport, io: KtxCliIo): void {
   io.stdout.write('\nArtifacts\n');
   io.stdout.write(`  Report: ${report.artifactPaths.reportPath ?? 'none'}\n`);
   io.stdout.write(`  Raw sources: ${report.artifactPaths.rawSourcesDir ?? 'none'}\n`);
@@ -255,7 +255,7 @@ function writeArtifacts(report: KloScanReport, io: KloCliIo): void {
   }
 }
 
-function writeHumanReportBody(report: KloScanReport, io: KloCliIo): void {
+function writeHumanReportBody(report: KtxScanReport, io: KtxCliIo): void {
   writeScanIdentity(report, io);
   writeWhatChanged(report, io);
   writeRelationships(report, io);
@@ -263,25 +263,25 @@ function writeHumanReportBody(report: KloScanReport, io: KloCliIo): void {
   writeArtifacts(report, io);
 }
 
-function writeRunSummary(report: KloScanReport, projectDir: string, io: KloCliIo): void {
+function writeRunSummary(report: KtxScanReport, projectDir: string, io: KtxCliIo): void {
   const styled = shouldUseStyledOutput(io);
-  io.stdout.write(`${styled ? green('✓') : ''}${styled ? ' ' : ''}KLO scan completed\n`);
+  io.stdout.write(`${styled ? green('✓') : ''}${styled ? ' ' : ''}KTX scan completed\n`);
   io.stdout.write('Status: done\n');
   writeHumanReportBody(report, io);
   const projectDirArg = quoteCliArg(projectDir);
   io.stdout.write('\nNext:\n');
-  const statusCommand = styled ? dim('klo dev scan status') : 'klo dev scan status';
-  const reportCommand = styled ? dim('klo dev scan report') : 'klo dev scan report';
+  const statusCommand = styled ? dim('ktx dev scan status') : 'ktx dev scan status';
+  const reportCommand = styled ? dim('ktx dev scan report') : 'ktx dev scan report';
   io.stdout.write(`  ${statusCommand} --project-dir ${projectDirArg} ${report.runId}\n`);
   io.stdout.write(`  ${reportCommand} --project-dir ${projectDirArg} ${report.runId}\n`);
 }
 
-function writeReport(report: KloScanReport, io: KloCliIo): void {
-  io.stdout.write('KLO scan report\n');
+function writeReport(report: KtxScanReport, io: KtxCliIo): void {
+  io.stdout.write('KTX scan report\n');
   writeHumanReportBody(report, io);
 }
 
-function formatRelationshipEndpoint(edge: KloRelationshipArtifactEdge, side: 'from' | 'to'): string {
+function formatRelationshipEndpoint(edge: KtxRelationshipArtifactEdge, side: 'from' | 'to'): string {
   const endpoint = edge[side];
   if (endpoint.columns.length === 1) {
     return `${endpoint.table.name}.${endpoint.columns[0]}`;
@@ -293,7 +293,7 @@ function formatRelationshipScore(value: number | null): string {
   return value === null ? 'n/a' : value.toFixed(2);
 }
 
-function relationshipStatusTitle(status: Exclude<KloRelationshipArtifactStatus, 'all'>): string {
+function relationshipStatusTitle(status: Exclude<KtxRelationshipArtifactStatus, 'all'>): string {
   if (status === 'accepted') {
     return 'Accepted relationships';
   }
@@ -307,9 +307,9 @@ function relationshipStatusTitle(status: Exclude<KloRelationshipArtifactStatus, 
 }
 
 function filteredRelationshipArtifact(
-  relationships: KloRelationshipArtifact,
-  status: KloRelationshipArtifactStatus,
-): KloRelationshipArtifact {
+  relationships: KtxRelationshipArtifact,
+  status: KtxRelationshipArtifactStatus,
+): KtxRelationshipArtifact {
   if (status === 'all') {
     return relationships;
   }
@@ -322,7 +322,7 @@ function filteredRelationshipArtifact(
   };
 }
 
-function writeRelationshipEdge(edge: KloRelationshipArtifactEdge, index: number, io: KloCliIo): void {
+function writeRelationshipEdge(edge: KtxRelationshipArtifactEdge, index: number, io: KtxCliIo): void {
   io.stdout.write(
     `  ${index + 1}. ${formatRelationshipEndpoint(edge, 'from')} -> ${formatRelationshipEndpoint(edge, 'to')}\n`,
   );
@@ -333,10 +333,10 @@ function writeRelationshipEdge(edge: KloRelationshipArtifactEdge, index: number,
 }
 
 function writeRelationshipGroup(
-  status: Exclude<KloRelationshipArtifactStatus, 'all'>,
-  relationships: KloRelationshipArtifact,
+  status: Exclude<KtxRelationshipArtifactStatus, 'all'>,
+  relationships: KtxRelationshipArtifact,
   limit: number,
-  io: KloCliIo,
+  io: KtxCliIo,
 ): void {
   if (status === 'skipped') {
     io.stdout.write(`\n${relationshipStatusTitle(status)} (${relationships.skipped.length})\n`);
@@ -366,15 +366,15 @@ function writeRelationshipArtifactSummary(input: {
   runId: string;
   connectionId: string;
   syncId: string;
-  status: KloRelationshipArtifactStatus;
+  status: KtxRelationshipArtifactStatus;
   limit: number;
-  summary: KloRelationshipArtifact;
-  relationships: KloRelationshipArtifact;
-  diagnostics: KloRelationshipDiagnosticsArtifact | null;
+  summary: KtxRelationshipArtifact;
+  relationships: KtxRelationshipArtifact;
+  diagnostics: KtxRelationshipDiagnosticsArtifact | null;
   relationshipsPath: string;
-  io: KloCliIo;
+  io: KtxCliIo;
 }): void {
-  input.io.stdout.write('KLO relationship artifacts\n');
+  input.io.stdout.write('KTX relationship artifacts\n');
   input.io.stdout.write(`Run: ${input.runId}\n`);
   input.io.stdout.write(`Connection: ${input.connectionId}\n`);
   input.io.stdout.write(`Sync: ${input.syncId}\n`);
@@ -386,14 +386,14 @@ function writeRelationshipArtifactSummary(input: {
   }
   input.io.stdout.write(`Artifacts: ${input.relationshipsPath}\n`);
 
-  const statuses: Array<Exclude<KloRelationshipArtifactStatus, 'all'>> =
+  const statuses: Array<Exclude<KtxRelationshipArtifactStatus, 'all'>> =
     input.status === 'all' ? ['accepted', 'review', 'rejected', 'skipped'] : [input.status];
   for (const status of statuses) {
     writeRelationshipGroup(status, input.relationships, input.limit, input.io);
   }
 }
 
-function writeRelationshipDecisionResult(result: WriteLocalScanRelationshipReviewDecisionResult, io: KloCliIo): void {
+function writeRelationshipDecisionResult(result: WriteLocalScanRelationshipReviewDecisionResult, io: KtxCliIo): void {
   io.stdout.write('Recorded relationship decision\n');
   io.stdout.write(`Decision: ${result.decision.decision}\n`);
   io.stdout.write(`Candidate: ${result.decision.candidateId}\n`);
@@ -405,7 +405,7 @@ function writeRelationshipDecisionResult(result: WriteLocalScanRelationshipRevie
   io.stdout.write(`Path: ${result.path}\n`);
 }
 
-function writeRelationshipApplyResult(result: ApplyLocalScanRelationshipReviewDecisionsResult, io: KloCliIo): void {
+function writeRelationshipApplyResult(result: ApplyLocalScanRelationshipReviewDecisionsResult, io: KtxCliIo): void {
   io.stdout.write('Relationship review apply\n');
   io.stdout.write(`Run: ${result.runId}\n`);
   io.stdout.write(`Connection: ${result.connectionId}\n`);
@@ -433,15 +433,15 @@ function feedbackTableShortName(value: string): string {
   return value.split('.').at(-1) ?? value;
 }
 
-function feedbackEndpoint(label: KloRelationshipFeedbackLabel, side: 'from' | 'to'): string {
+function feedbackEndpoint(label: KtxRelationshipFeedbackLabel, side: 'from' | 'to'): string {
   if (side === 'from') {
     return `${feedbackTableShortName(label.fromTable)}.${formatFeedbackColumns(label.fromColumns)}`;
   }
   return `${feedbackTableShortName(label.toTable)}.${formatFeedbackColumns(label.toColumns)}`;
 }
 
-function writeRelationshipFeedbackSummary(result: ExportLocalRelationshipFeedbackLabelsResult, io: KloCliIo): void {
-  io.stdout.write('KLO relationship feedback labels\n');
+function writeRelationshipFeedbackSummary(result: ExportLocalRelationshipFeedbackLabelsResult, io: KtxCliIo): void {
+  io.stdout.write('KTX relationship feedback labels\n');
   io.stdout.write(`Generated: ${result.generatedAt}\n`);
   io.stdout.write(`Filter connection: ${result.filters.connectionId ?? 'all'}\n`);
   io.stdout.write(`Filter decision: ${result.filters.decision}\n`);
@@ -474,29 +474,29 @@ function writeRelationshipFeedbackSummary(result: ExportLocalRelationshipFeedbac
   }
 }
 
-interface KloCliScanProgressState {
+interface KtxCliScanProgressState {
   progress: number;
   hasPendingTransient: boolean;
 }
 
-interface KloCliScanProgressUpdateOptions {
+interface KtxCliScanProgressUpdateOptions {
   transient?: boolean;
 }
 
-interface KloCliScanProgress extends Omit<KloProgressPort, 'update'> {
-  update(progress: number, message?: string, options?: KloCliScanProgressUpdateOptions): Promise<void>;
+interface KtxCliScanProgress extends Omit<KtxProgressPort, 'update'> {
+  update(progress: number, message?: string, options?: KtxCliScanProgressUpdateOptions): Promise<void>;
   flush(): void;
 }
 
 export function createCliScanProgress(
-  io: KloCliIo,
-  state: KloCliScanProgressState = { progress: 0, hasPendingTransient: false },
+  io: KtxCliIo,
+  state: KtxCliScanProgressState = { progress: 0, hasPendingTransient: false },
   start = 0,
   weight = 1,
-): KloCliScanProgress {
+): KtxCliScanProgress {
   const shouldWrite = io.stdout.isTTY === true && !process.env.CI;
-  const progress: KloCliScanProgress = {
-    async update(value: number, message?: string, options?: KloCliScanProgressUpdateOptions) {
+  const progress: KtxCliScanProgress = {
+    async update(value: number, message?: string, options?: KtxCliScanProgressUpdateOptions) {
       const absoluteValue = start + Math.max(0, Math.min(1, value)) * weight;
       state.progress = Math.max(state.progress, Math.min(1, absoluteValue));
       if (!shouldWrite || !message) {
@@ -526,7 +526,7 @@ export function createCliScanProgress(
   return progress;
 }
 
-function writeStatus(status: LocalScanStatusResponse, io: KloCliIo): void {
+function writeStatus(status: LocalScanStatusResponse, io: KtxCliIo): void {
   io.stdout.write(`Run: ${status.runId}\n`);
   io.stdout.write(`Status: ${status.status}\n`);
   io.stdout.write(`Connection: ${status.connectionId}\n`);
@@ -536,9 +536,9 @@ function writeStatus(status: LocalScanStatusResponse, io: KloCliIo): void {
   io.stdout.write(`Report: ${status.reportPath ?? 'none'}\n`);
 }
 
-export async function runKloScan(args: KloScanArgs, io: KloCliIo = process, deps: KloScanDeps = {}): Promise<number> {
+export async function runKtxScan(args: KtxScanArgs, io: KtxCliIo = process, deps: KtxScanDeps = {}): Promise<number> {
   try {
-    const project = await loadKloProject({ projectDir: args.projectDir });
+    const project = await loadKtxProject({ projectDir: args.projectDir });
     if (args.command === 'status') {
       const status = await (deps.getLocalScanStatus ?? getLocalScanStatus)(project, args.runId);
       if (!status) {
@@ -655,7 +655,7 @@ export async function runKloScan(args: KloScanArgs, io: KloCliIo = process, deps
       );
       if (args.jsonl) {
         io.stdout.write(
-          (deps.formatKloRelationshipFeedbackLabelsJsonl ?? formatKloRelationshipFeedbackLabelsJsonl)(result),
+          (deps.formatKtxRelationshipFeedbackLabelsJsonl ?? formatKtxRelationshipFeedbackLabelsJsonl)(result),
         );
       } else if (args.json) {
         io.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
@@ -675,10 +675,10 @@ export async function runKloScan(args: KloScanArgs, io: KloCliIo = process, deps
         },
       );
       if (args.json) {
-        io.stdout.write(`${JSON.stringify(result satisfies KloRelationshipFeedbackCalibrationReport, null, 2)}\n`);
+        io.stdout.write(`${JSON.stringify(result satisfies KtxRelationshipFeedbackCalibrationReport, null, 2)}\n`);
       } else {
         io.stdout.write(
-          (deps.formatKloRelationshipFeedbackCalibrationMarkdown ?? formatKloRelationshipFeedbackCalibrationMarkdown)(
+          (deps.formatKtxRelationshipFeedbackCalibrationMarkdown ?? formatKtxRelationshipFeedbackCalibrationMarkdown)(
             result,
           ),
         );
@@ -695,10 +695,10 @@ export async function runKloScan(args: KloScanArgs, io: KloCliIo = process, deps
         minRejectedLabels: args.minRejectedLabels,
       });
       if (args.json) {
-        io.stdout.write(`${JSON.stringify(result satisfies KloRelationshipThresholdAdviceReport, null, 2)}\n`);
+        io.stdout.write(`${JSON.stringify(result satisfies KtxRelationshipThresholdAdviceReport, null, 2)}\n`);
       } else {
         io.stdout.write(
-          (deps.formatKloRelationshipThresholdAdviceMarkdown ?? formatKloRelationshipThresholdAdviceMarkdown)(result),
+          (deps.formatKtxRelationshipThresholdAdviceMarkdown ?? formatKtxRelationshipThresholdAdviceMarkdown)(result),
         );
       }
       return 0;
@@ -706,7 +706,7 @@ export async function runKloScan(args: KloScanArgs, io: KloCliIo = process, deps
 
     const connector =
       args.mode !== 'structural' || args.detectRelationships
-        ? await createKloCliScanConnector(project, args.connectionId)
+        ? await createKtxCliScanConnector(project, args.connectionId)
         : undefined;
     const progress = createCliScanProgress(io);
     try {
@@ -719,7 +719,7 @@ export async function runKloScan(args: KloScanArgs, io: KloCliIo = process, deps
         trigger: 'cli',
         databaseIntrospectionUrl: args.databaseIntrospectionUrl,
         connector,
-        adapters: (deps.createLocalIngestAdapters ?? createKloCliLocalIngestAdapters)(project, {
+        adapters: (deps.createLocalIngestAdapters ?? createKtxCliLocalIngestAdapters)(project, {
           databaseIntrospectionUrl: args.databaseIntrospectionUrl,
         }),
         progress,

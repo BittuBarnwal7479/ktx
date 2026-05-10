@@ -1,6 +1,6 @@
 import { mkdir, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { noopLogger, resolveWorktreesDir, type KloCoreConfig, type KloLogger } from './config.js';
+import { noopLogger, resolveWorktreesDir, type KtxCoreConfig, type KtxLogger } from './config.js';
 import { GitService } from './git.service.js';
 
 export type SessionOutcome = 'success' | 'empty' | 'conflict' | 'crash';
@@ -28,14 +28,14 @@ export interface SessionWorktree<TConfig> {
 }
 
 export interface SessionWorktreeServiceDeps<TConfig extends WorktreeConfigPort<TConfig>> {
-  coreConfig: KloCoreConfig;
+  coreConfig: KtxCoreConfig;
   gitService: GitService;
   configService: TConfig;
-  logger?: KloLogger;
+  logger?: KtxLogger;
 }
 
 export class SessionWorktreeService<TConfig extends WorktreeConfigPort<TConfig> = WorktreeConfigPort<never>> {
-  private readonly logger: KloLogger;
+  private readonly logger: KtxLogger;
   private readonly worktreesRoot: string;
 
   constructor(private readonly deps: SessionWorktreeServiceDeps<TConfig>) {
@@ -101,7 +101,7 @@ export class SessionWorktreeService<TConfig extends WorktreeConfigPort<TConfig> 
       ...(extra?.conflictPaths ? { conflictPaths: extra.conflictPaths } : {}),
     };
     try {
-      await writeFile(join(session.workdir, '.klo-outcome'), JSON.stringify(payload, null, 2), 'utf-8');
+      await writeFile(join(session.workdir, '.ktx-outcome'), JSON.stringify(payload, null, 2), 'utf-8');
     } catch (error) {
       this.logger.warn(
         `cleanup(${outcome}) failed to write sentinel for ${session.chatId}: ${

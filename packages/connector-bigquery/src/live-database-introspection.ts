@@ -1,14 +1,14 @@
-import type { LiveDatabaseIntrospectionPort } from '@klo/context/ingest';
-import type { KloProjectConnectionConfig } from '@klo/context/project';
+import type { LiveDatabaseIntrospectionPort } from '@ktx/context/ingest';
+import type { KtxProjectConnectionConfig } from '@ktx/context/project';
 import {
-  KloBigQueryScanConnector,
-  type KloBigQueryClientFactory,
-  type KloBigQueryConnectionConfig,
+  KtxBigQueryScanConnector,
+  type KtxBigQueryClientFactory,
+  type KtxBigQueryConnectionConfig,
 } from './connector.js';
 
 interface CreateBigQueryLiveDatabaseIntrospectionOptions {
-  connections: Record<string, KloProjectConnectionConfig>;
-  clientFactory?: KloBigQueryClientFactory;
+  connections: Record<string, KtxProjectConnectionConfig>;
+  clientFactory?: KtxBigQueryClientFactory;
   now?: () => Date;
 }
 
@@ -17,8 +17,8 @@ export function createBigQueryLiveDatabaseIntrospection(
 ): LiveDatabaseIntrospectionPort {
   return {
     async extractSchema(connectionId: string) {
-      const connection = options.connections[connectionId] as KloBigQueryConnectionConfig | undefined;
-      const connector = new KloBigQueryScanConnector({
+      const connection = options.connections[connectionId] as KtxBigQueryConnectionConfig | undefined;
+      const connector = new KtxBigQueryScanConnector({
         connectionId,
         connection,
         clientFactory: options.clientFactory,

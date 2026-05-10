@@ -1,7 +1,7 @@
 {
-  "name": "@klo/connector-clickhouse",
+  "name": "@ktx/connector-clickhouse",
   "version": "0.0.0-private",
-  "description": "ClickHouse connector package for KLO scan interfaces",
+  "description": "ClickHouse connector package for KTX scan interfaces",
   "private": true,
   "type": "module",
   "engines": {
@@ -27,7 +27,7 @@
   },
   "dependencies": {
     "@clickhouse/client": "^1.18.2",
-    "@klo/context": "workspace:*"
+    "@ktx/context": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^24.3.0",

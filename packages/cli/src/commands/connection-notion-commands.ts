@@ -1,6 +1,6 @@
 import { type Command, InvalidArgumentError } from '@commander-js/extra-typings';
-import { collectOption, type KloCliCommandContext, resolveCommandProjectDir } from '../cli-program.js';
-import type { KloConnectionNotionArgs } from './connection-notion.js';
+import { collectOption, type KtxCliCommandContext, resolveCommandProjectDir } from '../cli-program.js';
+import type { KtxConnectionNotionArgs } from './connection-notion.js';
 
 interface NotionPickOptions {
   input?: boolean;
@@ -36,7 +36,7 @@ function normalizeNotionPageId(value: string): string {
   return `${lower.slice(0, 8)}-${lower.slice(8, 12)}-${lower.slice(12, 16)}-${lower.slice(16, 20)}-${lower.slice(20)}`;
 }
 
-function buildPickArgs(connectionId: string, projectDir: string, options: NotionPickOptions): KloConnectionNotionArgs {
+function buildPickArgs(connectionId: string, projectDir: string, options: NotionPickOptions): KtxConnectionNotionArgs {
   if (options.input !== false) {
     return {
       command: 'pick',
@@ -59,19 +59,19 @@ function buildPickArgs(connectionId: string, projectDir: string, options: Notion
   };
 }
 
-async function runConnectionNotionArgs(context: KloCliCommandContext, args: KloConnectionNotionArgs): Promise<void> {
-  const runner = context.deps.connectionNotion ?? (await import('./connection-notion.js')).runKloConnectionNotion;
+async function runConnectionNotionArgs(context: KtxCliCommandContext, args: KtxConnectionNotionArgs): Promise<void> {
+  const runner = context.deps.connectionNotion ?? (await import('./connection-notion.js')).runKtxConnectionNotion;
   context.setExitCode(await runner(args, context.io));
 }
 
-export function registerConnectionNotionCommands(connect: Command, context: KloCliCommandContext): void {
+export function registerConnectionNotionCommands(connect: Command, context: KtxCliCommandContext): void {
   const notion = connect
     .command('notion')
     .description('Configure Notion source selection')
     .showHelpAfterError()
     .addHelpText(
       'after',
-      '\nProject directory defaults to KLO_PROJECT_DIR when set, otherwise the current working directory.\n',
+      '\nProject directory defaults to KTX_PROJECT_DIR when set, otherwise the current working directory.\n',
     );
 
   notion.action(() => {

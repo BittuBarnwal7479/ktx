@@ -1,14 +1,14 @@
 import { type Command, Option } from '@commander-js/extra-typings';
 import {
   type CommandWithGlobalOptions,
-  type KloCliCommandContext,
+  type KtxCliCommandContext,
   resolveCommandProjectDirOverride,
 } from '../cli-program.js';
 import {
-  type KloDemoArgs,
-  type KloDemoInputMode,
-  type KloDemoMode,
-  type KloDemoOutputMode,
+  type KtxDemoArgs,
+  type KtxDemoInputMode,
+  type KtxDemoMode,
+  type KtxDemoOutputMode,
 } from '../demo.js';
 import { defaultDemoProjectDir } from '../demo-assets.js';
 import { resolveProjectDir } from '../project-dir.js';
@@ -23,7 +23,7 @@ interface DemoOptions {
   projectDir?: string;
 }
 
-function demoOutputMode(options: { plain?: boolean; json?: boolean }): KloDemoOutputMode {
+function demoOutputMode(options: { plain?: boolean; json?: boolean }): KtxDemoOutputMode {
   if (options.json === true) {
     return 'json';
   }
@@ -37,14 +37,14 @@ function demoDoctorOutputMode(options: { json?: boolean }): 'plain' | 'json' {
   return options.json === true ? 'json' : 'plain';
 }
 
-function demoInspectOutputMode(options: { plain?: boolean; json?: boolean }): KloDemoOutputMode {
+function demoInspectOutputMode(options: { plain?: boolean; json?: boolean }): KtxDemoOutputMode {
   if (options.json === true) {
     return 'json';
   }
   return 'plain';
 }
 
-function demoInputMode(options: { input?: boolean }): { inputMode?: KloDemoInputMode } {
+function demoInputMode(options: { input?: boolean }): { inputMode?: KtxDemoInputMode } {
   return options.input === false ? { inputMode: 'disabled' } : {};
 }
 
@@ -118,19 +118,19 @@ export function resolveDemoCommandOptions<T>(command: { opts: () => T; optsWithG
   return { ...inherited, ...definedOptions(command.opts() as Record<string, unknown>, inherited, command) } as T;
 }
 
-async function runDemoArgs(context: KloCliCommandContext, args: KloDemoArgs): Promise<void> {
-  const runner = context.deps.demo ?? (await import('../demo.js')).runKloDemo;
+async function runDemoArgs(context: KtxCliCommandContext, args: KtxDemoArgs): Promise<void> {
+  const runner = context.deps.demo ?? (await import('../demo.js')).runKtxDemo;
   context.setExitCode(await runner(args, context.io));
 }
 
 export function registerDemoCommands(
   program: Command,
-  context: KloCliCommandContext,
+  context: KtxCliCommandContext,
   options: { description?: string } = {},
 ): void {
   const demo = program
     .command('demo')
-    .description(options.description ?? 'Run the pre-seeded KLO demo or a full LLM-backed demo')
+    .description(options.description ?? 'Run the pre-seeded KTX demo or a full LLM-backed demo')
     .addOption(
       new Option('--mode <mode>', 'Demo mode: seeded (default), replay, or full')
         .choices(['seeded', 'replay', 'full'])
@@ -260,7 +260,7 @@ export function registerDemoCommands(
     .addOption(new Option('--plain', 'Print plain text output instead of the visual demo').conflicts('json'))
     .addOption(new Option('--json', 'Print JSON output').conflicts('plain'))
     .option('--no-input', 'Disable interactive terminal input')
-    .action(async (_options, command: { opts: () => { mode: KloDemoMode } & DemoOptions }) => {
+    .action(async (_options, command: { opts: () => { mode: KtxDemoMode } & DemoOptions }) => {
       const options = resolveDemoCommandOptions(command);
       await runDemoArgs(context, {
         command: 'ingest',

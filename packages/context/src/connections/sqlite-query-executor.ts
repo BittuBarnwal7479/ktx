@@ -4,16 +4,16 @@ import Database from 'better-sqlite3';
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import type {
-  KloSqlQueryExecutionInput,
-  KloSqlQueryExecutionResult,
-  KloSqlQueryExecutorPort,
+  KtxSqlQueryExecutionInput,
+  KtxSqlQueryExecutionResult,
+  KtxSqlQueryExecutorPort,
 } from './query-executor.js';
 import { normalizeQueryRows } from './query-executor.js';
 import { limitSqlForExecution } from './read-only-sql.js';
 
 type SqliteConnectionConfig = Record<string, unknown> | undefined;
 
-function connectionDriver(input: KloSqlQueryExecutionInput): string {
+function connectionDriver(input: KtxSqlQueryExecutionInput): string {
   return String(input.connection?.driver ?? '').toLowerCase();
 }
 
@@ -49,7 +49,7 @@ function sqlitePathFromUrl(url: string): string {
   return url;
 }
 
-export function sqliteDatabasePathFromConnection(input: KloSqlQueryExecutionInput): string {
+export function sqliteDatabasePathFromConnection(input: KtxSqlQueryExecutionInput): string {
   const driver = connectionDriver(input);
   if (driver !== 'sqlite' && driver !== 'sqlite3') {
     throw new Error(`Local SQLite execution cannot run driver "${input.connection?.driver ?? 'unknown'}".`);
@@ -70,9 +70,9 @@ export function sqliteDatabasePathFromConnection(input: KloSqlQueryExecutionInpu
   return isAbsolute(candidate) ? candidate : resolve(input.projectDir ?? process.cwd(), candidate);
 }
 
-export function createSqliteQueryExecutor(): KloSqlQueryExecutorPort {
+export function createSqliteQueryExecutor(): KtxSqlQueryExecutorPort {
   return {
-    async execute(input: KloSqlQueryExecutionInput): Promise<KloSqlQueryExecutionResult> {
+    async execute(input: KtxSqlQueryExecutionInput): Promise<KtxSqlQueryExecutionResult> {
       const sql = limitSqlForExecution(input.sql, input.maxRows);
       const dbPath = sqliteDatabasePathFromConnection(input);
       const db = new Database(dbPath, { readonly: true, fileMustExist: true });

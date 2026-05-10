@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { KloSqliteDialect } from './dialect.js';
+import { KtxSqliteDialect } from './dialect.js';
 
-describe('KloSqliteDialect', () => {
-  const dialect = new KloSqliteDialect();
+describe('KtxSqliteDialect', () => {
+  const dialect = new KtxSqliteDialect();
 
   it('quotes identifiers and formats single-file SQLite table names', () => {
     expect(dialect.quoteIdentifier('orders')).toBe('"orders"');
@@ -10,7 +10,7 @@ describe('KloSqliteDialect', () => {
     expect(dialect.formatTableName({ catalog: 'ignored', db: 'ignored', name: 'orders' })).toBe('"orders"');
   });
 
-  it('maps native SQLite types to KLO dimension types', () => {
+  it('maps native SQLite types to KTX dimension types', () => {
     expect(dialect.mapToDimensionType('INTEGER')).toBe('number');
     expect(dialect.mapToDimensionType('numeric(10,2)')).toBe('number');
     expect(dialect.mapToDimensionType('timestamp')).toBe('time');

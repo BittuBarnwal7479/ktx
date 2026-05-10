@@ -2,7 +2,7 @@ import { cancel, confirm, isCancel, password, select, text } from '@clack/prompt
 import type { Option as ClackOption } from '@clack/prompts';
 import { resolve } from 'node:path';
 import { inspectDemoProjectState } from './demo-assets.js';
-import type { KloDemoInputMode } from './demo.js';
+import type { KtxDemoInputMode } from './demo.js';
 import { withMenuOptionsSpacing } from './prompt-navigation.js';
 
 type DemoPromptOption<T extends string> = ClackOption<T>;
@@ -29,7 +29,7 @@ type FullCredentialDecision =
   | { action: 'run-mode'; mode: 'seeded' | 'replay' }
   | { action: 'cancel' };
 
-function isInteractive(inputMode: KloDemoInputMode | undefined, io: DemoInteractiveIo): boolean {
+function isInteractive(inputMode: KtxDemoInputMode | undefined, io: DemoInteractiveIo): boolean {
   return inputMode !== 'disabled' && io.stdin?.isTTY === true && io.stdout.isTTY === true;
 }
 
@@ -97,7 +97,7 @@ export function createTestDemoPromptAdapter(options: {
 
 export async function chooseDemoProjectForInteractiveRun(options: {
   projectDir: string;
-  inputMode?: KloDemoInputMode;
+  inputMode?: KtxDemoInputMode;
   io: DemoInteractiveIo;
   prompts?: DemoPromptAdapter;
 }): Promise<DemoProjectDecision> {
@@ -108,7 +108,7 @@ export async function chooseDemoProjectForInteractiveRun(options: {
   if (!isInteractive(options.inputMode, options.io)) {
     if (state.status === 'corrupt') {
       throw new Error(
-        `Demo project is not ready at ${projectDir}: missing ${state.missing.join(', ')}. Run klo setup demo reset --project-dir ${projectDir} --force --no-input`,
+        `Demo project is not ready at ${projectDir}: missing ${state.missing.join(', ')}. Run ktx setup demo reset --project-dir ${projectDir} --force --no-input`,
       );
     }
     return { action: 'use', projectDir, reset: false };
@@ -163,7 +163,7 @@ export async function chooseDemoProjectForInteractiveRun(options: {
 
 export async function resolveFullCredentialDecision(options: {
   needsAnthropicKey: boolean;
-  inputMode?: KloDemoInputMode;
+  inputMode?: KtxDemoInputMode;
   io: DemoInteractiveIo;
   env: NodeJS.ProcessEnv;
   prompts?: DemoPromptAdapter;

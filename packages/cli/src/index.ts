@@ -1,48 +1,48 @@
 import { profileMark } from './startup-profile.js';
 
 export {
-  getKloCliPackageInfo,
+  getKtxCliPackageInfo,
   runInitForCommander,
-  runKloCli,
-  type KloCliDeps,
-  type KloCliIo,
-  type KloCliPackageInfo,
+  runKtxCli,
+  type KtxCliDeps,
+  type KtxCliIo,
+  type KtxCliPackageInfo,
 } from './cli-runtime.js';
-export { runKloAgent, type KloAgentArgs } from './agent.js';
+export { runKtxAgent, type KtxAgentArgs } from './agent.js';
 export {
-  KLO_AGENT_MAX_ROWS_CAP,
-  createKloAgentRuntime,
+  KTX_AGENT_MAX_ROWS_CAP,
+  createKtxAgentRuntime,
   parseAgentMaxRows,
   readAgentJsonFile,
   writeAgentJson,
   writeAgentJsonError,
-  type KloAgentRuntime,
-  type KloAgentRuntimeDeps,
+  type KtxAgentRuntime,
+  type KtxAgentRuntimeDeps,
 } from './agent-runtime.js';
-export { runKloSetup, type KloSetupArgs, type KloSetupStatus } from './setup.js';
+export { runKtxSetup, type KtxSetupArgs, type KtxSetupStatus } from './setup.js';
 export type {
-  KloSetupDatabaseDriver,
-  KloSetupDatabasesArgs,
-  KloSetupDatabasesDeps,
-  KloSetupDatabasesResult,
+  KtxSetupDatabaseDriver,
+  KtxSetupDatabasesArgs,
+  KtxSetupDatabasesDeps,
+  KtxSetupDatabasesResult,
 } from './setup-databases.js';
-export { runKloSetupDatabasesStep } from './setup-databases.js';
+export { runKtxSetupDatabasesStep } from './setup-databases.js';
 export type {
-  KloSetupEmbeddingBackend,
-  KloSetupEmbeddingsArgs,
-  KloSetupEmbeddingsDeps,
-  KloSetupEmbeddingsResult,
+  KtxSetupEmbeddingBackend,
+  KtxSetupEmbeddingsArgs,
+  KtxSetupEmbeddingsDeps,
+  KtxSetupEmbeddingsResult,
 } from './setup-embeddings.js';
-export { runKloSetupEmbeddingsStep } from './setup-embeddings.js';
+export { runKtxSetupEmbeddingsStep } from './setup-embeddings.js';
 export type {
-  KloSetupSourcesArgs,
-  KloSetupSourcesDeps,
-  KloSetupSourcesPromptAdapter,
-  KloSetupSourcesResult,
-  KloSetupSourceType,
+  KtxSetupSourcesArgs,
+  KtxSetupSourcesDeps,
+  KtxSetupSourcesPromptAdapter,
+  KtxSetupSourcesResult,
+  KtxSetupSourceType,
 } from './setup-sources.js';
-export { runKloSetupSourcesStep } from './setup-sources.js';
-export type { KloMemoryFlowTuiIo, MemoryFlowTuiLiveSession } from './memory-flow-tui.js';
+export { runKtxSetupSourcesStep } from './setup-sources.js';
+export type { KtxMemoryFlowTuiIo, MemoryFlowTuiLiveSession } from './memory-flow-tui.js';
 export {
   renderMemoryFlowTui,
   sanitizeMemoryFlowTuiError,

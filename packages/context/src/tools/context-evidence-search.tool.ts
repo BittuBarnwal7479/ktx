@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { KloEmbeddingPort } from '../core/index.js';
+import type { KtxEmbeddingPort } from '../core/index.js';
 import { BaseTool, type ToolContext, type ToolOutput } from './base-tool.js';
 import type { ContextEvidenceToolStorePort } from './context-evidence-tool-store.js';
 import { ingestMetadataRequired, resolveIngestMetadata, type ToolFailure } from './context-ingest-metadata.js';
@@ -48,7 +48,7 @@ export class ContextEvidenceSearchTool extends BaseTool<typeof contextEvidenceSe
 
   constructor(
     private readonly store: ContextEvidenceToolStorePort,
-    private readonly embeddingService: Pick<KloEmbeddingPort, 'computeEmbedding'>,
+    private readonly embeddingService: Pick<KtxEmbeddingPort, 'computeEmbedding'>,
   ) {
     super();
   }

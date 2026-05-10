@@ -74,7 +74,7 @@ class MetabaseApiError extends Error {
  * Strip Metabase `[[ ... {{ var }} ... ]]` optional-clause blocks from native SQL.
  *
  * The bracketed blocks are emitted only when the embedded `{{ var }}` is supplied at
- * Metabase query time. For KLO semantic-layer ingest there's no such runtime
+ * Metabase query time. For KTX semantic-layer ingest there's no such runtime
  * parameter — chat-time filters are composed by the SL query planner — so the optional
  * block must be removed before the SQL becomes a permanent SL source. Substituting a
  * dummy value (the alternative) bakes a placeholder filter into the source and silently
@@ -425,7 +425,7 @@ export class MetabaseClient implements MetabaseRuntimeClient {
 
   private buildPlaceholderWarningComment(tags: MetabaseTemplateTag[]): string {
     const lines = [
-      '-- KLO_PLACEHOLDER_WARNING: this SQL was extracted from a Metabase card with',
+      '-- KTX_PLACEHOLDER_WARNING: this SQL was extracted from a Metabase card with',
       '-- unbound template parameters. The placeholders below were substituted with DUMMY',
       "-- values to satisfy Metabase's parser — they DO NOT represent intended filters.",
       '-- Drop the corresponding clauses (or expose them as runtime SL filters) before',

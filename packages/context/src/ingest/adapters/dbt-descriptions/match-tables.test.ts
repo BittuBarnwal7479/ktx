@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { DbtParsedTable } from './parse-schema.js';
-import { findMatchingKloTable, matchDbtTables, type DbtHostTableLite } from './match-tables.js';
+import { findMatchingKtxTable, matchDbtTables, type DbtHostTableLite } from './match-tables.js';
 
 const hostTables: DbtHostTableLite[] = [
   { id: '1', name: 'orders', catalog: 'warehouse', db: 'analytics', columns: [{ id: 'c1', name: 'id' }] },
@@ -23,20 +23,20 @@ function table(input: Partial<DbtParsedTable>): DbtParsedTable {
 describe('dbt descriptions table matching', () => {
   it('uses schema plus name first and checks catalog when dbt database is present', () => {
     expect(
-      findMatchingKloTable(table({ database: 'warehouse', schema: 'analytics' }), hostTables, null)?.id,
+      findMatchingKtxTable(table({ database: 'warehouse', schema: 'analytics' }), hostTables, null)?.id,
     ).toBe('1');
   });
 
   it('does not fall back to name-only for source tables', () => {
-    expect(findMatchingKloTable(table({ resourceType: 'source' }), hostTables, null)).toBeUndefined();
+    expect(findMatchingKtxTable(table({ resourceType: 'source' }), hostTables, null)).toBeUndefined();
   });
 
   it('uses targetSchema for models and name-only only when unique', () => {
-    expect(findMatchingKloTable(table({ resourceType: 'model' }), hostTables, 'staging')?.id).toBe('2');
-    expect(findMatchingKloTable(table({ name: 'customers', resourceType: 'model' }), hostTables, null)?.id).toBe(
+    expect(findMatchingKtxTable(table({ resourceType: 'model' }), hostTables, 'staging')?.id).toBe('2');
+    expect(findMatchingKtxTable(table({ name: 'customers', resourceType: 'model' }), hostTables, null)?.id).toBe(
       '3',
     );
-    expect(findMatchingKloTable(table({ resourceType: 'model' }), hostTables, null)).toBeUndefined();
+    expect(findMatchingKtxTable(table({ resourceType: 'model' }), hostTables, null)).toBeUndefined();
   });
 
   it('summarizes matched columns and descriptions', () => {

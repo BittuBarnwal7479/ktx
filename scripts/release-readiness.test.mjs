@@ -18,24 +18,24 @@ async function writeReleaseMetadataInputs(root, options = {}) {
       name: packageInfo.name,
       version: '0.0.0-private',
       private:
-        packageInfo.name === '@klo/context'
+        packageInfo.name === '@ktx/context'
           ? (options.contextPrivate ?? true)
-          : packageInfo.name === '@klo/cli'
+          : packageInfo.name === '@ktx/cli'
             ? (options.cliPrivate ?? true)
             : true,
     });
   }
 
-  await mkdir(join(root, 'python', 'klo-sl'), { recursive: true });
-  await mkdir(join(root, 'python', 'klo-daemon'), { recursive: true });
+  await mkdir(join(root, 'python', 'ktx-sl'), { recursive: true });
+  await mkdir(join(root, 'python', 'ktx-daemon'), { recursive: true });
 
   await writeFile(
-    join(root, 'python', 'klo-sl', 'pyproject.toml'),
-    ['[project]', 'name = "klo-sl"', 'version = "0.1.0"', ''].join('\n'),
+    join(root, 'python', 'ktx-sl', 'pyproject.toml'),
+    ['[project]', 'name = "ktx-sl"', 'version = "0.1.0"', ''].join('\n'),
   );
   await writeFile(
-    join(root, 'python', 'klo-daemon', 'pyproject.toml'),
-    ['[project]', 'name = "klo-daemon"', 'version = "0.1.0"', ''].join('\n'),
+    join(root, 'python', 'ktx-daemon', 'pyproject.toml'),
+    ['[project]', 'name = "ktx-daemon"', 'version = "0.1.0"', ''].join('\n'),
   );
 }
 
@@ -48,10 +48,10 @@ async function writeUploadableArtifactFixtures(layout) {
       layout.npmTarballs[packageInfo.name],
       `${packageInfo.name}-tarball`,
     ]),
-    [join(layout.pythonDir, 'klo_sl-0.1.0-py3-none-any.whl'), 'klo-sl-wheel'],
-    [join(layout.pythonDir, 'klo_sl-0.1.0.tar.gz'), 'klo-sl-sdist'],
-    [join(layout.pythonDir, 'klo_daemon-0.1.0-py3-none-any.whl'), 'klo-daemon-wheel'],
-    [join(layout.pythonDir, 'klo_daemon-0.1.0.tar.gz'), 'klo-daemon-sdist'],
+    [join(layout.pythonDir, 'ktx_sl-0.1.0-py3-none-any.whl'), 'ktx-sl-wheel'],
+    [join(layout.pythonDir, 'ktx_sl-0.1.0.tar.gz'), 'ktx-sl-sdist'],
+    [join(layout.pythonDir, 'ktx_daemon-0.1.0-py3-none-any.whl'), 'ktx-daemon-wheel'],
+    [join(layout.pythonDir, 'ktx_daemon-0.1.0.tar.gz'), 'ktx-daemon-sdist'],
   ]);
 
   for (const [path, contents] of fileContents) {
@@ -74,7 +74,7 @@ function releasePolicy(overrides = {}) {
     python: {
       publish: false,
       repository: null,
-      packages: ['klo-sl', 'klo-daemon'],
+      packages: ['ktx-sl', 'ktx-daemon'],
       ...pythonOverrides,
     },
     publishedPackageSmoke: {
@@ -109,8 +109,8 @@ async function writeReadyFixture(root, options = {}) {
 }
 
 describe('release readiness policy', () => {
-  it('reads the checked release policy path from the KLO root', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'klo-release-policy-test-'));
+  it('reads the checked release policy path from the KTX root', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'ktx-release-policy-test-'));
     try {
       const policy = releasePolicy();
       await writePolicy(root, policy);
@@ -123,7 +123,7 @@ describe('release readiness policy', () => {
   });
 
   it('accepts the current ci-artifact-only policy, package metadata, and artifact manifest', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'klo-release-ready-test-'));
+    const root = await mkdtemp(join(tmpdir(), 'ktx-release-ready-test-'));
     try {
       await writeReadyFixture(root);
 
@@ -135,7 +135,7 @@ describe('release readiness policy', () => {
         sourceRevision: 'abc123',
         npmPublishEnabled: false,
         pythonPublishEnabled: false,
-        packageNames: [...NPM_ARTIFACT_PACKAGES.map((packageInfo) => packageInfo.name), 'klo-sl', 'klo-daemon'],
+        packageNames: [...NPM_ARTIFACT_PACKAGES.map((packageInfo) => packageInfo.name), 'ktx-sl', 'ktx-daemon'],
         publishedPackageSmokeGate: {
           status: 'not_required',
           script: 'pnpm run release:published-smoke',
@@ -159,12 +159,12 @@ describe('release readiness policy', () => {
   });
 
   it('reports policy-controlled published package smoke config when present', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'klo-release-smoke-config-test-'));
+    const root = await mkdtemp(join(tmpdir(), 'ktx-release-smoke-config-test-'));
     try {
       await writeReadyFixture(root, {
         policy: releasePolicy({
           publishedPackageSmoke: {
-            packageName: '@klo/cli-public',
+            packageName: '@ktx/cli-public',
             version: '2026.5.8',
             registry: 'https://registry.npmjs.org/',
           },
@@ -178,7 +178,7 @@ describe('release readiness policy', () => {
         script: 'pnpm run release:published-smoke',
         reason: 'Published package smoke remains pending until release-policy.json enables npm registry publishing.',
         configSource: 'release-policy',
-        packageName: '@klo/cli-public',
+        packageName: '@ktx/cli-public',
         version: '2026.5.8',
         registry: 'https://registry.npmjs.org/',
       });
@@ -188,13 +188,13 @@ describe('release readiness policy', () => {
   });
 
   it('reports required published package smoke when release mode requires it', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'klo-release-smoke-required-test-'));
+    const root = await mkdtemp(join(tmpdir(), 'ktx-release-smoke-required-test-'));
     try {
       await writeReadyFixture(root, {
         policy: releasePolicy({
           releaseMode: 'published-package-smoke-required',
           publishedPackageSmoke: {
-            packageName: '@klo/cli-public',
+            packageName: '@ktx/cli-public',
             version: '2026.5.8',
             registry: 'https://registry.npmjs.org/',
           },
@@ -210,13 +210,13 @@ describe('release readiness policy', () => {
         sourceRevision: 'abc123',
         npmPublishEnabled: false,
         pythonPublishEnabled: false,
-        packageNames: [...NPM_ARTIFACT_PACKAGES.map((packageInfo) => packageInfo.name), 'klo-sl', 'klo-daemon'],
+        packageNames: [...NPM_ARTIFACT_PACKAGES.map((packageInfo) => packageInfo.name), 'ktx-sl', 'ktx-daemon'],
         publishedPackageSmokeGate: {
           status: 'required',
           script: 'pnpm run release:published-smoke',
           reason: 'Run the published package smoke before accepting the hybrid-search release.',
           configSource: 'release-policy',
-          packageName: '@klo/cli-public',
+          packageName: '@ktx/cli-public',
           version: '2026.5.8',
           registry: 'https://registry.npmjs.org/',
         },
@@ -228,7 +228,7 @@ describe('release readiness policy', () => {
   });
 
   it('rejects required published smoke mode without a package name', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'klo-release-smoke-required-missing-config-test-'));
+    const root = await mkdtemp(join(tmpdir(), 'ktx-release-smoke-required-missing-config-test-'));
     try {
       await writeReadyFixture(root, {
         policy: releasePolicy({
@@ -247,13 +247,13 @@ describe('release readiness policy', () => {
   });
 
   it('rejects required published smoke mode while publishing decisions remain', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'klo-release-smoke-required-blocked-test-'));
+    const root = await mkdtemp(join(tmpdir(), 'ktx-release-smoke-required-blocked-test-'));
     try {
       await writeReadyFixture(root, {
         policy: releasePolicy({
           releaseMode: 'published-package-smoke-required',
           publishedPackageSmoke: {
-            packageName: '@klo/cli-public',
+            packageName: '@ktx/cli-public',
             version: 'latest',
             registry: null,
           },
@@ -270,7 +270,7 @@ describe('release readiness policy', () => {
   });
 
   it('rejects unsupported release modes', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'klo-release-unsupported-mode-test-'));
+    const root = await mkdtemp(join(tmpdir(), 'ktx-release-unsupported-mode-test-'));
     try {
       await writeReadyFixture(root, {
         policy: releasePolicy({
@@ -288,7 +288,7 @@ describe('release readiness policy', () => {
   });
 
   it('rejects publish-enabled npm policy while releaseMode is ci-artifact-only', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'klo-release-npm-publish-test-'));
+    const root = await mkdtemp(join(tmpdir(), 'ktx-release-npm-publish-test-'));
     try {
       await writeReadyFixture(root, {
         policy: releasePolicy({
@@ -306,7 +306,7 @@ describe('release readiness policy', () => {
   });
 
   it('rejects publish-enabled Python policy while releaseMode is ci-artifact-only', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'klo-release-python-publish-test-'));
+    const root = await mkdtemp(join(tmpdir(), 'ktx-release-python-publish-test-'));
     try {
       await writeReadyFixture(root, {
         policy: releasePolicy({
@@ -324,12 +324,12 @@ describe('release readiness policy', () => {
   });
 
   it('rejects unsafe release-policy published package smoke config', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'klo-release-smoke-invalid-test-'));
+    const root = await mkdtemp(join(tmpdir(), 'ktx-release-smoke-invalid-test-'));
     try {
       await writeReadyFixture(root, {
         policy: releasePolicy({
           publishedPackageSmoke: {
-            packageName: '@klo/cli public',
+            packageName: '@ktx/cli public',
             version: 'latest',
             registry: null,
           },
@@ -346,13 +346,13 @@ describe('release readiness policy', () => {
   });
 
   it('rejects a public npm package while releaseMode is ci-artifact-only', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'klo-release-public-npm-test-'));
+    const root = await mkdtemp(join(tmpdir(), 'ktx-release-public-npm-test-'));
     try {
       await writeReadyFixture(root, { contextPrivate: false });
 
       await assert.rejects(
         () => releaseReadinessReport(root),
-        /ci-artifact-only policy npm package @klo\/context must remain private/,
+        /ci-artifact-only policy npm package @ktx\/context must remain private/,
       );
     } finally {
       await rm(root, { recursive: true, force: true });
@@ -360,7 +360,7 @@ describe('release readiness policy', () => {
   });
 
   it('rejects stale artifacts before reporting release readiness', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'klo-release-stale-artifact-test-'));
+    const root = await mkdtemp(join(tmpdir(), 'ktx-release-stale-artifact-test-'));
     try {
       const layout = await writeReadyFixture(root);
       await writeFile(layout.cliTarball, 'changed-cli-tarball');

@@ -1,14 +1,14 @@
-# KLO
+# KTX
 
-KLO is a workspace-first context layer for database agents. It stores warehouse
+KTX is a workspace-first context layer for database agents. It stores warehouse
 memory in a project directory, generates and validates semantic-layer YAML,
 indexes knowledge, scans database schemas, and exposes the result through a CLI
 and MCP server.
 
-KLO projects are plain files: YAML, Markdown, SQLite state, and generated
+KTX projects are plain files: YAML, Markdown, SQLite state, and generated
 artifacts. You can inspect them, commit them, and serve them to any MCP client.
 
-## What KLO provides
+## What KTX provides
 
 - Durable warehouse memory with semantic-layer sources and knowledge pages.
 - Native scan connectors for SQLite, Postgres, MySQL, ClickHouse, SQL Server,
@@ -25,8 +25,8 @@ Run the pre-seeded demo from the repository root:
 ```bash
 pnpm install
 pnpm run setup:dev
-pnpm run klo -- setup demo --no-input
-pnpm run klo -- setup demo inspect
+pnpm run ktx -- setup demo --no-input
+pnpm run ktx -- setup demo inspect
 ```
 
 The default demo uses packaged sample data and prebuilt context. It does not
@@ -35,7 +35,7 @@ require API keys, network access, or an LLM provider.
 To replay the packaged ingest run, use:
 
 ```bash
-pnpm run klo -- setup demo --mode replay --no-input
+pnpm run ktx -- setup demo --mode replay --no-input
 ```
 
 To run the full agentic demo with an LLM provider, set a provider key for the
@@ -43,11 +43,11 @@ current process:
 
 ```bash
 ANTHROPIC_API_KEY=$YOUR_ANTHROPIC_API_KEY \
-  pnpm run klo -- setup demo --mode full --no-input
+  pnpm run ktx -- setup demo --mode full --no-input
 ```
 
 Interactive full-demo setup can prompt for a provider key without writing the
-key to `klo.yaml`.
+key to `ktx.yaml`.
 
 ## Build a local project
 
@@ -57,8 +57,8 @@ Create a project from the repository root:
 uv sync --all-packages
 source .venv/bin/activate
 
-PROJECT_DIR="$(mktemp -d)/klo-demo"
-pnpm run klo -- init "$PROJECT_DIR" --name klo-demo
+PROJECT_DIR="$(mktemp -d)/ktx-demo"
+pnpm run ktx -- init "$PROJECT_DIR" --name ktx-demo
 ```
 
 Create a SQLite warehouse:
@@ -88,11 +88,11 @@ conn.close()
 PY
 ```
 
-Replace the generated `klo.yaml`:
+Replace the generated `ktx.yaml`:
 
 ```bash
-cat > "$PROJECT_DIR/klo.yaml" <<YAML
-project: klo-demo
+cat > "$PROJECT_DIR/ktx.yaml" <<YAML
+project: ktx-demo
 connections:
   warehouse:
     driver: sqlite
@@ -103,7 +103,7 @@ storage:
   search: sqlite-fts5
   git:
     auto_commit: true
-    author: "klo <klo@example.com>"
+    author: "ktx <ktx@example.com>"
 memory:
   auto_commit: true
 YAML
@@ -112,7 +112,7 @@ YAML
 Write and validate a semantic-layer source:
 
 ```bash
-pnpm run klo -- sl write accounts --project-dir "$PROJECT_DIR" \
+pnpm run ktx -- sl write accounts --project-dir "$PROJECT_DIR" \
   --connection-id warehouse --yaml 'name: accounts
 table: accounts
 description: CRM accounts with segmentation attributes.
@@ -133,14 +133,14 @@ measures:
 joins: []
 '
 
-pnpm run klo -- sl validate accounts --project-dir "$PROJECT_DIR" \
+pnpm run ktx -- sl validate accounts --project-dir "$PROJECT_DIR" \
   --connection-id warehouse
 ```
 
 Generate SQL and execute the query:
 
 ```bash
-pnpm run klo -- sl query --project-dir "$PROJECT_DIR" \
+pnpm run ktx -- sl query --project-dir "$PROJECT_DIR" \
   --connection-id warehouse \
   --measure accounts.account_count \
   --dimension accounts.segment \
@@ -148,7 +148,7 @@ pnpm run klo -- sl query --project-dir "$PROJECT_DIR" \
   --limit 5 \
   --format sql
 
-pnpm run klo -- sl query --project-dir "$PROJECT_DIR" \
+pnpm run ktx -- sl query --project-dir "$PROJECT_DIR" \
   --connection-id warehouse \
   --measure accounts.account_count \
   --dimension accounts.segment \
@@ -161,8 +161,8 @@ pnpm run klo -- sl query --project-dir "$PROJECT_DIR" \
 List and test the warehouse connection:
 
 ```bash
-pnpm run klo -- connection list --project-dir "$PROJECT_DIR"
-pnpm run klo -- connection test warehouse --project-dir "$PROJECT_DIR"
+pnpm run ktx -- connection list --project-dir "$PROJECT_DIR"
+pnpm run ktx -- connection test warehouse --project-dir "$PROJECT_DIR"
 ```
 
 The connection test prints the configured driver and discovered table count:
@@ -179,11 +179,11 @@ Scan artifacts are written under
 
 ```bash
 
-SCAN_OUTPUT="$(pnpm run klo -- scan warehouse --project-dir "$PROJECT_DIR")"
+SCAN_OUTPUT="$(pnpm run ktx -- scan warehouse --project-dir "$PROJECT_DIR")"
 printf '%s\n' "$SCAN_OUTPUT"
 SCAN_RUN_ID="$(printf '%s\n' "$SCAN_OUTPUT" | awk '/^Run: / { print $2 }')"
-pnpm run klo -- scan status --project-dir "$PROJECT_DIR" "$SCAN_RUN_ID"
-pnpm run klo -- scan report --project-dir "$PROJECT_DIR" "$SCAN_RUN_ID"
+pnpm run ktx -- scan status --project-dir "$PROJECT_DIR" "$SCAN_RUN_ID"
+pnpm run ktx -- scan report --project-dir "$PROJECT_DIR" "$SCAN_RUN_ID"
 ```
 
 For non-SQLite drivers, prefer credential references such as `--url env:NAME`
@@ -195,13 +195,13 @@ Start the Python compute daemon in one terminal:
 
 ```bash
 source .venv/bin/activate
-uv run klo-daemon serve-http --host 127.0.0.1 --port 8765
+uv run ktx-daemon serve-http --host 127.0.0.1 --port 8765
 ```
 
 Start the stdio MCP server in another terminal:
 
 ```bash
-pnpm run klo -- serve --mcp stdio --project-dir "$PROJECT_DIR" \
+pnpm run ktx -- serve --mcp stdio --project-dir "$PROJECT_DIR" \
   --user-id local \
   --semantic-compute-url http://127.0.0.1:8765 \
   --execute-queries
@@ -225,8 +225,8 @@ The MCP server exposes `connection_list`, `knowledge_search`,
 - `packages/connector-snowflake`: Snowflake scan connector.
 - `packages/connector-sqlite`: SQLite scan connector.
 - `packages/connector-sqlserver`: SQL Server scan connector.
-- `python/klo-sl`: semantic-layer engine.
-- `python/klo-daemon`: portable compute service for semantic-layer operations.
+- `python/ktx-sl`: semantic-layer engine.
+- `python/ktx-daemon`: portable compute service for semantic-layer operations.
 
 ## Development
 
@@ -240,11 +240,11 @@ source .venv/bin/activate
 uv run pytest
 ```
 
-Use the optional development binary when you want a local `klo-dev` command:
+Use the optional development binary when you want a local `ktx-dev` command:
 
 ```bash
 pnpm run link:dev
-klo-dev --help
+ktx-dev --help
 ```
 
 The repository uses `pnpm` for TypeScript packages and `uv` for Python
@@ -267,4 +267,4 @@ pnpm run release:readiness
 
 ## License
 
-KLO is licensed under the Apache License, Version 2.0. See `LICENSE`.
+KTX is licensed under the Apache License, Version 2.0. See `LICENSE`.

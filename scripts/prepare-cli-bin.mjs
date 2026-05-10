@@ -5,11 +5,11 @@ import { access, chmod } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-export function kloRootDir() {
+export function ktxRootDir() {
   return resolve(dirname(fileURLToPath(import.meta.url)), '..');
 }
 
-export function cliBinPath(rootDir = kloRootDir()) {
+export function cliBinPath(rootDir = ktxRootDir()) {
   return resolve(rootDir, 'packages', 'cli', 'dist', 'bin.js');
 }
 
@@ -22,7 +22,7 @@ async function canExecute(path) {
   }
 }
 
-export async function ensureCliBinExecutable(rootDir = kloRootDir()) {
+export async function ensureCliBinExecutable(rootDir = ktxRootDir()) {
   const binPath = cliBinPath(rootDir);
   await access(binPath, constants.R_OK);
 
@@ -36,7 +36,7 @@ export async function ensureCliBinExecutable(rootDir = kloRootDir()) {
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
     const binPath = await ensureCliBinExecutable();
-    process.stdout.write(`Prepared KLO CLI bin: ${binPath}\n`);
+    process.stdout.write(`Prepared KTX CLI bin: ${binPath}\n`);
   } catch (error) {
     process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
     process.exitCode = 1;

@@ -1,11 +1,11 @@
 # Orbit-style relationship discovery verification
 
-This KLO project backs the default `relationships:verify-orbit` command. It uses
+This KTX project backs the default `relationships:verify-orbit` command. It uses
 the checked-in Orbit-style SQLite fixture from the relationship discovery
 benchmark corpus, with no declared primary keys or foreign keys in the database
 schema.
 
-Run from the KLO workspace root:
+Run from the KTX workspace root:
 
 ```bash
 pnpm run relationships:verify-orbit
@@ -29,5 +29,5 @@ examples/orbit-relationship-verification/reports/orbit-verification.md
 Use a real local Orbit project by overriding the project directory:
 
 ```bash
-KLO_ORBIT_PROJECT_DIR=/path/to/orbit-project pnpm run relationships:verify-orbit
+KTX_ORBIT_PROJECT_DIR=/path/to/orbit-project pnpm run relationships:verify-orbit
 ```

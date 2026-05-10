@@ -1,15 +1,15 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   createSnowflakeLiveDatabaseIntrospection,
-  isKloSnowflakeConnectionConfig,
-  KloSnowflakeScanConnector,
+  isKtxSnowflakeConnectionConfig,
+  KtxSnowflakeScanConnector,
   snowflakeConnectionConfigFromConfig,
-  type KloSnowflakeDriver,
-  type KloSnowflakeDriverFactory,
+  type KtxSnowflakeDriver,
+  type KtxSnowflakeDriverFactory,
 } from './index.js';
 
-function fakeDriverFactory(): KloSnowflakeDriverFactory {
-  const driver: KloSnowflakeDriver = {
+function fakeDriverFactory(): KtxSnowflakeDriverFactory {
+  const driver: KtxSnowflakeDriver = {
     test: vi.fn(async () => ({ success: true })),
     query: vi.fn(async (sql: string) => {
       if (sql.includes('TABLE_CONSTRAINTS')) {
@@ -24,7 +24,7 @@ function fakeDriverFactory(): KloSnowflakeDriverFactory {
           rowCount: 1,
         };
       }
-      if (sql.includes('select * from (select ID, STATUS from ORDERS) as klo_query_result limit 1')) {
+      if (sql.includes('select * from (select ID, STATUS from ORDERS) as ktx_query_result limit 1')) {
         return { headers: ['ID', 'STATUS'], rows: [[1, 'paid']], totalRows: 1, rowCount: 1 };
       }
       if (sql.includes('SELECT "STATUS" FROM "ANALYTICS"."PUBLIC"."ORDERS"')) {
@@ -65,10 +65,10 @@ function fakeDriverFactory(): KloSnowflakeDriverFactory {
   return { createDriver: vi.fn(() => driver) };
 }
 
-describe('KloSnowflakeScanConnector', () => {
+describe('KtxSnowflakeScanConnector', () => {
   it('resolves Snowflake connection configuration safely', () => {
     expect(
-      isKloSnowflakeConnectionConfig({
+      isKtxSnowflakeConnectionConfig({
         driver: 'snowflake',
         account: 'acct',
         warehouse: 'WH',
@@ -77,7 +77,7 @@ describe('KloSnowflakeScanConnector', () => {
         readonly: true,
       }),
     ).toBe(true);
-    expect(isKloSnowflakeConnectionConfig({ driver: 'bigquery' })).toBe(false);
+    expect(isKtxSnowflakeConnectionConfig({ driver: 'bigquery' })).toBe(false);
     expect(
       snowflakeConnectionConfigFromConfig({
         connectionId: 'warehouse',
@@ -110,7 +110,7 @@ describe('KloSnowflakeScanConnector', () => {
   });
 
   it('introspects schema, primary keys, comments, row counts, and dimensions', async () => {
-    const connector = new KloSnowflakeScanConnector({
+    const connector = new KtxSnowflakeScanConnector({
       connectionId: 'warehouse',
       connection: {
         driver: 'snowflake',
@@ -170,7 +170,7 @@ describe('KloSnowflakeScanConnector', () => {
 
   it('supports read-only query, sampling, distinct values, row counts, schema listing, and cleanup', async () => {
     const driverFactory = fakeDriverFactory();
-    const connector = new KloSnowflakeScanConnector({
+    const connector = new KtxSnowflakeScanConnector({
       connectionId: 'warehouse',
       connection: {
         driver: 'snowflake',
@@ -223,7 +223,7 @@ describe('KloSnowflakeScanConnector', () => {
     await expect(connector.getTableRowCount('ORDERS')).resolves.toBe(12);
     await expect(connector.listSchemas()).resolves.toEqual(['PUBLIC', 'MART']);
     await connector.cleanup();
-    const driver = (driverFactory.createDriver as ReturnType<typeof vi.fn>).mock.results[0]?.value as KloSnowflakeDriver;
+    const driver = (driverFactory.createDriver as ReturnType<typeof vi.fn>).mock.results[0]?.value as KtxSnowflakeDriver;
     expect(driver.cleanup).toHaveBeenCalledTimes(1);
   });
 

@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 
 export const DEFAULT_VERSION_TAG = 'latest';
 export const NO_PACKAGE_REASON =
-  'Set KLO_PUBLISHED_KLO_PACKAGE or release-policy.json publishedPackageSmoke.packageName to the published npm package name after the release decision.';
+  'Set KTX_PUBLISHED_KTX_PACKAGE or release-policy.json publishedPackageSmoke.packageName to the published npm package name after the release decision.';
 
 function optionalTrimmedString(value) {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
@@ -53,7 +53,7 @@ export function readPublishedPackageSmokeConfig(env = process.env, args = proces
   const requireConfig = args.includes('--require-config');
   const policy = normalizePolicyConfig(policyConfig);
 
-  const envPackageName = optionalTrimmedString(env.KLO_PUBLISHED_KLO_PACKAGE);
+  const envPackageName = optionalTrimmedString(env.KTX_PUBLISHED_KTX_PACKAGE);
   const packageName = envPackageName ?? policy.packageName;
 
   if (!packageName) {
@@ -68,24 +68,24 @@ export function readPublishedPackageSmokeConfig(env = process.env, args = proces
   assertSafePackageName(
     packageName,
     configSource === 'environment'
-      ? 'KLO_PUBLISHED_KLO_PACKAGE'
+      ? 'KTX_PUBLISHED_KTX_PACKAGE'
       : 'release-policy.json publishedPackageSmoke.packageName',
   );
 
-  const packageVersion = optionalTrimmedString(env.KLO_PUBLISHED_KLO_VERSION) ?? policy.version;
+  const packageVersion = optionalTrimmedString(env.KTX_PUBLISHED_KTX_VERSION) ?? policy.version;
   assertSafeVersionTag(
     packageVersion,
-    optionalTrimmedString(env.KLO_PUBLISHED_KLO_VERSION)
-      ? 'KLO_PUBLISHED_KLO_VERSION'
+    optionalTrimmedString(env.KTX_PUBLISHED_KTX_VERSION)
+      ? 'KTX_PUBLISHED_KTX_VERSION'
       : 'release-policy.json publishedPackageSmoke.version',
   );
 
-  const registry = optionalTrimmedString(env.KLO_PUBLISHED_KLO_REGISTRY) ?? policy.registry;
+  const registry = optionalTrimmedString(env.KTX_PUBLISHED_KTX_REGISTRY) ?? policy.registry;
   if (registry) {
     assertHttpRegistry(
       registry,
-      optionalTrimmedString(env.KLO_PUBLISHED_KLO_REGISTRY)
-        ? 'KLO_PUBLISHED_KLO_REGISTRY'
+      optionalTrimmedString(env.KTX_PUBLISHED_KTX_REGISTRY)
+        ? 'KTX_PUBLISHED_KTX_REGISTRY'
         : 'release-policy.json publishedPackageSmoke.registry',
     );
   }

@@ -2,9 +2,9 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import Database from 'better-sqlite3';
-import { initKloProject } from '@klo/context/project';
+import { initKtxProject } from '@ktx/context/project';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { runKloSl } from './sl.js';
+import { runKtxSl } from './sl.js';
 
 const ORDERS_YAML = [
   'name: orders',
@@ -38,11 +38,11 @@ function makeIo() {
   };
 }
 
-describe('runKloSl', () => {
+describe('runKtxSl', () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-cli-sl-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-cli-sl-'));
   });
 
   afterEach(async () => {
@@ -51,11 +51,11 @@ describe('runKloSl', () => {
 
   it('writes, validates, reads, and lists semantic-layer sources', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
 
     const writeIo = makeIo();
     await expect(
-      runKloSl(
+      runKtxSl(
         {
           command: 'write',
           projectDir,
@@ -70,23 +70,23 @@ describe('runKloSl', () => {
 
     const validateIo = makeIo();
     await expect(
-      runKloSl({ command: 'validate', projectDir, connectionId: 'warehouse', sourceName: 'orders' }, validateIo.io),
+      runKtxSl({ command: 'validate', projectDir, connectionId: 'warehouse', sourceName: 'orders' }, validateIo.io),
     ).resolves.toBe(0);
     expect(validateIo.stdout()).toContain('Valid semantic-layer source: warehouse/orders');
 
     const readIo = makeIo();
-    await expect(runKloSl({ command: 'read', projectDir, connectionId: 'warehouse', sourceName: 'orders' }, readIo.io))
+    await expect(runKtxSl({ command: 'read', projectDir, connectionId: 'warehouse', sourceName: 'orders' }, readIo.io))
       .resolves.toBe(0);
     expect(readIo.stdout()).toContain('name: orders');
 
     const listIo = makeIo();
-    await expect(runKloSl({ command: 'list', projectDir, connectionId: 'warehouse' }, listIo.io)).resolves.toBe(0);
+    await expect(runKtxSl({ command: 'list', projectDir, connectionId: 'warehouse' }, listIo.io)).resolves.toBe(0);
     expect(listIo.stdout()).toContain('warehouse\torders\tcolumns=1\tmeasures=0\tjoins=0');
   });
 
   it('runs sl query and prints SQL output', async () => {
     const projectDir = join(tempDir, 'project');
-    const project = await initKloProject({ projectDir, projectName: 'warehouse' });
+    const project = await initKtxProject({ projectDir, projectName: 'warehouse' });
     project.config.connections.warehouse = { driver: 'postgres', readonly: true };
     await project.fileStore.writeFile(
       'semantic-layer/warehouse/orders.yaml',
@@ -101,8 +101,8 @@ measures:
     expr: count(*)
 joins: []
 `,
-      'klo',
-      'klo@example.com',
+      'ktx',
+      'ktx@example.com',
       'Add orders source',
     );
 
@@ -121,7 +121,7 @@ joins: []
     }));
 
     await expect(
-      runKloSl(
+      runKtxSl(
         {
           command: 'query',
           projectDir: '/tmp/project',
@@ -141,7 +141,7 @@ joins: []
 
   it('executes sl query through the injected query executor', async () => {
     const projectDir = join(tempDir, 'project');
-    const project = await initKloProject({ projectDir, projectName: 'warehouse' });
+    const project = await initKtxProject({ projectDir, projectName: 'warehouse' });
     project.config.connections.warehouse = { driver: 'postgres', url: 'postgres://example/db', readonly: true };
     await project.fileStore.writeFile(
       'semantic-layer/warehouse/orders.yaml',
@@ -156,8 +156,8 @@ measures:
     expr: count(*)
 joins: []
 `,
-      'klo',
-      'klo@example.com',
+      'ktx',
+      'ktx@example.com',
       'Add orders source',
     );
 
@@ -185,7 +185,7 @@ joins: []
     }));
 
     await expect(
-      runKloSl(
+      runKtxSl(
         {
           command: 'query',
           projectDir,
@@ -224,7 +224,7 @@ joins: []
 
   it('executes sl query against a local SQLite connection through the default executor', async () => {
     const projectDir = join(tempDir, 'project');
-    const project = await initKloProject({ projectDir, projectName: 'warehouse' });
+    const project = await initKtxProject({ projectDir, projectName: 'warehouse' });
     const dbPath = join(projectDir, 'warehouse.db');
     const db = new Database(dbPath);
     db.exec(`
@@ -238,7 +238,7 @@ joins: []
 
     project.config.connections.warehouse = { driver: 'sqlite', path: 'warehouse.db', readonly: true };
     await writeFile(
-      join(projectDir, 'klo.yaml'),
+      join(projectDir, 'ktx.yaml'),
       [
         'project: warehouse',
         'connections:',
@@ -265,8 +265,8 @@ measures:
     expr: count(*)
 joins: []
 `,
-      'klo',
-      'klo@example.com',
+      'ktx',
+      'ktx@example.com',
       'Add orders source',
     );
 
@@ -283,7 +283,7 @@ joins: []
       generateSources: vi.fn(),
     }));
 
-    const exitCode = await runKloSl(
+    const exitCode = await runKtxSl(
       {
         command: 'query',
         projectDir,
@@ -317,16 +317,16 @@ joins: []
 
   it('emits sl list as a JSON envelope when output=json', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
 
     const writeIo = makeIo();
-    await runKloSl(
+    await runKtxSl(
       { command: 'write', projectDir, connectionId: 'warehouse', sourceName: 'orders', yaml: ORDERS_YAML },
       writeIo.io,
     );
 
     const listIo = makeIo();
-    const code = await runKloSl(
+    const code = await runKtxSl(
       { command: 'list', projectDir, connectionId: 'warehouse', output: 'json' },
       listIo.io,
     );
@@ -347,16 +347,16 @@ joins: []
 
   it('emits sl list with grouping and Clack-style framing when output=pretty', async () => {
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
 
     const writeIo = makeIo();
-    await runKloSl(
+    await runKtxSl(
       { command: 'write', projectDir, connectionId: 'warehouse', sourceName: 'orders', yaml: ORDERS_YAML },
       writeIo.io,
     );
 
     const listIo = makeIo();
-    const code = await runKloSl(
+    const code = await runKtxSl(
       { command: 'list', projectDir, connectionId: 'warehouse', output: 'pretty' },
       listIo.io,
     );

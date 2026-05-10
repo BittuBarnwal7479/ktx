@@ -1,19 +1,19 @@
-import { isKloRelationshipBenchmarkTuningEligible } from './relationship-benchmarks.js';
+import { isKtxRelationshipBenchmarkTuningEligible } from './relationship-benchmarks.js';
 import type {
-  KloRelationshipBenchmarkCaseResult,
-  KloRelationshipBenchmarkFixture,
-  KloRelationshipBenchmarkMode,
-  KloRelationshipBenchmarkSuiteResult,
+  KtxRelationshipBenchmarkCaseResult,
+  KtxRelationshipBenchmarkFixture,
+  KtxRelationshipBenchmarkMode,
+  KtxRelationshipBenchmarkSuiteResult,
 } from './relationship-benchmarks.js';
 
-export type KloRelationshipBenchmarkReportCaseStatus = 'run' | 'validation_blocked' | 'not_run';
+export type KtxRelationshipBenchmarkReportCaseStatus = 'run' | 'validation_blocked' | 'not_run';
 
-export interface KloRelationshipBenchmarkReportCase {
+export interface KtxRelationshipBenchmarkReportCase {
   fixtureId: string;
   fixtureName: string;
   tier: string;
-  mode: KloRelationshipBenchmarkMode;
-  status: KloRelationshipBenchmarkReportCaseStatus;
+  mode: KtxRelationshipBenchmarkMode;
+  status: KtxRelationshipBenchmarkReportCaseStatus;
   reason: string | null;
   tuningEligible: boolean;
   metrics: {
@@ -39,7 +39,7 @@ export interface KloRelationshipBenchmarkReportCase {
   };
 }
 
-export interface KloRelationshipBenchmarkReport {
+export interface KtxRelationshipBenchmarkReport {
   generatedAt: string;
   headline: {
     caseCount: number;
@@ -50,10 +50,10 @@ export interface KloRelationshipBenchmarkReport {
     acceptedFalsePositiveCount: number;
     validationBlockedCount: number;
   };
-  cases: KloRelationshipBenchmarkReportCase[];
+  cases: KtxRelationshipBenchmarkReportCase[];
 }
 
-function key(fixtureId: string, mode: KloRelationshipBenchmarkMode): string {
+function key(fixtureId: string, mode: KtxRelationshipBenchmarkMode): string {
   return `${fixtureId}:${mode}`;
 }
 
@@ -62,8 +62,8 @@ function fixed(value: number | null): string {
 }
 
 function reportCaseReason(input: {
-  fixture: KloRelationshipBenchmarkFixture;
-  result: KloRelationshipBenchmarkCaseResult;
+  fixture: KtxRelationshipBenchmarkFixture;
+  result: KtxRelationshipBenchmarkCaseResult;
 }): string | null {
   if (input.result.validationBlocked) {
     return 'validation unavailable for this benchmark mode';
@@ -77,10 +77,10 @@ function reportCaseReason(input: {
 }
 
 function reportCaseFromResult(input: {
-  fixture: KloRelationshipBenchmarkFixture;
-  mode: KloRelationshipBenchmarkMode;
-  result: KloRelationshipBenchmarkCaseResult;
-}): KloRelationshipBenchmarkReportCase {
+  fixture: KtxRelationshipBenchmarkFixture;
+  mode: KtxRelationshipBenchmarkMode;
+  result: KtxRelationshipBenchmarkCaseResult;
+}): KtxRelationshipBenchmarkReportCase {
   const status = input.result.validationBlocked ? 'validation_blocked' : 'run';
   return {
     fixtureId: input.fixture.id,
@@ -89,7 +89,7 @@ function reportCaseFromResult(input: {
     mode: input.mode,
     status,
     reason: reportCaseReason({ fixture: input.fixture, result: input.result }),
-    tuningEligible: isKloRelationshipBenchmarkTuningEligible({
+    tuningEligible: isKtxRelationshipBenchmarkTuningEligible({
       fixture: input.fixture,
       mode: input.mode,
       validationBlocked: input.result.validationBlocked,
@@ -110,10 +110,10 @@ function reportCaseFromResult(input: {
 }
 
 function notRunCase(input: {
-  fixture: KloRelationshipBenchmarkFixture;
-  mode: KloRelationshipBenchmarkMode;
+  fixture: KtxRelationshipBenchmarkFixture;
+  mode: KtxRelationshipBenchmarkMode;
   reason: string;
-}): KloRelationshipBenchmarkReportCase {
+}): KtxRelationshipBenchmarkReportCase {
   return {
     fixtureId: input.fixture.id,
     fixtureName: input.fixture.name,
@@ -137,14 +137,14 @@ function notRunCase(input: {
   };
 }
 
-export function buildKloRelationshipBenchmarkReport(input: {
-  fixtures: readonly KloRelationshipBenchmarkFixture[];
-  suite: KloRelationshipBenchmarkSuiteResult;
-  modes: readonly KloRelationshipBenchmarkMode[];
+export function buildKtxRelationshipBenchmarkReport(input: {
+  fixtures: readonly KtxRelationshipBenchmarkFixture[];
+  suite: KtxRelationshipBenchmarkSuiteResult;
+  modes: readonly KtxRelationshipBenchmarkMode[];
   generatedAt?: string;
-}): KloRelationshipBenchmarkReport {
+}): KtxRelationshipBenchmarkReport {
   const resultsByKey = new Map(input.suite.cases.map((result) => [key(result.fixtureId, result.mode), result]));
-  const cases: KloRelationshipBenchmarkReportCase[] = [];
+  const cases: KtxRelationshipBenchmarkReportCase[] = [];
 
   for (const fixture of input.fixtures) {
     const selectedModes = new Set(fixture.defaultModes);
@@ -182,13 +182,13 @@ export function buildKloRelationshipBenchmarkReport(input: {
   };
 }
 
-type KloRelationshipBenchmarkFailureSelector = (
-  item: KloRelationshipBenchmarkReportCase,
+type KtxRelationshipBenchmarkFailureSelector = (
+  item: KtxRelationshipBenchmarkReportCase,
 ) => readonly string[];
 
 function sortedFailureLines(input: {
-  cases: readonly KloRelationshipBenchmarkReportCase[];
-  select: KloRelationshipBenchmarkFailureSelector;
+  cases: readonly KtxRelationshipBenchmarkReportCase[];
+  select: KtxRelationshipBenchmarkFailureSelector;
 }): string[] {
   return input.cases
     .flatMap((item) =>
@@ -209,14 +209,14 @@ function sortedFailureLines(input: {
 
 function failureBlock(input: {
   title: string;
-  cases: readonly KloRelationshipBenchmarkReportCase[];
-  select: KloRelationshipBenchmarkFailureSelector;
+  cases: readonly KtxRelationshipBenchmarkReportCase[];
+  select: KtxRelationshipBenchmarkFailureSelector;
 }): string[] {
   const values = sortedFailureLines({ cases: input.cases, select: input.select });
   return ['', `### ${input.title}`, '', ...(values.length > 0 ? values : ['- none'])];
 }
 
-function headlineFailureContextBlocks(report: KloRelationshipBenchmarkReport): string[] {
+function headlineFailureContextBlocks(report: KtxRelationshipBenchmarkReport): string[] {
   const headlineCases = report.cases.filter((item) => item.tuningEligible);
   const remainingPkMisses = sortedFailureLines({
     cases: headlineCases,
@@ -246,7 +246,7 @@ function headlineFailureContextBlocks(report: KloRelationshipBenchmarkReport): s
   ];
 }
 
-function failureDetailBlocks(report: KloRelationshipBenchmarkReport): string[] {
+function failureDetailBlocks(report: KtxRelationshipBenchmarkReport): string[] {
   const headlineCases = report.cases.filter((item) => item.tuningEligible);
   const otherCases = report.cases.filter((item) => !item.tuningEligible);
 
@@ -296,7 +296,7 @@ function failureDetailBlocks(report: KloRelationshipBenchmarkReport): string[] {
   ];
 }
 
-function compositeSkipBlocks(report: KloRelationshipBenchmarkReport): string[] {
+function compositeSkipBlocks(report: KtxRelationshipBenchmarkReport): string[] {
   const headlineCases = report.cases.filter((item) => item.tuningEligible);
 
   return [
@@ -315,9 +315,9 @@ function compositeSkipBlocks(report: KloRelationshipBenchmarkReport): string[] {
   ];
 }
 
-export function formatKloRelationshipBenchmarkReportMarkdown(report: KloRelationshipBenchmarkReport): string {
+export function formatKtxRelationshipBenchmarkReportMarkdown(report: KtxRelationshipBenchmarkReport): string {
   const lines = [
-    '# KLO Relationship Discovery Benchmark Evidence',
+    '# KTX Relationship Discovery Benchmark Evidence',
     '',
     `Generated: ${report.generatedAt}`,
     '',

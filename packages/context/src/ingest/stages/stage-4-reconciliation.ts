@@ -1,5 +1,5 @@
-import type { AgentRunnerService } from '@klo/context/agent';
-import type { KloModelRole } from '@klo/llm';
+import type { AgentRunnerService } from '@ktx/context/agent';
+import type { KtxModelRole } from '@ktx/llm';
 import type { ToolSet } from 'ai';
 import type { EvictionUnit } from '../types.js';
 import type { StageIndex } from './stage-index.types.js';
@@ -11,7 +11,7 @@ export interface ReconciliationContext {
   buildSystemPrompt: (idx: StageIndex, ev: EvictionUnit | undefined) => string;
   buildUserPrompt: (idx: StageIndex, ev: EvictionUnit | undefined) => string;
   buildToolSet: () => ToolSet;
-  modelRole: KloModelRole;
+  modelRole: KtxModelRole;
   stepBudget: number;
   sourceKey: string;
   jobId: string;

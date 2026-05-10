@@ -86,14 +86,14 @@ const PROPERTY_DESCRIPTIONS: Record<string, string> = {
   $feature_flag_response: 'Feature flag value or variant.',
 };
 
-export function getKloPostHogTableDescription(tableName: string): string | undefined {
+export function getKtxPostHogTableDescription(tableName: string): string | undefined {
   return TABLE_DESCRIPTIONS[tableName];
 }
 
-export function getKloPostHogColumnDescription(tableName: string, columnName: string): string | undefined {
+export function getKtxPostHogColumnDescription(tableName: string, columnName: string): string | undefined {
   return COLUMN_DESCRIPTIONS[`${tableName}.${columnName}`];
 }
 
-export function getKloPostHogPropertyDescription(propertyKey: string): string | null {
+export function getKtxPostHogPropertyDescription(propertyKey: string): string | null {
   return PROPERTY_DESCRIPTIONS[propertyKey] ?? null;
 }

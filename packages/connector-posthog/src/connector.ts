@@ -1,36 +1,36 @@
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { resolve } from 'node:path';
-import { assertReadOnlySql, limitSqlForExecution } from '@klo/context/connections';
+import { assertReadOnlySql, limitSqlForExecution } from '@ktx/context/connections';
 import {
-  createKloConnectorCapabilities,
-  type KloColumnSampleInput,
-  type KloColumnSampleResult,
-  type KloColumnStatsInput,
-  type KloColumnStatsResult,
-  type KloEventPropertyDiscovery,
-  type KloEventPropertyDiscoveryInput,
-  type KloEventPropertyValuesInput,
-  type KloEventPropertyValuesResult,
-  type KloEventStreamDiscoveryPort,
-  type KloEventTypeDiscovery,
-  type KloEventTypeDiscoveryInput,
-  type KloQueryResult,
-  type KloReadOnlyQueryInput,
-  type KloScanConnector,
-  type KloScanContext,
-  type KloScanInput,
-  type KloSchemaColumn,
-  type KloSchemaSnapshot,
-  type KloSchemaTable,
-  type KloTableRef,
-  type KloTableSampleInput,
-  type KloTableSampleResult,
-} from '@klo/context/scan';
-import { KloPostHogDialect, type KloPostHogSampleColumnInfo } from './dialect.js';
-import { getKloPostHogColumnDescription, getKloPostHogTableDescription } from './schema-descriptions.js';
+  createKtxConnectorCapabilities,
+  type KtxColumnSampleInput,
+  type KtxColumnSampleResult,
+  type KtxColumnStatsInput,
+  type KtxColumnStatsResult,
+  type KtxEventPropertyDiscovery,
+  type KtxEventPropertyDiscoveryInput,
+  type KtxEventPropertyValuesInput,
+  type KtxEventPropertyValuesResult,
+  type KtxEventStreamDiscoveryPort,
+  type KtxEventTypeDiscovery,
+  type KtxEventTypeDiscoveryInput,
+  type KtxQueryResult,
+  type KtxReadOnlyQueryInput,
+  type KtxScanConnector,
+  type KtxScanContext,
+  type KtxScanInput,
+  type KtxSchemaColumn,
+  type KtxSchemaSnapshot,
+  type KtxSchemaTable,
+  type KtxTableRef,
+  type KtxTableSampleInput,
+  type KtxTableSampleResult,
+} from '@ktx/context/scan';
+import { KtxPostHogDialect, type KtxPostHogSampleColumnInfo } from './dialect.js';
+import { getKtxPostHogColumnDescription, getKtxPostHogTableDescription } from './schema-descriptions.js';
 
-export interface KloPostHogConnectionConfig {
+export interface KtxPostHogConnectionConfig {
   driver?: string;
   api_key?: string;
   apiKey?: string;
@@ -42,34 +42,34 @@ export interface KloPostHogConnectionConfig {
   [key: string]: unknown;
 }
 
-export interface KloPostHogResolvedConnectionConfig {
+export interface KtxPostHogResolvedConnectionConfig {
   apiKey: string;
   projectId: string;
   baseUrl: string;
 }
 
-export type KloPostHogFetch = (url: string, init?: RequestInit) => Promise<Response>;
+export type KtxPostHogFetch = (url: string, init?: RequestInit) => Promise<Response>;
 
-export interface KloPostHogScanConnectorOptions {
+export interface KtxPostHogScanConnectorOptions {
   connectionId: string;
-  connection: KloPostHogConnectionConfig | undefined;
+  connection: KtxPostHogConnectionConfig | undefined;
   env?: NodeJS.ProcessEnv;
-  fetch?: KloPostHogFetch;
+  fetch?: KtxPostHogFetch;
   sleep?: (ms: number) => Promise<void>;
   now?: () => Date;
 }
 
-export interface KloPostHogReadOnlyQueryInput extends KloReadOnlyQueryInput {
+export interface KtxPostHogReadOnlyQueryInput extends KtxReadOnlyQueryInput {
   params?: Record<string, unknown>;
 }
 
-export interface KloPostHogColumnDistinctValuesOptions {
+export interface KtxPostHogColumnDistinctValuesOptions {
   maxCardinality: number;
   limit: number;
   sampleSize?: number;
 }
 
-export interface KloPostHogColumnDistinctValuesResult {
+export interface KtxPostHogColumnDistinctValuesResult {
   values: string[] | null;
   cardinality: number;
 }
@@ -119,7 +119,7 @@ const excludedTables = new Set([
 ]);
 const hiddenTablesToProbe = ['person_distinct_ids', 'cohort_people', 'static_cohort_people'];
 
-export function isKloPostHogConnectionConfig(connection: KloPostHogConnectionConfig | undefined): boolean {
+export function isKtxPostHogConnectionConfig(connection: KtxPostHogConnectionConfig | undefined): boolean {
   return String(connection?.driver ?? '').toLowerCase() === 'posthog';
 }
 
@@ -136,8 +136,8 @@ function resolveStringReference(value: string, env: NodeJS.ProcessEnv): string {
 }
 
 function stringConfigValue(
-  connection: KloPostHogConnectionConfig | undefined,
-  key: keyof KloPostHogConnectionConfig,
+  connection: KtxPostHogConnectionConfig | undefined,
+  key: keyof KtxPostHogConnectionConfig,
   env: NodeJS.ProcessEnv,
 ): string | undefined {
   const value = connection?.[key];
@@ -146,10 +146,10 @@ function stringConfigValue(
 
 export function postHogConnectionConfigFromConfig(input: {
   connectionId: string;
-  connection: KloPostHogConnectionConfig | undefined;
+  connection: KtxPostHogConnectionConfig | undefined;
   env?: NodeJS.ProcessEnv;
-}): KloPostHogResolvedConnectionConfig {
-  if (!isKloPostHogConnectionConfig(input.connection)) {
+}): KtxPostHogResolvedConnectionConfig {
+  if (!isKtxPostHogConnectionConfig(input.connection)) {
     throw new Error(`Native PostHog connector cannot run driver "${input.connection?.driver ?? 'unknown'}"`);
   }
   if (input.connection?.readonly !== true) {
@@ -174,10 +174,10 @@ export function postHogConnectionConfigFromConfig(input: {
   };
 }
 
-export class KloPostHogScanConnector implements KloScanConnector {
+export class KtxPostHogScanConnector implements KtxScanConnector {
   readonly id: string;
   readonly driver = 'posthog' as const;
-  readonly capabilities = createKloConnectorCapabilities({
+  readonly capabilities = createKtxConnectorCapabilities({
     tableSampling: true,
     columnSampling: true,
     columnStats: false,
@@ -188,20 +188,20 @@ export class KloPostHogScanConnector implements KloScanConnector {
     estimatedRowCounts: true,
   });
 
-  readonly eventStreamDiscovery: KloEventStreamDiscoveryPort = {
+  readonly eventStreamDiscovery: KtxEventStreamDiscoveryPort = {
     listEventTypes: (input, ctx) => this.listEventTypes(input, ctx),
     listPropertyKeys: (input, ctx) => this.listPropertyKeys(input, ctx),
     listPropertyValues: (input, ctx) => this.listPropertyValues(input, ctx),
   };
 
   private readonly connectionId: string;
-  private readonly resolved: KloPostHogResolvedConnectionConfig;
-  private readonly fetchImpl: KloPostHogFetch;
+  private readonly resolved: KtxPostHogResolvedConnectionConfig;
+  private readonly fetchImpl: KtxPostHogFetch;
   private readonly sleep: (ms: number) => Promise<void>;
   private readonly now: () => Date;
-  private readonly dialect = new KloPostHogDialect();
+  private readonly dialect = new KtxPostHogDialect();
 
-  constructor(options: KloPostHogScanConnectorOptions) {
+  constructor(options: KtxPostHogScanConnectorOptions) {
     this.connectionId = options.connectionId;
     this.resolved = postHogConnectionConfigFromConfig({
       connectionId: options.connectionId,
@@ -219,10 +219,10 @@ export class KloPostHogScanConnector implements KloScanConnector {
     return response.error ? { success: false, error: response.error } : { success: true };
   }
 
-  async introspect(input: KloScanInput, _ctx: KloScanContext): Promise<KloSchemaSnapshot> {
+  async introspect(input: KtxScanInput, _ctx: KtxScanContext): Promise<KtxSchemaSnapshot> {
     this.assertConnection(input.connectionId);
     const response = await this.makeRequest<PostHogSchemaResponse>('/query', { query: { kind: 'DatabaseSchemaQuery' } });
-    const tables: KloSchemaTable[] = [];
+    const tables: KtxSchemaTable[] = [];
     for (const [tableName, tableInfo] of Object.entries(response.tables ?? {})) {
       if (!allowedTableTypes.has(tableInfo.type) || excludedTables.has(tableName)) {
         continue;
@@ -246,9 +246,9 @@ export class KloPostHogScanConnector implements KloScanConnector {
   }
 
   async sampleTable(
-    input: KloTableSampleInput & { columnMetadata?: KloPostHogSampleColumnInfo[] },
-    _ctx: KloScanContext,
-  ): Promise<KloTableSampleResult> {
+    input: KtxTableSampleInput & { columnMetadata?: KtxPostHogSampleColumnInfo[] },
+    _ctx: KtxScanContext,
+  ): Promise<KtxTableSampleResult> {
     this.assertConnection(input.connectionId);
     const sql = input.columnMetadata
       ? this.dialect.generateSampleQueryWithMetadata(this.qTableName(input.table), input.limit, input.columnMetadata)
@@ -257,7 +257,7 @@ export class KloPostHogScanConnector implements KloScanConnector {
     return { headers: result.headers, rows: result.rows, totalRows: result.totalRows };
   }
 
-  async sampleColumn(input: KloColumnSampleInput, _ctx: KloScanContext): Promise<KloColumnSampleResult> {
+  async sampleColumn(input: KtxColumnSampleInput, _ctx: KtxScanContext): Promise<KtxColumnSampleResult> {
     this.assertConnection(input.connectionId);
     const result = await this.query(
       this.dialect.generateColumnSampleQuery(this.qTableName(input.table), input.column, input.limit),
@@ -266,11 +266,11 @@ export class KloPostHogScanConnector implements KloScanConnector {
     return { values, nullCount: null, distinctCount: null };
   }
 
-  async columnStats(_input: KloColumnStatsInput, _ctx: KloScanContext): Promise<KloColumnStatsResult | null> {
+  async columnStats(_input: KtxColumnStatsInput, _ctx: KtxScanContext): Promise<KtxColumnStatsResult | null> {
     return null;
   }
 
-  async executeReadOnly(input: KloPostHogReadOnlyQueryInput, _ctx: KloScanContext): Promise<KloQueryResult> {
+  async executeReadOnly(input: KtxPostHogReadOnlyQueryInput, _ctx: KtxScanContext): Promise<KtxQueryResult> {
     this.assertConnection(input.connectionId);
     const limitedSql = limitSqlForExecution(assertReadOnlySql(input.sql), input.maxRows);
     const prepared = this.dialect.prepareQuery(limitedSql, input.params);
@@ -284,10 +284,10 @@ export class KloPostHogScanConnector implements KloScanConnector {
   }
 
   async getColumnDistinctValues(
-    table: KloTableRef,
+    table: KtxTableRef,
     columnName: string,
-    options: KloPostHogColumnDistinctValuesOptions,
-  ): Promise<KloPostHogColumnDistinctValuesResult | null> {
+    options: KtxPostHogColumnDistinctValuesOptions,
+  ): Promise<KtxPostHogColumnDistinctValuesResult | null> {
     const sampleSize = options.sampleSize ?? 10000;
     const tableName = this.qTableName(table);
     const cardinalityResult = await this.query(
@@ -317,9 +317,9 @@ export class KloPostHogScanConnector implements KloScanConnector {
   }
 
   private async listEventTypes(
-    input: KloEventTypeDiscoveryInput,
-    _ctx: KloScanContext,
-  ): Promise<KloEventTypeDiscovery[]> {
+    input: KtxEventTypeDiscoveryInput,
+    _ctx: KtxScanContext,
+  ): Promise<KtxEventTypeDiscovery[]> {
     this.assertConnection(input.connectionId);
     const limit = this.positiveInteger(input.limit, 'limit');
     const lookbackDays = this.positiveInteger(input.lookbackDays ?? 30, 'lookbackDays');
@@ -345,9 +345,9 @@ export class KloPostHogScanConnector implements KloScanConnector {
   }
 
   private async listPropertyKeys(
-    input: KloEventPropertyDiscoveryInput,
-    _ctx: KloScanContext,
-  ): Promise<KloEventPropertyDiscovery[]> {
+    input: KtxEventPropertyDiscoveryInput,
+    _ctx: KtxScanContext,
+  ): Promise<KtxEventPropertyDiscovery[]> {
     this.assertConnection(input.connectionId);
     const sampleSize = this.positiveInteger(input.sampleSize, 'sampleSize');
     const limit = this.positiveInteger(input.limit, 'limit');
@@ -374,9 +374,9 @@ export class KloPostHogScanConnector implements KloScanConnector {
   }
 
   private async listPropertyValues(
-    input: KloEventPropertyValuesInput,
-    _ctx: KloScanContext,
-  ): Promise<KloEventPropertyValuesResult | null> {
+    input: KtxEventPropertyValuesInput,
+    _ctx: KtxScanContext,
+  ): Promise<KtxEventPropertyValuesResult | null> {
     this.assertConnection(input.connectionId);
     const limit = this.positiveInteger(input.limit, 'limit');
     const maxCardinality = this.positiveInteger(input.maxCardinality ?? 1000, 'maxCardinality');
@@ -421,7 +421,7 @@ export class KloPostHogScanConnector implements KloScanConnector {
 
   async cleanup(): Promise<void> {}
 
-  qTableName(table: Pick<KloTableRef, 'name'>): string {
+  qTableName(table: Pick<KtxTableRef, 'name'>): string {
     return this.dialect.formatTableName(table);
   }
 
@@ -429,21 +429,21 @@ export class KloPostHogScanConnector implements KloScanConnector {
     return this.dialect.quoteIdentifier(identifier);
   }
 
-  private toSchemaTable(tableName: string, tableInfo: PostHogSchemaTable): KloSchemaTable {
+  private toSchemaTable(tableName: string, tableInfo: PostHogSchemaTable): KtxSchemaTable {
     return {
       catalog: this.resolved.projectId,
       db: null,
       name: tableName,
       kind: tableName === 'events' ? 'event_stream' : 'table',
-      comment: getKloPostHogTableDescription(tableName) ?? null,
+      comment: getKtxPostHogTableDescription(tableName) ?? null,
       estimatedRows: tableInfo.row_count ?? null,
       columns: this.extractColumns(tableName, tableInfo.fields),
       foreignKeys: [],
     };
   }
 
-  private async discoverHiddenTables(): Promise<KloSchemaTable[]> {
-    const tables: KloSchemaTable[] = [];
+  private async discoverHiddenTables(): Promise<KtxSchemaTable[]> {
+    const tables: KtxSchemaTable[] = [];
     for (const tableName of hiddenTablesToProbe) {
       const result = await this.query(`SELECT * FROM ${tableName} LIMIT 0`);
       if (result.error) {
@@ -454,7 +454,7 @@ export class KloPostHogScanConnector implements KloScanConnector {
         db: null,
         name: tableName,
         kind: 'table',
-        comment: getKloPostHogTableDescription(tableName) ?? null,
+        comment: getKtxPostHogTableDescription(tableName) ?? null,
         estimatedRows: null,
         columns: result.headers.map((header) => ({
           name: header,
@@ -463,7 +463,7 @@ export class KloPostHogScanConnector implements KloScanConnector {
           dimensionType: 'string',
           nullable: true,
           primaryKey: false,
-          comment: getKloPostHogColumnDescription(tableName, header) ?? null,
+          comment: getKtxPostHogColumnDescription(tableName, header) ?? null,
         })),
         foreignKeys: [],
       });
@@ -471,8 +471,8 @@ export class KloPostHogScanConnector implements KloScanConnector {
     return tables;
   }
 
-  private extractColumns(tableName: string, fields: Record<string, PostHogSchemaField>): KloSchemaColumn[] {
-    const columns: KloSchemaColumn[] = [];
+  private extractColumns(tableName: string, fields: Record<string, PostHogSchemaField>): KtxSchemaColumn[] {
+    const columns: KtxSchemaColumn[] = [];
     for (const [fieldName, fieldInfo] of Object.entries(fields)) {
       if (
         fieldInfo.type === 'lazy_table' ||
@@ -490,7 +490,7 @@ export class KloPostHogScanConnector implements KloScanConnector {
         dimensionType: this.dialect.mapToDimensionType(nativeType),
         nullable: this.isNullableField(tableName, fieldName, fieldInfo.type),
         primaryKey: this.isPrimaryKeyField(tableName, fieldName),
-        comment: getKloPostHogColumnDescription(tableName, fieldName) ?? null,
+        comment: getKtxPostHogColumnDescription(tableName, fieldName) ?? null,
       });
     }
     return columns;
@@ -527,7 +527,7 @@ export class KloPostHogScanConnector implements KloScanConnector {
     );
   }
 
-  private async query(sql: string, params?: Record<string, unknown>): Promise<KloQueryResult & { error?: string }> {
+  private async query(sql: string, params?: Record<string, unknown>): Promise<KtxQueryResult & { error?: string }> {
     const response = await this.makeRequest<PostHogQueryResponse>('/query', {
       query: {
         kind: 'HogQLQuery',

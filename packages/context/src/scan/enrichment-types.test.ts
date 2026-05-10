@@ -1,19 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import type {
-  KloColumnSampleUpdate,
-  KloDescriptionUpdate,
-  KloEmbeddingUpdate,
-  KloEnrichedSchema,
-  KloJoinUpdate,
-  KloRelationshipEndpoint,
-  KloRelationshipUpdate,
-  KloScanMetadataStore,
-  KloStructuralSyncPlan,
+  KtxColumnSampleUpdate,
+  KtxDescriptionUpdate,
+  KtxEmbeddingUpdate,
+  KtxEnrichedSchema,
+  KtxJoinUpdate,
+  KtxRelationshipEndpoint,
+  KtxRelationshipUpdate,
+  KtxScanMetadataStore,
+  KtxStructuralSyncPlan,
 } from './enrichment-types.js';
 
-describe('KLO scan enrichment contracts', () => {
+describe('KTX scan enrichment contracts', () => {
   it('models an enriched schema with reusable table, column, and relationship metadata', () => {
-    const schema: KloEnrichedSchema = {
+    const schema: KtxEnrichedSchema = {
       connectionId: 'warehouse',
       tables: [
         {
@@ -69,36 +69,36 @@ describe('KLO scan enrichment contracts', () => {
   });
 
   it('models metadata-store updates without requiring a concrete store implementation', async () => {
-    const structuralPlan: KloStructuralSyncPlan = {
+    const structuralPlan: KtxStructuralSyncPlan = {
       connectionId: 'warehouse',
       snapshotId: 'snapshot-1',
       operations: [{ kind: 'create_table', table: 'orders' }],
     };
-    const descriptionUpdate: KloDescriptionUpdate = {
+    const descriptionUpdate: KtxDescriptionUpdate = {
       connectionId: 'warehouse',
       table: { catalog: 'analytics', db: 'public', name: 'orders' },
       source: 'ai',
       tableDescription: 'Customer orders',
       columnDescriptions: { status: 'Payment lifecycle state' },
     };
-    const sampleUpdate: KloColumnSampleUpdate = {
+    const sampleUpdate: KtxColumnSampleUpdate = {
       columnId: 'column-orders-status',
       sampleValues: ['paid', 'refunded'],
       cardinality: 2,
     };
-    const embeddingUpdate: KloEmbeddingUpdate = {
+    const embeddingUpdate: KtxEmbeddingUpdate = {
       columnId: 'column-orders-status',
       text: 'orders.status (varchar). Values: paid, refunded',
       embedding: [0.25, 0.75],
     };
-    const relationshipUpdate: KloRelationshipUpdate = {
+    const relationshipUpdate: KtxRelationshipUpdate = {
       connectionId: 'warehouse',
       accepted: [],
       rejected: [],
       skipped: [{ reason: 'missing parent table', relationshipId: 'candidate-1' }],
     };
 
-    const store: KloScanMetadataStore = {
+    const store: KtxScanMetadataStore = {
       loadSchema: async () => null,
       applyStructuralPlan: async (plan) => ({
         connectionId: plan.connectionId,
@@ -134,21 +134,21 @@ describe('KLO scan enrichment contracts', () => {
 
 describe('relationship tuple contracts', () => {
   it('represents relationship endpoints and join updates as ordered column tuples', () => {
-    const endpoint: KloRelationshipEndpoint = {
+    const endpoint: KtxRelationshipEndpoint = {
       tableId: 'public.order_lines',
       columnIds: ['public.order_lines.order_id', 'public.order_lines.line_number'],
       table: { catalog: null, db: 'public', name: 'order_lines' },
       columns: ['order_id', 'line_number'],
     };
-    const update: KloJoinUpdate = {
+    const update: KtxJoinUpdate = {
       connectionId: 'warehouse',
       fromTable: 'order_line_allocations',
       fromColumns: ['order_id', 'line_number'],
       toTable: 'order_lines',
       toColumns: ['order_id', 'line_number'],
       relationship: 'many_to_one',
-      author: 'klo',
-      authorEmail: 'klo@example.com',
+      author: 'ktx',
+      authorEmail: 'ktx@example.com',
     };
 
     expect(endpoint.columns).toEqual(['order_id', 'line_number']);

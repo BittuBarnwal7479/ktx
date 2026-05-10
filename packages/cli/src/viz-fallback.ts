@@ -2,40 +2,40 @@ import { profileMark } from './startup-profile.js';
 
 profileMark('module:viz-fallback');
 
-type KloVizFallbackReason =
+type KtxVizFallbackReason =
   | 'stdout-not-tty'
   | 'term-dumb'
   | 'stdin-not-tty'
   | 'stdin-raw-mode-unavailable'
   | 'renderer-unavailable';
 
-interface KloVizFallbackIo {
+interface KtxVizFallbackIo {
   stdin?: { isTTY?: boolean; setRawMode?(value: boolean): void };
   stdout: { isTTY?: boolean };
   stderr: { write(chunk: string): void };
 }
 
-interface KloVizFallbackOptions {
+interface KtxVizFallbackOptions {
   requireInput?: boolean;
 }
 
-type KloVizFallbackDecision =
+type KtxVizFallbackDecision =
   | {
       shouldDegrade: false;
     }
   | {
       shouldDegrade: true;
-      reason: KloVizFallbackReason;
+      reason: KtxVizFallbackReason;
       message: string;
     };
 
-const warnedFallbackReasons = new Set<KloVizFallbackReason>();
+const warnedFallbackReasons = new Set<KtxVizFallbackReason>();
 
 export function resolveVizFallback(
-  io: KloVizFallbackIo,
+  io: KtxVizFallbackIo,
   env: NodeJS.ProcessEnv = process.env,
-  options: KloVizFallbackOptions = {},
-): KloVizFallbackDecision {
+  options: KtxVizFallbackOptions = {},
+): KtxVizFallbackDecision {
   if (io.stdout.isTTY !== true) {
     return {
       shouldDegrade: true,
@@ -71,7 +71,7 @@ export function resolveVizFallback(
   return { shouldDegrade: false };
 }
 
-export function rendererUnavailableVizFallback(): KloVizFallbackDecision {
+export function rendererUnavailableVizFallback(): KtxVizFallbackDecision {
   return {
     shouldDegrade: true,
     reason: 'renderer-unavailable',
@@ -79,7 +79,7 @@ export function rendererUnavailableVizFallback(): KloVizFallbackDecision {
   };
 }
 
-export function warnVizFallbackOnce(io: KloVizFallbackIo, decision: KloVizFallbackDecision): void {
+export function warnVizFallbackOnce(io: KtxVizFallbackIo, decision: KtxVizFallbackDecision): void {
   if (!decision.shouldDegrade || warnedFallbackReasons.has(decision.reason)) {
     return;
   }

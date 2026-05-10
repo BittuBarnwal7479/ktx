@@ -7,7 +7,7 @@ test('runSetupDev runs phased setup without global linking', async () => {
   const logs = [];
 
   const result = await runSetupDev({
-    rootDir: '/workspace/klo',
+    rootDir: '/workspace/ktx',
     execFile: async (command, args, options) => {
       calls.push({ command, args, cwd: options.cwd });
       return { stdout: `${command} ${args.join(' ')}`, stderr: '' };
@@ -34,7 +34,7 @@ test('runSetupDev stops at the failed phase and prints a retry command', async (
   const logs = [];
 
   const result = await runSetupDev({
-    rootDir: '/workspace/klo',
+    rootDir: '/workspace/ktx',
     execFile: async (command, args) => {
       calls.push({ command, args });
       if (args.includes('native:rebuild')) {

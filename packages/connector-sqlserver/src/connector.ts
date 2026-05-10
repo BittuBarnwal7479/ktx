@@ -1,30 +1,30 @@
-import { assertReadOnlySql } from '@klo/context/connections';
+import { assertReadOnlySql } from '@ktx/context/connections';
 import {
-  createKloConnectorCapabilities,
-  type KloColumnSampleInput,
-  type KloColumnSampleResult,
-  type KloColumnStatsInput,
-  type KloColumnStatsResult,
-  type KloQueryResult,
-  type KloReadOnlyQueryInput,
-  type KloScanConnector,
-  type KloScanContext,
-  type KloScanInput,
-  type KloSchemaColumn,
-  type KloSchemaForeignKey,
-  type KloSchemaSnapshot,
-  type KloSchemaTable,
-  type KloTableRef,
-  type KloTableSampleInput,
-  type KloTableSampleResult,
-} from '@klo/context/scan';
+  createKtxConnectorCapabilities,
+  type KtxColumnSampleInput,
+  type KtxColumnSampleResult,
+  type KtxColumnStatsInput,
+  type KtxColumnStatsResult,
+  type KtxQueryResult,
+  type KtxReadOnlyQueryInput,
+  type KtxScanConnector,
+  type KtxScanContext,
+  type KtxScanInput,
+  type KtxSchemaColumn,
+  type KtxSchemaForeignKey,
+  type KtxSchemaSnapshot,
+  type KtxSchemaTable,
+  type KtxTableRef,
+  type KtxTableSampleInput,
+  type KtxTableSampleResult,
+} from '@ktx/context/scan';
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { resolve } from 'node:path';
 import sql from 'mssql';
-import { KloSqlServerDialect } from './dialect.js';
+import { KtxSqlServerDialect } from './dialect.js';
 
-export interface KloSqlServerConnectionConfig {
+export interface KtxSqlServerConnectionConfig {
   driver?: string;
   host?: string;
   port?: number;
@@ -40,7 +40,7 @@ export interface KloSqlServerConnectionConfig {
   [key: string]: unknown;
 }
 
-export interface KloSqlServerPoolConfig {
+export interface KtxSqlServerPoolConfig {
   server: string;
   port: number;
   database: string;
@@ -50,63 +50,63 @@ export interface KloSqlServerPoolConfig {
   pool: { max: number; min: number; idleTimeoutMillis: number };
 }
 
-export interface KloSqlServerQueryResult {
+export interface KtxSqlServerQueryResult {
   recordset?: Array<Record<string, unknown>> & { columns?: Record<string, { type?: { declaration?: string } }> };
 }
 
-interface KloSqlServerRequest {
-  input(name: string, value: unknown): KloSqlServerRequest;
-  query(query: string): Promise<KloSqlServerQueryResult>;
+interface KtxSqlServerRequest {
+  input(name: string, value: unknown): KtxSqlServerRequest;
+  query(query: string): Promise<KtxSqlServerQueryResult>;
 }
 
-export interface KloSqlServerPool {
-  request(): KloSqlServerRequest;
+export interface KtxSqlServerPool {
+  request(): KtxSqlServerRequest;
   close(): Promise<void>;
 }
 
-export interface KloSqlServerPoolFactory {
-  createPool(config: KloSqlServerPoolConfig): Promise<KloSqlServerPool>;
+export interface KtxSqlServerPoolFactory {
+  createPool(config: KtxSqlServerPoolConfig): Promise<KtxSqlServerPool>;
 }
 
-interface KloSqlServerResolvedEndpoint {
+interface KtxSqlServerResolvedEndpoint {
   host: string;
   port: number;
   close?: () => Promise<void>;
 }
 
-export interface KloSqlServerEndpointResolver {
+export interface KtxSqlServerEndpointResolver {
   resolve(input: {
     host: string;
     port: number;
-    connection: KloSqlServerConnectionConfig;
-  }): Promise<KloSqlServerResolvedEndpoint>;
+    connection: KtxSqlServerConnectionConfig;
+  }): Promise<KtxSqlServerResolvedEndpoint>;
 }
 
-export interface KloSqlServerScanConnectorOptions {
+export interface KtxSqlServerScanConnectorOptions {
   connectionId: string;
-  connection: KloSqlServerConnectionConfig | undefined;
-  poolFactory?: KloSqlServerPoolFactory;
-  endpointResolver?: KloSqlServerEndpointResolver;
+  connection: KtxSqlServerConnectionConfig | undefined;
+  poolFactory?: KtxSqlServerPoolFactory;
+  endpointResolver?: KtxSqlServerEndpointResolver;
   env?: NodeJS.ProcessEnv;
   now?: () => Date;
 }
 
-export interface KloSqlServerReadOnlyQueryInput extends KloReadOnlyQueryInput {
+export interface KtxSqlServerReadOnlyQueryInput extends KtxReadOnlyQueryInput {
   params?: Record<string, unknown>;
 }
 
-export interface KloSqlServerColumnDistinctValuesOptions {
+export interface KtxSqlServerColumnDistinctValuesOptions {
   maxCardinality: number;
   limit: number;
   sampleSize?: number;
 }
 
-export interface KloSqlServerColumnDistinctValuesResult {
+export interface KtxSqlServerColumnDistinctValuesResult {
   values: string[] | null;
   cardinality: number;
 }
 
-interface KloSqlServerTableSampleResult extends KloTableSampleResult {
+interface KtxSqlServerTableSampleResult extends KtxTableSampleResult {
   headerTypes?: string[];
 }
 
@@ -128,8 +128,8 @@ function sqlTypeDeclaration(type: unknown): string {
 function sqlRecordset(
   rows: Array<Record<string, unknown>> | undefined,
   columns: Record<string, { type?: unknown }> | undefined,
-): NonNullable<KloSqlServerQueryResult['recordset']> {
-  const recordset = [...(rows ?? [])] as NonNullable<KloSqlServerQueryResult['recordset']>;
+): NonNullable<KtxSqlServerQueryResult['recordset']> {
+  const recordset = [...(rows ?? [])] as NonNullable<KtxSqlServerQueryResult['recordset']>;
   recordset.columns = Object.fromEntries(
     Object.entries(columns ?? {}).map(([name, metadata]) => [
       name,
@@ -139,8 +139,8 @@ function sqlRecordset(
   return recordset;
 }
 
-class DefaultSqlServerPoolFactory implements KloSqlServerPoolFactory {
-  async createPool(config: KloSqlServerPoolConfig): Promise<KloSqlServerPool> {
+class DefaultSqlServerPoolFactory implements KtxSqlServerPoolFactory {
+  async createPool(config: KtxSqlServerPoolConfig): Promise<KtxSqlServerPool> {
     const pool = await new sql.ConnectionPool(config as sql.config).connect();
     return {
       request() {
@@ -164,8 +164,8 @@ class DefaultSqlServerPoolFactory implements KloSqlServerPoolFactory {
 }
 
 function stringConfigValue(
-  connection: KloSqlServerConnectionConfig | undefined,
-  key: keyof KloSqlServerConnectionConfig,
+  connection: KtxSqlServerConnectionConfig | undefined,
+  key: keyof KtxSqlServerConnectionConfig,
   env: NodeJS.ProcessEnv,
 ): string | undefined {
   const value = connection?.[key];
@@ -184,7 +184,7 @@ function resolveStringReference(value: string, env: NodeJS.ProcessEnv): string {
   return value;
 }
 
-function parseSqlServerUrl(url: string): Partial<KloSqlServerConnectionConfig> {
+function parseSqlServerUrl(url: string): Partial<KtxSqlServerConnectionConfig> {
   const parsed = new URL(url);
   return {
     host: parsed.hostname,
@@ -200,7 +200,7 @@ function maybeNumber(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
-function schemaNames(connection: KloSqlServerConnectionConfig, env: NodeJS.ProcessEnv): string[] {
+function schemaNames(connection: KtxSqlServerConnectionConfig, env: NodeJS.ProcessEnv): string[] {
   if (Array.isArray(connection.schemas) && connection.schemas.length > 0) {
     return connection.schemas.filter((schema) => schema.trim().length > 0).map((schema) => resolveStringReference(schema, env));
   }
@@ -230,19 +230,19 @@ function limitSqlForSqlServerExecution(sqlText: string, maxRows: number | undefi
   if (!Number.isInteger(maxRows) || maxRows <= 0) {
     throw new Error('maxRows must be a positive integer.');
   }
-  return `SELECT TOP ${maxRows} * FROM (${trimmed}) AS klo_query_result`;
+  return `SELECT TOP ${maxRows} * FROM (${trimmed}) AS ktx_query_result`;
 }
 
-export function isKloSqlServerConnectionConfig(connection: KloSqlServerConnectionConfig | undefined): boolean {
+export function isKtxSqlServerConnectionConfig(connection: KtxSqlServerConnectionConfig | undefined): boolean {
   return String(connection?.driver ?? '').toLowerCase() === 'sqlserver';
 }
 
 export function sqlServerConnectionPoolConfigFromConfig(input: {
   connectionId: string;
-  connection: KloSqlServerConnectionConfig | undefined;
+  connection: KtxSqlServerConnectionConfig | undefined;
   env?: NodeJS.ProcessEnv;
-}): KloSqlServerPoolConfig {
-  if (!isKloSqlServerConnectionConfig(input.connection)) {
+}): KtxSqlServerPoolConfig {
+  if (!isKtxSqlServerConnectionConfig(input.connection)) {
     throw new Error(`Native SQL Server connector cannot run driver "${input.connection?.driver ?? 'unknown'}"`);
   }
   if (input.connection?.readonly !== true) {
@@ -252,7 +252,7 @@ export function sqlServerConnectionPoolConfigFromConfig(input: {
   const env = input.env ?? process.env;
   const referencedUrl = stringConfigValue(input.connection, 'url', env);
   const urlConfig = referencedUrl ? parseSqlServerUrl(referencedUrl) : {};
-  const merged: KloSqlServerConnectionConfig = { ...urlConfig, ...input.connection };
+  const merged: KtxSqlServerConnectionConfig = { ...urlConfig, ...input.connection };
   const server = stringConfigValue(merged, 'host', env);
   const database = stringConfigValue(merged, 'database', env);
   const user = stringConfigValue(merged, 'username', env) ?? stringConfigValue(merged, 'user', env);
@@ -278,10 +278,10 @@ export function sqlServerConnectionPoolConfigFromConfig(input: {
   };
 }
 
-export class KloSqlServerScanConnector implements KloScanConnector {
+export class KtxSqlServerScanConnector implements KtxScanConnector {
   readonly id: string;
   readonly driver = 'sqlserver' as const;
-  readonly capabilities = createKloConnectorCapabilities({
+  readonly capabilities = createKtxConnectorCapabilities({
     tableSampling: true,
     columnSampling: true,
     columnStats: false,
@@ -292,17 +292,17 @@ export class KloSqlServerScanConnector implements KloScanConnector {
   });
 
   private readonly connectionId: string;
-  private readonly connection: KloSqlServerConnectionConfig;
-  private readonly poolConfig: KloSqlServerPoolConfig;
+  private readonly connection: KtxSqlServerConnectionConfig;
+  private readonly poolConfig: KtxSqlServerPoolConfig;
   private readonly schemas: string[];
-  private readonly poolFactory: KloSqlServerPoolFactory;
-  private readonly endpointResolver?: KloSqlServerEndpointResolver;
+  private readonly poolFactory: KtxSqlServerPoolFactory;
+  private readonly endpointResolver?: KtxSqlServerEndpointResolver;
   private readonly now: () => Date;
-  private readonly dialect = new KloSqlServerDialect();
-  private pool: KloSqlServerPool | null = null;
-  private resolvedEndpoint: KloSqlServerResolvedEndpoint | null = null;
+  private readonly dialect = new KtxSqlServerDialect();
+  private pool: KtxSqlServerPool | null = null;
+  private resolvedEndpoint: KtxSqlServerResolvedEndpoint | null = null;
 
-  constructor(options: KloSqlServerScanConnectorOptions) {
+  constructor(options: KtxSqlServerScanConnectorOptions) {
     this.connectionId = options.connectionId;
     this.connection = options.connection ?? {};
     const env = options.env ?? process.env;
@@ -327,9 +327,9 @@ export class KloSqlServerScanConnector implements KloScanConnector {
     }
   }
 
-  async introspect(input: KloScanInput, _ctx: KloScanContext): Promise<KloSchemaSnapshot> {
+  async introspect(input: KtxScanInput, _ctx: KtxScanContext): Promise<KtxSchemaSnapshot> {
     this.assertConnection(input.connectionId);
-    const tables: KloSchemaTable[] = [];
+    const tables: KtxSchemaTable[] = [];
     for (const schemaName of this.schemas) {
       tables.push(...(await this.introspectSchema(schemaName)));
     }
@@ -349,13 +349,13 @@ export class KloSqlServerScanConnector implements KloScanConnector {
     };
   }
 
-  async sampleTable(input: KloTableSampleInput, _ctx: KloScanContext): Promise<KloSqlServerTableSampleResult> {
+  async sampleTable(input: KtxTableSampleInput, _ctx: KtxScanContext): Promise<KtxSqlServerTableSampleResult> {
     this.assertConnection(input.connectionId);
     const result = await this.query(this.dialect.generateSampleQuery(this.qTableName(input.table), input.limit, input.columns));
     return { headers: result.headers, headerTypes: result.headerTypes, rows: result.rows, totalRows: result.totalRows };
   }
 
-  async sampleColumn(input: KloColumnSampleInput, _ctx: KloScanContext): Promise<KloColumnSampleResult> {
+  async sampleColumn(input: KtxColumnSampleInput, _ctx: KtxScanContext): Promise<KtxColumnSampleResult> {
     this.assertConnection(input.connectionId);
     const result = await this.query(
       this.dialect.generateColumnSampleQuery(this.qTableName(input.table), input.column, input.limit),
@@ -364,11 +364,11 @@ export class KloSqlServerScanConnector implements KloScanConnector {
     return { values, nullCount: null, distinctCount: null };
   }
 
-  async columnStats(_input: KloColumnStatsInput, _ctx: KloScanContext): Promise<KloColumnStatsResult | null> {
+  async columnStats(_input: KtxColumnStatsInput, _ctx: KtxScanContext): Promise<KtxColumnStatsResult | null> {
     return null;
   }
 
-  async executeReadOnly(input: KloSqlServerReadOnlyQueryInput, _ctx: KloScanContext): Promise<KloQueryResult> {
+  async executeReadOnly(input: KtxSqlServerReadOnlyQueryInput, _ctx: KtxScanContext): Promise<KtxQueryResult> {
     this.assertConnection(input.connectionId);
     const limitedSql = limitSqlForSqlServerExecution(input.sql, input.maxRows);
     const prepared = this.dialect.prepareQuery(limitedSql, input.params);
@@ -377,10 +377,10 @@ export class KloSqlServerScanConnector implements KloScanConnector {
   }
 
   async getColumnDistinctValues(
-    table: KloTableRef,
+    table: KtxTableRef,
     columnName: string,
-    options: KloSqlServerColumnDistinctValuesOptions,
-  ): Promise<KloSqlServerColumnDistinctValuesResult | null> {
+    options: KtxSqlServerColumnDistinctValuesOptions,
+  ): Promise<KtxSqlServerColumnDistinctValuesResult | null> {
     const tableName = this.qTableName(table);
     const quotedColumn = this.dialect.quoteIdentifier(columnName);
     const cardinalityRows = await this.queryRaw<{ cardinality: unknown }>(
@@ -418,7 +418,7 @@ export class KloSqlServerScanConnector implements KloScanConnector {
     return firstNumber(rows[0]?.row_count) ?? 0;
   }
 
-  qTableName(table: Pick<KloTableRef, 'name'> & Partial<Pick<KloTableRef, 'catalog' | 'db'>>): string {
+  qTableName(table: Pick<KtxTableRef, 'name'> & Partial<Pick<KtxTableRef, 'catalog' | 'db'>>): string {
     return this.dialect.formatTableName(table);
   }
 
@@ -452,7 +452,7 @@ export class KloSqlServerScanConnector implements KloScanConnector {
     }
   }
 
-  private async introspectSchema(schemaName: string): Promise<KloSchemaTable[]> {
+  private async introspectSchema(schemaName: string): Promise<KtxSchemaTable[]> {
     const tables = await this.queryRaw<{ table_name: string; table_type: string }>(
       `
       SELECT TABLE_NAME AS table_name, TABLE_TYPE AS table_type
@@ -613,7 +613,7 @@ export class KloSqlServerScanConnector implements KloScanConnector {
     column: { table_name: string; column_name: string; data_type: string; is_nullable: string },
     primaryKeys: Set<string>,
     comments: Map<string, string>,
-  ): KloSchemaColumn {
+  ): KtxSchemaColumn {
     return {
       name: column.column_name,
       nativeType: column.data_type,
@@ -631,7 +631,7 @@ export class KloSqlServerScanConnector implements KloScanConnector {
     referenced_table_name: string;
     referenced_column_name: string;
     constraint_name: string;
-  }): KloSchemaForeignKey {
+  }): KtxSchemaForeignKey {
     return {
       fromColumn: row.column_name,
       toCatalog: this.poolConfig.database,
@@ -642,7 +642,7 @@ export class KloSqlServerScanConnector implements KloScanConnector {
     };
   }
 
-  private async poolForQuery(): Promise<KloSqlServerPool> {
+  private async poolForQuery(): Promise<KtxSqlServerPool> {
     if (!this.pool) {
       const config = { ...this.poolConfig };
       if (this.endpointResolver) {
@@ -671,7 +671,7 @@ export class KloSqlServerScanConnector implements KloScanConnector {
     return (result.recordset ?? []) as T[];
   }
 
-  private async query(query: string, params?: Record<string, unknown>): Promise<Omit<KloQueryResult, 'rowCount'>> {
+  private async query(query: string, params?: Record<string, unknown>): Promise<Omit<KtxQueryResult, 'rowCount'>> {
     const pool = await this.poolForQuery();
     const request = pool.request();
     if (params) {
@@ -695,7 +695,7 @@ export class KloSqlServerScanConnector implements KloScanConnector {
 
   private assertConnection(connectionId: string): void {
     if (connectionId !== this.connectionId) {
-      throw new Error(`KLO SQL Server connector ${this.id} cannot serve connection ${connectionId}`);
+      throw new Error(`KTX SQL Server connector ${this.id} cannot serve connection ${connectionId}`);
     }
   }
 }

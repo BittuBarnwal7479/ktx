@@ -1,18 +1,18 @@
-export { KloIngestEmbeddingPortAdapter, KloScanEmbeddingPortAdapter } from './embedding-port.js';
-export { generateKloObject, generateKloText } from './generation.js';
+export { KtxIngestEmbeddingPortAdapter, KtxScanEmbeddingPortAdapter } from './embedding-port.js';
+export { generateKtxObject, generateKtxText } from './generation.js';
 export type {
-  KloLlmDebugProviderOptionsEntry,
-  KloLlmDebugRequest,
-  KloLlmDebugRequestRecorder,
-  SummarizeKloLlmDebugRequestInput,
+  KtxLlmDebugProviderOptionsEntry,
+  KtxLlmDebugRequest,
+  KtxLlmDebugRequestRecorder,
+  SummarizeKtxLlmDebugRequestInput,
 } from './debug-request-recorder.js';
 export {
-  createJsonlKloLlmDebugRequestRecorder,
-  summarizeKloLlmDebugRequest,
+  createJsonlKtxLlmDebugRequestRecorder,
+  summarizeKtxLlmDebugRequest,
 } from './debug-request-recorder.js';
 export {
-  createLocalKloEmbeddingProviderFromConfig,
-  createLocalKloLlmProviderFromConfig,
-  resolveLocalKloEmbeddingConfig,
-  resolveLocalKloLlmConfig,
+  createLocalKtxEmbeddingProviderFromConfig,
+  createLocalKtxLlmProviderFromConfig,
+  resolveLocalKtxEmbeddingConfig,
+  resolveLocalKtxLlmConfig,
 } from './local-config.js';

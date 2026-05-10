@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
-  KloSetupExitError,
+  KtxSetupExitError,
   withSetupInterruptConfirmation,
   type SetupInterruptTracker,
 } from './setup-interrupt.js';
@@ -58,7 +58,7 @@ describe('setup interrupt confirmation', () => {
         isCancel: (value): value is symbol => value === CANCEL,
         tracker: makeTracker([true]),
       }),
-    ).rejects.toBeInstanceOf(KloSetupExitError);
+    ).rejects.toBeInstanceOf(KtxSetupExitError);
   });
 
   it('keeps non-Ctrl+C cancellation available for Back and Escape flows', async () => {
@@ -85,6 +85,6 @@ describe('setup interrupt confirmation', () => {
         isCancel: (value): value is symbol => value === CANCEL,
         tracker: makeTracker([true]),
       }),
-    ).rejects.toBeInstanceOf(KloSetupExitError);
+    ).rejects.toBeInstanceOf(KtxSetupExitError);
   });
 });

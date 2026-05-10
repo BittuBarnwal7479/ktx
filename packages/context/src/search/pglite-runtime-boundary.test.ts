@@ -3,10 +3,10 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-const kloRoot = fileURLToPath(new URL('../../../../', import.meta.url));
+const ktxRoot = fileURLToPath(new URL('../../../../', import.meta.url));
 
-function readKloFile(relativePath: string): string {
-  return readFileSync(join(kloRoot, relativePath), 'utf8');
+function readKtxFile(relativePath: string): string {
+  return readFileSync(join(ktxRoot, relativePath), 'utf8');
 }
 
 function readContextPackageJson(): {
@@ -15,7 +15,7 @@ function readContextPackageJson(): {
   exports?: Record<string, unknown>;
   files?: string[];
 } {
-  return JSON.parse(readKloFile('packages/context/package.json'));
+  return JSON.parse(readKtxFile('packages/context/package.json'));
 }
 
 describe('PGlite hybrid search runtime boundary', () => {
@@ -42,7 +42,7 @@ describe('PGlite hybrid search runtime boundary', () => {
     ];
 
     for (const relativePath of publicExportFiles) {
-      expect(readKloFile(relativePath), relativePath).not.toMatch(/pglite/i);
+      expect(readKtxFile(relativePath), relativePath).not.toMatch(/pglite/i);
     }
 
     const productionRoutingFiles = [
@@ -53,12 +53,12 @@ describe('PGlite hybrid search runtime boundary', () => {
     ];
 
     for (const relativePath of productionRoutingFiles) {
-      expect(readKloFile(relativePath), relativePath).not.toMatch(
+      expect(readKtxFile(relativePath), relativePath).not.toMatch(
         /pglite-owner-prototype|pglite-sl-search-prototype|@electric-sql\/pglite/i,
       );
     }
 
-    const localSlSource = readKloFile('packages/context/src/sl/local-sl.ts');
+    const localSlSource = readKtxFile('packages/context/src/sl/local-sl.ts');
     expect(localSlSource).toContain("input.backend === 'pglite-owner-prototype'");
     expect(localSlSource).toContain('PGlite semantic-layer search prototype requires pglite owner-process options.');
     expect(localSlSource).toContain("await import('./pglite-sl-search-prototype.js')");

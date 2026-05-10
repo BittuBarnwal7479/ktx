@@ -4,21 +4,21 @@ import { URL } from 'node:url';
 import { spawn } from 'node:child_process';
 import type { SemanticLayerQueryInput, SemanticLayerSource } from '../sl/index.js';
 
-export interface KloSemanticLayerComputeQueryResult {
+export interface KtxSemanticLayerComputeQueryResult {
   sql: string;
   dialect: string;
   columns: Array<Record<string, unknown>>;
   plan: Record<string, unknown>;
 }
 
-export interface KloSemanticLayerComputeValidationResult {
+export interface KtxSemanticLayerComputeValidationResult {
   valid: boolean;
   errors: string[];
   warnings: string[];
   perSourceWarnings: Record<string, string[]>;
 }
 
-export interface KloSemanticLayerSourceGenerationColumnInput {
+export interface KtxSemanticLayerSourceGenerationColumnInput {
   name: string;
   type: string;
   primaryKey?: boolean;
@@ -26,15 +26,15 @@ export interface KloSemanticLayerSourceGenerationColumnInput {
   comment?: string | null;
 }
 
-export interface KloSemanticLayerSourceGenerationTableInput {
+export interface KtxSemanticLayerSourceGenerationTableInput {
   name: string;
   catalog?: string | null;
   db?: string | null;
   comment?: string | null;
-  columns: KloSemanticLayerSourceGenerationColumnInput[];
+  columns: KtxSemanticLayerSourceGenerationColumnInput[];
 }
 
-export interface KloSemanticLayerSourceGenerationLinkInput {
+export interface KtxSemanticLayerSourceGenerationLinkInput {
   fromTable: string;
   fromColumn: string;
   toTable: string;
@@ -42,57 +42,57 @@ export interface KloSemanticLayerSourceGenerationLinkInput {
   relationshipType: string;
 }
 
-export interface KloSemanticLayerSourceGenerationInput {
-  tables: KloSemanticLayerSourceGenerationTableInput[];
-  links: KloSemanticLayerSourceGenerationLinkInput[];
+export interface KtxSemanticLayerSourceGenerationInput {
+  tables: KtxSemanticLayerSourceGenerationTableInput[];
+  links: KtxSemanticLayerSourceGenerationLinkInput[];
   dialect?: string;
 }
 
-export interface KloSemanticLayerSourceGenerationResult {
+export interface KtxSemanticLayerSourceGenerationResult {
   sources: Array<Record<string, unknown>>;
   sourceCount: number;
 }
 
-export interface KloSemanticLayerComputePort {
+export interface KtxSemanticLayerComputePort {
   query(input: {
     sources: Array<Record<string, unknown> | SemanticLayerSource>;
     query: SemanticLayerQueryInput;
     dialect: string;
-  }): Promise<KloSemanticLayerComputeQueryResult>;
+  }): Promise<KtxSemanticLayerComputeQueryResult>;
   validateSources(input: {
     sources: Array<Record<string, unknown> | SemanticLayerSource>;
     dialect: string;
     recentlyTouched?: string[];
-  }): Promise<KloSemanticLayerComputeValidationResult>;
-  generateSources(input: KloSemanticLayerSourceGenerationInput): Promise<KloSemanticLayerSourceGenerationResult>;
+  }): Promise<KtxSemanticLayerComputeValidationResult>;
+  generateSources(input: KtxSemanticLayerSourceGenerationInput): Promise<KtxSemanticLayerSourceGenerationResult>;
 }
 
-export type KloDaemonCommand = 'semantic-query' | 'semantic-validate' | 'semantic-generate-sources';
+export type KtxDaemonCommand = 'semantic-query' | 'semantic-validate' | 'semantic-generate-sources';
 
-export type KloDaemonJsonRunner = (
-  subcommand: KloDaemonCommand,
+export type KtxDaemonJsonRunner = (
+  subcommand: KtxDaemonCommand,
   payload: Record<string, unknown>,
 ) => Promise<Record<string, unknown>>;
 
-export type KloDaemonHttpJsonRunner = (path: string, payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
+export type KtxDaemonHttpJsonRunner = (path: string, payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
 
 export interface PythonSemanticLayerComputeOptions {
   command?: string;
   args?: string[];
   cwd?: string;
   env?: NodeJS.ProcessEnv;
-  runJson?: KloDaemonJsonRunner;
+  runJson?: KtxDaemonJsonRunner;
 }
 
 export interface HttpSemanticLayerComputeOptions {
   baseUrl: string;
-  requestJson?: KloDaemonHttpJsonRunner;
+  requestJson?: KtxDaemonHttpJsonRunner;
 }
 
 function parseJsonObject(raw: string, subcommand: string): Record<string, unknown> {
   const parsed = JSON.parse(raw) as unknown;
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    throw new Error(`klo-daemon ${subcommand} returned non-object JSON`);
+    throw new Error(`ktx-daemon ${subcommand} returned non-object JSON`);
   }
   return parsed as Record<string, unknown>;
 }
@@ -100,8 +100,8 @@ function parseJsonObject(raw: string, subcommand: string): Record<string, unknow
 function runProcessJson(
   options: Required<Pick<PythonSemanticLayerComputeOptions, 'command' | 'args'>> &
     Pick<PythonSemanticLayerComputeOptions, 'cwd' | 'env'>,
-): KloDaemonJsonRunner {
-  return async (subcommand: KloDaemonCommand, payload: Record<string, unknown>): Promise<Record<string, unknown>> =>
+): KtxDaemonJsonRunner {
+  return async (subcommand: KtxDaemonCommand, payload: Record<string, unknown>): Promise<Record<string, unknown>> =>
     new Promise((resolve, reject) => {
       const child = spawn(options.command, [...options.args, subcommand], {
         cwd: options.cwd,
@@ -118,7 +118,7 @@ function runProcessJson(
         const stdoutText = Buffer.concat(stdout).toString('utf8').trim();
         const stderrText = Buffer.concat(stderr).toString('utf8').trim();
         if (code !== 0) {
-          reject(new Error(`klo-daemon ${subcommand} failed: ${stderrText || `exit code ${code}`}`));
+          reject(new Error(`ktx-daemon ${subcommand} failed: ${stderrText || `exit code ${code}`}`));
           return;
         }
         try {
@@ -135,7 +135,7 @@ function normalizedBaseUrl(baseUrl: string): string {
   return baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
 }
 
-function postJson(baseUrl: string): KloDaemonHttpJsonRunner {
+function postJson(baseUrl: string): KtxDaemonHttpJsonRunner {
   return async (path, payload) =>
     new Promise((resolve, reject) => {
       const target = new URL(path.replace(/^\//, ''), normalizedBaseUrl(baseUrl));
@@ -158,7 +158,7 @@ function postJson(baseUrl: string): KloDaemonHttpJsonRunner {
             const text = Buffer.concat(chunks).toString('utf8');
             const statusCode = response.statusCode ?? 0;
             if (statusCode < 200 || statusCode >= 300) {
-              reject(new Error(`klo-daemon HTTP ${path} failed with ${statusCode}: ${text}`));
+              reject(new Error(`ktx-daemon HTTP ${path} failed with ${statusCode}: ${text}`));
               return;
             }
             try {
@@ -190,7 +190,7 @@ function recordArray(value: unknown): Array<Record<string, unknown>> {
     : [];
 }
 
-function sourceGenerationPayload(input: KloSemanticLayerSourceGenerationInput): Record<string, unknown> {
+function sourceGenerationPayload(input: KtxSemanticLayerSourceGenerationInput): Record<string, unknown> {
   return {
     tables: input.tables.map((table) => ({
       name: table.name,
@@ -216,7 +216,7 @@ function sourceGenerationPayload(input: KloSemanticLayerSourceGenerationInput): 
   };
 }
 
-function sourceGenerationResult(raw: Record<string, unknown>): KloSemanticLayerSourceGenerationResult {
+function sourceGenerationResult(raw: Record<string, unknown>): KtxSemanticLayerSourceGenerationResult {
   return {
     sources: recordArray(raw.sources),
     sourceCount: typeof raw.source_count === 'number' ? raw.source_count : recordArray(raw.sources).length,
@@ -225,9 +225,9 @@ function sourceGenerationResult(raw: Record<string, unknown>): KloSemanticLayerS
 
 export function createPythonSemanticLayerComputePort(
   options: PythonSemanticLayerComputeOptions = {},
-): KloSemanticLayerComputePort {
+): KtxSemanticLayerComputePort {
   const command = options.command ?? 'python';
-  const args = options.args ?? ['-m', 'klo_daemon'];
+  const args = options.args ?? ['-m', 'ktx_daemon'];
   const runJson = options.runJson ?? runProcessJson({ command, args, cwd: options.cwd, env: options.env });
 
   return {
@@ -266,7 +266,7 @@ export function createPythonSemanticLayerComputePort(
 
 export function createHttpSemanticLayerComputePort(
   options: HttpSemanticLayerComputeOptions,
-): KloSemanticLayerComputePort {
+): KtxSemanticLayerComputePort {
   const requestJson = options.requestJson ?? postJson(options.baseUrl);
 
   return {

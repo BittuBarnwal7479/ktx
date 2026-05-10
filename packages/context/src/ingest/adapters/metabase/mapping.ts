@@ -23,7 +23,7 @@ export interface DiscoveredMetabaseDatabase {
 export interface MetabaseMappingDrift {
   unmappedDiscovered: DiscoveredMetabaseDatabase[];
   staleMappings: Array<{ id: string; reason: 'database_not_found' }>;
-  inSync: Array<{ id: number; kloConnectionId: string }>;
+  inSync: Array<{ id: number; ktxConnectionId: string }>;
 }
 
 export interface MappingPhysicalInfo {
@@ -32,7 +32,7 @@ export interface MappingPhysicalInfo {
   metabaseHost: string | null;
 }
 
-export interface KloConnectionPhysicalInfo {
+export interface KtxConnectionPhysicalInfo {
   connection_type: string;
   database?: unknown;
   host?: unknown;
@@ -45,7 +45,7 @@ export interface KloConnectionPhysicalInfo {
 export interface PhysicalMismatchInput {
   mappingId: string;
   metabase: MappingPhysicalInfo;
-  target: KloConnectionPhysicalInfo;
+  target: KtxConnectionPhysicalInfo;
 }
 
 export interface PhysicalMismatch {
@@ -102,7 +102,7 @@ function displayValue(value: unknown): string {
   return typeof value === 'string' && value.length > 0 ? value : 'unknown';
 }
 
-function getTargetDatabase(target: KloConnectionPhysicalInfo): unknown {
+function getTargetDatabase(target: KtxConnectionPhysicalInfo): unknown {
   if (target.connection_type === 'BIGQUERY') {
     return target.dataset_id ?? target.project_id ?? target.database;
   }
@@ -164,23 +164,23 @@ export function computeMetabaseMappingDrift(args: {
     .filter((id) => !discoveredById.has(id))
     .map((id) => ({ id, reason: 'database_not_found' as const }));
   const inSync = Object.entries(args.currentMappings)
-    .filter(([id, kloConnectionId]) => discoveredById.has(id) && typeof kloConnectionId === 'string')
-    .map(([id, kloConnectionId]) => ({ id: Number(id), kloConnectionId: kloConnectionId as string }));
+    .filter(([id, ktxConnectionId]) => discoveredById.has(id) && typeof ktxConnectionId === 'string')
+    .map(([id, ktxConnectionId]) => ({ id: Number(id), ktxConnectionId: ktxConnectionId as string }));
 
   return { unmappedDiscovered, staleMappings, inSync };
 }
 
 export function validateMetabaseMappings(args: {
   mappings: Record<string, string | null | undefined>;
-  knownKloConnectionIds: Set<string>;
+  knownKtxConnectionIds: Set<string>;
 }): MetabaseMappingValidationResult {
   const errors: Array<{ key: string; reason: string }> = [];
   for (const [key, connectionId] of Object.entries(args.mappings)) {
     if (!connectionId) {
       continue;
     }
-    if (!args.knownKloConnectionIds.has(connectionId)) {
-      errors.push({ key, reason: `KLO connection ${connectionId} does not exist` });
+    if (!args.knownKtxConnectionIds.has(connectionId)) {
+      errors.push({ key, reason: `KTX connection ${connectionId} does not exist` });
     }
   }
   return errors.length === 0 ? { ok: true } : { ok: false, errors };
@@ -188,7 +188,7 @@ export function validateMetabaseMappings(args: {
 
 export function validateMappingPhysicalMatch(
   mapping: MappingPhysicalInfo,
-  target: KloConnectionPhysicalInfo,
+  target: KtxConnectionPhysicalInfo,
 ): string | null {
   const engine = mapping.metabaseEngine?.toLowerCase();
   if (!engine) {
@@ -201,7 +201,7 @@ export function validateMappingPhysicalMatch(
   }
 
   if (target.connection_type !== expectedType) {
-    return `Metabase database engine '${engine}' does not match KLO connection type '${target.connection_type}'`;
+    return `Metabase database engine '${engine}' does not match KTX connection type '${target.connection_type}'`;
   }
 
   const metabaseDb = normalizeName(mapping.metabaseDbName);
@@ -209,7 +209,7 @@ export function validateMappingPhysicalMatch(
 
   if (engine === 'snowflake' || engine === 'bigquery' || engine === 'bigquery-cloud-sdk') {
     if (metabaseDb && targetDb && metabaseDb !== targetDb) {
-      return `Metabase database '${mapping.metabaseDbName}' does not match KLO connection database '${displayValue(
+      return `Metabase database '${mapping.metabaseDbName}' does not match KTX connection database '${displayValue(
         getTargetDatabase(target),
       )}'`;
     }
@@ -221,12 +221,12 @@ export function validateMappingPhysicalMatch(
     const targetHost = normalizeHost(target.host);
 
     if (metabaseHost && targetHost && metabaseHost !== targetHost) {
-      return `Metabase host '${mapping.metabaseHost}' does not match KLO connection host '${displayValue(
+      return `Metabase host '${mapping.metabaseHost}' does not match KTX connection host '${displayValue(
         target.host,
       )}'`;
     }
     if (metabaseDb && targetDb && metabaseDb !== targetDb) {
-      return `Metabase database '${mapping.metabaseDbName}' does not match KLO connection database '${displayValue(
+      return `Metabase database '${mapping.metabaseDbName}' does not match KTX connection database '${displayValue(
         getTargetDatabase(target),
       )}'`;
     }
@@ -250,7 +250,7 @@ export function computeMetabaseMappingPhysicalMismatches(inputs: PhysicalMismatc
 export async function refreshMetabaseMapping(args: {
   client: Pick<MetabaseRuntimeClient, 'getDatabases'>;
   currentMappings: Record<string, string | null | undefined>;
-  resolveKloConnectionPhysicalInfo: (kloConnectionId: string) => Promise<KloConnectionPhysicalInfo | null>;
+  resolveKtxConnectionPhysicalInfo: (ktxConnectionId: string) => Promise<KtxConnectionPhysicalInfo | null>;
 }): Promise<MappingRefreshReport> {
   const discovered = await discoverMetabaseDatabases(args.client);
   const drift = computeMetabaseMappingDrift({ currentMappings: args.currentMappings, discovered });
@@ -262,11 +262,11 @@ export async function refreshMetabaseMapping(args: {
     if (!discoveredDatabase) {
       continue;
     }
-    const target = await args.resolveKloConnectionPhysicalInfo(mapping.kloConnectionId);
+    const target = await args.resolveKtxConnectionPhysicalInfo(mapping.ktxConnectionId);
     if (!target) {
       physicalMismatches.push({
         mappingId: String(mapping.id),
-        reason: `KLO connection ${mapping.kloConnectionId} does not exist`,
+        reason: `KTX connection ${mapping.ktxConnectionId} does not exist`,
       });
       continue;
     }

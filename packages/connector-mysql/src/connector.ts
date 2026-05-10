@@ -2,29 +2,29 @@ import mysql, { type FieldPacket, type Pool, type RowDataPacket } from 'mysql2/p
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { resolve } from 'node:path';
-import { assertReadOnlySql, limitSqlForExecution } from '@klo/context/connections';
+import { assertReadOnlySql, limitSqlForExecution } from '@ktx/context/connections';
 import {
-  createKloConnectorCapabilities,
-  type KloColumnSampleInput,
-  type KloColumnSampleResult,
-  type KloColumnStatsInput,
-  type KloColumnStatsResult,
-  type KloQueryResult,
-  type KloReadOnlyQueryInput,
-  type KloScanConnector,
-  type KloScanContext,
-  type KloScanInput,
-  type KloSchemaColumn,
-  type KloSchemaForeignKey,
-  type KloSchemaSnapshot,
-  type KloSchemaTable,
-  type KloTableRef,
-  type KloTableSampleInput,
-  type KloTableSampleResult,
-} from '@klo/context/scan';
-import { KloMysqlDialect } from './dialect.js';
+  createKtxConnectorCapabilities,
+  type KtxColumnSampleInput,
+  type KtxColumnSampleResult,
+  type KtxColumnStatsInput,
+  type KtxColumnStatsResult,
+  type KtxQueryResult,
+  type KtxReadOnlyQueryInput,
+  type KtxScanConnector,
+  type KtxScanContext,
+  type KtxScanInput,
+  type KtxSchemaColumn,
+  type KtxSchemaForeignKey,
+  type KtxSchemaSnapshot,
+  type KtxSchemaTable,
+  type KtxTableRef,
+  type KtxTableSampleInput,
+  type KtxTableSampleResult,
+} from '@ktx/context/scan';
+import { KtxMysqlDialect } from './dialect.js';
 
-export interface KloMysqlConnectionConfig {
+export interface KtxMysqlConnectionConfig {
   driver?: string;
   host?: string;
   port?: number;
@@ -38,7 +38,7 @@ export interface KloMysqlConnectionConfig {
   [key: string]: unknown;
 }
 
-export interface KloMysqlPoolConfig {
+export interface KtxMysqlPoolConfig {
   host: string;
   port: number;
   database: string;
@@ -49,50 +49,50 @@ export interface KloMysqlPoolConfig {
   ssl?: { rejectUnauthorized: boolean };
 }
 
-interface KloMysqlConnection {
+interface KtxMysqlConnection {
   query(sql: string, params?: unknown): Promise<[RowDataPacket[], FieldPacket[]]>;
   release(): void;
 }
 
-interface KloMysqlPool {
-  getConnection(): Promise<KloMysqlConnection>;
+interface KtxMysqlPool {
+  getConnection(): Promise<KtxMysqlConnection>;
   end(): Promise<void>;
 }
 
-export interface KloMysqlPoolFactory {
-  createPool(config: KloMysqlPoolConfig): KloMysqlPool;
+export interface KtxMysqlPoolFactory {
+  createPool(config: KtxMysqlPoolConfig): KtxMysqlPool;
 }
 
-interface KloMysqlResolvedEndpoint {
+interface KtxMysqlResolvedEndpoint {
   host: string;
   port: number;
   close?: () => Promise<void>;
 }
 
-export interface KloMysqlEndpointResolver {
-  resolve(input: { host: string; port: number; connection: KloMysqlConnectionConfig }): Promise<KloMysqlResolvedEndpoint>;
+export interface KtxMysqlEndpointResolver {
+  resolve(input: { host: string; port: number; connection: KtxMysqlConnectionConfig }): Promise<KtxMysqlResolvedEndpoint>;
 }
 
-export interface KloMysqlScanConnectorOptions {
+export interface KtxMysqlScanConnectorOptions {
   connectionId: string;
-  connection: KloMysqlConnectionConfig | undefined;
-  poolFactory?: KloMysqlPoolFactory;
-  endpointResolver?: KloMysqlEndpointResolver;
+  connection: KtxMysqlConnectionConfig | undefined;
+  poolFactory?: KtxMysqlPoolFactory;
+  endpointResolver?: KtxMysqlEndpointResolver;
   env?: NodeJS.ProcessEnv;
   now?: () => Date;
 }
 
-export interface KloMysqlReadOnlyQueryInput extends KloReadOnlyQueryInput {
+export interface KtxMysqlReadOnlyQueryInput extends KtxReadOnlyQueryInput {
   params?: Record<string, unknown> | unknown[];
 }
 
-export interface KloMysqlColumnDistinctValuesOptions {
+export interface KtxMysqlColumnDistinctValuesOptions {
   maxCardinality: number;
   limit: number;
   sampleSize?: number;
 }
 
-export interface KloMysqlColumnDistinctValuesResult {
+export interface KtxMysqlColumnDistinctValuesResult {
   values: string[] | null;
   cardinality: number;
 }
@@ -138,15 +138,15 @@ interface MysqlDistinctValueRow extends RowDataPacket {
   val: unknown;
 }
 
-class DefaultMysqlPoolFactory implements KloMysqlPoolFactory {
-  createPool(config: KloMysqlPoolConfig): KloMysqlPool {
+class DefaultMysqlPoolFactory implements KtxMysqlPoolFactory {
+  createPool(config: KtxMysqlPoolConfig): KtxMysqlPool {
     return mysql.createPool(config) as Pool;
   }
 }
 
 function stringConfigValue(
-  connection: KloMysqlConnectionConfig | undefined,
-  key: keyof KloMysqlConnectionConfig,
+  connection: KtxMysqlConnectionConfig | undefined,
+  key: keyof KtxMysqlConnectionConfig,
   env: NodeJS.ProcessEnv,
 ): string | undefined {
   const value = connection?.[key];
@@ -170,7 +170,7 @@ function maybeNumber(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
-function parseMysqlUrl(url: string): Partial<KloMysqlConnectionConfig> {
+function parseMysqlUrl(url: string): Partial<KtxMysqlConnectionConfig> {
   const parsed = new URL(url);
   const sslParam = parsed.searchParams.get('ssl') ?? parsed.searchParams.get('sslmode');
   return {
@@ -225,16 +225,16 @@ function queryParams(params: Record<string, unknown> | unknown[] | undefined): u
   return Array.isArray(params) ? params : Object.values(params);
 }
 
-export function isKloMysqlConnectionConfig(connection: KloMysqlConnectionConfig | undefined): boolean {
+export function isKtxMysqlConnectionConfig(connection: KtxMysqlConnectionConfig | undefined): boolean {
   return String(connection?.driver ?? '').toLowerCase() === 'mysql';
 }
 
 export function mysqlConnectionPoolConfigFromConfig(input: {
   connectionId: string;
-  connection: KloMysqlConnectionConfig | undefined;
+  connection: KtxMysqlConnectionConfig | undefined;
   env?: NodeJS.ProcessEnv;
-}): KloMysqlPoolConfig {
-  if (!isKloMysqlConnectionConfig(input.connection)) {
+}): KtxMysqlPoolConfig {
+  if (!isKtxMysqlConnectionConfig(input.connection)) {
     throw new Error(`Native MySQL connector cannot run driver "${input.connection?.driver ?? 'unknown'}"`);
   }
   if (input.connection?.readonly !== true) {
@@ -244,7 +244,7 @@ export function mysqlConnectionPoolConfigFromConfig(input: {
   const env = input.env ?? process.env;
   const referencedUrl = stringConfigValue(input.connection, 'url', env);
   const urlConfig = referencedUrl ? parseMysqlUrl(referencedUrl) : {};
-  const merged: KloMysqlConnectionConfig = { ...urlConfig, ...input.connection };
+  const merged: KtxMysqlConnectionConfig = { ...urlConfig, ...input.connection };
   const host = stringConfigValue(merged, 'host', env);
   const database = stringConfigValue(merged, 'database', env);
   const user = stringConfigValue(merged, 'username', env) ?? stringConfigValue(merged, 'user', env);
@@ -272,10 +272,10 @@ export function mysqlConnectionPoolConfigFromConfig(input: {
   };
 }
 
-export class KloMysqlScanConnector implements KloScanConnector {
+export class KtxMysqlScanConnector implements KtxScanConnector {
   readonly id: string;
   readonly driver = 'mysql' as const;
-  readonly capabilities = createKloConnectorCapabilities({
+  readonly capabilities = createKtxConnectorCapabilities({
     tableSampling: true,
     columnSampling: true,
     columnStats: false,
@@ -286,16 +286,16 @@ export class KloMysqlScanConnector implements KloScanConnector {
   });
 
   private readonly connectionId: string;
-  private readonly connection: KloMysqlConnectionConfig;
-  private readonly poolConfig: KloMysqlPoolConfig;
-  private readonly poolFactory: KloMysqlPoolFactory;
-  private readonly endpointResolver?: KloMysqlEndpointResolver;
+  private readonly connection: KtxMysqlConnectionConfig;
+  private readonly poolConfig: KtxMysqlPoolConfig;
+  private readonly poolFactory: KtxMysqlPoolFactory;
+  private readonly endpointResolver?: KtxMysqlEndpointResolver;
   private readonly now: () => Date;
-  private readonly dialect = new KloMysqlDialect();
-  private pool: KloMysqlPool | null = null;
-  private resolvedEndpoint: KloMysqlResolvedEndpoint | null = null;
+  private readonly dialect = new KtxMysqlDialect();
+  private pool: KtxMysqlPool | null = null;
+  private resolvedEndpoint: KtxMysqlResolvedEndpoint | null = null;
 
-  constructor(options: KloMysqlScanConnectorOptions) {
+  constructor(options: KtxMysqlScanConnectorOptions) {
     this.connectionId = options.connectionId;
     this.connection = options.connection ?? {};
     this.poolConfig = mysqlConnectionPoolConfigFromConfig({
@@ -318,7 +318,7 @@ export class KloMysqlScanConnector implements KloScanConnector {
     }
   }
 
-  async introspect(input: KloScanInput, _ctx: KloScanContext): Promise<KloSchemaSnapshot> {
+  async introspect(input: KtxScanInput, _ctx: KtxScanContext): Promise<KtxSchemaSnapshot> {
     this.assertConnection(input.connectionId);
     const database = this.poolConfig.database;
     const tables = await this.queryRaw<MysqlTableRow>(
@@ -382,13 +382,13 @@ export class KloMysqlScanConnector implements KloScanConnector {
     };
   }
 
-  async sampleTable(input: KloTableSampleInput, _ctx: KloScanContext): Promise<KloTableSampleResult> {
+  async sampleTable(input: KtxTableSampleInput, _ctx: KtxScanContext): Promise<KtxTableSampleResult> {
     this.assertConnection(input.connectionId);
     const result = await this.query(this.dialect.generateSampleQuery(this.qTableName(input.table), input.limit, input.columns));
     return { headers: result.headers, rows: result.rows, totalRows: result.totalRows };
   }
 
-  async sampleColumn(input: KloColumnSampleInput, _ctx: KloScanContext): Promise<KloColumnSampleResult> {
+  async sampleColumn(input: KtxColumnSampleInput, _ctx: KtxScanContext): Promise<KtxColumnSampleResult> {
     this.assertConnection(input.connectionId);
     const result = await this.query(
       this.dialect.generateColumnSampleQuery(this.qTableName(input.table), input.column, input.limit),
@@ -397,11 +397,11 @@ export class KloMysqlScanConnector implements KloScanConnector {
     return { values, nullCount: null, distinctCount: null };
   }
 
-  async columnStats(_input: KloColumnStatsInput, _ctx: KloScanContext): Promise<KloColumnStatsResult | null> {
+  async columnStats(_input: KtxColumnStatsInput, _ctx: KtxScanContext): Promise<KtxColumnStatsResult | null> {
     return null;
   }
 
-  async executeReadOnly(input: KloMysqlReadOnlyQueryInput, _ctx: KloScanContext): Promise<KloQueryResult> {
+  async executeReadOnly(input: KtxMysqlReadOnlyQueryInput, _ctx: KtxScanContext): Promise<KtxQueryResult> {
     this.assertConnection(input.connectionId);
     const limitedSql = limitSqlForExecution(assertReadOnlySql(input.sql), input.maxRows);
     const prepared = Array.isArray(input.params)
@@ -412,10 +412,10 @@ export class KloMysqlScanConnector implements KloScanConnector {
   }
 
   async getColumnDistinctValues(
-    table: KloTableRef,
+    table: KtxTableRef,
     columnName: string,
-    options: KloMysqlColumnDistinctValuesOptions,
-  ): Promise<KloMysqlColumnDistinctValuesResult | null> {
+    options: KtxMysqlColumnDistinctValuesOptions,
+  ): Promise<KtxMysqlColumnDistinctValuesResult | null> {
     const sampleSize = options.sampleSize ?? 10000;
     const tableName = this.qTableName(table);
     const quotedColumn = this.dialect.quoteIdentifier(columnName);
@@ -448,7 +448,7 @@ export class KloMysqlScanConnector implements KloScanConnector {
     return Number(rows[0]?.count ?? 0);
   }
 
-  qTableName(table: Pick<KloTableRef, 'name'> & Partial<Pick<KloTableRef, 'catalog' | 'db'>>): string {
+  qTableName(table: Pick<KtxTableRef, 'name'> & Partial<Pick<KtxTableRef, 'catalog' | 'db'>>): string {
     return this.dialect.formatTableName(table);
   }
 
@@ -482,7 +482,7 @@ export class KloMysqlScanConnector implements KloScanConnector {
     columns: MysqlColumnRow[],
     primaryKeysByTable: Map<string, Set<string>>,
     foreignKeysByTable: Map<string, MysqlForeignKeyRow[]>,
-  ): KloSchemaTable {
+  ): KtxSchemaTable {
     const tableName = table.TABLE_NAME;
     const kind = table.TABLE_TYPE === 'VIEW' ? 'view' : 'table';
     const estimatedRows = kind === 'view' ? null : Number(table.TABLE_ROWS ?? 0);
@@ -498,7 +498,7 @@ export class KloMysqlScanConnector implements KloScanConnector {
     };
   }
 
-  private toSchemaColumn(column: MysqlColumnRow, primaryKeys: Set<string>): KloSchemaColumn {
+  private toSchemaColumn(column: MysqlColumnRow, primaryKeys: Set<string>): KtxSchemaColumn {
     return {
       name: column.COLUMN_NAME,
       nativeType: column.DATA_TYPE,
@@ -510,7 +510,7 @@ export class KloMysqlScanConnector implements KloScanConnector {
     };
   }
 
-  private toSchemaForeignKey(row: MysqlForeignKeyRow): KloSchemaForeignKey {
+  private toSchemaForeignKey(row: MysqlForeignKeyRow): KtxSchemaForeignKey {
     return {
       fromColumn: row.COLUMN_NAME,
       toCatalog: null,
@@ -521,7 +521,7 @@ export class KloMysqlScanConnector implements KloScanConnector {
     };
   }
 
-  private async poolForQuery(): Promise<KloMysqlPool> {
+  private async poolForQuery(): Promise<KtxMysqlPool> {
     if (!this.pool) {
       const config = { ...this.poolConfig };
       if (this.endpointResolver) {
@@ -552,7 +552,7 @@ export class KloMysqlScanConnector implements KloScanConnector {
   private async query(
     sql: string,
     params?: Record<string, unknown> | unknown[],
-  ): Promise<Omit<KloQueryResult, 'rowCount'>> {
+  ): Promise<Omit<KtxQueryResult, 'rowCount'>> {
     const pool = await this.poolForQuery();
     const connection = await pool.getConnection();
     try {
@@ -572,7 +572,7 @@ export class KloMysqlScanConnector implements KloScanConnector {
 
   private assertConnection(connectionId: string): void {
     if (connectionId !== this.connectionId) {
-      throw new Error(`KLO MySQL connector ${this.id} cannot serve connection ${connectionId}`);
+      throw new Error(`KTX MySQL connector ${this.id} cannot serve connection ${connectionId}`);
     }
   }
 }

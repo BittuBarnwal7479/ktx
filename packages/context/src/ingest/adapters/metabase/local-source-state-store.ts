@@ -4,7 +4,7 @@ import Database from 'better-sqlite3';
 import type { MetabaseSourceState, MetabaseSourceStateReader, MetabaseSourceStateSelection } from './source-state-port.js';
 import type { MetabaseSyncMode } from './types.js';
 
-export type LocalMetabaseMappingSource = 'klo.yaml' | 'cli' | 'refresh';
+export type LocalMetabaseMappingSource = 'ktx.yaml' | 'cli' | 'refresh';
 
 interface LocalMetabaseSourceStateStoreOptions {
   dbPath: string;
@@ -197,13 +197,13 @@ export class LocalMetabaseSourceStateReader implements MetabaseSourceStateReader
           source,
           updated_at
         )
-        VALUES (?, ?, NULL, NULL, NULL, NULL, ?, ?, 'klo.yaml', ?)
+        VALUES (?, ?, NULL, NULL, NULL, NULL, ?, ?, 'ktx.yaml', ?)
       `);
       const updateRefreshRow = this.db.prepare(`
         UPDATE local_metabase_database_mappings
         SET target_connection_id = ?,
             sync_enabled = ?,
-            source = 'klo.yaml',
+            source = 'ktx.yaml',
             updated_at = ?
         WHERE metabase_connection_id = ?
           AND metabase_database_id = ?

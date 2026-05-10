@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   createSqlServerLiveDatabaseIntrospection,
-  isKloSqlServerConnectionConfig,
-  KloSqlServerScanConnector,
+  isKtxSqlServerConnectionConfig,
+  KtxSqlServerScanConnector,
   sqlServerConnectionPoolConfigFromConfig,
-  type KloSqlServerPoolFactory,
-  type KloSqlServerQueryResult,
+  type KtxSqlServerPoolFactory,
+  type KtxSqlServerQueryResult,
 } from './index.js';
 
 function recordset<T extends Record<string, unknown>>(
@@ -17,12 +17,12 @@ function recordset<T extends Record<string, unknown>>(
   return withColumns;
 }
 
-function result<T extends Record<string, unknown>>(rows: T[], columnNames: string[]): KloSqlServerQueryResult {
+function result<T extends Record<string, unknown>>(rows: T[], columnNames: string[]): KtxSqlServerQueryResult {
   return { recordset: recordset(rows, columnNames) };
 }
 
-function fakePoolFactory(): KloSqlServerPoolFactory {
-  const query = vi.fn(async (sql: string): Promise<KloSqlServerQueryResult> => {
+function fakePoolFactory(): KtxSqlServerPoolFactory {
+  const query = vi.fn(async (sql: string): Promise<KtxSqlServerQueryResult> => {
     if (sql.includes('INFORMATION_SCHEMA.TABLES')) {
       return result(
         [
@@ -102,7 +102,7 @@ function fakePoolFactory(): KloSqlServerPoolFactory {
     if (sql.includes('SELECT TOP 1 [id], [status] FROM [dbo].[orders]')) {
       return result([{ id: 10, status: 'paid' }], ['id', 'status']);
     }
-    if (sql.includes('SELECT TOP 1 * FROM (select id, status from dbo.orders) AS klo_query_result')) {
+    if (sql.includes('SELECT TOP 1 * FROM (select id, status from dbo.orders) AS ktx_query_result')) {
       return result([{ id: 10, status: 'paid' }], ['id', 'status']);
     }
     if (sql.includes('SELECT TOP 5 [status] FROM [dbo].[orders]')) {
@@ -138,17 +138,17 @@ function fakePoolFactory(): KloSqlServerPoolFactory {
   };
 }
 
-describe('KloSqlServerScanConnector', () => {
+describe('KtxSqlServerScanConnector', () => {
   it('resolves SQL Server connection configuration safely', () => {
     expect(
-      isKloSqlServerConnectionConfig({
+      isKtxSqlServerConnectionConfig({
         driver: 'sqlserver',
         host: 'localhost',
         database: 'analytics',
         readonly: true,
       }),
     ).toBe(true);
-    expect(isKloSqlServerConnectionConfig({ driver: 'mysql', host: 'localhost', database: 'analytics' })).toBe(false);
+    expect(isKtxSqlServerConnectionConfig({ driver: 'mysql', host: 'localhost', database: 'analytics' })).toBe(false);
     expect(
       sqlServerConnectionPoolConfigFromConfig({
         connectionId: 'warehouse',
@@ -178,7 +178,7 @@ describe('KloSqlServerScanConnector', () => {
   });
 
   it('introspects schema, primary keys, comments, row counts, views, and foreign keys', async () => {
-    const connector = new KloSqlServerScanConnector({
+    const connector = new KtxSqlServerScanConnector({
       connectionId: 'warehouse',
       connection: {
         driver: 'sqlserver',
@@ -238,7 +238,7 @@ describe('KloSqlServerScanConnector', () => {
 
   it('runs samples, distinct values, read-only SQL, row count, schema list, and cleanup', async () => {
     const poolFactory = fakePoolFactory();
-    const connector = new KloSqlServerScanConnector({
+    const connector = new KtxSqlServerScanConnector({
       connectionId: 'warehouse',
       connection: {
         driver: 'sqlserver',

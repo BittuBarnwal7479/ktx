@@ -1,6 +1,6 @@
-import type { KloSqlQueryExecutorPort } from '../connections/index.js';
-import type { KloSemanticLayerComputePort } from '../daemon/index.js';
-import type { KloLocalProject } from '../project/index.js';
+import type { KtxSqlQueryExecutorPort } from '../connections/index.js';
+import type { KtxSemanticLayerComputePort } from '../daemon/index.js';
+import type { KtxLocalProject } from '../project/index.js';
 import { loadLocalSlSourceRecords } from './local-sl.js';
 import type { SemanticLayerQueryExecutionResult, SemanticLayerQueryInput } from './types.js';
 
@@ -10,10 +10,10 @@ const COMPILE_ONLY_REASON =
 export interface CompileLocalSlQueryOptions {
   connectionId?: string;
   query: SemanticLayerQueryInput;
-  compute: KloSemanticLayerComputePort;
+  compute: KtxSemanticLayerComputePort;
   execute?: boolean;
   maxRows?: number;
-  queryExecutor?: KloSqlQueryExecutorPort;
+  queryExecutor?: KtxSqlQueryExecutorPort;
 }
 
 export interface CompileLocalSlQueryResult extends SemanticLayerQueryExecutionResult {
@@ -61,7 +61,7 @@ function dialectForDriver(driver: string | undefined): string {
   return map[normalized] ?? 'postgres';
 }
 
-function resolveLocalConnectionId(project: KloLocalProject, requested: string | undefined): string {
+function resolveLocalConnectionId(project: KtxLocalProject, requested: string | undefined): string {
   if (requested) {
     return assertSafeConnectionId(requested);
   }
@@ -73,7 +73,7 @@ function resolveLocalConnectionId(project: KloLocalProject, requested: string | 
 }
 
 async function loadComputableSources(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   connectionId: string,
 ): Promise<Record<string, unknown>[]> {
   return (await loadLocalSlSourceRecords(project, { connectionId: assertSafeConnectionId(connectionId) }))
@@ -88,7 +88,7 @@ function headersFromColumns(columns: Array<Record<string, unknown>>): string[] {
 }
 
 export async function compileLocalSlQuery(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   options: CompileLocalSlQueryOptions,
 ): Promise<CompileLocalSlQueryResult> {
   const connectionId = resolveLocalConnectionId(project, options.connectionId);

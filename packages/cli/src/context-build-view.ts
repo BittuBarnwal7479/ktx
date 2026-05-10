@@ -1,12 +1,12 @@
 import { spawn } from 'node:child_process';
 import { mkdirSync, openSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import type { KloCliIo } from './index.js';
+import type { KtxCliIo } from './index.js';
 import type {
-  KloPublicIngestArgs,
-  KloPublicIngestPlanTarget,
-  KloPublicIngestProject,
-  KloPublicIngestTargetResult,
+  KtxPublicIngestArgs,
+  KtxPublicIngestPlanTarget,
+  KtxPublicIngestProject,
+  KtxPublicIngestTargetResult,
 } from './public-ingest.js';
 import { buildPublicIngestPlan, executePublicIngestTarget } from './public-ingest.js';
 import { formatDuration } from './demo-metrics.js';
@@ -18,7 +18,7 @@ const SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', 
 const ESC = String.fromCharCode(0x1b);
 
 export interface ContextBuildTargetState {
-  target: KloPublicIngestPlanTarget;
+  target: KtxPublicIngestPlanTarget;
   status: 'queued' | 'running' | 'done' | 'failed';
   detailLine: string | null;
   summaryText: string | null;
@@ -131,7 +131,7 @@ function renderTargetGroup(
 }
 
 function resumeCommand(projectDir?: string): string {
-  return projectDir ? `klo setup --project-dir ${projectDir}` : 'klo setup';
+  return projectDir ? `ktx setup --project-dir ${projectDir}` : 'ktx setup';
 }
 
 export function renderContextBuildView(
@@ -142,7 +142,7 @@ export function renderContextBuildView(
   const width = columnWidth(state);
   const lines: string[] = [
     '',
-    'Building KLO context',
+    'Building KTX context',
     '─────────────────────',
     ...renderTargetGroup('Primary sources', state.primarySources, state.frame, styled, width),
     ...renderTargetGroup('Context sources', state.contextSources, state.frame, styled, width),
@@ -184,7 +184,7 @@ export function parseIngestSummary(output: string): string | null {
 }
 
 interface CapturedIo {
-  io: KloCliIo;
+  io: KtxCliIo;
   captured(): string;
 }
 
@@ -212,7 +212,7 @@ function createCaptureIo(onProgress: (message: string) => void, isTTY: boolean):
 
 // --- Repaint ---
 
-function createRepainter(io: KloCliIo) {
+function createRepainter(io: KtxCliIo) {
   let lastLineCount = 0;
 
   return {
@@ -229,7 +229,7 @@ function createRepainter(io: KloCliIo) {
 
 // --- Background build ---
 
-function resolveKloEntryScript(): string | null {
+function resolveKtxEntryScript(): string | null {
   const argv1 = process.argv[1];
   if (argv1 && (argv1.endsWith('.js') || argv1.endsWith('.ts') || argv1.endsWith('.mjs'))) {
     return argv1;
@@ -238,11 +238,11 @@ function resolveKloEntryScript(): string | null {
 }
 
 function spawnBackgroundBuild(projectDir: string): { logPath: string } | null {
-  const entryScript = resolveKloEntryScript();
+  const entryScript = resolveKtxEntryScript();
   if (!entryScript) return null;
 
   const resolvedDir = resolve(projectDir);
-  const logDir = join(resolvedDir, '.klo', 'setup');
+  const logDir = join(resolvedDir, '.ktx', 'setup');
   mkdirSync(logDir, { recursive: true });
   const logPath = join(logDir, 'context-build.log');
   const logFd = openSync(logPath, 'w');
@@ -280,11 +280,11 @@ function defaultSetupKeystroke(onDetach: () => void, onCtrlC: () => void): (() =
 
 // --- Orchestration ---
 
-function makeTargetState(target: KloPublicIngestPlanTarget): ContextBuildTargetState {
+function makeTargetState(target: KtxPublicIngestPlanTarget): ContextBuildTargetState {
   return { target, status: 'queued', detailLine: null, summaryText: null, startedAt: null, elapsedMs: 0 };
 }
 
-export function initViewState(targets: KloPublicIngestPlanTarget[]): ContextBuildViewState {
+export function initViewState(targets: KtxPublicIngestPlanTarget[]): ContextBuildViewState {
   return {
     primarySources: targets.filter((t) => t.operation === 'scan').map(makeTargetState),
     contextSources: targets.filter((t) => t.operation === 'source-ingest').map(makeTargetState),
@@ -293,9 +293,9 @@ export function initViewState(targets: KloPublicIngestPlanTarget[]): ContextBuil
 }
 
 export async function runContextBuild(
-  project: KloPublicIngestProject,
+  project: KtxPublicIngestProject,
   args: ContextBuildArgs,
-  io: KloCliIo,
+  io: KtxCliIo,
   deps: ContextBuildDeps = {},
 ): Promise<ContextBuildResult> {
   const plan = buildPublicIngestPlan(project, { projectDir: args.projectDir, all: true });
@@ -339,7 +339,7 @@ export async function runContextBuild(
         const bg = spawnBackgroundBuild(args.projectDir);
         io.stdout.write('\n\nContext build continuing in the background.\n');
         if (bg) io.stdout.write(`Log: ${bg.logPath}\n`);
-        io.stdout.write(`Status: klo setup context status --project-dir ${resolve(args.projectDir)}\n`);
+        io.stdout.write(`Status: ktx setup context status --project-dir ${resolve(args.projectDir)}\n`);
         io.stdout.write(`Resume: ${resumeCommand(args.projectDir)}\n`);
         process.exit(0);
       },
@@ -351,7 +351,7 @@ export async function runContextBuild(
       },
     );
   }
-  const runArgs: Extract<KloPublicIngestArgs, { command: 'run' }> = {
+  const runArgs: Extract<KtxPublicIngestArgs, { command: 'run' }> = {
     command: 'run',
     projectDir: args.projectDir,
     all: true,

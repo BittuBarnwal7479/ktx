@@ -14,7 +14,7 @@ function runValidator(args) {
 }
 
 function writeDebugJsonl(records) {
-  const dir = mkdtempSync(join(tmpdir(), 'klo-llm-debug-validator-'));
+  const dir = mkdtempSync(join(tmpdir(), 'ktx-llm-debug-validator-'));
   const filePath = join(dir, 'debug.jsonl');
   writeFileSync(filePath, `${records.map((record) => JSON.stringify(record)).join('\n')}\n`, 'utf8');
   return filePath;
@@ -52,7 +52,7 @@ test('prints usage and exits 2 when required arguments are missing', () => {
   const result = runValidator([]);
 
   assert.equal(result.status, 2);
-  assert.match(result.stderr, /Usage: node klo\/scripts\/validate-llm-debug-jsonl\.mjs anthropic\|vertex/);
+  assert.match(result.stderr, /Usage: node ktx\/scripts\/validate-llm-debug-jsonl\.mjs anthropic\|vertex/);
 });
 
 test('accepts sanitized debug JSONL with message, message-part, and tool cache markers', () => {

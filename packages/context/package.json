@@ -1,5 +1,5 @@
 {
-  "name": "@klo/context",
+  "name": "@ktx/context",
   "version": "0.0.0-private",
   "description": "Core context library for database agents",
   "private": true,
@@ -127,7 +127,7 @@
     "type-check": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@klo/llm": "workspace:*",
+    "@ktx/llm": "workspace:*",
     "@looker/sdk": "^26.6.1",
     "@looker/sdk-node": "^26.6.1",
     "@looker/sdk-rtl": "^21.6.5",

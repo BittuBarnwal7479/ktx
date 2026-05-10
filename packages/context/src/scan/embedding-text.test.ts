@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { buildKloColumnEmbeddingText } from './embedding-text.js';
+import { buildKtxColumnEmbeddingText } from './embedding-text.js';
 
-describe('KLO scan embedding text', () => {
+describe('KTX scan embedding text', () => {
   it('builds column embedding text with table, description, FK, and sample-value context', () => {
     expect(
-      buildKloColumnEmbeddingText({
+      buildKtxColumnEmbeddingText({
         tableName: 'orders',
         columnName: 'status',
         columnType: 'varchar',
@@ -24,7 +24,7 @@ describe('KLO scan embedding text', () => {
 
   it('omits optional sections when the scan has no enrichment context yet', () => {
     expect(
-      buildKloColumnEmbeddingText({
+      buildKtxColumnEmbeddingText({
         tableName: 'orders',
         columnName: 'id',
         columnType: 'integer',
@@ -35,7 +35,7 @@ describe('KLO scan embedding text', () => {
 
   it('keeps all available sample values when no explicit max is supplied', () => {
     expect(
-      buildKloColumnEmbeddingText({
+      buildKtxColumnEmbeddingText({
         tableName: 'orders',
         columnName: 'status',
         columnType: 'varchar',

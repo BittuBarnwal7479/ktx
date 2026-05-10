@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { KloEmbeddingPort } from '../../../core/embedding.js';
+import type { KtxEmbeddingPort } from '../../../core/embedding.js';
 import { kmeans, pickK } from '../../clustering/kmeans.js';
 import type { WorkUnit } from '../../types.js';
 import { notionMetadataSchema } from './types.js';
@@ -12,7 +12,7 @@ const CLUSTER_SEED = 42;
 interface ClusterNotionWorkUnitsArgs {
   workUnits: WorkUnit[];
   stagedDir: string;
-  embedding: KloEmbeddingPort;
+  embedding: KtxEmbeddingPort;
 }
 
 async function buildClusterText(wu: WorkUnit, stagedDir: string): Promise<string> {

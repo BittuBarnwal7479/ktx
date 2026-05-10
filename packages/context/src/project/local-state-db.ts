@@ -1,6 +1,6 @@
 import { join } from 'node:path';
-import type { KloLocalProject } from './project.js';
+import type { KtxLocalProject } from './project.js';
 
-export function kloLocalStateDbPath(project: Pick<KloLocalProject, 'projectDir'>): string {
-  return join(project.projectDir, '.klo', 'db.sqlite');
+export function ktxLocalStateDbPath(project: Pick<KtxLocalProject, 'projectDir'>): string {
+  return join(project.projectDir, '.ktx', 'db.sqlite');
 }

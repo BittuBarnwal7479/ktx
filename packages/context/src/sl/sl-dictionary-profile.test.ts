@@ -2,16 +2,16 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { initKloProject, type KloLocalProject } from '../project/index.js';
+import { initKtxProject, type KtxLocalProject } from '../project/index.js';
 import { loadLatestSlDictionaryEntries } from './sl-dictionary-profile.js';
 
 describe('loadLatestSlDictionaryEntries', () => {
   let tempDir: string;
-  let project: KloLocalProject;
+  let project: KtxLocalProject;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-sl-dictionary-profile-'));
-    project = await initKloProject({ projectDir: join(tempDir, 'project'), projectName: 'warehouse' });
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-sl-dictionary-profile-'));
+    project = await initKtxProject({ projectDir: join(tempDir, 'project'), projectName: 'warehouse' });
   });
 
   afterEach(async () => {
@@ -63,8 +63,8 @@ describe('loadLatestSlDictionaryEntries', () => {
         null,
         2,
       )}\n`,
-      'klo',
-      'klo@example.com',
+      'ktx',
+      'ktx@example.com',
       'Seed profile',
     );
 
@@ -98,8 +98,8 @@ describe('loadLatestSlDictionaryEntries', () => {
         null,
         2,
       )}\n`,
-      'klo',
-      'klo@example.com',
+      'ktx',
+      'ktx@example.com',
       'Seed newer profile',
     );
 

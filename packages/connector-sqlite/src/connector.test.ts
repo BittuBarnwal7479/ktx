@@ -6,17 +6,17 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   createSqliteLiveDatabaseIntrospection,
-  isKloSqliteConnectionConfig,
-  KloSqliteScanConnector,
+  isKtxSqliteConnectionConfig,
+  KtxSqliteScanConnector,
   sqliteDatabasePathFromConfig,
 } from './index.js';
 
-describe('KloSqliteScanConnector', () => {
+describe('KtxSqliteScanConnector', () => {
   let tempDir: string;
   let dbPath: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-connector-sqlite-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-connector-sqlite-'));
     dbPath = join(tempDir, 'warehouse.db');
     const db = new Database(dbPath);
     db.exec(`
@@ -47,14 +47,14 @@ describe('KloSqliteScanConnector', () => {
   });
 
   it('resolves SQLite path configuration safely', () => {
-    const originalDatabaseUrl = process.env.KLO_SQLITE_TEST_URL;
+    const originalDatabaseUrl = process.env.KTX_SQLITE_TEST_URL;
     const pointerPath = join(tempDir, 'sqlite-path.txt');
-    process.env.KLO_SQLITE_TEST_URL = `sqlite:${dbPath}`;
+    process.env.KTX_SQLITE_TEST_URL = `sqlite:${dbPath}`;
     writeFileSync(pointerPath, dbPath, 'utf-8');
 
     try {
-      expect(isKloSqliteConnectionConfig({ driver: 'sqlite', path: 'warehouse.db', readonly: true })).toBe(true);
-      expect(isKloSqliteConnectionConfig({ driver: 'postgres', url: 'env:DATABASE_URL', readonly: true })).toBe(
+      expect(isKtxSqliteConnectionConfig({ driver: 'sqlite', path: 'warehouse.db', readonly: true })).toBe(true);
+      expect(isKtxSqliteConnectionConfig({ driver: 'postgres', url: 'env:DATABASE_URL', readonly: true })).toBe(
         false,
       );
       expect(
@@ -68,7 +68,7 @@ describe('KloSqliteScanConnector', () => {
         sqliteDatabasePathFromConfig({
           connectionId: 'warehouse',
           projectDir: tempDir,
-          connection: { driver: 'sqlite', url: 'env:KLO_SQLITE_TEST_URL', readonly: true },
+          connection: { driver: 'sqlite', url: 'env:KTX_SQLITE_TEST_URL', readonly: true },
         }),
       ).toBe(dbPath);
       expect(
@@ -94,15 +94,15 @@ describe('KloSqliteScanConnector', () => {
       ).toThrow('Native SQLite connector requires connections.warehouse.readonly: true');
     } finally {
       if (originalDatabaseUrl === undefined) {
-        delete process.env.KLO_SQLITE_TEST_URL;
+        delete process.env.KTX_SQLITE_TEST_URL;
       } else {
-        process.env.KLO_SQLITE_TEST_URL = originalDatabaseUrl;
+        process.env.KTX_SQLITE_TEST_URL = originalDatabaseUrl;
       }
     }
   });
 
   it('introspects schema, primary keys, row counts, views, and foreign keys', async () => {
-    const connector = new KloSqliteScanConnector({
+    const connector = new KtxSqliteScanConnector({
       connectionId: 'warehouse',
       connection: { driver: 'sqlite', path: dbPath, readonly: true },
       now: () => new Date('2026-04-29T10:00:00.000Z'),
@@ -149,7 +149,7 @@ describe('KloSqliteScanConnector', () => {
   });
 
   it('runs samples, distinct values, statistics, and read-only SQL', async () => {
-    const connector = new KloSqliteScanConnector({
+    const connector = new KtxSqliteScanConnector({
       connectionId: 'warehouse',
       connection: { driver: 'sqlite', path: dbPath, readonly: true },
     });

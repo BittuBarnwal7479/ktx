@@ -11,8 +11,8 @@ describe('SqliteContextEvidenceStore', () => {
   let dbPath: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-context-evidence-sqlite-'));
-    dbPath = join(tempDir, '.klo', 'db.sqlite');
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-context-evidence-sqlite-'));
+    dbPath = join(tempDir, '.ktx', 'db.sqlite');
   });
 
   afterEach(async () => {

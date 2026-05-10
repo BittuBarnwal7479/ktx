@@ -18,7 +18,7 @@ describe('standalone example docs', () => {
   it('documents the Orbit relationship verification example project', async () => {
     const examples = await readText('examples/README.md');
     const readme = await readText('examples/orbit-relationship-verification/README.md');
-    const config = await readText('examples/orbit-relationship-verification/klo.yaml');
+    const config = await readText('examples/orbit-relationship-verification/ktx.yaml');
 
     assert.match(examples, /orbit-relationship-verification/);
     assert.match(examples, /relationships:verify-orbit/);
@@ -51,14 +51,14 @@ describe('standalone example docs', () => {
     assert.match(examples, /pg_stat_statements/);
     assert.match(readme, /--enable-historic-sql/);
     assert.match(readme, /--historic-sql-min-calls 2/);
-    assert.match(readme, /klo dev doctor --project-dir/);
+    assert.match(readme, /ktx dev doctor --project-dir/);
     assert.match(readme, /Postgres Historic SQL/);
     assert.match(readme, /dev ingest run/);
     assert.match(compose, /postgres:14/);
     assert.match(compose, /shared_preload_libraries=pg_stat_statements/);
     assert.match(compose, /pg_stat_statements.track=top/);
     assert.match(initSql, /CREATE EXTENSION IF NOT EXISTS pg_stat_statements/);
-    assert.match(initSql, /GRANT pg_read_all_stats TO klo_reader/);
+    assert.match(initSql, /GRANT pg_read_all_stats TO ktx_reader/);
     assert.match(workload, /JOIN customers/);
     assert.match(workload, /app_user/);
     assert.match(workload, /etl_user/);
@@ -81,8 +81,8 @@ describe('standalone example docs', () => {
     assert.match(rootReadme, /`packages\/connector-snowflake`/);
     assert.match(rootReadme, /`packages\/connector-sqlite`/);
     assert.match(rootReadme, /`packages\/connector-sqlserver`/);
-    assert.match(rootReadme, /`python\/klo-sl`/);
-    assert.match(rootReadme, /`python\/klo-daemon`/);
+    assert.match(rootReadme, /`python\/ktx-sl`/);
+    assert.match(rootReadme, /`python\/ktx-daemon`/);
   });
 
   it('documents every standalone MCP tool that the CLI server exposes', async () => {
@@ -103,7 +103,7 @@ describe('standalone example docs', () => {
     assert.match(rootReadme, /`ingest_replay`/);
   });
 
-  it('walks through klo connection list and klo connection test in the README quickstart', async () => {
+  it('walks through ktx connection list and ktx connection test in the README quickstart', async () => {
     const rootReadme = await readText('README.md');
 
     assert.match(rootReadme, /connection list --project-dir/);
@@ -112,7 +112,7 @@ describe('standalone example docs', () => {
     assert.match(rootReadme, /Tables: 1/);
   });
 
-  it('replaces the fake-ingest smoke with a klo scan walkthrough in the README', async () => {
+  it('replaces the fake-ingest smoke with a ktx scan walkthrough in the README', async () => {
     const rootReadme = await readText('README.md');
 
     assert.match(rootReadme, /### Scan the demo warehouse/);
@@ -121,15 +121,15 @@ describe('standalone example docs', () => {
     assert.match(rootReadme, /scan report --project-dir/);
     assert.match(rootReadme, /raw-sources\/warehouse\/live-database/);
     assert.doesNotMatch(rootReadme, /Run a local ingest smoke test/);
-    assert.doesNotMatch(rootReadme, /klo dev ingest run --project-dir/);
-    assert.doesNotMatch(rootReadme, /klo ingest status --project-dir/);
+    assert.doesNotMatch(rootReadme, /ktx dev ingest run --project-dir/);
+    assert.doesNotMatch(rootReadme, /ktx ingest status --project-dir/);
   });
 
   it('documents pnpm setup as a prerequisite when optional dev linking fails', async () => {
     const rootReadme = await readText('README.md');
 
     assert.match(rootReadme, /pnpm run link:dev/);
-    assert.match(rootReadme, /klo-dev --help/);
+    assert.match(rootReadme, /ktx-dev --help/);
     assert.doesNotMatch(
       rootReadme,
       /If the setup command reports that pnpm's global bin directory is not on your\n`PATH`, add the printed directory to your shell profile/,
@@ -144,7 +144,7 @@ describe('standalone example docs', () => {
   });
 
   it('documents daemon HTTP database, source generation, LookML, embedding, and code execution support', async () => {
-    const readme = await readText('python/klo-daemon/README.md');
+    const readme = await readText('python/ktx-daemon/README.md');
 
     assert.match(readme, /semantic-generate-sources/);
     assert.match(readme, /database-introspect/);

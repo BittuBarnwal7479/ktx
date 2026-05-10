@@ -1,30 +1,30 @@
 import { createClient } from '@clickhouse/client';
-import { assertReadOnlySql, limitSqlForExecution } from '@klo/context/connections';
+import { assertReadOnlySql, limitSqlForExecution } from '@ktx/context/connections';
 import {
-  createKloConnectorCapabilities,
-  type KloColumnSampleInput,
-  type KloColumnSampleResult,
-  type KloColumnStatsInput,
-  type KloColumnStatsResult,
-  type KloQueryResult,
-  type KloReadOnlyQueryInput,
-  type KloScanConnector,
-  type KloScanContext,
-  type KloScanInput,
-  type KloSchemaColumn,
-  type KloSchemaSnapshot,
-  type KloSchemaTable,
-  type KloTableRef,
-  type KloTableSampleInput,
-  type KloTableSampleResult,
-} from '@klo/context/scan';
+  createKtxConnectorCapabilities,
+  type KtxColumnSampleInput,
+  type KtxColumnSampleResult,
+  type KtxColumnStatsInput,
+  type KtxColumnStatsResult,
+  type KtxQueryResult,
+  type KtxReadOnlyQueryInput,
+  type KtxScanConnector,
+  type KtxScanContext,
+  type KtxScanInput,
+  type KtxSchemaColumn,
+  type KtxSchemaSnapshot,
+  type KtxSchemaTable,
+  type KtxTableRef,
+  type KtxTableSampleInput,
+  type KtxTableSampleResult,
+} from '@ktx/context/scan';
 import { readFileSync } from 'node:fs';
 import { Agent as HttpsAgent } from 'node:https';
 import { homedir } from 'node:os';
 import { resolve } from 'node:path';
-import { KloClickHouseDialect } from './dialect.js';
+import { KtxClickHouseDialect } from './dialect.js';
 
-export interface KloClickHouseConnectionConfig {
+export interface KtxClickHouseConnectionConfig {
   driver?: string;
   host?: string;
   port?: number;
@@ -38,7 +38,7 @@ export interface KloClickHouseConnectionConfig {
   [key: string]: unknown;
 }
 
-export interface KloClickHouseResolvedClientConfig {
+export interface KtxClickHouseResolvedClientConfig {
   host: string;
   port: number;
   database: string;
@@ -57,49 +57,49 @@ interface ClickHouseResultSet {
   json(): Promise<unknown>;
 }
 
-export interface KloClickHouseClient {
+export interface KtxClickHouseClient {
   query(input: ClickHouseQueryInput): Promise<ClickHouseResultSet>;
   close(): Promise<void>;
 }
 
-export interface KloClickHouseClientFactory {
-  createClient(config: Parameters<typeof createClient>[0]): KloClickHouseClient;
+export interface KtxClickHouseClientFactory {
+  createClient(config: Parameters<typeof createClient>[0]): KtxClickHouseClient;
 }
 
-interface KloClickHouseResolvedEndpoint {
+interface KtxClickHouseResolvedEndpoint {
   host: string;
   port: number;
   close?: () => Promise<void>;
 }
 
-export interface KloClickHouseEndpointResolver {
+export interface KtxClickHouseEndpointResolver {
   resolve(input: {
     host: string;
     port: number;
-    connection: KloClickHouseConnectionConfig;
-  }): Promise<KloClickHouseResolvedEndpoint>;
+    connection: KtxClickHouseConnectionConfig;
+  }): Promise<KtxClickHouseResolvedEndpoint>;
 }
 
-export interface KloClickHouseScanConnectorOptions {
+export interface KtxClickHouseScanConnectorOptions {
   connectionId: string;
-  connection: KloClickHouseConnectionConfig | undefined;
-  clientFactory?: KloClickHouseClientFactory;
-  endpointResolver?: KloClickHouseEndpointResolver;
+  connection: KtxClickHouseConnectionConfig | undefined;
+  clientFactory?: KtxClickHouseClientFactory;
+  endpointResolver?: KtxClickHouseEndpointResolver;
   env?: NodeJS.ProcessEnv;
   now?: () => Date;
 }
 
-export interface KloClickHouseReadOnlyQueryInput extends KloReadOnlyQueryInput {
+export interface KtxClickHouseReadOnlyQueryInput extends KtxReadOnlyQueryInput {
   params?: Record<string, unknown>;
 }
 
-export interface KloClickHouseColumnDistinctValuesOptions {
+export interface KtxClickHouseColumnDistinctValuesOptions {
   maxCardinality: number;
   limit: number;
   sampleSize?: number;
 }
 
-export interface KloClickHouseColumnDistinctValuesResult {
+export interface KtxClickHouseColumnDistinctValuesResult {
   values: string[] | null;
   cardinality: number;
 }
@@ -134,15 +134,15 @@ interface ClickHouseCompactResponse {
   rows?: number;
 }
 
-class DefaultClickHouseClientFactory implements KloClickHouseClientFactory {
-  createClient(config: Parameters<typeof createClient>[0]): KloClickHouseClient {
+class DefaultClickHouseClientFactory implements KtxClickHouseClientFactory {
+  createClient(config: Parameters<typeof createClient>[0]): KtxClickHouseClient {
     return createClient(config);
   }
 }
 
 function stringConfigValue(
-  connection: KloClickHouseConnectionConfig | undefined,
-  key: keyof KloClickHouseConnectionConfig,
+  connection: KtxClickHouseConnectionConfig | undefined,
+  key: keyof KtxClickHouseConnectionConfig,
   env: NodeJS.ProcessEnv,
 ): string | undefined {
   const value = connection?.[key];
@@ -166,7 +166,7 @@ function maybeNumber(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
-function parseClickHouseUrl(url: string): Partial<KloClickHouseConnectionConfig> {
+function parseClickHouseUrl(url: string): Partial<KtxClickHouseConnectionConfig> {
   const parsed = new URL(url);
   return {
     host: parsed.hostname,
@@ -178,7 +178,7 @@ function parseClickHouseUrl(url: string): Partial<KloClickHouseConnectionConfig>
   };
 }
 
-function tableKind(engine: string): KloSchemaTable['kind'] {
+function tableKind(engine: string): KtxSchemaTable['kind'] {
   return engine === 'View' || engine === 'MaterializedView' ? 'view' : 'table';
 }
 
@@ -186,16 +186,16 @@ function isNullableClickHouseType(type: string): boolean {
   return type.startsWith('Nullable(') || type.startsWith('LowCardinality(Nullable(');
 }
 
-export function isKloClickHouseConnectionConfig(connection: KloClickHouseConnectionConfig | undefined): boolean {
+export function isKtxClickHouseConnectionConfig(connection: KtxClickHouseConnectionConfig | undefined): boolean {
   return String(connection?.driver ?? '').toLowerCase() === 'clickhouse';
 }
 
 export function clickHouseClientConfigFromConfig(input: {
   connectionId: string;
-  connection: KloClickHouseConnectionConfig | undefined;
+  connection: KtxClickHouseConnectionConfig | undefined;
   env?: NodeJS.ProcessEnv;
-}): KloClickHouseResolvedClientConfig {
-  if (!isKloClickHouseConnectionConfig(input.connection)) {
+}): KtxClickHouseResolvedClientConfig {
+  if (!isKtxClickHouseConnectionConfig(input.connection)) {
     throw new Error(`Native ClickHouse connector cannot run driver "${input.connection?.driver ?? 'unknown'}"`);
   }
   if (input.connection?.readonly !== true) {
@@ -205,7 +205,7 @@ export function clickHouseClientConfigFromConfig(input: {
   const env = input.env ?? process.env;
   const referencedUrl = stringConfigValue(input.connection, 'url', env);
   const urlConfig = referencedUrl ? parseClickHouseUrl(referencedUrl) : {};
-  const merged: KloClickHouseConnectionConfig = { ...urlConfig, ...input.connection };
+  const merged: KtxClickHouseConnectionConfig = { ...urlConfig, ...input.connection };
   const host = stringConfigValue(merged, 'host', env);
   const database = stringConfigValue(merged, 'database', env) ?? 'default';
   const username = stringConfigValue(merged, 'username', env) ?? stringConfigValue(merged, 'user', env) ?? 'default';
@@ -224,10 +224,10 @@ export function clickHouseClientConfigFromConfig(input: {
   };
 }
 
-export class KloClickHouseScanConnector implements KloScanConnector {
+export class KtxClickHouseScanConnector implements KtxScanConnector {
   readonly id: string;
   readonly driver = 'clickhouse' as const;
-  readonly capabilities = createKloConnectorCapabilities({
+  readonly capabilities = createKtxConnectorCapabilities({
     tableSampling: true,
     columnSampling: true,
     columnStats: false,
@@ -238,16 +238,16 @@ export class KloClickHouseScanConnector implements KloScanConnector {
   });
 
   private readonly connectionId: string;
-  private readonly connection: KloClickHouseConnectionConfig;
-  private readonly clientConfig: KloClickHouseResolvedClientConfig;
-  private readonly clientFactory: KloClickHouseClientFactory;
-  private readonly endpointResolver?: KloClickHouseEndpointResolver;
+  private readonly connection: KtxClickHouseConnectionConfig;
+  private readonly clientConfig: KtxClickHouseResolvedClientConfig;
+  private readonly clientFactory: KtxClickHouseClientFactory;
+  private readonly endpointResolver?: KtxClickHouseEndpointResolver;
   private readonly now: () => Date;
-  private readonly dialect = new KloClickHouseDialect();
-  private client: KloClickHouseClient | null = null;
-  private resolvedEndpoint: KloClickHouseResolvedEndpoint | null = null;
+  private readonly dialect = new KtxClickHouseDialect();
+  private client: KtxClickHouseClient | null = null;
+  private resolvedEndpoint: KtxClickHouseResolvedEndpoint | null = null;
 
-  constructor(options: KloClickHouseScanConnectorOptions) {
+  constructor(options: KtxClickHouseScanConnectorOptions) {
     this.connectionId = options.connectionId;
     this.connection = options.connection ?? {};
     this.clientConfig = clickHouseClientConfigFromConfig({
@@ -270,7 +270,7 @@ export class KloClickHouseScanConnector implements KloScanConnector {
     }
   }
 
-  async introspect(input: KloScanInput, _ctx: KloScanContext): Promise<KloSchemaSnapshot> {
+  async introspect(input: KtxScanInput, _ctx: KtxScanContext): Promise<KtxSchemaSnapshot> {
     this.assertConnection(input.connectionId);
     const database = this.clientConfig.database;
     const tables = await this.queryEachRow<ClickHouseTableRow>(
@@ -326,7 +326,7 @@ export class KloClickHouseScanConnector implements KloScanConnector {
     };
   }
 
-  async sampleTable(input: KloTableSampleInput, _ctx: KloScanContext): Promise<KloTableSampleResult> {
+  async sampleTable(input: KtxTableSampleInput, _ctx: KtxScanContext): Promise<KtxTableSampleResult> {
     this.assertConnection(input.connectionId);
     const result = await this.query(
       this.dialect.generateSampleQuery(this.qTableName(input.table), input.limit, input.columns),
@@ -334,7 +334,7 @@ export class KloClickHouseScanConnector implements KloScanConnector {
     return { headers: result.headers, rows: result.rows, totalRows: result.totalRows };
   }
 
-  async sampleColumn(input: KloColumnSampleInput, _ctx: KloScanContext): Promise<KloColumnSampleResult> {
+  async sampleColumn(input: KtxColumnSampleInput, _ctx: KtxScanContext): Promise<KtxColumnSampleResult> {
     this.assertConnection(input.connectionId);
     const result = await this.query(
       this.dialect.generateColumnSampleQuery(this.qTableName(input.table), input.column, input.limit),
@@ -343,11 +343,11 @@ export class KloClickHouseScanConnector implements KloScanConnector {
     return { values, nullCount: null, distinctCount: null };
   }
 
-  async columnStats(_input: KloColumnStatsInput, _ctx: KloScanContext): Promise<KloColumnStatsResult | null> {
+  async columnStats(_input: KtxColumnStatsInput, _ctx: KtxScanContext): Promise<KtxColumnStatsResult | null> {
     return null;
   }
 
-  async executeReadOnly(input: KloClickHouseReadOnlyQueryInput, _ctx: KloScanContext): Promise<KloQueryResult> {
+  async executeReadOnly(input: KtxClickHouseReadOnlyQueryInput, _ctx: KtxScanContext): Promise<KtxQueryResult> {
     this.assertConnection(input.connectionId);
     const limitedSql = limitSqlForExecution(assertReadOnlySql(input.sql), input.maxRows);
     const prepared = this.dialect.prepareQuery(limitedSql, input.params);
@@ -356,10 +356,10 @@ export class KloClickHouseScanConnector implements KloScanConnector {
   }
 
   async getColumnDistinctValues(
-    table: KloTableRef,
+    table: KtxTableRef,
     columnName: string,
-    options: KloClickHouseColumnDistinctValuesOptions,
-  ): Promise<KloClickHouseColumnDistinctValuesResult | null> {
+    options: KtxClickHouseColumnDistinctValuesOptions,
+  ): Promise<KtxClickHouseColumnDistinctValuesResult | null> {
     const sampleSize = options.sampleSize ?? 10000;
     const tableName = this.qTableName(table);
     const quotedColumn = this.dialect.quoteIdentifier(columnName);
@@ -397,7 +397,7 @@ export class KloClickHouseScanConnector implements KloScanConnector {
     return Number(result.rows[0]?.[0] ?? 0);
   }
 
-  qTableName(table: Pick<KloTableRef, 'name'> & Partial<Pick<KloTableRef, 'catalog' | 'db'>>): string {
+  qTableName(table: Pick<KtxTableRef, 'name'> & Partial<Pick<KtxTableRef, 'catalog' | 'db'>>): string {
     return this.dialect.formatTableName(table);
   }
 
@@ -428,7 +428,7 @@ export class KloClickHouseScanConnector implements KloScanConnector {
     }
   }
 
-  private toSchemaTable(table: ClickHouseTableRow, columns: ClickHouseColumnRow[], estimatedRows: number): KloSchemaTable {
+  private toSchemaTable(table: ClickHouseTableRow, columns: ClickHouseColumnRow[], estimatedRows: number): KtxSchemaTable {
     const kind = tableKind(table.engine);
     return {
       catalog: null,
@@ -442,7 +442,7 @@ export class KloClickHouseScanConnector implements KloScanConnector {
     };
   }
 
-  private toSchemaColumn(column: ClickHouseColumnRow): KloSchemaColumn {
+  private toSchemaColumn(column: ClickHouseColumnRow): KtxSchemaColumn {
     return {
       name: column.name,
       nativeType: column.type,
@@ -454,7 +454,7 @@ export class KloClickHouseScanConnector implements KloScanConnector {
     };
   }
 
-  private async clientForQuery(): Promise<KloClickHouseClient> {
+  private async clientForQuery(): Promise<KtxClickHouseClient> {
     if (!this.client) {
       const config = { ...this.clientConfig };
       if (this.endpointResolver) {
@@ -500,7 +500,7 @@ export class KloClickHouseScanConnector implements KloScanConnector {
     return (await resultSet.json()) as T[];
   }
 
-  private async query(sql: string, params?: Record<string, unknown>): Promise<Omit<KloQueryResult, 'rowCount'>> {
+  private async query(sql: string, params?: Record<string, unknown>): Promise<Omit<KtxQueryResult, 'rowCount'>> {
     const client = await this.clientForQuery();
     const resultSet = await client.query({
       query: assertReadOnlySql(sql),
@@ -519,7 +519,7 @@ export class KloClickHouseScanConnector implements KloScanConnector {
 
   private assertConnection(connectionId: string): void {
     if (connectionId !== this.connectionId) {
-      throw new Error(`KLO ClickHouse connector ${this.id} cannot serve connection ${connectionId}`);
+      throw new Error(`KTX ClickHouse connector ${this.id} cannot serve connection ${connectionId}`);
     }
   }
 }

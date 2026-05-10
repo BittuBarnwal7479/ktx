@@ -1,14 +1,14 @@
 {
-  "name": "@klo/cli",
+  "name": "@ktx/cli",
   "version": "0.0.0-private",
-  "description": "CLI wrapper for klo context packages",
+  "description": "CLI wrapper for ktx context packages",
   "private": true,
   "type": "module",
   "engines": {
     "node": ">=22.0.0"
   },
   "bin": {
-    "klo": "./dist/bin.js"
+    "ktx": "./dist/bin.js"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -34,16 +34,16 @@
   "dependencies": {
     "@clack/prompts": "1.3.0",
     "@commander-js/extra-typings": "14.0.0",
-    "@klo/connector-bigquery": "workspace:*",
-    "@klo/connector-clickhouse": "workspace:*",
-    "@klo/connector-mysql": "workspace:*",
-    "@klo/connector-postgres": "workspace:*",
-    "@klo/connector-posthog": "workspace:*",
-    "@klo/connector-snowflake": "workspace:*",
-    "@klo/connector-sqlite": "workspace:*",
-    "@klo/connector-sqlserver": "workspace:*",
-    "@klo/context": "workspace:*",
-    "@klo/llm": "workspace:*",
+    "@ktx/connector-bigquery": "workspace:*",
+    "@ktx/connector-clickhouse": "workspace:*",
+    "@ktx/connector-mysql": "workspace:*",
+    "@ktx/connector-postgres": "workspace:*",
+    "@ktx/connector-posthog": "workspace:*",
+    "@ktx/connector-snowflake": "workspace:*",
+    "@ktx/connector-sqlite": "workspace:*",
+    "@ktx/connector-sqlserver": "workspace:*",
+    "@ktx/context": "workspace:*",
+    "@ktx/llm": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.27.1",
     "commander": "14.0.3",
     "ink": "^7.0.1",

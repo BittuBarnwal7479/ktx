@@ -1,4 +1,4 @@
-import type { KloEmbeddingPort, KloLogger } from '../core/index.js';
+import type { KtxEmbeddingPort, KtxLogger } from '../core/index.js';
 import { noopLogger } from '../core/index.js';
 import { DEFAULT_PRIORITY, resolveDescription } from './descriptions.js';
 import type { SlSourcesIndexPort } from './ports.js';
@@ -74,9 +74,9 @@ export function buildSemanticLayerSourceSearchText(
 
 export class SlSearchService {
   constructor(
-    private readonly embeddingService: KloEmbeddingPort,
+    private readonly embeddingService: KtxEmbeddingPort,
     private readonly slSourcesRepository: SlSourcesIndexPort,
-    private readonly logger: KloLogger = noopLogger,
+    private readonly logger: KtxLogger = noopLogger,
   ) {}
 
   async indexSources(connectionId: string, sources: SemanticLayerSource[]): Promise<void> {

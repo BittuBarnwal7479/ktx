@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   createPostHogLiveDatabaseIntrospection,
-  isKloPostHogConnectionConfig,
-  KloPostHogScanConnector,
+  isKtxPostHogConnectionConfig,
+  KtxPostHogScanConnector,
   postHogConnectionConfigFromConfig,
-  type KloPostHogConnectionConfig,
-  type KloPostHogFetch,
+  type KtxPostHogConnectionConfig,
+  type KtxPostHogFetch,
 } from './index.js';
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -17,7 +17,7 @@ function jsonResponse(body: unknown, status = 200): Response {
   } as Response;
 }
 
-function fakeFetch(queries: string[] = []): KloPostHogFetch {
+function fakeFetch(queries: string[] = []): KtxPostHogFetch {
   return vi.fn(async (_url: string, init?: RequestInit) => {
     const body = JSON.parse(String(init?.body ?? '{}')) as { query?: { kind?: string; query?: string } };
     const sql = body.query?.query ?? '';
@@ -160,13 +160,13 @@ function fakeFetch(queries: string[] = []): KloPostHogFetch {
       });
     }
     return jsonResponse({ results: [['$pageview']], columns: ['event'], types: [['event', 'String']], error: null, hogql: sql });
-  }) as KloPostHogFetch;
+  }) as KtxPostHogFetch;
 }
 
 const posthogApiKeyEnv = ['POSTHOG', 'API', 'KEY'].join('_');
 const fixtureToken = ['phx', 'fixture'].join('_');
 const env = { [posthogApiKeyEnv]: fixtureToken };
-const connection: KloPostHogConnectionConfig & { driver: string } = {
+const connection: KtxPostHogConnectionConfig & { driver: string } = {
   driver: 'posthog',
   ['api_' + 'key']: `env:${posthogApiKeyEnv}`,
   project_id: '157881',
@@ -174,10 +174,10 @@ const connection: KloPostHogConnectionConfig & { driver: string } = {
   readonly: true,
 };
 
-describe('KloPostHogScanConnector', () => {
+describe('KtxPostHogScanConnector', () => {
   it('resolves configuration safely', () => {
-    expect(isKloPostHogConnectionConfig(connection)).toBe(true);
-    expect(isKloPostHogConnectionConfig({ driver: 'mysql' })).toBe(false);
+    expect(isKtxPostHogConnectionConfig(connection)).toBe(true);
+    expect(isKtxPostHogConnectionConfig({ driver: 'mysql' })).toBe(false);
     const resolved = postHogConnectionConfigFromConfig({
       connectionId: 'product',
       connection,
@@ -195,7 +195,7 @@ describe('KloPostHogScanConnector', () => {
   });
 
   it('introspects schema metadata, hidden tables, descriptions, primary keys, and normalized types', async () => {
-    const connector = new KloPostHogScanConnector({
+    const connector = new KtxPostHogScanConnector({
       connectionId: 'product',
       connection,
       env,
@@ -269,7 +269,7 @@ describe('KloPostHogScanConnector', () => {
 
   it('runs samples, read-only SQL, event-stream discovery, row counts, and cleanup', async () => {
     const queries: string[] = [];
-    const connector = new KloPostHogScanConnector({
+    const connector = new KtxPostHogScanConnector({
       connectionId: 'product',
       connection,
       env,

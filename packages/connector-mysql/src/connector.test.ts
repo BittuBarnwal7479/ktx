@@ -2,17 +2,17 @@ import { describe, expect, it, vi } from 'vitest';
 import type { FieldPacket, RowDataPacket } from 'mysql2/promise';
 import {
   createMysqlLiveDatabaseIntrospection,
-  isKloMysqlConnectionConfig,
-  KloMysqlScanConnector,
+  isKtxMysqlConnectionConfig,
+  KtxMysqlScanConnector,
   mysqlConnectionPoolConfigFromConfig,
-  type KloMysqlPoolFactory,
+  type KtxMysqlPoolFactory,
 } from './index.js';
 
 function mysqlResult(rows: Record<string, unknown>[], fields: Array<{ name: string; type?: number }>): [RowDataPacket[], FieldPacket[]] {
   return [rows as RowDataPacket[], fields as FieldPacket[]];
 }
 
-function fakePoolFactory(): KloMysqlPoolFactory {
+function fakePoolFactory(): KtxMysqlPoolFactory {
   const query = vi.fn(async (sql: string, params?: unknown): Promise<[RowDataPacket[], FieldPacket[]]> => {
     if (sql.includes('INFORMATION_SCHEMA.TABLES')) {
       return mysqlResult(
@@ -57,7 +57,7 @@ function fakePoolFactory(): KloMysqlPoolFactory {
     if (sql.includes('SELECT `id`, `status` FROM `analytics`.`orders` LIMIT 1')) {
       return mysqlResult([{ id: 10, status: 'paid' }], [{ name: 'id', type: 3 }, { name: 'status', type: 253 }]);
     }
-    if (sql.includes('select * from (select id, status from analytics.orders) as klo_query_result limit 1')) {
+    if (sql.includes('select * from (select id, status from analytics.orders) as ktx_query_result limit 1')) {
       return mysqlResult([{ id: 10, status: 'paid' }], [{ name: 'id', type: 3 }, { name: 'status', type: 253 }]);
     }
     if (sql.includes('SELECT `status` FROM `analytics`.`orders`')) {
@@ -90,10 +90,10 @@ function fakePoolFactory(): KloMysqlPoolFactory {
   };
 }
 
-describe('KloMysqlScanConnector', () => {
+describe('KtxMysqlScanConnector', () => {
   it('resolves MySQL connection configuration safely', () => {
-    expect(isKloMysqlConnectionConfig({ driver: 'mysql', host: 'localhost', database: 'analytics', readonly: true })).toBe(true);
-    expect(isKloMysqlConnectionConfig({ driver: 'postgres', host: 'localhost', database: 'analytics' })).toBe(false);
+    expect(isKtxMysqlConnectionConfig({ driver: 'mysql', host: 'localhost', database: 'analytics', readonly: true })).toBe(true);
+    expect(isKtxMysqlConnectionConfig({ driver: 'postgres', host: 'localhost', database: 'analytics' })).toBe(false);
     expect(
       mysqlConnectionPoolConfigFromConfig({
         connectionId: 'warehouse',
@@ -125,7 +125,7 @@ describe('KloMysqlScanConnector', () => {
   });
 
   it('introspects schema, primary keys, comments, row counts, views, and foreign keys', async () => {
-    const connector = new KloMysqlScanConnector({
+    const connector = new KtxMysqlScanConnector({
       connectionId: 'warehouse',
       connection: {
         driver: 'mysql',
@@ -184,7 +184,7 @@ describe('KloMysqlScanConnector', () => {
 
   it('runs samples, distinct values, read-only SQL, row count, schema list, and cleanup', async () => {
     const poolFactory = fakePoolFactory();
-    const connector = new KloMysqlScanConnector({
+    const connector = new KtxMysqlScanConnector({
       connectionId: 'warehouse',
       connection: {
         driver: 'mysql',

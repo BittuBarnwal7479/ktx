@@ -7,14 +7,14 @@ import type {
   LookerTableIdentifierParser,
 } from './mapping.js';
 
-export type KloDaemonTableIdentifierHttpJsonRunner = (
+export type KtxDaemonTableIdentifierHttpJsonRunner = (
   path: string,
   payload: Record<string, unknown>,
 ) => Promise<Record<string, unknown>>;
 
 export interface DaemonLookerTableIdentifierParserOptions {
   baseUrl: string;
-  requestJson?: KloDaemonTableIdentifierHttpJsonRunner;
+  requestJson?: KtxDaemonTableIdentifierHttpJsonRunner;
 }
 
 export function createDaemonLookerTableIdentifierParser(
@@ -25,7 +25,7 @@ export function createDaemonLookerTableIdentifierParser(
     async parse(items: LookerTableIdentifierParseItem[]): Promise<Record<string, LookerParsedIdentifier>> {
       const raw = await requestJson('/sql/parse-table-identifier', { items });
       if (!raw.results || typeof raw.results !== 'object' || Array.isArray(raw.results)) {
-        throw new Error('klo-daemon table identifier parser returned invalid results');
+        throw new Error('ktx-daemon table identifier parser returned invalid results');
       }
       return raw.results as Record<string, LookerParsedIdentifier>;
     },
@@ -36,7 +36,7 @@ function normalizedBaseUrl(baseUrl: string): string {
   return baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
 }
 
-function postJson(baseUrl: string): KloDaemonTableIdentifierHttpJsonRunner {
+function postJson(baseUrl: string): KtxDaemonTableIdentifierHttpJsonRunner {
   return async (path, payload) =>
     new Promise((resolve, reject) => {
       const target = new URL(path.replace(/^\//, ''), normalizedBaseUrl(baseUrl));
@@ -59,13 +59,13 @@ function postJson(baseUrl: string): KloDaemonTableIdentifierHttpJsonRunner {
             const text = Buffer.concat(chunks).toString('utf8');
             const statusCode = response.statusCode ?? 0;
             if (statusCode < 200 || statusCode >= 300) {
-              reject(new Error(`klo-daemon HTTP ${path} failed with ${statusCode}: ${text}`));
+              reject(new Error(`ktx-daemon HTTP ${path} failed with ${statusCode}: ${text}`));
               return;
             }
             try {
               const parsed = JSON.parse(text) as unknown;
               if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-                reject(new Error(`klo-daemon HTTP ${path} returned non-object JSON`));
+                reject(new Error(`ktx-daemon HTTP ${path} returned non-object JSON`));
                 return;
               }
               resolve(parsed as Record<string, unknown>);

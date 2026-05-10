@@ -3,14 +3,14 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
-  completedKloScanEnrichmentStateSummary,
-  computeKloScanEnrichmentInputHash,
-  summarizeKloScanEnrichmentState,
+  completedKtxScanEnrichmentStateSummary,
+  computeKtxScanEnrichmentInputHash,
+  summarizeKtxScanEnrichmentState,
 } from './enrichment-state.js';
 import { SqliteLocalScanEnrichmentStateStore } from './sqlite-local-enrichment-state-store.js';
-import type { KloSchemaSnapshot } from './types.js';
+import type { KtxSchemaSnapshot } from './types.js';
 
-const snapshot: KloSchemaSnapshot = {
+const snapshot: KtxSchemaSnapshot = {
   connectionId: 'warehouse',
   driver: 'postgres',
   extractedAt: '2026-04-29T12:00:00.000Z',
@@ -45,7 +45,7 @@ describe('scan enrichment state', () => {
   let store: SqliteLocalScanEnrichmentStateStore;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-scan-enrichment-state-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-scan-enrichment-state-'));
     store = new SqliteLocalScanEnrichmentStateStore({ dbPath: join(tempDir, 'db.sqlite') });
   });
 
@@ -54,13 +54,13 @@ describe('scan enrichment state', () => {
   });
 
   it('computes stable input hashes without depending on object key order', () => {
-    const first = computeKloScanEnrichmentInputHash({
+    const first = computeKtxScanEnrichmentInputHash({
       snapshot,
       mode: 'enriched',
       detectRelationships: true,
       providerIdentity: { provider: 'deterministic', embeddingDimensions: 8, llmModel: 'a' },
     });
-    const second = computeKloScanEnrichmentInputHash({
+    const second = computeKtxScanEnrichmentInputHash({
       snapshot: { ...snapshot, metadata: {} },
       mode: 'enriched',
       detectRelationships: true,
@@ -70,7 +70,7 @@ describe('scan enrichment state', () => {
     if (!firstTable) {
       throw new Error('Expected test snapshot table');
     }
-    const changed = computeKloScanEnrichmentInputHash({
+    const changed = computeKtxScanEnrichmentInputHash({
       snapshot: { ...snapshot, tables: [{ ...firstTable, name: 'orders_v2' }] },
       mode: 'enriched',
       detectRelationships: true,
@@ -83,7 +83,7 @@ describe('scan enrichment state', () => {
   });
 
   it('persists completed stages and ignores stale hashes', async () => {
-    const inputHash = computeKloScanEnrichmentInputHash({
+    const inputHash = computeKtxScanEnrichmentInputHash({
       snapshot,
       mode: 'enriched',
       detectRelationships: true,
@@ -155,7 +155,7 @@ describe('scan enrichment state', () => {
 
   it('summarizes resumed, completed, and failed stages for reports', () => {
     expect(
-      summarizeKloScanEnrichmentState({
+      summarizeKtxScanEnrichmentState({
         resumedStages: ['descriptions'],
         completedStages: ['descriptions', 'embeddings'],
         failedStages: ['relationships'],
@@ -166,7 +166,7 @@ describe('scan enrichment state', () => {
       failedStages: ['relationships'],
     });
 
-    expect(completedKloScanEnrichmentStateSummary()).toEqual({
+    expect(completedKtxScanEnrichmentStateSummary()).toEqual({
       resumedStages: [],
       completedStages: [],
       failedStages: [],

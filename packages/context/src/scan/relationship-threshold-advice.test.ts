@@ -1,18 +1,18 @@
-import type { KloLocalProject } from '../project/index.js';
+import type { KtxLocalProject } from '../project/index.js';
 import { describe, expect, it, vi } from 'vitest';
 import {
   adviseLocalRelationshipFeedbackThresholds,
-  buildKloRelationshipThresholdAdviceReport,
-  formatKloRelationshipThresholdAdviceMarkdown,
+  buildKtxRelationshipThresholdAdviceReport,
+  formatKtxRelationshipThresholdAdviceMarkdown,
 } from './relationship-threshold-advice.js';
 import type {
   ExportLocalRelationshipFeedbackLabelsResult,
-  KloRelationshipFeedbackLabel,
+  KtxRelationshipFeedbackLabel,
 } from './relationship-feedback-export.js';
 
 function label(
-  input: Partial<KloRelationshipFeedbackLabel> & Pick<KloRelationshipFeedbackLabel, 'candidateId' | 'decision' | 'score'>,
-): KloRelationshipFeedbackLabel {
+  input: Partial<KtxRelationshipFeedbackLabel> & Pick<KtxRelationshipFeedbackLabel, 'candidateId' | 'decision' | 'score'>,
+): KtxRelationshipFeedbackLabel {
   return {
     schemaVersion: 1,
     previousStatus: 'review',
@@ -37,7 +37,7 @@ function label(
   };
 }
 
-function feedback(labels: KloRelationshipFeedbackLabel[]): ExportLocalRelationshipFeedbackLabelsResult {
+function feedback(labels: KtxRelationshipFeedbackLabel[]): ExportLocalRelationshipFeedbackLabelsResult {
   return {
     generatedAt: '2026-05-07T13:00:00.000Z',
     filters: { connectionId: null, decision: 'all' },
@@ -55,7 +55,7 @@ function feedback(labels: KloRelationshipFeedbackLabel[]): ExportLocalRelationsh
 
 describe('relationship threshold advice', () => {
   it('selects the highest-quality threshold candidate when enough labels exist', () => {
-    const report = buildKloRelationshipThresholdAdviceReport(
+    const report = buildKtxRelationshipThresholdAdviceReport(
       feedback([
         label({
           candidateId: 'orders:orders.customer_id->customers:customers.id',
@@ -125,7 +125,7 @@ describe('relationship threshold advice', () => {
   });
 
   it('reports insufficient labels without hiding evaluated candidates', () => {
-    const report = buildKloRelationshipThresholdAdviceReport(
+    const report = buildKtxRelationshipThresholdAdviceReport(
       feedback([
         label({ candidateId: 'orders:orders.customer_id->customers:customers.id', decision: 'accepted', score: 0.91 }),
         label({ candidateId: 'orders:orders.note_id->notes:notes.id', decision: 'rejected', score: 0.21 }),
@@ -157,7 +157,7 @@ describe('relationship threshold advice', () => {
   });
 
   it('reports no eligible thresholds when label counts pass but quality gates fail', () => {
-    const report = buildKloRelationshipThresholdAdviceReport(
+    const report = buildKtxRelationshipThresholdAdviceReport(
       feedback([
         label({ candidateId: 'a', decision: 'accepted', score: 0.92 }),
         label({ candidateId: 'b', decision: 'accepted', score: 0.58 }),
@@ -186,7 +186,7 @@ describe('relationship threshold advice', () => {
   });
 
   it('wraps the feedback exporter and preserves warnings', async () => {
-    const project = { projectDir: '/tmp/klo-project' } as KloLocalProject;
+    const project = { projectDir: '/tmp/ktx-project' } as KtxLocalProject;
     const exportLocalRelationshipFeedbackLabels = vi.fn(async () => ({
       ...feedback([]),
       warnings: [
@@ -216,7 +216,7 @@ describe('relationship threshold advice', () => {
   });
 
   it('formats a stable human-readable report', () => {
-    const report = buildKloRelationshipThresholdAdviceReport(
+    const report = buildKtxRelationshipThresholdAdviceReport(
       feedback([
         label({ candidateId: 'orders:orders.customer_id->customers:customers.id', decision: 'accepted', score: 0.91 }),
         label({ candidateId: 'orders:orders.account_id->accounts:accounts.id', decision: 'accepted', score: 0.61 }),
@@ -233,9 +233,9 @@ describe('relationship threshold advice', () => {
       },
     );
 
-    expect(formatKloRelationshipThresholdAdviceMarkdown(report)).toContain('KLO relationship threshold advice');
-    expect(formatKloRelationshipThresholdAdviceMarkdown(report)).toContain('Status: ready');
-    expect(formatKloRelationshipThresholdAdviceMarkdown(report)).toContain('Recommended: accept=0.90 review=0.55');
-    expect(formatKloRelationshipThresholdAdviceMarkdown(report)).toContain('acceptedPrecision=1.000');
+    expect(formatKtxRelationshipThresholdAdviceMarkdown(report)).toContain('KTX relationship threshold advice');
+    expect(formatKtxRelationshipThresholdAdviceMarkdown(report)).toContain('Status: ready');
+    expect(formatKtxRelationshipThresholdAdviceMarkdown(report)).toContain('Recommended: accept=0.90 review=0.55');
+    expect(formatKtxRelationshipThresholdAdviceMarkdown(report)).toContain('acceptedPrecision=1.000');
   });
 });

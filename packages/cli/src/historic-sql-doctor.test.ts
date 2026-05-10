@@ -1,5 +1,5 @@
-import { buildDefaultKloProjectConfig, type KloProjectConnectionConfig } from '@klo/context/project';
-import { HistoricSqlExtensionMissingError } from '@klo/context/ingest';
+import { buildDefaultKtxProjectConfig, type KtxProjectConnectionConfig } from '@ktx/context/project';
+import { HistoricSqlExtensionMissingError } from '@ktx/context/ingest';
 import { describe, expect, it, vi } from 'vitest';
 import {
   runPostgresHistoricSqlDoctorChecks,
@@ -7,14 +7,14 @@ import {
   type PostgresHistoricSqlDoctorProbe,
 } from './historic-sql-doctor.js';
 
-function projectWithConnections(connections: Record<string, KloProjectConnectionConfig>): HistoricSqlDoctorProject {
+function projectWithConnections(connections: Record<string, KtxProjectConnectionConfig>): HistoricSqlDoctorProject {
   return {
-    projectDir: '/tmp/klo-project',
+    projectDir: '/tmp/ktx-project',
     config: {
-      ...buildDefaultKloProjectConfig('warehouse'),
+      ...buildDefaultKtxProjectConfig('warehouse'),
       connections,
       ingest: {
-        ...buildDefaultKloProjectConfig('warehouse').ingest,
+        ...buildDefaultKtxProjectConfig('warehouse').ingest,
         adapters: ['live-database', 'historic-sql'],
       },
     },
@@ -61,7 +61,7 @@ describe('runPostgresHistoricSqlDoctorChecks', () => {
     );
 
     expect(probe).toHaveBeenCalledWith({
-      projectDir: '/tmp/klo-project',
+      projectDir: '/tmp/ktx-project',
       connectionId: 'warehouse',
       connection: {
         driver: 'postgres',
@@ -108,7 +108,7 @@ describe('runPostgresHistoricSqlDoctorChecks', () => {
         status: 'warn',
         detail:
           'pg_stat_statements ready (PostgreSQL 16.4) with warnings: pg_stat_statements.max is 1000; set it to at least 5000 to reduce query-template eviction churn',
-        fix: 'Update the Postgres parameter group or config, then rerun `klo dev doctor --project-dir /tmp/klo-project`',
+        fix: 'Update the Postgres parameter group or config, then rerun `ktx dev doctor --project-dir /tmp/ktx-project`',
       },
     ]);
   });

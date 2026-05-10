@@ -1,16 +1,16 @@
-import type { LiveDatabaseIntrospectionPort } from '@klo/context/ingest';
-import type { KloProjectConnectionConfig } from '@klo/context/project';
+import type { LiveDatabaseIntrospectionPort } from '@ktx/context/ingest';
+import type { KtxProjectConnectionConfig } from '@ktx/context/project';
 import {
-  KloPostgresScanConnector,
-  type KloPostgresConnectionConfig,
-  type KloPostgresEndpointResolver,
-  type KloPostgresPoolFactory,
+  KtxPostgresScanConnector,
+  type KtxPostgresConnectionConfig,
+  type KtxPostgresEndpointResolver,
+  type KtxPostgresPoolFactory,
 } from './connector.js';
 
 interface CreatePostgresLiveDatabaseIntrospectionOptions {
-  connections: Record<string, KloProjectConnectionConfig>;
-  poolFactory?: KloPostgresPoolFactory;
-  endpointResolver?: KloPostgresEndpointResolver;
+  connections: Record<string, KtxProjectConnectionConfig>;
+  poolFactory?: KtxPostgresPoolFactory;
+  endpointResolver?: KtxPostgresEndpointResolver;
   now?: () => Date;
 }
 
@@ -19,8 +19,8 @@ export function createPostgresLiveDatabaseIntrospection(
 ): LiveDatabaseIntrospectionPort {
   return {
     async extractSchema(connectionId: string) {
-      const connection = options.connections[connectionId] as KloPostgresConnectionConfig | undefined;
-      const connector = new KloPostgresScanConnector({
+      const connection = options.connections[connectionId] as KtxPostgresConnectionConfig | undefined;
+      const connector = new KtxPostgresScanConnector({
         connectionId,
         connection,
         poolFactory: options.poolFactory,

@@ -1,19 +1,19 @@
-import type { KloLocalProject } from '../project/index.js';
+import type { KtxLocalProject } from '../project/index.js';
 import { describe, expect, it, vi } from 'vitest';
 import {
-  buildKloRelationshipFeedbackCalibrationReport,
+  buildKtxRelationshipFeedbackCalibrationReport,
   calibrateLocalRelationshipFeedbackLabels,
-  formatKloRelationshipFeedbackCalibrationMarkdown,
+  formatKtxRelationshipFeedbackCalibrationMarkdown,
 } from './relationship-feedback-calibration.js';
 import type {
   ExportLocalRelationshipFeedbackLabelsResult,
-  KloRelationshipFeedbackLabel,
+  KtxRelationshipFeedbackLabel,
 } from './relationship-feedback-export.js';
 
 function label(
-  input: Partial<KloRelationshipFeedbackLabel> &
-    Pick<KloRelationshipFeedbackLabel, 'candidateId' | 'decision' | 'score'>,
-): KloRelationshipFeedbackLabel {
+  input: Partial<KtxRelationshipFeedbackLabel> &
+    Pick<KtxRelationshipFeedbackLabel, 'candidateId' | 'decision' | 'score'>,
+): KtxRelationshipFeedbackLabel {
   return {
     schemaVersion: 1,
     previousStatus: 'review',
@@ -38,7 +38,7 @@ function label(
   };
 }
 
-function feedback(labels: KloRelationshipFeedbackLabel[]): ExportLocalRelationshipFeedbackLabelsResult {
+function feedback(labels: KtxRelationshipFeedbackLabel[]): ExportLocalRelationshipFeedbackLabelsResult {
   return {
     generatedAt: '2026-05-07T13:00:00.000Z',
     filters: { connectionId: null, decision: 'all' },
@@ -56,7 +56,7 @@ function feedback(labels: KloRelationshipFeedbackLabel[]): ExportLocalRelationsh
 
 describe('relationship feedback calibration', () => {
   it('builds score buckets and threshold-band summary from feedback labels', () => {
-    const report = buildKloRelationshipFeedbackCalibrationReport(
+    const report = buildKtxRelationshipFeedbackCalibrationReport(
       feedback([
         label({
           candidateId: 'orders:orders.customer_id->customers:customers.id',
@@ -124,7 +124,7 @@ describe('relationship feedback calibration', () => {
   });
 
   it('keeps unscored labels visible without treating them as threshold predictions', () => {
-    const report = buildKloRelationshipFeedbackCalibrationReport(
+    const report = buildKtxRelationshipFeedbackCalibrationReport(
       feedback([
         label({
           candidateId: 'orders:orders.note_id->notes:notes.id',
@@ -161,7 +161,7 @@ describe('relationship feedback calibration', () => {
   });
 
   it('formats a stable markdown summary for human CLI output', () => {
-    const report = buildKloRelationshipFeedbackCalibrationReport(
+    const report = buildKtxRelationshipFeedbackCalibrationReport(
       feedback([
         label({ candidateId: 'orders:orders.customer_id->customers:customers.id', decision: 'accepted', score: 0.91 }),
         label({ candidateId: 'orders:orders.note_id->notes:notes.id', decision: 'rejected', score: 0.21 }),
@@ -172,18 +172,18 @@ describe('relationship feedback calibration', () => {
       },
     );
 
-    expect(formatKloRelationshipFeedbackCalibrationMarkdown(report)).toContain(
-      'KLO relationship feedback calibration',
+    expect(formatKtxRelationshipFeedbackCalibrationMarkdown(report)).toContain(
+      'KTX relationship feedback calibration',
     );
-    expect(formatKloRelationshipFeedbackCalibrationMarkdown(report)).toContain('Total labels: 2');
-    expect(formatKloRelationshipFeedbackCalibrationMarkdown(report)).toContain('Accepted-band precision: 1.000');
-    expect(formatKloRelationshipFeedbackCalibrationMarkdown(report)).toContain(
+    expect(formatKtxRelationshipFeedbackCalibrationMarkdown(report)).toContain('Total labels: 2');
+    expect(formatKtxRelationshipFeedbackCalibrationMarkdown(report)).toContain('Accepted-band precision: 1.000');
+    expect(formatKtxRelationshipFeedbackCalibrationMarkdown(report)).toContain(
       '0.75-1.00: total=1 accepted=1 rejected=0 acceptanceRate=1.000',
     );
   });
 
   it('wraps the feedback exporter and preserves exporter warnings', async () => {
-    const project = { projectDir: '/tmp/klo-project' } as KloLocalProject;
+    const project = { projectDir: '/tmp/ktx-project' } as KtxLocalProject;
     const exportLocalRelationshipFeedbackLabels = vi.fn(async () => ({
       ...feedback([
         label({ candidateId: 'orders:orders.customer_id->customers:customers.id', decision: 'accepted', score: 0.91 }),

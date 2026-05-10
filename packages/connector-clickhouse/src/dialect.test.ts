@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { KloClickHouseDialect } from './dialect.js';
+import { KtxClickHouseDialect } from './dialect.js';
 
-describe('KloClickHouseDialect', () => {
-  const dialect = new KloClickHouseDialect();
+describe('KtxClickHouseDialect', () => {
+  const dialect = new KtxClickHouseDialect();
 
   it('quotes identifiers and formats database-qualified table names', () => {
     expect(dialect.quoteIdentifier('events')).toBe('`events`');
@@ -13,7 +13,7 @@ describe('KloClickHouseDialect', () => {
     expect(dialect.formatTableName({ catalog: null, db: null, name: 'events' })).toBe('`events`');
   });
 
-  it('maps nullable and low-cardinality ClickHouse types to KLO dimension types', () => {
+  it('maps nullable and low-cardinality ClickHouse types to KTX dimension types', () => {
     expect(dialect.mapToDimensionType('Nullable(DateTime64(3))')).toBe('time');
     expect(dialect.mapToDimensionType('LowCardinality(Nullable(String))')).toBe('string');
     expect(dialect.mapToDimensionType('UInt64')).toBe('number');

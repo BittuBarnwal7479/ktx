@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import type { KloCliIo } from '../cli-runtime.js';
+import type { KtxCliIo } from '../cli-runtime.js';
 import { printList, type PrintListColumn } from './print-list.js';
 import { SYMBOLS } from './symbols.js';
 
-function recorder(): { io: KloCliIo; out: () => string; err: () => string } {
+function recorder(): { io: KtxCliIo; out: () => string; err: () => string } {
   let stdout = '';
   let stderr = '';
   return {

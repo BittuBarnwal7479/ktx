@@ -13,7 +13,7 @@ describe('standalone Notion connection config', () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-notion-config-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-notion-config-'));
   });
 
   afterEach(async () => {

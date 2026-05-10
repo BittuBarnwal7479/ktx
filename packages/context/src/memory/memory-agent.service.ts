@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { tool } from 'ai';
 import * as YAML from 'yaml';
 import { z } from 'zod';
-import { type KloLogger, noopLogger } from '../core/index.js';
+import { type KtxLogger, noopLogger } from '../core/index.js';
 import {
   revertSourceToPreHead,
   type SemanticLayerSource,
@@ -41,7 +41,7 @@ import type {
 type GateDeps = SlValidationDeps & { slValidator: SlValidatorPort<SlValidationDeps> };
 
 export class MemoryAgentService {
-  private readonly logger: KloLogger;
+  private readonly logger: KtxLogger;
 
   constructor(private readonly deps: MemoryAgentServiceDeps) {
     this.logger = deps.logger ?? noopLogger;

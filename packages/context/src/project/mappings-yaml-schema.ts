@@ -1,5 +1,5 @@
 import * as z from 'zod';
-import type { KloProjectConnectionConfig } from './config.js';
+import type { KtxProjectConnectionConfig } from './config.js';
 
 const metabaseSyncModeSchema = z.enum(['ALL', 'ONLY', 'EXCEPT']);
 const positiveIntegerValueSchema = z.number().int().positive();
@@ -66,13 +66,13 @@ function assertPositiveIntegerKeys(field: string, record: Record<string, unknown
   }
 }
 
-function driverOf(connection: KloProjectConnectionConfig): string {
+function driverOf(connection: KtxProjectConnectionConfig): string {
   return String(connection.driver ?? '').toLowerCase();
 }
 
 export function parseMetabaseMappingBootstrap(
   connectionId: string,
-  connection: KloProjectConnectionConfig,
+  connection: KtxProjectConnectionConfig,
 ): MetabaseMappingBootstrap {
   const rawMappings = recordValue(connection.mappings);
   assertPositiveIntegerKeys('databaseMappings', recordValue(rawMappings.databaseMappings));
@@ -91,7 +91,7 @@ export function parseMetabaseMappingBootstrap(
 
 export function parseLookerMappingBootstrap(
   connectionId: string,
-  connection: KloProjectConnectionConfig,
+  connection: KtxProjectConnectionConfig,
 ): LookerMappingBootstrap {
   const parsed = lookerMappingsSchema.parse(recordValue(connection.mappings));
   return {
@@ -103,7 +103,7 @@ export function parseLookerMappingBootstrap(
 
 export function parseLookmlMappingBootstrap(
   connectionId: string,
-  connection: KloProjectConnectionConfig,
+  connection: KtxProjectConnectionConfig,
 ): LookmlMappingBootstrap {
   const parsed = lookmlMappingsSchema.parse(recordValue(connection.mappings));
   return {
@@ -115,7 +115,7 @@ export function parseLookmlMappingBootstrap(
 
 export function parseConnectionMappingBootstrap(
   connectionId: string,
-  connection: KloProjectConnectionConfig,
+  connection: KtxProjectConnectionConfig,
 ): ConnectionMappingBootstrap | null {
   if (!connection.mappings || typeof connection.mappings !== 'object' || Array.isArray(connection.mappings)) {
     return null;

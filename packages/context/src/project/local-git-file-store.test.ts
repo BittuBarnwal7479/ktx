@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { GitService, type KloCoreConfig } from '../core/index.js';
+import { GitService, type KtxCoreConfig } from '../core/index.js';
 import { LocalGitFileStore } from './local-git-file-store.js';
 
 describe('LocalGitFileStore', () => {
@@ -10,15 +10,15 @@ describe('LocalGitFileStore', () => {
   let store: LocalGitFileStore;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-local-store-'));
-    const coreConfig: KloCoreConfig = {
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-local-store-'));
+    const coreConfig: KtxCoreConfig = {
       storage: { configDir: tempDir, homeDir: tempDir },
       git: {
-        userName: 'klo',
-        userEmail: 'klo@example.com',
+        userName: 'ktx',
+        userEmail: 'ktx@example.com',
         bootstrapMessage: 'Initialize test project',
-        bootstrapAuthor: 'klo',
-        bootstrapAuthorEmail: 'klo@example.com',
+        bootstrapAuthor: 'ktx',
+        bootstrapAuthorEmail: 'ktx@example.com',
       },
     };
     const git = new GitService(coreConfig);

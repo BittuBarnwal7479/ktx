@@ -39,6 +39,6 @@ describe('createDaemonLookerTableIdentifierParser', () => {
       requestJson: async () => ({ results: null }),
     });
 
-    await expect(parser.parse([])).rejects.toThrow('klo-daemon table identifier parser returned invalid results');
+    await expect(parser.parse([])).rejects.toThrow('ktx-daemon table identifier parser returned invalid results');
   });
 });

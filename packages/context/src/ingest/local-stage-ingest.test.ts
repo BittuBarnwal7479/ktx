@@ -2,7 +2,7 @@ import { access, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promise
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { initKloProject, type KloLocalProject, loadKloProject } from '../project/index.js';
+import { initKtxProject, type KtxLocalProject, loadKtxProject } from '../project/index.js';
 import { FakeSourceAdapter } from './adapters/fake/fake.adapter.js';
 import { createDefaultLocalIngestAdapters } from './local-adapters.js';
 import {
@@ -15,7 +15,7 @@ import type { SourceAdapter } from './types.js';
 
 async function writeWarehouseConfig(projectDir: string): Promise<void> {
   await writeFile(
-    join(projectDir, 'klo.yaml'),
+    join(projectDir, 'ktx.yaml'),
     [
       'project: warehouse',
       'connections:',
@@ -32,7 +32,7 @@ async function writeWarehouseConfig(projectDir: string): Promise<void> {
 
 async function writeLiveDatabaseConfig(projectDir: string): Promise<void> {
   await writeFile(
-    join(projectDir, 'klo.yaml'),
+    join(projectDir, 'ktx.yaml'),
     [
       'project: warehouse',
       'connections:',
@@ -84,14 +84,14 @@ function fetchOnlyAdapter(): SourceAdapter {
 
 describe('local ingest', () => {
   let tempDir: string;
-  let project: KloLocalProject;
+  let project: KtxLocalProject;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-local-ingest-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-local-ingest-'));
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeWarehouseConfig(projectDir);
-    project = await loadKloProject({ projectDir });
+    project = await loadKtxProject({ projectDir });
   });
 
   afterEach(async () => {
@@ -158,12 +158,12 @@ describe('local ingest', () => {
     const status = await getLocalStageOnlyIngestStatus(project, 'local-job-1');
     expect(status).toEqual(result);
 
-    await expect(access(join(project.projectDir, '.klo', 'db.sqlite'))).resolves.toBeUndefined();
+    await expect(access(join(project.projectDir, '.ktx', 'db.sqlite'))).resolves.toBeUndefined();
     await expect(
-      readFile(join(project.projectDir, '.klo', 'ingest-runs', 'local-job-1.json'), 'utf-8'),
+      readFile(join(project.projectDir, '.ktx', 'ingest-runs', 'local-job-1.json'), 'utf-8'),
     ).rejects.toThrow();
     await expect(
-      readFile(join(project.projectDir, '.klo', 'ingest-reports', 'local-job-1.json'), 'utf-8'),
+      readFile(join(project.projectDir, '.ktx', 'ingest-reports', 'local-job-1.json'), 'utf-8'),
     ).rejects.toThrow();
   });
 
@@ -345,12 +345,12 @@ describe('local ingest', () => {
     const status = await getLocalStageOnlyIngestStatus(project, 'local-job-3');
     expect(status).toEqual(changed);
 
-    await expect(access(join(project.projectDir, '.klo', 'db.sqlite'))).resolves.toBeUndefined();
+    await expect(access(join(project.projectDir, '.ktx', 'db.sqlite'))).resolves.toBeUndefined();
     await expect(
-      readFile(join(project.projectDir, '.klo', 'ingest-runs', 'local-job-3.json'), 'utf-8'),
+      readFile(join(project.projectDir, '.ktx', 'ingest-runs', 'local-job-3.json'), 'utf-8'),
     ).rejects.toThrow();
     await expect(
-      readFile(join(project.projectDir, '.klo', 'ingest-reports', 'local-job-3.json'), 'utf-8'),
+      readFile(join(project.projectDir, '.ktx', 'ingest-reports', 'local-job-3.json'), 'utf-8'),
     ).rejects.toThrow();
   });
 
@@ -430,7 +430,7 @@ describe('local ingest', () => {
 
   it('runs fetch-capable adapters without a source directory', async () => {
     await writeLiveDatabaseConfig(project.projectDir);
-    project = await loadKloProject({ projectDir: project.projectDir });
+    project = await loadKtxProject({ projectDir: project.projectDir });
 
     const result = await runLocalStageOnlyIngest({
       project,
@@ -470,7 +470,7 @@ describe('local ingest', () => {
 
   it('supports dry-run planning without writing raw files, status, or commits', async () => {
     await writeLiveDatabaseConfig(project.projectDir);
-    project = await loadKloProject({ projectDir: project.projectDir });
+    project = await loadKtxProject({ projectDir: project.projectDir });
 
     const result = await runLocalStageOnlyIngest({
       project,
@@ -516,7 +516,7 @@ describe('local ingest', () => {
 
   it('uses daemon-backed live-database introspection in default local adapters', async () => {
     await writeLiveDatabaseConfig(project.projectDir);
-    project = await loadKloProject({ projectDir: project.projectDir });
+    project = await loadKtxProject({ projectDir: project.projectDir });
     const runJson = vi.fn(async () => ({
       connection_id: 'warehouse',
       extracted_at: '2026-04-28T10:00:00+00:00',
@@ -562,7 +562,7 @@ describe('local ingest', () => {
     });
   });
 
-  it('includes upload-capable KLO adapters in default local ingest adapters', () => {
+  it('includes upload-capable KTX adapters in default local ingest adapters', () => {
     expect(createDefaultLocalIngestAdapters(project).map((adapter) => adapter.source)).toEqual(
       expect.arrayContaining(['dbt', 'metricflow', 'notion']),
     );
@@ -573,7 +573,7 @@ describe('local ingest', () => {
     process.env.NOTION_AUTH_TOKEN = 'ntn_local_test_token';
     try {
       await writeFile(
-        join(project.projectDir, 'klo.yaml'),
+        join(project.projectDir, 'ktx.yaml'),
         [
           'project: warehouse',
           'connections:',
@@ -590,7 +590,7 @@ describe('local ingest', () => {
         ].join('\n'),
         'utf-8',
       );
-      project = await loadKloProject({ projectDir: project.projectDir });
+      project = await loadKtxProject({ projectDir: project.projectDir });
 
       const fetch = vi.fn(async (_pullConfig: unknown, stagedDir: string) => {
         await mkdir(join(stagedDir, 'pages', 'page-1'), { recursive: true });
@@ -686,7 +686,7 @@ describe('local ingest', () => {
     ).rejects.toThrow('Local ingest adapter "fake" requires sourceDir because it does not implement fetch().');
   });
 
-  it('rejects adapters that are not enabled in klo.yaml', async () => {
+  it('rejects adapters that are not enabled in ktx.yaml', async () => {
     const sourceDir = join(tempDir, 'source');
     await mkdir(join(sourceDir, 'orders'), { recursive: true });
     await writeFile(join(sourceDir, 'orders', 'orders.json'), '{"name":"orders"}\n', 'utf-8');
@@ -701,6 +701,6 @@ describe('local ingest', () => {
         jobId: 'local-job-2',
         now: () => new Date('2026-04-27T12:00:00.000Z'),
       }),
-    ).rejects.toThrow('Adapter "metricflow" is not enabled in klo.yaml');
+    ).rejects.toThrow('Adapter "metricflow" is not enabled in ktx.yaml');
   });
 });

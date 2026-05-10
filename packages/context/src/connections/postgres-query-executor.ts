@@ -1,8 +1,8 @@
 import { Client, type ClientConfig } from 'pg';
 import type {
-  KloSqlQueryExecutionInput,
-  KloSqlQueryExecutionResult,
-  KloSqlQueryExecutorPort,
+  KtxSqlQueryExecutionInput,
+  KtxSqlQueryExecutionResult,
+  KtxSqlQueryExecutorPort,
 } from './query-executor.js';
 import { limitSqlForExecution } from './read-only-sql.js';
 
@@ -24,7 +24,7 @@ interface PostgresQueryExecutorOptions {
   clientFactory?: (config: ClientConfig) => PgClientLike;
 }
 
-function connectionDriver(input: KloSqlQueryExecutionInput): string {
+function connectionDriver(input: KtxSqlQueryExecutionInput): string {
   return String(input.connection?.driver ?? '').toLowerCase();
 }
 
@@ -32,10 +32,10 @@ function createDefaultClient(config: ClientConfig): PgClientLike {
   return new Client(config);
 }
 
-export function createPostgresQueryExecutor(options: PostgresQueryExecutorOptions = {}): KloSqlQueryExecutorPort {
+export function createPostgresQueryExecutor(options: PostgresQueryExecutorOptions = {}): KtxSqlQueryExecutorPort {
   const clientFactory = options.clientFactory ?? createDefaultClient;
   return {
-    async execute(input: KloSqlQueryExecutionInput): Promise<KloSqlQueryExecutionResult> {
+    async execute(input: KtxSqlQueryExecutionInput): Promise<KtxSqlQueryExecutionResult> {
       const driver = connectionDriver(input);
       if (driver !== 'postgres' && driver !== 'postgresql') {
         throw new Error(`Local Postgres execution cannot run driver "${input.connection?.driver ?? 'unknown'}".`);
@@ -52,7 +52,7 @@ export function createPostgresQueryExecutor(options: PostgresQueryExecutorOption
         statement_timeout: options.statementTimeoutMs ?? 30_000,
         query_timeout: options.queryTimeoutMs ?? 35_000,
         connectionTimeoutMillis: options.connectionTimeoutMs ?? 5_000,
-        application_name: 'klo-local-query',
+        application_name: 'ktx-local-query',
       });
       await client.connect();
       try {

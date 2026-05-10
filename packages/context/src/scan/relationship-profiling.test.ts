@@ -2,22 +2,22 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import Database from 'better-sqlite3';
 import { afterEach, describe, expect, it } from 'vitest';
-import type { KloEnrichedColumn, KloEnrichedSchema, KloEnrichedTable } from './enrichment-types.js';
-import { snapshotToKloEnrichedSchema } from './local-enrichment.js';
-import { loadKloRelationshipBenchmarkFixture, maskKloRelationshipBenchmarkSnapshot } from './relationship-benchmarks.js';
+import type { KtxEnrichedColumn, KtxEnrichedSchema, KtxEnrichedTable } from './enrichment-types.js';
+import { snapshotToKtxEnrichedSchema } from './local-enrichment.js';
+import { loadKtxRelationshipBenchmarkFixture, maskKtxRelationshipBenchmarkSnapshot } from './relationship-benchmarks.js';
 import {
-  createKloRelationshipProfileCache,
-  formatKloRelationshipTableRef,
-  profileKloRelationshipSchema,
-  quoteKloRelationshipIdentifier,
+  createKtxRelationshipProfileCache,
+  formatKtxRelationshipTableRef,
+  profileKtxRelationshipSchema,
+  quoteKtxRelationshipIdentifier,
 } from './relationship-profiling.js';
-import type { KloQueryResult, KloReadOnlyQueryInput, KloScanContext } from './types.js';
+import type { KtxQueryResult, KtxReadOnlyQueryInput, KtxScanContext } from './types.js';
 
 class InMemorySqliteExecutor {
   readonly db = new Database(':memory:');
   queryCount = 0;
 
-  executeReadOnly(input: KloReadOnlyQueryInput, _ctx: KloScanContext): Promise<KloQueryResult> {
+  executeReadOnly(input: KtxReadOnlyQueryInput, _ctx: KtxScanContext): Promise<KtxQueryResult> {
     this.queryCount += 1;
     const rows = this.db.prepare(input.sql).all() as Record<string, unknown>[];
     const headers = Object.keys(rows[0] ?? {});
@@ -42,7 +42,7 @@ class FileSqliteExecutor {
     this.db = new Database(dataPath, { readonly: true, fileMustExist: true });
   }
 
-  executeReadOnly(input: KloReadOnlyQueryInput, _ctx: KloScanContext): Promise<KloQueryResult> {
+  executeReadOnly(input: KtxReadOnlyQueryInput, _ctx: KtxScanContext): Promise<KtxQueryResult> {
     this.queryCount += 1;
     const rows = this.db.prepare(input.sql).all() as Record<string, unknown>[];
     const headers = Object.keys(rows[0] ?? {});
@@ -59,7 +59,7 @@ class FileSqliteExecutor {
   }
 }
 
-function column(tableId: string, name: string, overrides: Partial<KloEnrichedColumn> = {}): KloEnrichedColumn {
+function column(tableId: string, name: string, overrides: Partial<KtxEnrichedColumn> = {}): KtxEnrichedColumn {
   const tableRef = overrides.tableRef ?? { catalog: null, db: null, name: tableId };
   return {
     id: `${tableId}.${name}`,
@@ -80,7 +80,7 @@ function column(tableId: string, name: string, overrides: Partial<KloEnrichedCol
   };
 }
 
-function table(name: string, columns: KloEnrichedColumn[]): KloEnrichedTable {
+function table(name: string, columns: KtxEnrichedColumn[]): KtxEnrichedTable {
   const ref = { catalog: null, db: null, name };
   return {
     id: name,
@@ -91,7 +91,7 @@ function table(name: string, columns: KloEnrichedColumn[]): KloEnrichedTable {
   };
 }
 
-function schema(tables: KloEnrichedTable[]): KloEnrichedSchema {
+function schema(tables: KtxEnrichedTable[]): KtxEnrichedSchema {
   return { connectionId: 'warehouse', tables, relationships: [] };
 }
 
@@ -113,11 +113,11 @@ describe('relationship profiling', () => {
   });
 
   it('quotes identifiers and formats table refs for supported local SQL drivers', () => {
-    expect(quoteKloRelationshipIdentifier('sqlite', 'odd"name')).toBe('"odd""name"');
-    expect(quoteKloRelationshipIdentifier('mysql', 'odd`name')).toBe('`odd``name`');
-    expect(quoteKloRelationshipIdentifier('sqlserver', 'odd]name')).toBe('[odd]]name]');
-    expect(formatKloRelationshipTableRef('sqlite', { catalog: null, db: null, name: 'accounts' })).toBe('"accounts"');
-    expect(formatKloRelationshipTableRef('postgres', { catalog: null, db: 'analytics', name: 'accounts' })).toBe(
+    expect(quoteKtxRelationshipIdentifier('sqlite', 'odd"name')).toBe('"odd""name"');
+    expect(quoteKtxRelationshipIdentifier('mysql', 'odd`name')).toBe('`odd``name`');
+    expect(quoteKtxRelationshipIdentifier('sqlserver', 'odd]name')).toBe('[odd]]name]');
+    expect(formatKtxRelationshipTableRef('sqlite', { catalog: null, db: null, name: 'accounts' })).toBe('"accounts"');
+    expect(formatKtxRelationshipTableRef('postgres', { catalog: null, db: 'analytics', name: 'accounts' })).toBe(
       '"analytics"."accounts"',
     );
   });
@@ -133,7 +133,7 @@ describe('relationship profiling', () => {
         (4, 'C-3', 2);
     `);
 
-    const result = await profileKloRelationshipSchema({
+    const result = await profileKtxRelationshipSchema({
       connectionId: 'warehouse',
       driver: 'sqlite',
       schema: schema([
@@ -195,7 +195,7 @@ describe('relationship profiling', () => {
         (12, 2);
     `);
 
-    const result = await profileKloRelationshipSchema({
+    const result = await profileKtxRelationshipSchema({
       connectionId: 'warehouse',
       driver: 'sqlite',
       schema: schema([
@@ -238,7 +238,7 @@ describe('relationship profiling', () => {
       INSERT INTO accounts VALUES (1, 'a1'), (2, 'a2'), (3, 'a3'), (4, 'a4');
     `);
 
-    const profiles = await profileKloRelationshipSchema({
+    const profiles = await profileKtxRelationshipSchema({
       connectionId: 'warehouse',
       driver: 'sqlite',
       schema: schema([
@@ -287,9 +287,9 @@ describe('relationship profiling', () => {
         }),
       ]),
     ]);
-    const cache = createKloRelationshipProfileCache();
+    const cache = createKtxRelationshipProfileCache();
 
-    const first = await profileKloRelationshipSchema({
+    const first = await profileKtxRelationshipSchema({
       connectionId: 'warehouse',
       driver: 'sqlite',
       schema: relationshipSchema,
@@ -297,7 +297,7 @@ describe('relationship profiling', () => {
       ctx: { runId: 'profile-cache-run' },
       cache,
     });
-    const second = await profileKloRelationshipSchema({
+    const second = await profileKtxRelationshipSchema({
       connectionId: 'warehouse',
       driver: 'sqlite',
       schema: relationshipSchema,
@@ -305,13 +305,13 @@ describe('relationship profiling', () => {
       ctx: { runId: 'profile-cache-run' },
       cache,
     });
-    const third = await profileKloRelationshipSchema({
+    const third = await profileKtxRelationshipSchema({
       connectionId: 'warehouse',
       driver: 'sqlite',
       schema: relationshipSchema,
       executor,
       ctx: { runId: 'profile-cache-fresh-run' },
-      cache: createKloRelationshipProfileCache(),
+      cache: createKtxRelationshipProfileCache(),
     });
 
     expect(first.queryCount).toBe(1);
@@ -324,20 +324,20 @@ describe('relationship profiling', () => {
 
   it('profiles the checked-in scale stress fixture with one query per table', async () => {
     const fixtureRoot = new URL('../../test/fixtures/relationship-benchmarks/', import.meta.url);
-    const fixture = await loadKloRelationshipBenchmarkFixture(join(fixtureRoot.pathname, 'scale_stress_no_declared_constraints'));
+    const fixture = await loadKtxRelationshipBenchmarkFixture(join(fixtureRoot.pathname, 'scale_stress_no_declared_constraints'));
     if (!fixture.dataPath) {
       throw new Error('scale_stress_no_declared_constraints is missing data.sqlite');
     }
-    const maskedSnapshot = maskKloRelationshipBenchmarkSnapshot(
+    const maskedSnapshot = maskKtxRelationshipBenchmarkSnapshot(
       fixture.snapshot,
       'declared_pks_and_declared_fks_removed',
     );
     const scaleExecutor = new FileSqliteExecutor(fixture.dataPath);
     try {
-      const result = await profileKloRelationshipSchema({
+      const result = await profileKtxRelationshipSchema({
         connectionId: fixture.snapshot.connectionId,
         driver: fixture.snapshot.driver,
-        schema: snapshotToKloEnrichedSchema(maskedSnapshot, new Map()),
+        schema: snapshotToKtxEnrichedSchema(maskedSnapshot, new Map()),
         executor: scaleExecutor,
         ctx: { runId: 'scale-stress-profile-query-count' },
         profileSampleRows: 3,

@@ -2,7 +2,7 @@
 
 This example is a manual smoke for Postgres historic-SQL ingest through
 `pg_stat_statements`. It starts Postgres 14 with the extension preloaded,
-generates query workload under separate users, runs `klo setup` with
+generates query workload under separate users, runs `ktx setup` with
 `--enable-historic-sql`, and verifies three local ingest runs:
 
 - first run creates a fresh PGSS baseline
@@ -12,30 +12,30 @@ generates query workload under separate users, runs `klo setup` with
 ## Prerequisites
 
 - Docker with Compose v2
-- Node and pnpm matching the KLO workspace
-- `python-service/.venv` already created, or `KLO_SQL_ANALYSIS_URL` pointing at
+- Node and pnpm matching the KTX workspace
+- `python-service/.venv` already created, or `KTX_SQL_ANALYSIS_URL` pointing at
   a running service that exposes `/api/sql/analyze-for-fingerprint`
 
 ## Run
 
-From the KLO repository root:
+From the KTX repository root:
 
 ```bash
 examples/postgres-historic/scripts/smoke.sh
 ```
 
-The smoke creates a temporary KLO project, starts Postgres on
+The smoke creates a temporary KTX project, starts Postgres on
 `127.0.0.1:55432`, and uses this connection URL:
 
 ```bash
-postgresql://klo_reader:klo_reader@127.0.0.1:55432/analytics # pragma: allowlist secret
+postgresql://ktx_reader:ktx_reader@127.0.0.1:55432/analytics # pragma: allowlist secret
 ```
 
-Set `KLO_POSTGRES_HISTORIC_KEEP_DOCKER=1` to leave the container running after
+Set `KTX_POSTGRES_HISTORIC_KEEP_DOCKER=1` to leave the container running after
 the script exits.
 
 The smoke validates the historic-SQL raw snapshot path without requiring LLM
-credentials. It uses KLO's local stage-only ingest API after `klo setup` so the
+credentials. It uses KTX's local stage-only ingest API after `ktx setup` so the
 PGSS baseline and delta behavior can be checked independently from curation.
 
 ## Manual Commands
@@ -50,9 +50,9 @@ examples/postgres-historic/scripts/generate-workload.sh base
 Create a project and enable historic SQL:
 
 ```bash
-export WAREHOUSE_DATABASE_URL=postgresql://klo_reader:klo_reader@127.0.0.1:55432/analytics # pragma: allowlist secret
-pnpm --filter @klo/cli run build
-node packages/cli/dist/bin.js --project-dir /tmp/klo-postgres-historic setup \
+export WAREHOUSE_DATABASE_URL=postgresql://ktx_reader:ktx_reader@127.0.0.1:55432/analytics # pragma: allowlist secret
+pnpm --filter @ktx/cli run build
+node packages/cli/dist/bin.js --project-dir /tmp/ktx-postgres-historic setup \
   --new \
   --skip-agents \
   --skip-llm \
@@ -71,11 +71,11 @@ node packages/cli/dist/bin.js --project-dir /tmp/klo-postgres-historic setup \
 ### Readiness check
 
 ```bash
-pnpm run klo -- dev doctor --project-dir /tmp/klo-postgres-historic --no-input
+pnpm run ktx -- dev doctor --project-dir /tmp/ktx-postgres-historic --no-input
 ```
 
-The installed CLI form is `klo dev doctor --project-dir
-/tmp/klo-postgres-historic --no-input`. Expected output includes `PASS Postgres
+The installed CLI form is `ktx dev doctor --project-dir
+/tmp/ktx-postgres-historic --no-input`. Expected output includes `PASS Postgres
 Historic SQL (warehouse)` when `pg_stat_statements` is installed,
 `pg_read_all_stats` is granted, tracking is enabled, and
 `pg_stat_statements.max` is at least 5000.
@@ -83,7 +83,7 @@ Historic SQL (warehouse)` when `pg_stat_statements` is installed,
 Run local historic-SQL ingest:
 
 ```bash
-node packages/cli/dist/bin.js --project-dir /tmp/klo-postgres-historic dev ingest run \
+node packages/cli/dist/bin.js --project-dir /tmp/ktx-postgres-historic dev ingest run \
   --connection-id warehouse \
   --adapter historic-sql \
   --plain \
@@ -96,7 +96,7 @@ configured LLM provider.
 Inspect the latest manifest:
 
 ```bash
-find /tmp/klo-postgres-historic/raw-sources/warehouse/historic-sql -name manifest.json | sort | tail -n 1
+find /tmp/ktx-postgres-historic/raw-sources/warehouse/historic-sql -name manifest.json | sort | tail -n 1
 ```
 
 The manifest should have `dialect: "postgres"`, `degraded: true`,
@@ -108,8 +108,8 @@ The manifest should have `dialect: "postgres"`, `degraded: true`,
 - Missing extension: confirm `shared_preload_libraries=pg_stat_statements` and
   `CREATE EXTENSION pg_stat_statements;` both happened in the `analytics`
   database.
-- Missing grants: confirm `GRANT pg_read_all_stats TO klo_reader;`.
+- Missing grants: confirm `GRANT pg_read_all_stats TO ktx_reader;`.
 - Empty templates: rerun `scripts/generate-workload.sh base` and keep
   `--historic-sql-min-calls 2` for the smoke.
-- SQL-analysis failures: set `KLO_SQL_ANALYSIS_URL` to the running service URL
+- SQL-analysis failures: set `KTX_SQL_ANALYSIS_URL` to the running service URL
   or create `python-service/.venv` before running `scripts/smoke.sh`.

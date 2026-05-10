@@ -18,9 +18,9 @@ const expectedAdapterSkillHeadings: Record<string, string> = {
   historic_sql_ingest: '# Historic SQL Ingest',
   live_database_ingest: '# Live Database Ingest',
   looker_ingest: '# Looker Runtime Ingest',
-  lookml_ingest: '# LookML to KLO Semantic Layer',
-  metabase_ingest: '# Metabase to KLO Semantic Layer',
-  metricflow_ingest: '# MetricFlow to KLO Semantic Layer',
+  lookml_ingest: '# LookML to KTX Semantic Layer',
+  metabase_ingest: '# Metabase to KTX Semantic Layer',
+  metricflow_ingest: '# MetricFlow to KTX Semantic Layer',
 };
 
 function forbiddenProductPattern() {

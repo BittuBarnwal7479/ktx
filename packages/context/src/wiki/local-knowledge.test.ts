@@ -2,7 +2,7 @@ import { access, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { initKloProject, type KloLocalProject } from '../project/index.js';
+import { initKtxProject, type KtxLocalProject } from '../project/index.js';
 import {
   listLocalKnowledgePages,
   readLocalKnowledgePage,
@@ -24,11 +24,11 @@ class FakeEmbeddingPort {
 
 describe('local knowledge helpers', () => {
   let tempDir: string;
-  let project: KloLocalProject;
+  let project: KtxLocalProject;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-local-knowledge-'));
-    project = await initKloProject({ projectDir: join(tempDir, 'project'), projectName: 'warehouse' });
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-local-knowledge-'));
+    project = await initKtxProject({ projectDir: join(tempDir, 'project'), projectName: 'warehouse' });
   });
 
   afterEach(async () => {
@@ -80,7 +80,7 @@ describe('local knowledge helpers', () => {
       }),
     ]);
     expect(search[0]?.score).toBeGreaterThan(0);
-    await expect(access(join(project.projectDir, '.klo', 'db.sqlite'))).resolves.toBeUndefined();
+    await expect(access(join(project.projectDir, '.ktx', 'db.sqlite'))).resolves.toBeUndefined();
   });
 
   it('adds the token lane alongside lexical wiki matches', async () => {

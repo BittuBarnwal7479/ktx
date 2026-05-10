@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readdir, readFile } from 'node:fs/promises';
 import { describe, it } from 'node:test';
 
-const KLO_ROOT = new URL('../', import.meta.url);
+const KTX_ROOT = new URL('../', import.meta.url);
 
 const RELATIONSHIP_RUNTIME_SOURCES = Object.freeze([
   'packages/context/src/scan/relationship-benchmarks.ts',
@@ -19,7 +19,7 @@ const RELATIONSHIP_RUNTIME_SOURCES = Object.freeze([
 ]);
 
 async function checkedInFixtureIds() {
-  const fixtureRoot = new URL('packages/context/test/fixtures/relationship-benchmarks/', KLO_ROOT);
+  const fixtureRoot = new URL('packages/context/test/fixtures/relationship-benchmarks/', KTX_ROOT);
   const entries = await readdir(fixtureRoot, { withFileTypes: true });
   return entries
     .filter((entry) => entry.isDirectory())
@@ -31,7 +31,7 @@ async function readRuntimeSources() {
   return Promise.all(
     RELATIONSHIP_RUNTIME_SOURCES.map(async (relativePath) => ({
       relativePath,
-      source: await readFile(new URL(relativePath, KLO_ROOT), 'utf8'),
+      source: await readFile(new URL(relativePath, KTX_ROOT), 'utf8'),
     })),
   );
 }

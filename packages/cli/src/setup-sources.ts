@@ -3,8 +3,8 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { cancel, isCancel, log, multiselect, select, text } from '@clack/prompts';
-import { resolveNotionAuthToken } from '@klo/context/connections';
-import { resolveKloConfigReference } from '@klo/context/core';
+import { resolveNotionAuthToken } from '@ktx/context/connections';
+import { resolveKtxConfigReference } from '@ktx/context/core';
 import {
   cloneOrPull,
   loadDbtSchemaFiles,
@@ -14,27 +14,27 @@ import {
   parseLookmlStagedDir,
   parseMetricflowFiles,
   testRepoConnection,
-} from '@klo/context/ingest';
+} from '@ktx/context/ingest';
 import {
-  type KloProjectConfig,
-  type KloProjectConnectionConfig,
-  loadKloProject,
-  markKloSetupStepComplete,
-  serializeKloProjectConfig,
-} from '@klo/context/project';
-import type { KloCliIo } from './cli-runtime.js';
-import { runKloConnectionMapping } from './commands/connection-mapping.js';
-import { runKloConnection } from './connection.js';
+  type KtxProjectConfig,
+  type KtxProjectConnectionConfig,
+  loadKtxProject,
+  markKtxSetupStepComplete,
+  serializeKtxProjectConfig,
+} from '@ktx/context/project';
+import type { KtxCliIo } from './cli-runtime.js';
+import { runKtxConnectionMapping } from './commands/connection-mapping.js';
+import { runKtxConnection } from './connection.js';
 import { withMenuOptionsSpacing, withMultiselectNavigation, withTextInputNavigation } from './prompt-navigation.js';
-import { runKloPublicIngest } from './public-ingest.js';
+import { runKtxPublicIngest } from './public-ingest.js';
 import { withSetupInterruptConfirmation } from './setup-interrupt.js';
 
-export type KloSetupSourceType = 'dbt' | 'metricflow' | 'metabase' | 'looker' | 'lookml' | 'notion';
+export type KtxSetupSourceType = 'dbt' | 'metricflow' | 'metabase' | 'looker' | 'lookml' | 'notion';
 
-export interface KloSetupSourcesArgs {
+export interface KtxSetupSourcesArgs {
   projectDir: string;
   inputMode: 'auto' | 'disabled';
-  source?: KloSetupSourceType;
+  source?: KtxSetupSourceType;
   sourceConnectionId?: string;
   sourcePath?: string;
   sourceGitUrl?: string;
@@ -56,14 +56,14 @@ export interface KloSetupSourcesArgs {
   skipSources: boolean;
 }
 
-export type KloSetupSourcesResult =
+export type KtxSetupSourcesResult =
   | { status: 'ready'; projectDir: string; connectionIds: string[] }
   | { status: 'skipped'; projectDir: string }
   | { status: 'back'; projectDir: string }
   | { status: 'missing-input'; projectDir: string }
   | { status: 'failed'; projectDir: string };
 
-export interface KloSetupSourcesPromptAdapter {
+export interface KtxSetupSourcesPromptAdapter {
   multiselect(options: {
     message: string;
     options: Array<{ value: string; label: string }>;
@@ -77,25 +77,25 @@ export interface KloSetupSourcesPromptAdapter {
 
 export type SourceValidationResult = { ok: true; detail?: string } | { ok: false; message: string };
 
-export interface KloSetupSourcesDeps {
-  prompts?: KloSetupSourcesPromptAdapter;
+export interface KtxSetupSourcesDeps {
+  prompts?: KtxSetupSourcesPromptAdapter;
   testGitRepo?: (args: { repoUrl: string; authToken?: string | null }) => Promise<{ ok: true } | { ok: false; error: string }>;
-  validateDbt?: (connection: KloProjectConnectionConfig) => Promise<SourceValidationResult>;
-  validateMetricflow?: (connection: KloProjectConnectionConfig) => Promise<SourceValidationResult>;
+  validateDbt?: (connection: KtxProjectConnectionConfig) => Promise<SourceValidationResult>;
+  validateMetricflow?: (connection: KtxProjectConnectionConfig) => Promise<SourceValidationResult>;
   validateMetabase?: (projectDir: string, connectionId: string) => Promise<SourceValidationResult>;
   validateLooker?: (projectDir: string, connectionId: string) => Promise<SourceValidationResult>;
-  validateLookml?: (connection: KloProjectConnectionConfig) => Promise<SourceValidationResult>;
-  validateNotion?: (connection: KloProjectConnectionConfig) => Promise<SourceValidationResult>;
-  runMapping?: (projectDir: string, connectionId: string, io: KloCliIo) => Promise<number>;
+  validateLookml?: (connection: KtxProjectConnectionConfig) => Promise<SourceValidationResult>;
+  validateNotion?: (connection: KtxProjectConnectionConfig) => Promise<SourceValidationResult>;
+  runMapping?: (projectDir: string, connectionId: string, io: KtxCliIo) => Promise<number>;
   runInitialIngest?: (
     projectDir: string,
     connectionId: string,
-    io: KloCliIo,
-    options: { inputMode: KloSetupSourcesArgs['inputMode'] },
+    io: KtxCliIo,
+    options: { inputMode: KtxSetupSourcesArgs['inputMode'] },
   ) => Promise<number>;
 }
 
-const SOURCE_OPTIONS: Array<{ value: KloSetupSourceType; label: string }> = [
+const SOURCE_OPTIONS: Array<{ value: KtxSetupSourceType; label: string }> = [
   { value: 'dbt', label: 'dbt' },
   { value: 'metricflow', label: 'MetricFlow' },
   { value: 'metabase', label: 'Metabase' },
@@ -105,7 +105,7 @@ const SOURCE_OPTIONS: Array<{ value: KloSetupSourceType; label: string }> = [
 ];
 
 const SOURCE_LABELS = Object.fromEntries(SOURCE_OPTIONS.map((option) => [option.value, option.label])) as Record<
-  KloSetupSourceType,
+  KtxSetupSourceType,
   string
 >;
 
@@ -119,7 +119,7 @@ const PRIMARY_SOURCE_DRIVERS = new Set([
   'snowflake',
 ]);
 
-function createPromptAdapter(): KloSetupSourcesPromptAdapter {
+function createPromptAdapter(): KtxSetupSourcesPromptAdapter {
   return {
     async multiselect(options) {
       const value = await withSetupInterruptConfirmation(() => multiselect(withMenuOptionsSpacing(options)));
@@ -160,19 +160,19 @@ function stringField(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
 }
 
-function sourceLabel(source: KloSetupSourceType): string {
+function sourceLabel(source: KtxSetupSourceType): string {
   return SOURCE_LABELS[source];
 }
 
-function sourceAdapter(source: KloSetupSourceType): string {
+function sourceAdapter(source: KtxSetupSourceType): string {
   return source;
 }
 
 function connectionNamePrompt(label: string): string {
-  return `Name this ${label} connection\nKLO will use this short name in commands and config. You can rename it now.`;
+  return `Name this ${label} connection\nKTX will use this short name in commands and config. You can rename it now.`;
 }
 
-function gitAuthAfterFailurePrompt(source: KloSetupSourceType): string {
+function gitAuthAfterFailurePrompt(source: KtxSetupSourceType): string {
   const label = source === 'dbt' ? 'This' : `This ${sourceLabel(source)}`;
   return [
     `${label} repo requires authentication.`,
@@ -183,7 +183,7 @@ function gitAuthAfterFailurePrompt(source: KloSetupSourceType): string {
   ].join('\n');
 }
 
-function sourceSubpathPrompt(source: KloSetupSourceType): string {
+function sourceSubpathPrompt(source: KtxSetupSourceType): string {
   if (source === 'dbt') {
     return [
       'Folder containing dbt_project.yml (optional)',
@@ -199,7 +199,7 @@ function sourceSubpathPrompt(source: KloSetupSourceType): string {
 }
 
 async function promptText(
-  prompts: KloSetupSourcesPromptAdapter,
+  prompts: KtxSetupSourcesPromptAdapter,
   options: { message: string; placeholder?: string; initialValue?: string },
 ): Promise<string | undefined> {
   return await prompts.text({ ...options, message: withTextInputNavigation(options.message) });
@@ -222,7 +222,7 @@ function credentialRef(value: string | undefined, label: string): string {
   return ref;
 }
 
-function repoOrLocalSource(args: KloSetupSourcesArgs): { sourceDir?: string; repoUrl?: string } {
+function repoOrLocalSource(args: KtxSetupSourcesArgs): { sourceDir?: string; repoUrl?: string } {
   if (args.sourcePath && args.sourceGitUrl) {
     throw new Error('Choose only one source location: --source-path or --source-git-url.');
   }
@@ -239,19 +239,19 @@ function fileRepoUrl(sourceDir: string): string {
   return pathToFileURL(sourceDir).toString();
 }
 
-async function writeProjectConfig(projectDir: string, config: KloProjectConfig): Promise<void> {
-  const project = await loadKloProject({ projectDir });
-  await writeFile(project.configPath, serializeKloProjectConfig(config), 'utf-8');
+async function writeProjectConfig(projectDir: string, config: KtxProjectConfig): Promise<void> {
+  const project = await loadKtxProject({ projectDir });
+  await writeFile(project.configPath, serializeKtxProjectConfig(config), 'utf-8');
 }
 
 async function writeSourceConnection(
   projectDir: string,
   connectionId: string,
-  connection: KloProjectConnectionConfig,
+  connection: KtxProjectConnectionConfig,
   adapter: string,
 ): Promise<() => Promise<void>> {
   assertSafeConnectionId(connectionId);
-  const project = await loadKloProject({ projectDir });
+  const project = await loadKtxProject({ projectDir });
   const previousConnection = project.config.connections[connectionId];
   const hadPreviousConnection = previousConnection !== undefined;
   const shouldRemoveAdapterOnRollback = !project.config.ingest.adapters.includes(adapter);
@@ -268,9 +268,9 @@ async function writeSourceConnection(
         : [...project.config.ingest.adapters, adapter],
     },
   };
-  await writeFile(project.configPath, serializeKloProjectConfig(config), 'utf-8');
+  await writeFile(project.configPath, serializeKtxProjectConfig(config), 'utf-8');
   return async () => {
-    const latest = await loadKloProject({ projectDir });
+    const latest = await loadKtxProject({ projectDir });
     const connections = { ...latest.config.connections };
     if (hadPreviousConnection) {
       connections[connectionId] = previousConnection;
@@ -290,9 +290,9 @@ async function writeSourceConnection(
   };
 }
 
-async function ensureSourceAdapterEnabled(projectDir: string, source: KloSetupSourceType): Promise<void> {
+async function ensureSourceAdapterEnabled(projectDir: string, source: KtxSetupSourceType): Promise<void> {
   const adapter = sourceAdapter(source);
-  const project = await loadKloProject({ projectDir });
+  const project = await loadKtxProject({ projectDir });
   if (project.config.ingest.adapters.includes(adapter)) {
     return;
   }
@@ -306,15 +306,15 @@ async function ensureSourceAdapterEnabled(projectDir: string, source: KloSetupSo
 }
 
 async function markSourcesComplete(projectDir: string): Promise<void> {
-  const project = await loadKloProject({ projectDir });
+  const project = await loadKtxProject({ projectDir });
   await writeFile(
     project.configPath,
-    serializeKloProjectConfig(markKloSetupStepComplete(project.config, 'sources')),
+    serializeKtxProjectConfig(markKtxSetupStepComplete(project.config, 'sources')),
     'utf-8',
   );
 }
 
-function hasPrimarySource(config: KloProjectConfig): boolean {
+function hasPrimarySource(config: KtxProjectConfig): boolean {
   const setupPrimaryIds = config.setup?.database_connection_ids ?? [];
   if (setupPrimaryIds.some((connectionId) => Object.hasOwn(config.connections, connectionId))) {
     return true;
@@ -324,7 +324,7 @@ function hasPrimarySource(config: KloProjectConfig): boolean {
   );
 }
 
-function buildDbtConnection(args: KloSetupSourcesArgs): KloProjectConnectionConfig {
+function buildDbtConnection(args: KtxSetupSourcesArgs): KtxProjectConnectionConfig {
   const source = repoOrLocalSource(args);
   return {
     driver: 'dbt',
@@ -341,7 +341,7 @@ function buildDbtConnection(args: KloSetupSourcesArgs): KloProjectConnectionConf
   };
 }
 
-function buildMetricflowConnection(args: KloSetupSourcesArgs): KloProjectConnectionConfig {
+function buildMetricflowConnection(args: KtxSetupSourcesArgs): KtxProjectConnectionConfig {
   const source = repoOrLocalSource(args);
   return {
     driver: 'metricflow',
@@ -356,7 +356,7 @@ function buildMetricflowConnection(args: KloSetupSourcesArgs): KloProjectConnect
   };
 }
 
-function buildMetabaseConnection(args: KloSetupSourcesArgs): KloProjectConnectionConfig {
+function buildMetabaseConnection(args: KtxSetupSourcesArgs): KtxProjectConnectionConfig {
   if (!args.sourceUrl) {
     throw new Error('Missing Metabase URL: pass --source-url.');
   }
@@ -378,7 +378,7 @@ function buildMetabaseConnection(args: KloSetupSourcesArgs): KloProjectConnectio
   };
 }
 
-function buildLookerConnection(args: KloSetupSourcesArgs): KloProjectConnectionConfig {
+function buildLookerConnection(args: KtxSetupSourcesArgs): KtxProjectConnectionConfig {
   if (!args.sourceUrl) {
     throw new Error('Missing Looker base URL: pass --source-url.');
   }
@@ -401,7 +401,7 @@ function buildLookerConnection(args: KloSetupSourcesArgs): KloProjectConnectionC
   };
 }
 
-function buildLookmlConnection(args: KloSetupSourcesArgs): KloProjectConnectionConfig {
+function buildLookmlConnection(args: KtxSetupSourcesArgs): KtxProjectConnectionConfig {
   const source = repoOrLocalSource(args);
   return {
     driver: 'lookml',
@@ -417,7 +417,7 @@ function buildLookmlConnection(args: KloSetupSourcesArgs): KloProjectConnectionC
   };
 }
 
-function buildNotionConnection(args: KloSetupSourcesArgs): KloProjectConnectionConfig {
+function buildNotionConnection(args: KtxSetupSourcesArgs): KtxProjectConnectionConfig {
   const crawlMode = args.notionCrawlMode ?? 'selected_roots';
   const rootPageIds = args.notionRootPageIds ?? [];
   if (crawlMode === 'selected_roots' && rootPageIds.length === 0) {
@@ -442,10 +442,10 @@ function sourcePathFromFileRepoUrl(repoUrl: string, subpath?: string): string {
   return subpath ? join(root, subpath) : root;
 }
 
-function repoAuthToken(connection: KloProjectConnectionConfig | Record<string, unknown>): string | null {
+function repoAuthToken(connection: KtxProjectConnectionConfig | Record<string, unknown>): string | null {
   const ref = stringField(connection.auth_token_ref) ?? stringField(connection.authTokenRef);
   const literal = stringField(connection.authToken) ?? stringField(connection.auth_token);
-  return literal ?? resolveKloConfigReference(ref, process.env) ?? null;
+  return literal ?? resolveKtxConfigReference(ref, process.env) ?? null;
 }
 
 async function collectYamlFilesRecursive(sourceRoot: string): Promise<Array<{ content: string; path: string }>> {
@@ -461,14 +461,14 @@ async function collectYamlFilesRecursive(sourceRoot: string): Promise<Array<{ co
   return files;
 }
 
-async function defaultValidateDbt(connection: KloProjectConnectionConfig): Promise<SourceValidationResult> {
+async function defaultValidateDbt(connection: KtxProjectConnectionConfig): Promise<SourceValidationResult> {
   let sourceDir = stringField(connection.source_dir) ?? stringField(connection.sourceDir);
   const repoUrl = stringField(connection.repo_url) ?? stringField(connection.repoUrl);
   if (!sourceDir && repoUrl?.startsWith('file:')) {
     sourceDir = sourcePathFromFileRepoUrl(repoUrl, stringField(connection.path));
   }
   if (!sourceDir && repoUrl) {
-    const cacheDir = await mkdtemp(join(tmpdir(), 'klo-setup-dbt-'));
+    const cacheDir = await mkdtemp(join(tmpdir(), 'ktx-setup-dbt-'));
     await cloneOrPull({
       repoUrl,
       authToken: repoAuthToken(connection),
@@ -488,7 +488,7 @@ async function defaultValidateDbt(connection: KloProjectConnectionConfig): Promi
   return { ok: true, detail: `project=${info.projectName ?? connection.project_name} schemas=${schemaFiles.length}` };
 }
 
-async function defaultValidateMetricflow(connection: KloProjectConnectionConfig): Promise<SourceValidationResult> {
+async function defaultValidateMetricflow(connection: KtxProjectConnectionConfig): Promise<SourceValidationResult> {
   const metricflow = isRecord(connection.metricflow) ? connection.metricflow : undefined;
   const repoUrl = stringField(metricflow?.repoUrl);
   if (!repoUrl) {
@@ -513,7 +513,7 @@ async function defaultValidateMetricflow(connection: KloProjectConnectionConfig)
 }
 
 async function defaultValidateMetabase(projectDir: string, connectionId: string): Promise<SourceValidationResult> {
-  const code = await runKloConnection(
+  const code = await runKtxConnection(
     { command: 'map', projectDir, sourceConnectionId: connectionId, json: true },
     { stdout: { write() {} }, stderr: { write() {} } },
   );
@@ -523,7 +523,7 @@ async function defaultValidateMetabase(projectDir: string, connectionId: string)
 }
 
 async function defaultValidateLooker(projectDir: string, connectionId: string): Promise<SourceValidationResult> {
-  const code = await runKloConnectionMapping(
+  const code = await runKtxConnectionMapping(
     { command: 'refresh', projectDir, connectionId, autoAccept: true },
     { stdout: { write() {} }, stderr: { write() {} } },
   );
@@ -532,7 +532,7 @@ async function defaultValidateLooker(projectDir: string, connectionId: string): 
     : { ok: false, message: 'Looker validation failed' };
 }
 
-async function defaultValidateLookml(connection: KloProjectConnectionConfig): Promise<SourceValidationResult> {
+async function defaultValidateLookml(connection: KtxProjectConnectionConfig): Promise<SourceValidationResult> {
   const repoUrl = stringField(connection.repoUrl) ?? stringField(connection.repo_url);
   if (!repoUrl) {
     return { ok: false, message: 'LookML setup requires repoUrl.' };
@@ -546,7 +546,7 @@ async function defaultValidateLookml(connection: KloProjectConnectionConfig): Pr
   return count > 0 ? { ok: true, detail: `lookmlFiles=${count}` } : { ok: false, message: 'No LookML files found' };
 }
 
-async function defaultValidateNotion(connection: KloProjectConnectionConfig): Promise<SourceValidationResult> {
+async function defaultValidateNotion(connection: KtxProjectConnectionConfig): Promise<SourceValidationResult> {
   const token = await resolveNotionAuthToken(String(connection.auth_token_ref));
   const client: NotionApi = new NotionClient(token);
   await client.retrieveBotUser();
@@ -559,17 +559,17 @@ async function defaultValidateNotion(connection: KloProjectConnectionConfig): Pr
   return { ok: true, detail: `roots=${roots.length}` };
 }
 
-async function defaultRunMapping(projectDir: string, connectionId: string, io: KloCliIo): Promise<number> {
-  return await runKloConnection({ command: 'map', projectDir, sourceConnectionId: connectionId, json: false }, io);
+async function defaultRunMapping(projectDir: string, connectionId: string, io: KtxCliIo): Promise<number> {
+  return await runKtxConnection({ command: 'map', projectDir, sourceConnectionId: connectionId, json: false }, io);
 }
 
 async function defaultRunInitialIngest(
   projectDir: string,
   connectionId: string,
-  io: KloCliIo,
-  options: { inputMode: KloSetupSourcesArgs['inputMode'] },
+  io: KtxCliIo,
+  options: { inputMode: KtxSetupSourcesArgs['inputMode'] },
 ): Promise<number> {
-  return await runKloPublicIngest(
+  return await runKtxPublicIngest(
     {
       command: 'run',
       projectDir,
@@ -583,11 +583,11 @@ async function defaultRunInitialIngest(
 }
 
 async function runInitialSourceIngestWithRecovery(input: {
-  args: KloSetupSourcesArgs;
+  args: KtxSetupSourcesArgs;
   connectionId: string;
-  io: KloCliIo;
-  prompts: KloSetupSourcesPromptAdapter;
-  deps: KloSetupSourcesDeps;
+  io: KtxCliIo;
+  prompts: KtxSetupSourcesPromptAdapter;
+  deps: KtxSetupSourcesDeps;
 }): Promise<'ready' | 'continue' | 'back' | 'failed'> {
   while (true) {
     input.io.stdout.write(`Building context from ${input.connectionId}. Large sources can take a while.\n`);
@@ -619,7 +619,7 @@ async function runInitialSourceIngestWithRecovery(input: {
     }
     if (action === 'continue') {
       input.io.stdout.write(`Context source saved without a completed context build for ${input.connectionId}.\n`);
-      input.io.stdout.write(`Run later: klo ingest ${input.connectionId}\n`);
+      input.io.stdout.write(`Run later: ktx ingest ${input.connectionId}\n`);
       return 'continue';
     }
     return 'back';
@@ -628,21 +628,21 @@ async function runInitialSourceIngestWithRecovery(input: {
 
 type SourceLocationChoice = 'path' | 'git';
 
-type SourcePromptState = KloSetupSourcesArgs & {
+type SourcePromptState = KtxSetupSourcesArgs & {
   sourceLocation?: SourceLocationChoice;
 };
 
 type SourcePromptStep = (state: SourcePromptState) => Promise<'next' | 'back'>;
 
 type InteractiveSourceConnectionChoice =
-  | { kind: 'existing'; connectionId: string; connection: KloProjectConnectionConfig }
-  | { kind: 'new'; args: KloSetupSourcesArgs }
+  | { kind: 'existing'; connectionId: string; connection: KtxProjectConnectionConfig }
+  | { kind: 'new'; args: KtxSetupSourcesArgs }
   | 'back';
 
 async function runSourcePromptSteps(
   initialState: SourcePromptState,
   stepsForState: (state: SourcePromptState) => SourcePromptStep[],
-): Promise<KloSetupSourcesArgs | 'back'> {
+): Promise<KtxSetupSourcesArgs | 'back'> {
   let stepIndex = 0;
   while (true) {
     const steps = stepsForState(initialState);
@@ -673,9 +673,9 @@ function resetRepoLocationFields(state: SourcePromptState): void {
 }
 
 function connectionIdPromptSteps(
-  args: KloSetupSourcesArgs,
-  source: KloSetupSourceType,
-  prompts: KloSetupSourcesPromptAdapter,
+  args: KtxSetupSourcesArgs,
+  source: KtxSetupSourceType,
+  prompts: KtxSetupSourcesPromptAdapter,
   defaultConnectionId: string,
 ): SourcePromptStep[] {
   if (args.sourceConnectionId) {
@@ -698,12 +698,12 @@ function connectionIdPromptSteps(
 }
 
 async function promptForInteractiveSource(
-  args: KloSetupSourcesArgs,
-  source: KloSetupSourceType,
-  prompts: KloSetupSourcesPromptAdapter,
+  args: KtxSetupSourcesArgs,
+  source: KtxSetupSourceType,
+  prompts: KtxSetupSourcesPromptAdapter,
   defaultConnectionId = `${source}-main`,
-  testGitRepo: KloSetupSourcesDeps['testGitRepo'] = testRepoConnection,
-): Promise<KloSetupSourcesArgs | 'back'> {
+  testGitRepo: KtxSetupSourcesDeps['testGitRepo'] = testRepoConnection,
+): Promise<KtxSetupSourcesArgs | 'back'> {
   const initialState: SourcePromptState = { ...args, source };
   if (args.sourceConnectionId) {
     initialState.sourceConnectionId = args.sourceConnectionId;
@@ -926,8 +926,8 @@ async function promptForInteractiveSource(
 }
 
 function existingConnectionIdsBySource(
-  connections: Record<string, KloProjectConnectionConfig>,
-  source: KloSetupSourceType,
+  connections: Record<string, KtxProjectConnectionConfig>,
+  source: KtxSetupSourceType,
 ): string[] {
   return Object.entries(connections)
     .filter(([, connection]) => String(connection.driver ?? '').toLowerCase() === source)
@@ -936,8 +936,8 @@ function existingConnectionIdsBySource(
 }
 
 function defaultConnectionIdForSource(
-  connections: Record<string, KloProjectConnectionConfig>,
-  source: KloSetupSourceType,
+  connections: Record<string, KtxProjectConnectionConfig>,
+  source: KtxSetupSourceType,
 ): string {
   const base = `${source}-main`;
   if (!connections[base]) {
@@ -951,11 +951,11 @@ function defaultConnectionIdForSource(
 }
 
 async function chooseInteractiveSourceConnection(input: {
-  args: KloSetupSourcesArgs;
-  source: KloSetupSourceType;
-  connections: Record<string, KloProjectConnectionConfig>;
-  prompts: KloSetupSourcesPromptAdapter;
-  testGitRepo?: KloSetupSourcesDeps['testGitRepo'];
+  args: KtxSetupSourcesArgs;
+  source: KtxSetupSourceType;
+  connections: Record<string, KtxProjectConnectionConfig>;
+  prompts: KtxSetupSourcesPromptAdapter;
+  testGitRepo?: KtxSetupSourcesDeps['testGitRepo'];
 }): Promise<InteractiveSourceConnectionChoice> {
   const existingIds = existingConnectionIdsBySource(input.connections, input.source);
   const defaultConnectionId = defaultConnectionIdForSource(input.connections, input.source);
@@ -995,7 +995,7 @@ async function chooseInteractiveSourceConnection(input: {
   }
 }
 
-function buildConnection(source: KloSetupSourceType, args: KloSetupSourcesArgs): KloProjectConnectionConfig {
+function buildConnection(source: KtxSetupSourceType, args: KtxSetupSourcesArgs): KtxProjectConnectionConfig {
   if (source === 'dbt') {
     return buildDbtConnection(args);
   }
@@ -1015,9 +1015,9 @@ function buildConnection(source: KloSetupSourceType, args: KloSetupSourcesArgs):
 }
 
 async function validateSource(
-  source: KloSetupSourceType,
-  args: { projectDir: string; connectionId: string; connection: KloProjectConnectionConfig },
-  deps: KloSetupSourcesDeps,
+  source: KtxSetupSourceType,
+  args: { projectDir: string; connectionId: string; connection: KtxProjectConnectionConfig },
+  deps: KtxSetupSourcesDeps,
 ): Promise<SourceValidationResult> {
   if (source === 'dbt') {
     return await (deps.validateDbt ?? defaultValidateDbt)(args.connection);
@@ -1037,11 +1037,11 @@ async function validateSource(
   return await (deps.validateNotion ?? defaultValidateNotion)(args.connection);
 }
 
-export async function runKloSetupSourcesStep(
-  args: KloSetupSourcesArgs,
-  io: KloCliIo,
-  deps: KloSetupSourcesDeps = {},
-): Promise<KloSetupSourcesResult> {
+export async function runKtxSetupSourcesStep(
+  args: KtxSetupSourcesArgs,
+  io: KtxCliIo,
+  deps: KtxSetupSourcesDeps = {},
+): Promise<KtxSetupSourcesResult> {
   try {
     if (args.skipSources) {
       await markSourcesComplete(args.projectDir);
@@ -1050,7 +1050,7 @@ export async function runKloSetupSourcesStep(
     }
 
     const prompts = deps.prompts ?? createPromptAdapter();
-    const project = await loadKloProject({ projectDir: args.projectDir });
+    const project = await loadKtxProject({ projectDir: args.projectDir });
     if (!hasPrimarySource(project.config)) {
       const message = 'Connect a primary source before adding context sources.';
       if (args.source) {
@@ -1069,7 +1069,7 @@ export async function runKloSetupSourcesStep(
         : args.inputMode === 'disabled'
           ? []
           : await prompts.multiselect({
-              message: withMultiselectNavigation('Which context sources should KLO ingest?'),
+              message: withMultiselectNavigation('Which context sources should KTX ingest?'),
               options: [...SOURCE_OPTIONS],
               required: false,
             });
@@ -1088,13 +1088,13 @@ export async function runKloSetupSourcesStep(
 
       const readyConnectionIds: string[] = [];
       let returnToSourceSelection = false;
-      for (const source of selected as KloSetupSourceType[]) {
+      for (const source of selected as KtxSetupSourceType[]) {
         const sourceChoice = args.source
           ? ({ kind: 'new', args } as const)
           : await chooseInteractiveSourceConnection({
               args,
               source,
-              connections: (await loadKloProject({ projectDir: args.projectDir })).config.connections,
+              connections: (await loadKtxProject({ projectDir: args.projectDir })).config.connections,
               prompts,
               testGitRepo: deps.testGitRepo,
             });

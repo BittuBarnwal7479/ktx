@@ -1,8 +1,8 @@
 import type { ChunkResult, DiffSet, WorkUnit } from '../../types.js';
-import type { KloSchemaTable } from '../../../scan/types.js';
+import type { KtxSchemaTable } from '../../../scan/types.js';
 import { LIVE_DATABASE_FOREIGN_KEYS_FILE, LIVE_DATABASE_META_FILE, readLiveDatabaseTableFiles } from './stage.js';
 
-function unitKey(table: KloSchemaTable): string {
+function unitKey(table: KtxSchemaTable): string {
   const parts = [table.catalog, table.db, table.name]
     .filter((part): part is string => typeof part === 'string' && part.length > 0)
     .map((part) =>
@@ -15,7 +15,7 @@ function unitKey(table: KloSchemaTable): string {
   return `live-database-${parts.join('-') || 'table'}`;
 }
 
-function displayName(table: KloSchemaTable): string {
+function displayName(table: KtxSchemaTable): string {
   return [table.catalog, table.db, table.name].filter(Boolean).join('.');
 }
 

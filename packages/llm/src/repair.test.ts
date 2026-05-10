@@ -1,12 +1,12 @@
 import { NoSuchToolError, type LanguageModel } from 'ai';
 import { describe, expect, it, vi } from 'vitest';
-import { createKloToolCallRepairHandler } from './repair.js';
+import { createKtxToolCallRepairHandler } from './repair.js';
 
 const repairModel = { modelId: 'claude-repair', provider: 'anthropic' } as LanguageModel;
 
-describe('createKloToolCallRepairHandler', () => {
+describe('createKtxToolCallRepairHandler', () => {
   it('returns null for NoSuchToolError', async () => {
-    const handler = createKloToolCallRepairHandler({
+    const handler = createKtxToolCallRepairHandler({
       source: 'unit',
       getRepairModel: () => repairModel,
       generateText: vi.fn(),
@@ -26,7 +26,7 @@ describe('createKloToolCallRepairHandler', () => {
 
   it('repairs string input by local JSON extraction without an LLM call', async () => {
     const generateText = vi.fn();
-    const handler = createKloToolCallRepairHandler({
+    const handler = createKtxToolCallRepairHandler({
       source: 'unit',
       getRepairModel: () => repairModel,
       generateText,
@@ -57,7 +57,7 @@ describe('createKloToolCallRepairHandler', () => {
 
   it('falls back to the repair model when local extraction fails', async () => {
     const generateText = vi.fn().mockResolvedValue({ text: '{"path":"customers.yaml"}' });
-    const handler = createKloToolCallRepairHandler({
+    const handler = createKtxToolCallRepairHandler({
       source: 'unit',
       getRepairModel: () => repairModel,
       generateText,

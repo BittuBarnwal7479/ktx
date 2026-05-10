@@ -1,33 +1,33 @@
-import type { KloLocalProject } from '../project/index.js';
+import type { KtxLocalProject } from '../project/index.js';
 import type {
-  KloRelationshipReviewDecisionArtifact,
-  KloRelationshipReviewDecisionEntry,
-  KloRelationshipReviewDecisionValue,
+  KtxRelationshipReviewDecisionArtifact,
+  KtxRelationshipReviewDecisionEntry,
+  KtxRelationshipReviewDecisionValue,
 } from './relationship-review-decisions.js';
 
 const DECISION_ARTIFACT_SUFFIX = '/enrichment/relationship-review-decisions.json';
 const FEEDBACK_SCHEMA_VERSION = 1;
 
-export type KloRelationshipFeedbackDecisionFilter = KloRelationshipReviewDecisionValue | 'all';
+export type KtxRelationshipFeedbackDecisionFilter = KtxRelationshipReviewDecisionValue | 'all';
 
 export interface ExportLocalRelationshipFeedbackLabelsInput {
   connectionId?: string | null;
-  decision?: KloRelationshipFeedbackDecisionFilter;
+  decision?: KtxRelationshipFeedbackDecisionFilter;
   now?: () => Date;
 }
 
-export interface KloRelationshipFeedbackLabel {
+export interface KtxRelationshipFeedbackLabel {
   schemaVersion: 1;
   candidateId: string;
-  decision: KloRelationshipReviewDecisionValue;
-  previousStatus: KloRelationshipReviewDecisionEntry['previousStatus'];
+  decision: KtxRelationshipReviewDecisionValue;
+  previousStatus: KtxRelationshipReviewDecisionEntry['previousStatus'];
   connectionId: string;
   runId: string;
   syncId: string;
   decidedAt: string;
   reviewer: string;
   note: string | null;
-  relationshipType: KloRelationshipReviewDecisionEntry['relationshipType'];
+  relationshipType: KtxRelationshipReviewDecisionEntry['relationshipType'];
   source: string;
   score: number | null;
   confidence: number;
@@ -41,7 +41,7 @@ export interface KloRelationshipFeedbackLabel {
   artifactPath: string;
 }
 
-export interface KloRelationshipFeedbackExportWarning {
+export interface KtxRelationshipFeedbackExportWarning {
   path: string;
   message: string;
 }
@@ -50,7 +50,7 @@ export interface ExportLocalRelationshipFeedbackLabelsResult {
   generatedAt: string;
   filters: {
     connectionId: string | null;
-    decision: KloRelationshipFeedbackDecisionFilter;
+    decision: KtxRelationshipFeedbackDecisionFilter;
   };
   summary: {
     total: number;
@@ -59,16 +59,16 @@ export interface ExportLocalRelationshipFeedbackLabelsResult {
     connections: number;
     runs: number;
   };
-  labels: KloRelationshipFeedbackLabel[];
-  warnings: KloRelationshipFeedbackExportWarning[];
+  labels: KtxRelationshipFeedbackLabel[];
+  warnings: KtxRelationshipFeedbackExportWarning[];
 }
 
-function qualifiedTableName(entry: KloRelationshipReviewDecisionEntry, side: 'from' | 'to'): string {
+function qualifiedTableName(entry: KtxRelationshipReviewDecisionEntry, side: 'from' | 'to'): string {
   const table = entry[side].table;
   return [table.catalog, table.db, table.name].filter((part): part is string => Boolean(part)).join('.');
 }
 
-function labelFromDecision(entry: KloRelationshipReviewDecisionEntry, artifactPath: string): KloRelationshipFeedbackLabel {
+function labelFromDecision(entry: KtxRelationshipReviewDecisionEntry, artifactPath: string): KtxRelationshipFeedbackLabel {
   return {
     schemaVersion: FEEDBACK_SCHEMA_VERSION,
     candidateId: entry.candidateId,
@@ -95,7 +95,7 @@ function labelFromDecision(entry: KloRelationshipReviewDecisionEntry, artifactPa
   };
 }
 
-function sortLabels(labels: KloRelationshipFeedbackLabel[]): KloRelationshipFeedbackLabel[] {
+function sortLabels(labels: KtxRelationshipFeedbackLabel[]): KtxRelationshipFeedbackLabel[] {
   return [...labels].sort((left, right) => {
     return (
       left.connectionId.localeCompare(right.connectionId) ||
@@ -107,8 +107,8 @@ function sortLabels(labels: KloRelationshipFeedbackLabel[]): KloRelationshipFeed
 }
 
 function passesFilters(
-  label: KloRelationshipFeedbackLabel,
-  filters: { connectionId: string | null; decision: KloRelationshipFeedbackDecisionFilter },
+  label: KtxRelationshipFeedbackLabel,
+  filters: { connectionId: string | null; decision: KtxRelationshipFeedbackDecisionFilter },
 ): boolean {
   if (filters.connectionId && label.connectionId !== filters.connectionId) {
     return false;
@@ -121,16 +121,16 @@ function messageFromUnknownError(error: unknown): string {
 }
 
 async function readDecisionLabels(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   artifactPath: string,
-): Promise<KloRelationshipFeedbackLabel[]> {
+): Promise<KtxRelationshipFeedbackLabel[]> {
   const raw = await project.fileStore.readFile(artifactPath);
-  const parsed = JSON.parse(raw.content) as KloRelationshipReviewDecisionArtifact;
+  const parsed = JSON.parse(raw.content) as KtxRelationshipReviewDecisionArtifact;
   const decisions = Array.isArray(parsed.decisions) ? parsed.decisions : [];
   return decisions.map((entry) => labelFromDecision(entry, artifactPath));
 }
 
-function summarize(labels: KloRelationshipFeedbackLabel[]): ExportLocalRelationshipFeedbackLabelsResult['summary'] {
+function summarize(labels: KtxRelationshipFeedbackLabel[]): ExportLocalRelationshipFeedbackLabelsResult['summary'] {
   return {
     total: labels.length,
     accepted: labels.filter((label) => label.decision === 'accepted').length,
@@ -141,7 +141,7 @@ function summarize(labels: KloRelationshipFeedbackLabel[]): ExportLocalRelations
 }
 
 export async function exportLocalRelationshipFeedbackLabels(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   input: ExportLocalRelationshipFeedbackLabelsInput = {},
 ): Promise<ExportLocalRelationshipFeedbackLabelsResult> {
   const filters = {
@@ -150,8 +150,8 @@ export async function exportLocalRelationshipFeedbackLabels(
   };
   const listed = await project.fileStore.listFiles('raw-sources');
   const artifactPaths = listed.files.filter((path) => path.endsWith(DECISION_ARTIFACT_SUFFIX)).sort();
-  const labels: KloRelationshipFeedbackLabel[] = [];
-  const warnings: KloRelationshipFeedbackExportWarning[] = [];
+  const labels: KtxRelationshipFeedbackLabel[] = [];
+  const warnings: KtxRelationshipFeedbackExportWarning[] = [];
 
   for (const artifactPath of artifactPaths) {
     try {
@@ -171,7 +171,7 @@ export async function exportLocalRelationshipFeedbackLabels(
   };
 }
 
-export function formatKloRelationshipFeedbackLabelsJsonl(result: ExportLocalRelationshipFeedbackLabelsResult): string {
+export function formatKtxRelationshipFeedbackLabelsJsonl(result: ExportLocalRelationshipFeedbackLabelsResult): string {
   if (result.labels.length === 0) {
     return '';
   }

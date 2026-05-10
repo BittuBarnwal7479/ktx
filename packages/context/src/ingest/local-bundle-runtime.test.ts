@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { AgentRunnerService } from '../agent/index.js';
-import { initKloProject, type KloLocalProject, loadKloProject } from '../project/index.js';
+import { initKtxProject, type KtxLocalProject, loadKtxProject } from '../project/index.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { FakeSourceAdapter } from './adapters/fake/fake.adapter.js';
 import { createLocalBundleIngestRuntime } from './local-bundle-runtime.js';
@@ -18,14 +18,14 @@ type RuntimeWithConnectionDeps = {
 
 describe('createLocalBundleIngestRuntime', () => {
   let tempDir: string;
-  let project: KloLocalProject;
+  let project: KtxLocalProject;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-local-bundle-runtime-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-local-bundle-runtime-'));
     const projectDir = join(tempDir, 'project');
-    await initKloProject({ projectDir, projectName: 'warehouse' });
+    await initKtxProject({ projectDir, projectName: 'warehouse' });
     await writeFile(
-      join(projectDir, 'klo.yaml'),
+      join(projectDir, 'ktx.yaml'),
       [
         'project: warehouse',
         'connections:',
@@ -40,7 +40,7 @@ describe('createLocalBundleIngestRuntime', () => {
       ].join('\n'),
       'utf-8',
     );
-    project = await loadKloProject({ projectDir });
+    project = await loadKtxProject({ projectDir });
   });
 
   afterEach(async () => {
@@ -53,7 +53,7 @@ describe('createLocalBundleIngestRuntime', () => {
         project,
         adapters: [new FakeSourceAdapter()],
       }),
-    ).toThrow('klo dev ingest run requires llm.provider.backend: anthropic, vertex, or gateway, or an injected agentRunner');
+    ).toThrow('ktx dev ingest run requires llm.provider.backend: anthropic, vertex, or gateway, or an injected agentRunner');
   });
 
   it('builds runner deps with local SQLite stores and context tools enabled', async () => {
@@ -67,12 +67,12 @@ describe('createLocalBundleIngestRuntime', () => {
     });
 
     expect(runtime.nextJobId()).toBe('job-1');
-    expect(runtime.storage.resolvePullDir('job-1')).toBe(join(project.projectDir, '.klo/cache/local-ingest/job-1/pull'));
+    expect(runtime.storage.resolvePullDir('job-1')).toBe(join(project.projectDir, '.ktx/cache/local-ingest/job-1/pull'));
     expect(runtime.storage.resolveUploadDir('job-1')).toBe(
-      join(project.projectDir, '.klo/cache/local-ingest/job-1/upload'),
+      join(project.projectDir, '.ktx/cache/local-ingest/job-1/upload'),
     );
     expect(runtime.storage.resolveTranscriptDir('job-1')).toBe(
-      join(project.projectDir, '.klo/ingest-transcripts/job-1'),
+      join(project.projectDir, '.ktx/ingest-transcripts/job-1'),
     );
 
     await mkdir(runtime.storage.resolveUploadDir('job-1'), { recursive: true });
@@ -109,7 +109,7 @@ describe('createLocalBundleIngestRuntime', () => {
 
   it('accepts a debug LLM request file when constructing the default agent runner', async () => {
     await writeFile(
-      join(project.projectDir, 'klo.yaml'),
+      join(project.projectDir, 'ktx.yaml'),
       [
         'project: warehouse',
         'connections:',
@@ -131,14 +131,14 @@ describe('createLocalBundleIngestRuntime', () => {
       ].join('\n'),
       'utf-8',
     );
-    project = await loadKloProject({ projectDir: project.projectDir });
+    project = await loadKtxProject({ projectDir: project.projectDir });
 
     const runtime = createLocalBundleIngestRuntime({
       project,
       adapters: [new FakeSourceAdapter()],
-      llmDebugRequestFile: join(project.projectDir, '.klo', 'llm-debug.jsonl'),
+      llmDebugRequestFile: join(project.projectDir, '.ktx', 'llm-debug.jsonl'),
     });
 
-    expect(runtime.storage.resolvePullDir('job-1')).toBe(join(project.projectDir, '.klo/cache/local-ingest/job-1/pull'));
+    expect(runtime.storage.resolvePullDir('job-1')).toBe(join(project.projectDir, '.ktx/cache/local-ingest/job-1/pull'));
   });
 });

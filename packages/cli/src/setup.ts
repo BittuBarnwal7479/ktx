@@ -1,62 +1,62 @@
 import { existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { cancel, isCancel, select } from '@clack/prompts';
-import { loadKloProject } from '@klo/context/project';
-import type { KloCliIo } from './cli-runtime.js';
-import type { KloDemoArgs } from './demo.js';
+import { loadKtxProject } from '@ktx/context/project';
+import type { KtxCliIo } from './cli-runtime.js';
+import type { KtxDemoArgs } from './demo.js';
 import { defaultDemoProjectDir } from './demo-assets.js';
 import { formatSetupNextStepLines } from './next-steps.js';
-import { isKloSetupExitError, withSetupInterruptConfirmation } from './setup-interrupt.js';
+import { isKtxSetupExitError, withSetupInterruptConfirmation } from './setup-interrupt.js';
 import {
-  type KloAgentInstallMode,
-  type KloAgentScope,
-  type KloAgentTarget,
-  type KloSetupAgentsDeps,
-  readKloAgentInstallManifest,
-  removeKloAgentInstall,
-  runKloSetupAgentsStep,
+  type KtxAgentInstallMode,
+  type KtxAgentScope,
+  type KtxAgentTarget,
+  type KtxSetupAgentsDeps,
+  readKtxAgentInstallManifest,
+  removeKtxAgentInstall,
+  runKtxSetupAgentsStep,
 } from './setup-agents.js';
 import {
-  type KloSetupDatabaseDriver,
-  type KloSetupDatabasesDeps,
-  runKloSetupDatabasesStep,
+  type KtxSetupDatabaseDriver,
+  type KtxSetupDatabasesDeps,
+  runKtxSetupDatabasesStep,
 } from './setup-databases.js';
-import { type KloSetupEmbeddingsDeps, runKloSetupEmbeddingsStep } from './setup-embeddings.js';
-import { type KloSetupModelDeps, runKloSetupAnthropicModelStep } from './setup-models.js';
-import { type KloSetupProjectDeps, runKloSetupProjectStep } from './setup-project.js';
-import { isKloSetupReady, type KloSetupReadyMenuDeps, runKloSetupReadyChangeMenu } from './setup-ready-menu.js';
-import { type KloSetupSourcesDeps, type KloSetupSourceType, runKloSetupSourcesStep } from './setup-sources.js';
+import { type KtxSetupEmbeddingsDeps, runKtxSetupEmbeddingsStep } from './setup-embeddings.js';
+import { type KtxSetupModelDeps, runKtxSetupAnthropicModelStep } from './setup-models.js';
+import { type KtxSetupProjectDeps, runKtxSetupProjectStep } from './setup-project.js';
+import { isKtxSetupReady, type KtxSetupReadyMenuDeps, runKtxSetupReadyChangeMenu } from './setup-ready-menu.js';
+import { type KtxSetupSourcesDeps, type KtxSetupSourceType, runKtxSetupSourcesStep } from './setup-sources.js';
 import { withMenuOptionsSpacing } from './prompt-navigation.js';
 import {
-  readKloSetupContextState,
-  runKloSetupContextCommand,
-  type KloSetupContextCommandArgs,
-  type KloSetupContextDeps,
-  type KloSetupContextResult,
-  runKloSetupContextStep,
+  readKtxSetupContextState,
+  runKtxSetupContextCommand,
+  type KtxSetupContextCommandArgs,
+  type KtxSetupContextDeps,
+  type KtxSetupContextResult,
+  runKtxSetupContextStep,
   setupContextStatusFromState,
-  type KloSetupContextStatusSummary,
+  type KtxSetupContextStatusSummary,
 } from './setup-context.js';
 
-export interface KloSetupStatus {
+export interface KtxSetupStatus {
   project: { path: string; ready: boolean; name?: string };
   llm: { backend?: string; ready: boolean; model?: string };
   embeddings: { backend?: string; ready: boolean; model?: string; dimensions?: number };
   databases: Array<{ connectionId: string; ready: boolean }>;
   sources: Array<{ connectionId: string; type: string; ready: boolean }>;
-  context: KloSetupContextStatusSummary;
+  context: KtxSetupContextStatusSummary;
   agents: Array<{ target: string; scope: string; ready: boolean }>;
 }
 
-export type KloSetupArgs =
+export type KtxSetupArgs =
   | {
       command: 'run';
       projectDir: string;
       mode: 'auto' | 'new' | 'existing';
       agents: boolean;
-      target?: KloAgentTarget;
-      agentScope?: KloAgentScope;
-      agentInstallMode?: KloAgentInstallMode;
+      target?: KtxAgentTarget;
+      agentScope?: KtxAgentScope;
+      agentInstallMode?: KtxAgentInstallMode;
       skipAgents?: boolean;
       inputMode: 'auto' | 'disabled';
       yes: boolean;
@@ -68,7 +68,7 @@ export type KloSetupArgs =
       embeddingApiKeyEnv?: string;
       embeddingApiKeyFile?: string;
       skipEmbeddings: boolean;
-      databaseDrivers?: KloSetupDatabaseDriver[];
+      databaseDrivers?: KtxSetupDatabaseDriver[];
       databaseConnectionIds?: string[];
       databaseConnectionId?: string;
       databaseUrl?: string;
@@ -80,7 +80,7 @@ export type KloSetupArgs =
       historicSqlServiceAccountPatterns?: string[];
       historicSqlRedactionPatterns?: string[];
       skipDatabases: boolean;
-      source?: KloSetupSourceType;
+      source?: KtxSetupSourceType;
       sourceConnectionId?: string;
       sourcePath?: string;
       sourceGitUrl?: string;
@@ -109,46 +109,46 @@ export type KloSetupArgs =
   | { command: 'context-stop'; projectDir: string; runId?: string }
   | { command: 'remove-agents'; projectDir: string };
 
-export interface KloSetupDeps {
-  project?: KloSetupProjectDeps;
+export interface KtxSetupDeps {
+  project?: KtxSetupProjectDeps;
   model?: (
-    args: Parameters<typeof runKloSetupAnthropicModelStep>[0],
-    io: KloCliIo,
-  ) => Promise<Awaited<ReturnType<typeof runKloSetupAnthropicModelStep>>>;
-  modelDeps?: KloSetupModelDeps;
+    args: Parameters<typeof runKtxSetupAnthropicModelStep>[0],
+    io: KtxCliIo,
+  ) => Promise<Awaited<ReturnType<typeof runKtxSetupAnthropicModelStep>>>;
+  modelDeps?: KtxSetupModelDeps;
   embeddings?: (
-    args: Parameters<typeof runKloSetupEmbeddingsStep>[0],
-    io: KloCliIo,
-  ) => Promise<Awaited<ReturnType<typeof runKloSetupEmbeddingsStep>>>;
-  embeddingsDeps?: KloSetupEmbeddingsDeps;
+    args: Parameters<typeof runKtxSetupEmbeddingsStep>[0],
+    io: KtxCliIo,
+  ) => Promise<Awaited<ReturnType<typeof runKtxSetupEmbeddingsStep>>>;
+  embeddingsDeps?: KtxSetupEmbeddingsDeps;
   databases?: (
-    args: Parameters<typeof runKloSetupDatabasesStep>[0],
-    io: KloCliIo,
-  ) => Promise<Awaited<ReturnType<typeof runKloSetupDatabasesStep>>>;
-  databasesDeps?: KloSetupDatabasesDeps;
+    args: Parameters<typeof runKtxSetupDatabasesStep>[0],
+    io: KtxCliIo,
+  ) => Promise<Awaited<ReturnType<typeof runKtxSetupDatabasesStep>>>;
+  databasesDeps?: KtxSetupDatabasesDeps;
   sources?: (
-    args: Parameters<typeof runKloSetupSourcesStep>[0],
-    io: KloCliIo,
-  ) => Promise<Awaited<ReturnType<typeof runKloSetupSourcesStep>>>;
-  sourcesDeps?: KloSetupSourcesDeps;
+    args: Parameters<typeof runKtxSetupSourcesStep>[0],
+    io: KtxCliIo,
+  ) => Promise<Awaited<ReturnType<typeof runKtxSetupSourcesStep>>>;
+  sourcesDeps?: KtxSetupSourcesDeps;
   agents?: (
-    args: Parameters<typeof runKloSetupAgentsStep>[0],
-    io: KloCliIo,
-  ) => Promise<Awaited<ReturnType<typeof runKloSetupAgentsStep>>>;
-  agentsDeps?: KloSetupAgentsDeps;
-  context?: (args: Parameters<typeof runKloSetupContextStep>[0], io: KloCliIo) => Promise<KloSetupContextResult>;
-  contextDeps?: KloSetupContextDeps;
-  removeAgents?: typeof removeKloAgentInstall;
-  readyMenuDeps?: KloSetupReadyMenuDeps;
-  entryMenuDeps?: KloSetupEntryMenuDeps;
-  demo?: (args: KloDemoArgs, io: KloCliIo) => Promise<number>;
+    args: Parameters<typeof runKtxSetupAgentsStep>[0],
+    io: KtxCliIo,
+  ) => Promise<Awaited<ReturnType<typeof runKtxSetupAgentsStep>>>;
+  agentsDeps?: KtxSetupAgentsDeps;
+  context?: (args: Parameters<typeof runKtxSetupContextStep>[0], io: KtxCliIo) => Promise<KtxSetupContextResult>;
+  contextDeps?: KtxSetupContextDeps;
+  removeAgents?: typeof removeKtxAgentInstall;
+  readyMenuDeps?: KtxSetupReadyMenuDeps;
+  entryMenuDeps?: KtxSetupEntryMenuDeps;
+  demo?: (args: KtxDemoArgs, io: KtxCliIo) => Promise<number>;
 }
 
 const SOURCE_DRIVERS = new Set(['dbt', 'metricflow', 'metabase', 'looker', 'lookml', 'notion']);
 
-type KloSetupEntryAction = 'setup' | 'new-project' | 'agents' | 'status' | 'demo' | 'exit';
-type KloSetupFlowStep = 'models' | 'embeddings' | 'databases' | 'sources' | 'context' | 'agents';
-type KloSetupFlowStatus =
+type KtxSetupEntryAction = 'setup' | 'new-project' | 'agents' | 'status' | 'demo' | 'exit';
+type KtxSetupFlowStep = 'models' | 'embeddings' | 'databases' | 'sources' | 'context' | 'agents';
+type KtxSetupFlowStatus =
   | 'ready'
   | 'skipped'
   | 'back'
@@ -158,16 +158,16 @@ type KloSetupFlowStatus =
   | 'paused'
   | 'interrupted';
 
-export interface KloSetupEntryMenuPromptAdapter {
+export interface KtxSetupEntryMenuPromptAdapter {
   select(options: { message: string; options: Array<{ value: string; label: string }> }): Promise<string>;
   cancel(message: string): void;
 }
 
-export interface KloSetupEntryMenuDeps {
-  prompts?: KloSetupEntryMenuPromptAdapter;
+export interface KtxSetupEntryMenuDeps {
+  prompts?: KtxSetupEntryMenuPromptAdapter;
 }
 
-function createEntryMenuPromptAdapter(): KloSetupEntryMenuPromptAdapter {
+function createEntryMenuPromptAdapter(): KtxSetupEntryMenuPromptAdapter {
   return {
     async select(options) {
       const value = await withSetupInterruptConfirmation(() => select(withMenuOptionsSpacing(options)));
@@ -182,39 +182,39 @@ function createEntryMenuPromptAdapter(): KloSetupEntryMenuPromptAdapter {
   };
 }
 
-async function runKloSetupEntryMenu(
-  status: KloSetupStatus,
-  deps: KloSetupEntryMenuDeps = {},
-): Promise<{ action: KloSetupEntryAction }> {
+async function runKtxSetupEntryMenu(
+  status: KtxSetupStatus,
+  deps: KtxSetupEntryMenuDeps = {},
+): Promise<{ action: KtxSetupEntryAction }> {
   const prompts = deps.prompts ?? createEntryMenuPromptAdapter();
   const options = status.project.ready
     ? [
         { value: 'setup', label: 'Resume or change an existing setup' },
-        { value: 'new-project', label: 'Create a new KLO project' },
-        { value: 'agents', label: 'Connect a coding agent to KLO' },
+        { value: 'new-project', label: 'Create a new KTX project' },
+        { value: 'agents', label: 'Connect a coding agent to KTX' },
         { value: 'status', label: 'Check setup status' },
-        { value: 'demo', label: 'Try KLO with packaged demo data' },
+        { value: 'demo', label: 'Try KTX with packaged demo data' },
         { value: 'exit', label: 'Exit' },
       ]
     : [
-        { value: 'setup', label: 'Set up KLO for my data' },
+        { value: 'setup', label: 'Set up KTX for my data' },
         { value: 'status', label: 'Check setup status' },
-        { value: 'demo', label: 'Try KLO with packaged demo data' },
+        { value: 'demo', label: 'Try KTX with packaged demo data' },
         { value: 'exit', label: 'Exit' },
       ];
   const action = (await prompts.select({
     message: 'What do you want to do?',
     options,
-  })) as KloSetupEntryAction;
+  })) as KtxSetupEntryAction;
   return { action };
 }
 
-async function runKloSetupDemoFromEntryMenu(
-  args: Extract<KloSetupArgs, { command: 'run' }>,
-  io: KloCliIo,
-  deps: KloSetupDeps,
+async function runKtxSetupDemoFromEntryMenu(
+  args: Extract<KtxSetupArgs, { command: 'run' }>,
+  io: KtxCliIo,
+  deps: KtxSetupDeps,
 ): Promise<number> {
-  const runner = deps.demo ?? (await import('./demo.js')).runKloDemo;
+  const runner = deps.demo ?? (await import('./demo.js')).runKtxDemo;
   return await runner(
     {
       command: 'seeded',
@@ -226,11 +226,11 @@ async function runKloSetupDemoFromEntryMenu(
   );
 }
 
-function llmReady(status: KloSetupStatus['llm']): boolean {
+function llmReady(status: KtxSetupStatus['llm']): boolean {
   return status.backend === 'anthropic' && typeof status.model === 'string' && status.model.length > 0;
 }
 
-function embeddingsReady(status: KloSetupStatus['embeddings']): boolean {
+function embeddingsReady(status: KtxSetupStatus['embeddings']): boolean {
   return (
     status.backend !== undefined &&
     status.backend !== 'none' &&
@@ -242,7 +242,7 @@ function embeddingsReady(status: KloSetupStatus['embeddings']): boolean {
   );
 }
 
-function sourceConnections(config: Awaited<ReturnType<typeof loadKloProject>>['config']) {
+function sourceConnections(config: Awaited<ReturnType<typeof loadKtxProject>>['config']) {
   return Object.entries(config.connections)
     .filter(([, connection]) => SOURCE_DRIVERS.has(String(connection.driver ?? '').toLowerCase()))
     .map(([connectionId, connection]) => ({
@@ -252,21 +252,21 @@ function sourceConnections(config: Awaited<ReturnType<typeof loadKloProject>>['c
     .sort((left, right) => left.connectionId.localeCompare(right.connectionId));
 }
 
-export async function readKloSetupStatus(projectDir: string): Promise<KloSetupStatus> {
+export async function readKtxSetupStatus(projectDir: string): Promise<KtxSetupStatus> {
   const resolvedProjectDir = resolve(projectDir);
-  if (!existsSync(join(resolvedProjectDir, 'klo.yaml'))) {
+  if (!existsSync(join(resolvedProjectDir, 'ktx.yaml'))) {
     return {
       project: { path: resolvedProjectDir, ready: false },
       llm: { ready: false },
       embeddings: { ready: false },
       databases: [],
       sources: [],
-      context: setupContextStatusFromState(await readKloSetupContextState(resolvedProjectDir)),
+      context: setupContextStatusFromState(await readKtxSetupContextState(resolvedProjectDir)),
       agents: [],
     };
   }
 
-  const project = await loadKloProject({ projectDir: resolvedProjectDir });
+  const project = await loadKtxProject({ projectDir: resolvedProjectDir });
   const llm = {
     backend: project.config.llm.provider.backend,
     ready: false,
@@ -283,10 +283,10 @@ export async function readKloSetupStatus(projectDir: string): Promise<KloSetupSt
   embeddings.ready = embeddingsReady(embeddings);
 
   const completedSteps = project.config.setup?.completed_steps ?? [];
-  const contextState = await readKloSetupContextState(resolvedProjectDir);
+  const contextState = await readKtxSetupContextState(resolvedProjectDir);
   const databaseIds = project.config.setup?.database_connection_ids ?? Object.keys(project.config.connections);
   const databasesComplete = completedSteps.includes('databases');
-  const manifest = await readKloAgentInstallManifest(resolvedProjectDir);
+  const manifest = await readKtxAgentInstallManifest(resolvedProjectDir);
   const agents =
     manifest?.installs.map((install) => ({
       target: install.target,
@@ -319,7 +319,7 @@ function formatConnectionList(ids: string[]): string {
   return ids.length > 0 ? `yes (${ids.join(', ')})` : 'no';
 }
 
-function formatContextBuilt(status: KloSetupContextStatusSummary): string {
+function formatContextBuilt(status: KtxSetupContextStatusSummary): string {
   if (status.ready) {
     return 'yes';
   }
@@ -330,20 +330,20 @@ function formatContextBuilt(status: KloSetupContextStatusSummary): string {
   return `${status.status.replaceAll('_', ' ')}${runSuffix}`;
 }
 
-export function formatKloSetupStatus(status: KloSetupStatus): string {
+export function formatKtxSetupStatus(status: KtxSetupStatus): string {
   if (!status.project.ready) {
     return [
-      `No KLO project found at ${status.project.path}.`,
+      `No KTX project found at ${status.project.path}.`,
       '',
-      'Check another project: klo --project-dir <folder> setup status',
-      'Or from that folder: klo setup status',
-      'Create a new KLO project here: klo setup',
+      'Check another project: ktx --project-dir <folder> setup status',
+      'Or from that folder: ktx setup status',
+      'Create a new KTX project here: ktx setup',
       '',
     ].join('\n');
   }
 
   const lines = [
-    `KLO project: ${status.project.path}`,
+    `KTX project: ${status.project.path}`,
     `Project ready: ${formatReady(status.project.ready)}`,
     `LLM ready: ${formatReady(status.llm.ready)}${status.llm.model ? ` (${status.llm.model})` : ''}`,
     `Embeddings ready: ${formatReady(status.embeddings.ready)}${
@@ -351,7 +351,7 @@ export function formatKloSetupStatus(status: KloSetupStatus): string {
     }`,
     `Primary sources configured: ${formatConnectionList(status.databases.map((database) => database.connectionId))}`,
     `Context sources configured: ${formatConnectionList(status.sources.map((source) => source.connectionId))}`,
-    `KLO context built: ${formatContextBuilt(status.context)}`,
+    `KTX context built: ${formatContextBuilt(status.context)}`,
     `Agent integration ready: ${formatReady(status.agents.some((agent) => agent.ready))}${
       status.agents.length > 0 ? ` (${status.agents.map((agent) => `${agent.target}:${agent.scope}`).join(', ')})` : ''
     }`,
@@ -361,14 +361,14 @@ export function formatKloSetupStatus(status: KloSetupStatus): string {
   }
   if (!status.context.ready && status.context.status === 'failed' && status.context.detail) {
     lines.push(
-      `Retry: ${status.context.retryCommand ?? `klo setup context build --project-dir ${status.project.path}`}`,
+      `Retry: ${status.context.retryCommand ?? `ktx setup context build --project-dir ${status.project.path}`}`,
     );
   }
 
   return `${lines.join('\n')}\n`;
 }
 
-function setupStatusReady(status: KloSetupStatus): boolean {
+function setupStatusReady(status: KtxSetupStatus): boolean {
   if (!status.project.ready) {
     return false;
   }
@@ -383,34 +383,34 @@ function setupStatusReady(status: KloSetupStatus): boolean {
   );
 }
 
-function setupHasContextTargets(status: KloSetupStatus): boolean {
+function setupHasContextTargets(status: KtxSetupStatus): boolean {
   return status.databases.length > 0 || status.sources.length > 0;
 }
 
-function setupContextReady(status: KloSetupStatus): boolean {
+function setupContextReady(status: KtxSetupStatus): boolean {
   return status.context.ready;
 }
 
-function writeContextNotReadyForAgents(projectDir: string, io: KloCliIo): void {
-  io.stderr.write('KLO context is not ready for agents.\n\n');
-  io.stderr.write(`Build context first:\n  klo setup context build --project-dir ${resolve(projectDir)}\n\n`);
-  io.stderr.write(`Then install agent integration:\n  klo setup --agents --project-dir ${resolve(projectDir)}\n`);
+function writeContextNotReadyForAgents(projectDir: string, io: KtxCliIo): void {
+  io.stderr.write('KTX context is not ready for agents.\n\n');
+  io.stderr.write(`Build context first:\n  ktx setup context build --project-dir ${resolve(projectDir)}\n\n`);
+  io.stderr.write(`Then install agent integration:\n  ktx setup --agents --project-dir ${resolve(projectDir)}\n`);
 }
 
-export async function runKloSetup(args: KloSetupArgs, io: KloCliIo, deps: KloSetupDeps = {}): Promise<number> {
+export async function runKtxSetup(args: KtxSetupArgs, io: KtxCliIo, deps: KtxSetupDeps = {}): Promise<number> {
   try {
-    return await runKloSetupInner(args, io, deps);
+    return await runKtxSetupInner(args, io, deps);
   } catch (error) {
-    if (isKloSetupExitError(error)) {
+    if (isKtxSetupExitError(error)) {
       return 0;
     }
     throw error;
   }
 }
 
-async function runKloSetupInner(args: KloSetupArgs, io: KloCliIo, deps: KloSetupDeps = {}): Promise<number> {
+async function runKtxSetupInner(args: KtxSetupArgs, io: KtxCliIo, deps: KtxSetupDeps = {}): Promise<number> {
   if (args.command === 'remove-agents') {
-    return await (deps.removeAgents ?? removeKloAgentInstall)(args.projectDir, io);
+    return await (deps.removeAgents ?? removeKtxAgentInstall)(args.projectDir, io);
   }
 
   if (
@@ -419,7 +419,7 @@ async function runKloSetupInner(args: KloSetupArgs, io: KloCliIo, deps: KloSetup
     args.command === 'context-status' ||
     args.command === 'context-stop'
   ) {
-    const commandArgs: KloSetupContextCommandArgs =
+    const commandArgs: KtxSetupContextCommandArgs =
       args.command === 'context-build'
         ? { command: 'build', projectDir: args.projectDir, inputMode: args.inputMode }
         : args.command === 'context-watch'
@@ -437,18 +437,18 @@ async function runKloSetupInner(args: KloSetupArgs, io: KloCliIo, deps: KloSetup
                 json: args.json,
               }
             : { command: 'stop', projectDir: args.projectDir, ...(args.runId ? { runId: args.runId } : {}) };
-    return await runKloSetupContextCommand(commandArgs, io, deps.contextDeps);
+    return await runKtxSetupContextCommand(commandArgs, io, deps.contextDeps);
   }
 
   if (args.command === 'status') {
-    const status = await readKloSetupStatus(args.projectDir);
-    io.stdout.write(args.json ? `${JSON.stringify(status, null, 2)}\n` : formatKloSetupStatus(status));
+    const status = await readKtxSetupStatus(args.projectDir);
+    io.stdout.write(args.json ? `${JSON.stringify(status, null, 2)}\n` : formatKtxSetupStatus(status));
     return 0;
   }
 
-  io.stdout.write('KLO setup\n');
-  let entryAction: KloSetupEntryAction | undefined;
-  let projectResult: Awaited<ReturnType<typeof runKloSetupProjectStep>>;
+  io.stdout.write('KTX setup\n');
+  let entryAction: KtxSetupEntryAction | undefined;
+  let projectResult: Awaited<ReturnType<typeof runKtxSetupProjectStep>>;
   const canShowEntryMenu =
     args.showEntryMenu === true &&
     args.inputMode !== 'disabled' &&
@@ -458,23 +458,23 @@ async function runKloSetupInner(args: KloSetupArgs, io: KloCliIo, deps: KloSetup
   setupLoop: while (true) {
     entryAction = undefined;
     if (canShowEntryMenu) {
-      const status = await readKloSetupStatus(args.projectDir);
-      entryAction = (await runKloSetupEntryMenu(status, deps.entryMenuDeps)).action;
+      const status = await readKtxSetupStatus(args.projectDir);
+      entryAction = (await runKtxSetupEntryMenu(status, deps.entryMenuDeps)).action;
       if (entryAction === 'exit') {
         (deps.entryMenuDeps?.prompts ?? createEntryMenuPromptAdapter()).cancel('Setup cancelled.');
         return 0;
       }
       if (entryAction === 'status') {
-        io.stdout.write(formatKloSetupStatus(status));
+        io.stdout.write(formatKtxSetupStatus(status));
         return 0;
       }
       if (entryAction === 'demo') {
-        return await runKloSetupDemoFromEntryMenu(args, io, deps);
+        return await runKtxSetupDemoFromEntryMenu(args, io, deps);
       }
     }
 
     const projectMode = entryAction === 'new-project' ? 'prompt-new' : args.mode;
-    projectResult = await runKloSetupProjectStep(
+    projectResult = await runKtxSetupProjectStep(
       {
         projectDir: args.projectDir,
         mode: projectMode,
@@ -495,10 +495,10 @@ async function runKloSetupInner(args: KloSetupArgs, io: KloCliIo, deps: KloSetup
     }
 
     const agentsRequested = args.agents || entryAction === 'agents';
-    const currentStatus = await readKloSetupStatus(projectResult.projectDir);
+    const currentStatus = await readKtxSetupStatus(projectResult.projectDir);
     let readyAction: string | undefined;
-    if (args.inputMode !== 'disabled' && !agentsRequested && isKloSetupReady(currentStatus)) {
-      readyAction = (await runKloSetupReadyChangeMenu(currentStatus, deps.readyMenuDeps)).action;
+    if (args.inputMode !== 'disabled' && !agentsRequested && isKtxSetupReady(currentStatus)) {
+      readyAction = (await runKtxSetupReadyChangeMenu(currentStatus, deps.readyMenuDeps)).action;
       if (readyAction === 'exit') return 0;
     }
 
@@ -511,15 +511,15 @@ async function runKloSetupInner(args: KloSetupArgs, io: KloCliIo, deps: KloSetup
     const shouldRunAgents = agentsRequested || !runOnly || runOnly === 'agents';
     const showPromptInstructions = projectResult.confirmedCreation !== true;
 
-    const setupSteps: KloSetupFlowStep[] = agentsRequested
+    const setupSteps: KtxSetupFlowStep[] = agentsRequested
       ? ['context']
       : ['models', 'embeddings', 'databases', 'sources', 'context'];
     if (shouldRunAgents && args.skipAgents !== true) {
       setupSteps.push('agents');
     }
 
-    const forcePromptSteps = new Set<KloSetupFlowStep>();
-    const isNavigableSetupStep = (step: KloSetupFlowStep): boolean => {
+    const forcePromptSteps = new Set<KtxSetupFlowStep>();
+    const isNavigableSetupStep = (step: KtxSetupFlowStep): boolean => {
       if (step === 'models') return !args.skipLlm && shouldRunModels;
       if (step === 'embeddings') return !args.skipEmbeddings && shouldRunEmbeddings;
       if (step === 'databases') return !args.skipDatabases && shouldRunDatabases;
@@ -541,10 +541,10 @@ async function runKloSetupInner(args: KloSetupArgs, io: KloCliIo, deps: KloSetup
       const step = setupSteps[stepIndex];
       if (!step) break;
 
-      let stepResult: { status: KloSetupFlowStatus };
+      let stepResult: { status: KtxSetupFlowStatus };
       if (step === 'models') {
         const modelRunner =
-          deps.model ?? ((modelArgs, modelIo) => runKloSetupAnthropicModelStep(modelArgs, modelIo, deps.modelDeps));
+          deps.model ?? ((modelArgs, modelIo) => runKtxSetupAnthropicModelStep(modelArgs, modelIo, deps.modelDeps));
         stepResult = await modelRunner(
           {
             projectDir: projectResult.projectDir,
@@ -561,7 +561,7 @@ async function runKloSetupInner(args: KloSetupArgs, io: KloCliIo, deps: KloSetup
       } else if (step === 'embeddings') {
         const embeddingsRunner =
           deps.embeddings ??
-          ((embeddingArgs, embeddingIo) => runKloSetupEmbeddingsStep(embeddingArgs, embeddingIo, deps.embeddingsDeps));
+          ((embeddingArgs, embeddingIo) => runKtxSetupEmbeddingsStep(embeddingArgs, embeddingIo, deps.embeddingsDeps));
         stepResult = await embeddingsRunner(
           {
             projectDir: projectResult.projectDir,
@@ -578,7 +578,7 @@ async function runKloSetupInner(args: KloSetupArgs, io: KloCliIo, deps: KloSetup
       } else if (step === 'databases') {
         const databasesRunner =
           deps.databases ??
-          ((databaseArgs, databaseIo) => runKloSetupDatabasesStep(databaseArgs, databaseIo, deps.databasesDeps));
+          ((databaseArgs, databaseIo) => runKtxSetupDatabasesStep(databaseArgs, databaseIo, deps.databasesDeps));
         stepResult = await databasesRunner(
           {
             projectDir: projectResult.projectDir,
@@ -604,7 +604,7 @@ async function runKloSetupInner(args: KloSetupArgs, io: KloCliIo, deps: KloSetup
         );
       } else if (step === 'sources') {
         const sourcesRunner =
-          deps.sources ?? ((sourceArgs, sourceIo) => runKloSetupSourcesStep(sourceArgs, sourceIo, deps.sourcesDeps));
+          deps.sources ?? ((sourceArgs, sourceIo) => runKtxSetupSourcesStep(sourceArgs, sourceIo, deps.sourcesDeps));
         stepResult = await sourcesRunner(
           {
             projectDir: projectResult.projectDir,
@@ -635,7 +635,7 @@ async function runKloSetupInner(args: KloSetupArgs, io: KloCliIo, deps: KloSetup
       } else if (step === 'context') {
         const contextRunner =
           deps.context ??
-          ((contextArgs, contextIo) => runKloSetupContextStep(contextArgs, contextIo, deps.contextDeps));
+          ((contextArgs, contextIo) => runKtxSetupContextStep(contextArgs, contextIo, deps.contextDeps));
         stepResult = await contextRunner(
           {
             projectDir: projectResult.projectDir,
@@ -647,7 +647,7 @@ async function runKloSetupInner(args: KloSetupArgs, io: KloCliIo, deps: KloSetup
         );
       } else {
         const agentsRunner =
-          deps.agents ?? ((agentArgs, agentIo) => runKloSetupAgentsStep(agentArgs, agentIo, deps.agentsDeps));
+          deps.agents ?? ((agentArgs, agentIo) => runKtxSetupAgentsStep(agentArgs, agentIo, deps.agentsDeps));
         stepResult = await agentsRunner(
           {
             projectDir: projectResult.projectDir,
@@ -698,8 +698,8 @@ async function runKloSetupInner(args: KloSetupArgs, io: KloCliIo, deps: KloSetup
     break;
   }
 
-  const status = await readKloSetupStatus(projectResult.projectDir);
-  io.stdout.write(formatKloSetupStatus(status));
+  const status = await readKtxSetupStatus(projectResult.projectDir);
+  io.stdout.write(formatKtxSetupStatus(status));
   io.stdout.write('\nWhat you can do next:\n');
   io.stdout.write(
     `${formatSetupNextStepLines({

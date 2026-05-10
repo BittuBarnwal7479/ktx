@@ -61,22 +61,22 @@ describe('scanFileContent', () => {
 
     assert.equal(scanFileContent('docs/transition.md', name).length, 0);
     assert.equal(scanFileContent('examples/transition.md', name).length, 0);
-    assert.equal(scanFileContent('python/klo-sl/plans/brainstorm.md', name).length, 0);
-    assert.equal(scanFileContent('python/klo-sl/openspec/specs/semantic-layer/spec.md', name).length, 0);
+    assert.equal(scanFileContent('python/ktx-sl/plans/brainstorm.md', name).length, 0);
+    assert.equal(scanFileContent('python/ktx-sl/openspec/specs/semantic-layer/spec.md', name).length, 0);
   });
 
   it('allows clean source files and clean runtime prompt assets', () => {
     assert.deepEqual(
-      scanFileContent('packages/context/src/index.ts', "export const packageName = '@klo/context';"),
+      scanFileContent('packages/context/src/index.ts', "export const packageName = '@ktx/context';"),
       [],
     );
     assert.deepEqual(
-      scanFileContent('packages/context/prompts/memory_agent_bundle_ingest_work_unit.md', 'Write output for KLO.'),
+      scanFileContent('packages/context/prompts/memory_agent_bundle_ingest_work_unit.md', 'Write output for KTX.'),
       [],
     );
   });
 
-  it('rejects context-owned LLM provider construction after @klo/llm migration', () => {
+  it('rejects context-owned LLM provider construction after @ktx/llm migration', () => {
     const violations = [
       ...scanFileContent(
         'packages/context/src/agent/local-llm-provider.ts',
@@ -92,10 +92,10 @@ describe('scanFileContent', () => {
     );
   });
 
-  it('rejects old KLO LLM port declarations in context', () => {
+  it('rejects old KTX LLM port declarations in context', () => {
     const violations = [
       ...scanFileContent('packages/context/src/agent/agent-runner.service.ts', 'export interface LlmProviderPort {}'),
-      ...scanFileContent('packages/context/src/scan/types.ts', 'export interface KloScanLlmPort {}'),
+      ...scanFileContent('packages/context/src/scan/types.ts', 'export interface KtxScanLlmPort {}'),
       ...scanFileContent('packages/context/src/agent/gateway-llm-provider.ts', 'export function createGatewayLlmProvider() {}'),
     ];
 
@@ -115,7 +115,7 @@ describe('scanFileContent', () => {
     assert.equal(violations[0]?.kind, 'llm-boundary');
     assert.equal(
       violations[0]?.message,
-      'Forbidden context getModelByName call; use getModel(role) inside @klo/context',
+      'Forbidden context getModelByName call; use getModel(role) inside @ktx/context',
     );
   });
 

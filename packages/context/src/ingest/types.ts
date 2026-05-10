@@ -1,4 +1,4 @@
-import type { KloEmbeddingPort } from '../core/embedding.js';
+import type { KtxEmbeddingPort } from '../core/embedding.js';
 import type { MemoryFlowEventSink } from './memory-flow/types.js';
 
 export type IngestTrigger = 'upload' | 'scheduled_pull' | 'manual_resync' | 'manual_override';
@@ -93,7 +93,7 @@ export interface TriageSignals {
 export interface ClusterWorkUnitsContext {
   workUnits: WorkUnit[];
   stagedDir: string;
-  embedding: KloEmbeddingPort;
+  embedding: KtxEmbeddingPort;
 }
 
 export interface SourceAdapter {

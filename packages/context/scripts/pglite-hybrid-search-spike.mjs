@@ -8,8 +8,8 @@ import { fileURLToPath } from 'node:url';
 const require = createRequire(import.meta.url);
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const contextDir = resolve(scriptDir, '..');
-const kloRoot = resolve(contextDir, '../..');
-const docsDir = join(kloRoot, 'docs');
+const ktxRoot = resolve(contextDir, '../..');
+const docsDir = join(ktxRoot, 'docs');
 const reportPath = join(docsDir, 'hybrid-search-pglite-spike.md');
 
 async function timed(label, fn) {
@@ -63,7 +63,7 @@ async function packageInfo(packageName) {
   return {
     name: packageName,
     version: packageJson.version,
-    path: relative(kloRoot, packageDir),
+    path: relative(ktxRoot, packageDir),
     bytes: await directoryBytes(packageDir),
   };
 }
@@ -164,7 +164,7 @@ async function main() {
   });
 
   const { PGlite, vector, pg_trgm } = importTimer.value;
-  const tempDir = await mkdtemp(join(tmpdir(), 'klo-pglite-report-'));
+  const tempDir = await mkdtemp(join(tmpdir(), 'ktx-pglite-report-'));
   const dataDir = join(tempDir, 'pgdata');
 
   let db;

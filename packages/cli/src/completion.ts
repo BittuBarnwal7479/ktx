@@ -28,10 +28,10 @@ export interface ZshCompletionInstallResult {
   zshrcPath: string;
 }
 
-const KLO_COMPLETION_BLOCK_START = '# >>> klo completion >>>';
-const KLO_COMPLETION_BLOCK_END = '# <<< klo completion <<<';
-const KLO_COMPLETION_BLOCK_PATTERN = new RegExp(
-  `\\n?${escapeRegExp(KLO_COMPLETION_BLOCK_START)}[\\s\\S]*?${escapeRegExp(KLO_COMPLETION_BLOCK_END)}\\n?`,
+const KTX_COMPLETION_BLOCK_START = '# >>> ktx completion >>>';
+const KTX_COMPLETION_BLOCK_END = '# <<< ktx completion <<<';
+const KTX_COMPLETION_BLOCK_PATTERN = new RegExp(
+  `\\n?${escapeRegExp(KTX_COMPLETION_BLOCK_START)}[\\s\\S]*?${escapeRegExp(KTX_COMPLETION_BLOCK_END)}\\n?`,
   'g',
 );
 
@@ -39,27 +39,27 @@ export function zshCompletionScript(): string {
   const zshWords = '$' + '{words[@]}';
   const zshCompletionCapture = [
     '$',
-    `{(@f)$("${'$'}{klo_completion_command[@]}" dev __complete --shell zsh --position "$CURRENT" -- "${zshWords}" 2>/dev/null)}`,
+    `{(@f)$("${'$'}{ktx_completion_command[@]}" dev __complete --shell zsh --position "$CURRENT" -- "${zshWords}" 2>/dev/null)}`,
   ].join('');
   const zshCompletionsCount = '$' + '{#completions[@]}';
-  const zshCompletionCommand = '$' + '(eval "print -r -- $' + '{KLO_COMPLETION_COMMAND:-klo}")';
+  const zshCompletionCommand = '$' + '(eval "print -r -- $' + '{KTX_COMPLETION_COMMAND:-ktx}")';
 
   return [
-    '#compdef klo',
+    '#compdef ktx',
     '',
-    '_klo() {',
+    '_ktx() {',
     '  local -a completions',
-    '  local -a klo_completion_command',
-    `  klo_completion_command=("\${(@z)${zshCompletionCommand}}")`,
+    '  local -a ktx_completion_command',
+    `  ktx_completion_command=("\${(@z)${zshCompletionCommand}}")`,
     `  completions=("${zshCompletionCapture}")`,
     `  if (( ${zshCompletionsCount} )); then`,
-    "    _describe 'klo completions' completions",
+    "    _describe 'ktx completions' completions",
     '  else',
     '    _files',
     '  fi',
     '}',
     '',
-    'compdef _klo klo',
+    'compdef _ktx ktx',
     '',
   ].join('\n');
 }
@@ -68,7 +68,7 @@ export async function installZshCompletion(): Promise<ZshCompletionInstallResult
   const homeDir = process.env.HOME || homedir();
   const zshConfigDir = process.env.ZDOTDIR || homeDir;
   const completionDir = join(homeDir, '.zfunc');
-  const completionPath = join(completionDir, '_klo');
+  const completionPath = join(completionDir, '_ktx');
   const zshrcPath = join(zshConfigDir, '.zshrc');
 
   await mkdir(completionDir, { recursive: true });
@@ -290,7 +290,7 @@ async function readOptionalTextFile(path: string): Promise<string> {
 }
 
 function updateZshrcCompletionBlock(contents: string): string {
-  const withoutManagedBlock = contents.replace(KLO_COMPLETION_BLOCK_PATTERN, normalizeTrailingNewline);
+  const withoutManagedBlock = contents.replace(KTX_COMPLETION_BLOCK_PATTERN, normalizeTrailingNewline);
   const hasCompinit = /^.*\bcompinit\b.*$/m.test(withoutManagedBlock);
   const block = zshrcCompletionBlock({ includeCompinit: !hasCompinit });
 
@@ -313,23 +313,23 @@ function updateZshrcCompletionBlock(contents: string): string {
 
 function zshrcCompletionBlock(options: { includeCompinit: boolean }): string {
   return [
-    KLO_COMPLETION_BLOCK_START,
-    '_klo_completion_command() {',
+    KTX_COMPLETION_BLOCK_START,
+    '_ktx_completion_command() {',
     '  local dir="$PWD"',
     '  while [[ "$dir" != "/" ]]; do',
-    `    if [[ -f "$dir/package.json" ]] && command grep -q '"name": "klo-workspace"' "$dir/package.json" 2>/dev/null; then`,
-    '      print -r -- "node $dir/scripts/run-klo.mjs --"',
+    `    if [[ -f "$dir/package.json" ]] && command grep -q '"name": "ktx-workspace"' "$dir/package.json" 2>/dev/null; then`,
+    '      print -r -- "node $dir/scripts/run-ktx.mjs --"',
     '      return',
     '    fi',
     '    dir="' + '$' + '{dir:h}"',
     '  done',
-    '  print -r -- "klo"',
+    '  print -r -- "ktx"',
     '}',
-    "export KLO_COMPLETION_COMMAND='$(_klo_completion_command)'",
+    "export KTX_COMPLETION_COMMAND='$(_ktx_completion_command)'",
     'setopt complete_aliases',
     'fpath=("$HOME/.zfunc" $fpath)',
     ...(options.includeCompinit ? ['autoload -Uz compinit', 'compinit'] : []),
-    KLO_COMPLETION_BLOCK_END,
+    KTX_COMPLETION_BLOCK_END,
   ].join('\n');
 }
 

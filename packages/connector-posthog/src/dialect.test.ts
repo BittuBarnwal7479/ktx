@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { KloPostHogDialect } from './dialect.js';
+import { KtxPostHogDialect } from './dialect.js';
 
-describe('KloPostHogDialect', () => {
-  const dialect = new KloPostHogDialect();
+describe('KtxPostHogDialect', () => {
+  const dialect = new KtxPostHogDialect();
 
   it('quotes identifiers, formats table names, maps types, and prepares HogQL params', () => {
     expect(dialect.quoteIdentifier('weird`name')).toBe('`weird\\`name`');

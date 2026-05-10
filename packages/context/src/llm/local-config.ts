@@ -1,23 +1,23 @@
 import {
-  createKloEmbeddingProvider,
-  createKloLlmProvider,
-  type KloEmbeddingConfig,
-  type KloEmbeddingProvider,
-  type KloLlmConfig,
-  type KloLlmProvider,
-  type KloModelRole,
-} from '@klo/llm';
-import { resolveKloConfigReference } from '../core/config-reference.js';
-import type { KloProjectEmbeddingConfig, KloProjectLlmConfig } from '../project/config.js';
+  createKtxEmbeddingProvider,
+  createKtxLlmProvider,
+  type KtxEmbeddingConfig,
+  type KtxEmbeddingProvider,
+  type KtxLlmConfig,
+  type KtxLlmProvider,
+  type KtxModelRole,
+} from '@ktx/llm';
+import { resolveKtxConfigReference } from '../core/config-reference.js';
+import type { KtxProjectEmbeddingConfig, KtxProjectLlmConfig } from '../project/config.js';
 
 interface LocalConfigDeps {
   env?: NodeJS.ProcessEnv;
-  createKloLlmProvider?: typeof createKloLlmProvider;
-  createKloEmbeddingProvider?: typeof createKloEmbeddingProvider;
+  createKtxLlmProvider?: typeof createKtxLlmProvider;
+  createKtxEmbeddingProvider?: typeof createKtxEmbeddingProvider;
 }
 
 function resolveOptional(value: string | undefined, env: NodeJS.ProcessEnv): string | undefined {
-  return resolveKloConfigReference(value, env) || undefined;
+  return resolveKtxConfigReference(value, env) || undefined;
 }
 
 function resolveRequired(value: string | undefined, env: NodeJS.ProcessEnv, message: string): string {
@@ -29,19 +29,19 @@ function resolveRequired(value: string | undefined, env: NodeJS.ProcessEnv, mess
 }
 
 function resolveModelSlots(
-  models: KloProjectLlmConfig['models'],
+  models: KtxProjectLlmConfig['models'],
   env: NodeJS.ProcessEnv,
-): KloLlmConfig['modelSlots'] {
-  const resolved: Partial<Record<KloModelRole, string>> & { default?: string } = {};
+): KtxLlmConfig['modelSlots'] {
+  const resolved: Partial<Record<KtxModelRole, string>> & { default?: string } = {};
   for (const [role, value] of Object.entries(models)) {
     if (value) {
-      resolved[role as KloModelRole] = resolveRequired(value, env, `llm.models.${role} is required`);
+      resolved[role as KtxModelRole] = resolveRequired(value, env, `llm.models.${role} is required`);
     }
   }
   if (!resolved.default) {
     throw new Error('llm.models.default is required when llm.provider.backend is not none');
   }
-  return resolved as KloLlmConfig['modelSlots'];
+  return resolved as KtxLlmConfig['modelSlots'];
 }
 
 function resolvedProviderConfig(
@@ -64,7 +64,7 @@ function resolvedProviderConfig(
   };
 }
 
-export function resolveLocalKloLlmConfig(config: KloProjectLlmConfig, env: NodeJS.ProcessEnv): KloLlmConfig | null {
+export function resolveLocalKtxLlmConfig(config: KtxProjectLlmConfig, env: NodeJS.ProcessEnv): KtxLlmConfig | null {
   if (config.provider.backend === 'none') {
     return null;
   }
@@ -81,18 +81,18 @@ export function resolveLocalKloLlmConfig(config: KloProjectLlmConfig, env: NodeJ
   };
 }
 
-export function createLocalKloLlmProviderFromConfig(
-  config: KloProjectLlmConfig,
+export function createLocalKtxLlmProviderFromConfig(
+  config: KtxProjectLlmConfig,
   deps: LocalConfigDeps = {},
-): KloLlmProvider | null {
-  const resolved = resolveLocalKloLlmConfig(config, deps.env ?? process.env);
-  return resolved ? (deps.createKloLlmProvider ?? createKloLlmProvider)(resolved) : null;
+): KtxLlmProvider | null {
+  const resolved = resolveLocalKtxLlmConfig(config, deps.env ?? process.env);
+  return resolved ? (deps.createKtxLlmProvider ?? createKtxLlmProvider)(resolved) : null;
 }
 
-export function resolveLocalKloEmbeddingConfig(
-  config: KloProjectEmbeddingConfig,
+export function resolveLocalKtxEmbeddingConfig(
+  config: KtxProjectEmbeddingConfig,
   env: NodeJS.ProcessEnv,
-): KloEmbeddingConfig | null {
+): KtxEmbeddingConfig | null {
   if (config.backend === 'none') {
     return null;
   }
@@ -113,10 +113,10 @@ export function resolveLocalKloEmbeddingConfig(
   };
 }
 
-export function createLocalKloEmbeddingProviderFromConfig(
-  config: KloProjectEmbeddingConfig,
+export function createLocalKtxEmbeddingProviderFromConfig(
+  config: KtxProjectEmbeddingConfig,
   deps: LocalConfigDeps = {},
-): KloEmbeddingProvider | null {
-  const resolved = resolveLocalKloEmbeddingConfig(config, deps.env ?? process.env);
-  return resolved ? (deps.createKloEmbeddingProvider ?? createKloEmbeddingProvider)(resolved) : null;
+): KtxEmbeddingProvider | null {
+  const resolved = resolveLocalKtxEmbeddingConfig(config, deps.env ?? process.env);
+  return resolved ? (deps.createKtxEmbeddingProvider ?? createKtxEmbeddingProvider)(resolved) : null;
 }

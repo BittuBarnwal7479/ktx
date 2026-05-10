@@ -1,5 +1,5 @@
-import type { KloLocalProject } from '../project/index.js';
-import { defaultKloDataDictionarySettings, isKloDataDictionaryCandidate } from '../scan/index.js';
+import type { KtxLocalProject } from '../project/index.js';
+import { defaultKtxDataDictionarySettings, isKtxDataDictionaryCandidate } from '../scan/index.js';
 
 export interface SlDictionaryEntry {
   connectionId: string;
@@ -58,12 +58,12 @@ function columnEntries(connectionId: string, column: RelationshipProfileColumn):
   }
 
   const columnType = column.normalizedType ?? column.nativeType ?? '';
-  if (!isKloDataDictionaryCandidate(columnType, columnName)) {
+  if (!isKtxDataDictionaryCandidate(columnType, columnName)) {
     return [];
   }
 
   const cardinality = typeof column.distinctCount === 'number' ? column.distinctCount : null;
-  if (cardinality !== null && cardinality > defaultKloDataDictionarySettings.cardinalityThreshold) {
+  if (cardinality !== null && cardinality > defaultKtxDataDictionarySettings.cardinalityThreshold) {
     return [];
   }
 
@@ -76,7 +76,7 @@ function columnEntries(connectionId: string, column: RelationshipProfileColumn):
   }));
 }
 
-async function latestProfilePath(project: KloLocalProject, connectionId: string): Promise<string | null> {
+async function latestProfilePath(project: KtxLocalProject, connectionId: string): Promise<string | null> {
   const root = `raw-sources/${connectionId}/live-database`;
   let files: string[];
   try {
@@ -94,7 +94,7 @@ async function latestProfilePath(project: KloLocalProject, connectionId: string)
 }
 
 export async function loadLatestSlDictionaryEntries(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   connectionIds: readonly string[],
 ): Promise<SlDictionaryEntry[]> {
   const entries: SlDictionaryEntry[] = [];

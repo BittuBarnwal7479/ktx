@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { KloCliIo } from '../cli-runtime.js';
+import type { KtxCliIo } from '../cli-runtime.js';
 import { resolveOutputMode } from './mode.js';
 
-function ioWith(isTTY: boolean | undefined): KloCliIo {
+function ioWith(isTTY: boolean | undefined): KtxCliIo {
   return {
     stdout: { isTTY, write: () => {} },
     stderr: { write: () => {} },
@@ -24,14 +24,14 @@ describe('resolveOutputMode', () => {
     expect(() => resolveOutputMode({ explicit: 'fancy', io: ioWith(true), env: {} })).toThrow(/Invalid --output/);
   });
 
-  it('honors KLO_OUTPUT env var when no explicit value', () => {
-    expect(resolveOutputMode({ io: ioWith(true), env: { KLO_OUTPUT: 'plain' } })).toBe('plain');
-    expect(resolveOutputMode({ io: ioWith(false), env: { KLO_OUTPUT: 'pretty' } })).toBe('pretty');
-    expect(resolveOutputMode({ io: ioWith(false), env: { KLO_OUTPUT: 'json' } })).toBe('json');
+  it('honors KTX_OUTPUT env var when no explicit value', () => {
+    expect(resolveOutputMode({ io: ioWith(true), env: { KTX_OUTPUT: 'plain' } })).toBe('plain');
+    expect(resolveOutputMode({ io: ioWith(false), env: { KTX_OUTPUT: 'pretty' } })).toBe('pretty');
+    expect(resolveOutputMode({ io: ioWith(false), env: { KTX_OUTPUT: 'json' } })).toBe('json');
   });
 
-  it('throws on unknown KLO_OUTPUT', () => {
-    expect(() => resolveOutputMode({ io: ioWith(true), env: { KLO_OUTPUT: 'fancy' } })).toThrow(/Invalid KLO_OUTPUT/);
+  it('throws on unknown KTX_OUTPUT', () => {
+    expect(() => resolveOutputMode({ io: ioWith(true), env: { KTX_OUTPUT: 'fancy' } })).toThrow(/Invalid KTX_OUTPUT/);
   });
 
   it('returns plain when CI is set to a truthy value', () => {
@@ -54,7 +54,7 @@ describe('resolveOutputMode', () => {
     expect(resolveOutputMode({ io: ioWith(undefined), env: {} })).toBe('plain');
   });
 
-  it('explicit value beats KLO_OUTPUT env var', () => {
-    expect(resolveOutputMode({ explicit: 'json', io: ioWith(true), env: { KLO_OUTPUT: 'plain' } })).toBe('json');
+  it('explicit value beats KTX_OUTPUT env var', () => {
+    expect(resolveOutputMode({ explicit: 'json', io: ioWith(true), env: { KTX_OUTPUT: 'plain' } })).toBe('json');
   });
 });

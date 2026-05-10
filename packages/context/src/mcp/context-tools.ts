@@ -1,10 +1,10 @@
 import { z } from 'zod';
-import type { KloMcpContextPorts, KloMcpServerLike, KloMcpToolResult, KloMcpUserContext } from './types.js';
+import type { KtxMcpContextPorts, KtxMcpServerLike, KtxMcpToolResult, KtxMcpUserContext } from './types.js';
 
-export interface RegisterKloContextToolsDeps {
-  server: KloMcpServerLike;
-  ports: KloMcpContextPorts;
-  userContext: KloMcpUserContext;
+export interface RegisterKtxContextToolsDeps {
+  server: KtxMcpServerLike;
+  ports: KtxMcpContextPorts;
+  userContext: KtxMcpUserContext;
 }
 
 const connectionIdSchema = z.string().min(1);
@@ -143,14 +143,14 @@ const scanArtifactReadSchema = z.object({
   path: z.string().min(1),
 });
 
-export function jsonToolResult<T extends object>(structuredContent: T): KloMcpToolResult<T> {
+export function jsonToolResult<T extends object>(structuredContent: T): KtxMcpToolResult<T> {
   return {
     content: [{ type: 'text', text: JSON.stringify(structuredContent, null, 2) }],
     structuredContent,
   };
 }
 
-export function jsonErrorToolResult(text: string): KloMcpToolResult<Record<string, never>> {
+export function jsonErrorToolResult(text: string): KtxMcpToolResult<Record<string, never>> {
   return {
     content: [{ type: 'text', text }],
     isError: true,
@@ -158,16 +158,16 @@ export function jsonErrorToolResult(text: string): KloMcpToolResult<Record<strin
 }
 
 function registerParsedTool<TSchema extends z.ZodType>(
-  server: KloMcpServerLike,
+  server: KtxMcpServerLike,
   name: string,
   config: { title: string; description: string; inputSchema: unknown },
   schema: TSchema,
-  handler: (input: z.infer<TSchema>) => Promise<KloMcpToolResult>,
+  handler: (input: z.infer<TSchema>) => Promise<KtxMcpToolResult>,
 ): void {
   server.registerTool(name, config, async (input) => handler(schema.parse(input)));
 }
 
-export function registerKloContextTools(deps: RegisterKloContextToolsDeps): void {
+export function registerKtxContextTools(deps: RegisterKtxContextToolsDeps): void {
   const { ports, server, userContext } = deps;
 
   if (ports.connections) {
@@ -177,7 +177,7 @@ export function registerKloContextTools(deps: RegisterKloContextToolsDeps): void
       'connection_list',
       {
         title: 'Connection List',
-        description: 'List configured read-only data connections available to the KLO project.',
+        description: 'List configured read-only data connections available to the KTX project.',
         inputSchema: connectionListSchema.shape,
       },
       connectionListSchema,
@@ -190,7 +190,7 @@ export function registerKloContextTools(deps: RegisterKloContextToolsDeps): void
         'connection_test',
         {
           title: 'Connection Test',
-          description: 'Test a configured standalone KLO connection through the host-provided scan connector.',
+          description: 'Test a configured standalone KTX connection through the host-provided scan connector.',
           inputSchema: connectionTestSchema.shape,
         },
         connectionTestSchema,
@@ -211,7 +211,7 @@ export function registerKloContextTools(deps: RegisterKloContextToolsDeps): void
       'knowledge_search',
       {
         title: 'Knowledge Search',
-        description: 'Search KLO knowledge pages and return ranked summaries.',
+        description: 'Search KTX knowledge pages and return ranked summaries.',
         inputSchema: knowledgeSearchSchema.shape,
       },
       knowledgeSearchSchema,
@@ -230,7 +230,7 @@ export function registerKloContextTools(deps: RegisterKloContextToolsDeps): void
       'knowledge_read',
       {
         title: 'Knowledge Read',
-        description: 'Read a KLO knowledge page by key.',
+        description: 'Read a KTX knowledge page by key.',
         inputSchema: knowledgeReadSchema.shape,
       },
       knowledgeReadSchema,
@@ -245,7 +245,7 @@ export function registerKloContextTools(deps: RegisterKloContextToolsDeps): void
       'knowledge_write',
       {
         title: 'Knowledge Write',
-        description: 'Create or replace a KLO knowledge page and its SL references.',
+        description: 'Create or replace a KTX knowledge page and its SL references.',
         inputSchema: knowledgeWriteSchema.shape,
       },
       knowledgeWriteSchema,
@@ -368,7 +368,7 @@ export function registerKloContextTools(deps: RegisterKloContextToolsDeps): void
       'ingest_trigger',
       {
         title: 'Ingest Trigger',
-        description: 'Trigger a KLO ingest run for an adapter and connection.',
+        description: 'Trigger a KTX ingest run for an adapter and connection.',
         inputSchema: ingestTriggerSchema.shape,
       },
       ingestTriggerSchema,
@@ -397,7 +397,7 @@ export function registerKloContextTools(deps: RegisterKloContextToolsDeps): void
         'ingest_report',
         {
           title: 'Ingest Report',
-          description: 'Read the stored canonical KLO ingest report for a local run id, job id, or report id.',
+          description: 'Read the stored canonical KTX ingest report for a local run id, job id, or report id.',
           inputSchema: ingestReportSchema.shape,
         },
         ingestReportSchema,
@@ -414,7 +414,7 @@ export function registerKloContextTools(deps: RegisterKloContextToolsDeps): void
         'ingest_replay',
         {
           title: 'Ingest Replay',
-          description: 'Read the memory-flow replay snapshot for a stored canonical KLO ingest run.',
+          description: 'Read the memory-flow replay snapshot for a stored canonical KTX ingest run.',
           inputSchema: ingestReplaySchema.shape,
         },
         ingestReplaySchema,
@@ -433,7 +433,7 @@ export function registerKloContextTools(deps: RegisterKloContextToolsDeps): void
       'scan_trigger',
       {
         title: 'Scan Trigger',
-        description: 'Run a standalone KLO structural connection scan and return its report summary.',
+        description: 'Run a standalone KTX structural connection scan and return its report summary.',
         inputSchema: scanTriggerSchema.shape,
       },
       scanTriggerSchema,
@@ -445,7 +445,7 @@ export function registerKloContextTools(deps: RegisterKloContextToolsDeps): void
       'scan_status',
       {
         title: 'Scan Status',
-        description: 'Read the current or final status for a standalone KLO scan run.',
+        description: 'Read the current or final status for a standalone KTX scan run.',
         inputSchema: scanStatusSchema.shape,
       },
       scanStatusSchema,
@@ -460,7 +460,7 @@ export function registerKloContextTools(deps: RegisterKloContextToolsDeps): void
       'scan_report',
       {
         title: 'Scan Report',
-        description: 'Read a standalone KLO scan report by run id.',
+        description: 'Read a standalone KTX scan report by run id.',
         inputSchema: scanStatusSchema.shape,
       },
       scanStatusSchema,
@@ -476,7 +476,7 @@ export function registerKloContextTools(deps: RegisterKloContextToolsDeps): void
         'scan_list_artifacts',
         {
           title: 'Scan List Artifacts',
-          description: 'List report, raw-source, manifest, and enrichment artifact paths for a standalone KLO scan run.',
+          description: 'List report, raw-source, manifest, and enrichment artifact paths for a standalone KTX scan run.',
           inputSchema: scanStatusSchema.shape,
         },
         scanStatusSchema,
@@ -493,7 +493,7 @@ export function registerKloContextTools(deps: RegisterKloContextToolsDeps): void
         'scan_read_artifact',
         {
           title: 'Scan Read Artifact',
-          description: 'Read one artifact that belongs to a standalone KLO scan run.',
+          description: 'Read one artifact that belongs to a standalone KTX scan run.',
           inputSchema: scanArtifactReadSchema.shape,
         },
         scanArtifactReadSchema,

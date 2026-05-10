@@ -1,7 +1,7 @@
 {
-  "name": "klo-workspace",
+  "name": "ktx-workspace",
   "version": "0.0.0-private",
-  "description": "Workspace root for klo packages",
+  "description": "Workspace root for ktx packages",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.28.0",
@@ -18,7 +18,7 @@
     "artifacts:verify-manifest": "node scripts/package-artifacts.mjs verify-manifest",
     "build": "pnpm --filter './packages/*' run build",
     "check": "node scripts/check-boundaries.mjs && node --test scripts/*.test.mjs && pnpm --filter './packages/*' run build && pnpm --filter './packages/*' run test",
-    "klo": "node scripts/run-klo.mjs",
+    "ktx": "node scripts/run-ktx.mjs",
     "link:dev": "node scripts/link-dev-cli.mjs",
     "native:rebuild": "pnpm -r rebuild better-sqlite3",
     "setup:dev": "node scripts/setup-dev.mjs",
@@ -28,7 +28,7 @@
     "relationships:rebuild-public-snapshots": "node scripts/build-benchmark-snapshot.mjs --rebuild-all",
     "relationships:build-adventureworks-oltp": "node scripts/build-adventureworks-oltp-fixture.mjs",
     "relationships:verify-orbit": "node scripts/relationship-orbit-verification.mjs",
-    "smoke": "pnpm run build && pnpm --filter @klo/cli run smoke",
+    "smoke": "pnpm run build && pnpm --filter @ktx/cli run smoke",
     "test": "node --test scripts/*.test.mjs && pnpm --filter './packages/*' run test",
     "type-check": "pnpm --filter './packages/*' run type-check"
   },

@@ -1,83 +1,83 @@
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { cancel, isCancel, multiselect, select } from '@clack/prompts';
-import { loadKloProject, markKloSetupStepComplete, serializeKloProjectConfig } from '@klo/context/project';
-import type { KloCliIo } from './cli-runtime.js';
+import { loadKtxProject, markKtxSetupStepComplete, serializeKtxProjectConfig } from '@ktx/context/project';
+import type { KtxCliIo } from './cli-runtime.js';
 import { withMenuOptionsSpacing, withMultiselectNavigation } from './prompt-navigation.js';
 import { withSetupInterruptConfirmation } from './setup-interrupt.js';
 
-export type KloAgentTarget = 'claude-code' | 'codex' | 'cursor' | 'opencode' | 'universal';
-export type KloAgentScope = 'project' | 'global';
-export type KloAgentInstallMode = 'cli' | 'mcp' | 'both';
+export type KtxAgentTarget = 'claude-code' | 'codex' | 'cursor' | 'opencode' | 'universal';
+export type KtxAgentScope = 'project' | 'global';
+export type KtxAgentInstallMode = 'cli' | 'mcp' | 'both';
 
-export interface KloSetupAgentsArgs {
+export interface KtxSetupAgentsArgs {
   projectDir: string;
   inputMode: 'auto' | 'disabled';
   yes: boolean;
   agents: boolean;
-  target?: KloAgentTarget;
-  scope: KloAgentScope;
-  mode: KloAgentInstallMode;
+  target?: KtxAgentTarget;
+  scope: KtxAgentScope;
+  mode: KtxAgentInstallMode;
   skipAgents: boolean;
 }
 
-export type KloSetupAgentsResult =
+export type KtxSetupAgentsResult =
   | {
       status: 'ready';
       projectDir: string;
-      installs: Array<{ target: KloAgentTarget; scope: KloAgentScope; mode: KloAgentInstallMode }>;
+      installs: Array<{ target: KtxAgentTarget; scope: KtxAgentScope; mode: KtxAgentInstallMode }>;
     }
   | { status: 'skipped'; projectDir: string }
   | { status: 'back'; projectDir: string }
   | { status: 'missing-input'; projectDir: string }
   | { status: 'failed'; projectDir: string };
 
-export interface KloAgentInstallManifest {
+export interface KtxAgentInstallManifest {
   version: 1;
   projectDir: string;
   installedAt: string;
-  installs: Array<{ target: KloAgentTarget; scope: KloAgentScope; mode: KloAgentInstallMode }>;
+  installs: Array<{ target: KtxAgentTarget; scope: KtxAgentScope; mode: KtxAgentInstallMode }>;
   entries: Array<{ kind: 'file'; path: string } | { kind: 'json-key'; path: string; jsonPath: string[] }>;
 }
 
-type InstallEntry = KloAgentInstallManifest['entries'][number];
+type InstallEntry = KtxAgentInstallManifest['entries'][number];
 
 export function agentInstallManifestPath(projectDir: string): string {
-  return join(resolve(projectDir), '.klo/agents/install-manifest.json');
+  return join(resolve(projectDir), '.ktx/agents/install-manifest.json');
 }
 
-export function plannedKloAgentFiles(input: {
+export function plannedKtxAgentFiles(input: {
   projectDir: string;
-  target: KloAgentTarget;
-  scope: KloAgentScope;
-  mode: KloAgentInstallMode;
+  target: KtxAgentTarget;
+  scope: KtxAgentScope;
+  mode: KtxAgentInstallMode;
 }): InstallEntry[] {
   if (input.scope === 'global') {
     if (input.target === 'claude-code') {
-      return [{ kind: 'file', path: join(process.env.HOME ?? '', '.claude/skills/klo/SKILL.md') }];
+      return [{ kind: 'file', path: join(process.env.HOME ?? '', '.claude/skills/ktx/SKILL.md') }];
     }
     if (input.target === 'codex') {
       return [
-        { kind: 'file', path: join(process.env.CODEX_HOME ?? join(process.env.HOME ?? '', '.codex'), 'skills/klo/SKILL.md') },
+        { kind: 'file', path: join(process.env.CODEX_HOME ?? join(process.env.HOME ?? '', '.codex'), 'skills/ktx/SKILL.md') },
       ];
     }
     throw new Error(`Global ${input.target} installation is not supported; use --project.`);
   }
 
   const root = resolve(input.projectDir);
-  const cliEntries: Partial<Record<KloAgentTarget, InstallEntry>> = {
-    'claude-code': { kind: 'file', path: join(root, '.claude/skills/klo/SKILL.md') },
-    codex: { kind: 'file', path: join(root, '.agents/skills/klo/SKILL.md') },
-    cursor: { kind: 'file', path: join(root, '.cursor/rules/klo.mdc') },
-    opencode: { kind: 'file', path: join(root, '.opencode/commands/klo.md') },
-    universal: { kind: 'file', path: join(root, '.agents/skills/klo/SKILL.md') },
+  const cliEntries: Partial<Record<KtxAgentTarget, InstallEntry>> = {
+    'claude-code': { kind: 'file', path: join(root, '.claude/skills/ktx/SKILL.md') },
+    codex: { kind: 'file', path: join(root, '.agents/skills/ktx/SKILL.md') },
+    cursor: { kind: 'file', path: join(root, '.cursor/rules/ktx.mdc') },
+    opencode: { kind: 'file', path: join(root, '.opencode/commands/ktx.md') },
+    universal: { kind: 'file', path: join(root, '.agents/skills/ktx/SKILL.md') },
   };
-  const mcpEntries: Record<KloAgentTarget, InstallEntry> = {
-    'claude-code': { kind: 'json-key', path: join(root, '.mcp.json'), jsonPath: ['mcpServers', 'klo'] },
-    codex: { kind: 'json-key', path: join(root, '.agents/mcp/klo.json'), jsonPath: ['mcpServers', 'klo'] },
-    cursor: { kind: 'json-key', path: join(root, '.cursor/mcp.json'), jsonPath: ['mcpServers', 'klo'] },
-    opencode: { kind: 'json-key', path: join(root, '.opencode/mcp.json'), jsonPath: ['mcpServers', 'klo'] },
-    universal: { kind: 'json-key', path: join(root, '.agents/mcp/klo.json'), jsonPath: ['mcpServers', 'klo'] },
+  const mcpEntries: Record<KtxAgentTarget, InstallEntry> = {
+    'claude-code': { kind: 'json-key', path: join(root, '.mcp.json'), jsonPath: ['mcpServers', 'ktx'] },
+    codex: { kind: 'json-key', path: join(root, '.agents/mcp/ktx.json'), jsonPath: ['mcpServers', 'ktx'] },
+    cursor: { kind: 'json-key', path: join(root, '.cursor/mcp.json'), jsonPath: ['mcpServers', 'ktx'] },
+    opencode: { kind: 'json-key', path: join(root, '.opencode/mcp.json'), jsonPath: ['mcpServers', 'ktx'] },
+    universal: { kind: 'json-key', path: join(root, '.agents/mcp/ktx.json'), jsonPath: ['mcpServers', 'ktx'] },
   };
   return [
     ...(input.mode === 'cli' || input.mode === 'both' ? [cliEntries[input.target]] : []),
@@ -85,28 +85,28 @@ export function plannedKloAgentFiles(input: {
   ].filter((entry): entry is InstallEntry => entry !== undefined);
 }
 
-function cliInstructionContent(input: { projectDir: string; target: KloAgentTarget }): string {
+function cliInstructionContent(input: { projectDir: string; target: KtxAgentTarget }): string {
   return [
     '---',
-    'name: klo',
-    'description: Use local KLO semantic context, wiki knowledge, and safe SQL execution for this project.',
+    'name: ktx',
+    'description: Use local KTX semantic context, wiki knowledge, and safe SQL execution for this project.',
     '---',
     '',
-    '# KLO Local Context',
+    '# KTX Local Context',
     '',
     `Use this project with \`--project-dir ${input.projectDir}\`.`,
     '',
-    'Agents must not print secrets, credential references, environment variable values, or file contents from `.klo/secrets`.',
+    'Agents must not print secrets, credential references, environment variable values, or file contents from `.ktx/secrets`.',
     '',
     'Available commands:',
     '',
-    `- \`klo agent context --json --project-dir ${input.projectDir}\``,
-    `- \`klo agent sl list --json --project-dir ${input.projectDir}\``,
-    `- \`klo agent sl read <sourceName> --json --project-dir ${input.projectDir}\``,
-    `- \`klo agent sl query --json --project-dir ${input.projectDir} --connection-id <id> --query-file <path> --execute --max-rows 100\``,
-    `- \`klo agent wiki search <query> --json --project-dir ${input.projectDir}\``,
-    `- \`klo agent wiki read <pageId> --json --project-dir ${input.projectDir}\``,
-    `- \`klo agent sql execute --json --project-dir ${input.projectDir} --connection-id <id> --sql-file <path> --max-rows 100\``,
+    `- \`ktx agent context --json --project-dir ${input.projectDir}\``,
+    `- \`ktx agent sl list --json --project-dir ${input.projectDir}\``,
+    `- \`ktx agent sl read <sourceName> --json --project-dir ${input.projectDir}\``,
+    `- \`ktx agent sl query --json --project-dir ${input.projectDir} --connection-id <id> --query-file <path> --execute --max-rows 100\``,
+    `- \`ktx agent wiki search <query> --json --project-dir ${input.projectDir}\``,
+    `- \`ktx agent wiki read <pageId> --json --project-dir ${input.projectDir}\``,
+    `- \`ktx agent sql execute --json --project-dir ${input.projectDir} --connection-id <id> --sql-file <path> --max-rows 100\``,
     '',
     'SQL execution is read-only, requires an explicit row limit, and should use the smallest useful limit.',
     '',
@@ -115,7 +115,7 @@ function cliInstructionContent(input: { projectDir: string; target: KloAgentTarg
 
 function mcpConfig(projectDir: string): Record<string, unknown> {
   return {
-    command: 'klo',
+    command: 'ktx',
     args: ['--project-dir', projectDir, 'serve', '--mcp', 'stdio', '--semantic-compute', '--execute-queries'],
     env: {},
   };
@@ -151,15 +151,15 @@ async function removeJsonKey(path: string, jsonPath: string[]): Promise<void> {
   await writeFile(path, `${JSON.stringify(root, null, 2)}\n`, 'utf-8');
 }
 
-export async function readKloAgentInstallManifest(projectDir: string): Promise<KloAgentInstallManifest | null> {
+export async function readKtxAgentInstallManifest(projectDir: string): Promise<KtxAgentInstallManifest | null> {
   try {
-    return JSON.parse(await readFile(agentInstallManifestPath(projectDir), 'utf-8')) as KloAgentInstallManifest;
+    return JSON.parse(await readFile(agentInstallManifestPath(projectDir), 'utf-8')) as KtxAgentInstallManifest;
   } catch {
     return null;
   }
 }
 
-async function writeManifest(projectDir: string, manifest: KloAgentInstallManifest): Promise<void> {
+async function writeManifest(projectDir: string, manifest: KtxAgentInstallManifest): Promise<void> {
   const path = agentInstallManifestPath(projectDir);
   await mkdir(dirname(path), { recursive: true });
   await writeFile(path, `${JSON.stringify(manifest, null, 2)}\n`, 'utf-8');
@@ -171,11 +171,11 @@ function entryKey(entry: InstallEntry): string {
 
 function mergeManifest(
   projectDir: string,
-  existing: KloAgentInstallManifest | null,
-  installs: KloAgentInstallManifest['installs'],
+  existing: KtxAgentInstallManifest | null,
+  installs: KtxAgentInstallManifest['installs'],
   entries: InstallEntry[],
-): KloAgentInstallManifest {
-  const installMap = new Map<string, KloAgentInstallManifest['installs'][number]>();
+): KtxAgentInstallManifest {
+  const installMap = new Map<string, KtxAgentInstallManifest['installs'][number]>();
   for (const install of [...(existing?.installs ?? []), ...installs]) {
     installMap.set(`${install.target}:${install.scope}:${install.mode}`, install);
   }
@@ -192,10 +192,10 @@ function mergeManifest(
   };
 }
 
-export async function removeKloAgentInstall(projectDir: string, io: KloCliIo): Promise<number> {
-  const manifest = await readKloAgentInstallManifest(projectDir);
+export async function removeKtxAgentInstall(projectDir: string, io: KtxCliIo): Promise<number> {
+  const manifest = await readKtxAgentInstallManifest(projectDir);
   if (!manifest) {
-    io.stdout.write('No KLO agent installation manifest found.\n');
+    io.stdout.write('No KTX agent installation manifest found.\n');
     return 0;
   }
   for (const entry of manifest.entries) {
@@ -203,11 +203,11 @@ export async function removeKloAgentInstall(projectDir: string, io: KloCliIo): P
     if (entry.kind === 'json-key') await removeJsonKey(entry.path, entry.jsonPath).catch(() => undefined);
   }
   await rm(agentInstallManifestPath(projectDir), { force: true });
-  io.stdout.write('Removed KLO agent integration files from manifest.\n');
+  io.stdout.write('Removed KTX agent integration files from manifest.\n');
   return 0;
 }
 
-export interface KloSetupAgentsPromptAdapter {
+export interface KtxSetupAgentsPromptAdapter {
   select(options: { message: string; options: Array<{ value: string; label: string }> }): Promise<string>;
   multiselect(options: {
     message: string;
@@ -217,11 +217,11 @@ export interface KloSetupAgentsPromptAdapter {
   cancel(message: string): void;
 }
 
-export interface KloSetupAgentsDeps {
-  prompts?: KloSetupAgentsPromptAdapter;
+export interface KtxSetupAgentsDeps {
+  prompts?: KtxSetupAgentsPromptAdapter;
 }
 
-function createPromptAdapter(): KloSetupAgentsPromptAdapter {
+function createPromptAdapter(): KtxSetupAgentsPromptAdapter {
   return {
     async select(options) {
       const value = await withSetupInterruptConfirmation(() => select(withMenuOptionsSpacing(options)));
@@ -247,11 +247,11 @@ function createPromptAdapter(): KloSetupAgentsPromptAdapter {
 
 async function installTarget(input: {
   projectDir: string;
-  target: KloAgentTarget;
-  scope: KloAgentScope;
-  mode: KloAgentInstallMode;
+  target: KtxAgentTarget;
+  scope: KtxAgentScope;
+  mode: KtxAgentInstallMode;
 }): Promise<InstallEntry[]> {
-  const entries = plannedKloAgentFiles(input);
+  const entries = plannedKtxAgentFiles(input);
   for (const entry of entries) {
     if (entry.kind === 'file') {
       await mkdir(dirname(entry.path), { recursive: true });
@@ -264,15 +264,15 @@ async function installTarget(input: {
 }
 
 async function markAgentsComplete(projectDir: string): Promise<void> {
-  const project = await loadKloProject({ projectDir });
-  await writeFile(project.configPath, serializeKloProjectConfig(markKloSetupStepComplete(project.config, 'agents')), 'utf-8');
+  const project = await loadKtxProject({ projectDir });
+  await writeFile(project.configPath, serializeKtxProjectConfig(markKtxSetupStepComplete(project.config, 'agents')), 'utf-8');
 }
 
-export async function runKloSetupAgentsStep(
-  args: KloSetupAgentsArgs,
-  io: KloCliIo,
-  deps: KloSetupAgentsDeps = {},
-): Promise<KloSetupAgentsResult> {
+export async function runKtxSetupAgentsStep(
+  args: KtxSetupAgentsArgs,
+  io: KtxCliIo,
+  deps: KtxSetupAgentsDeps = {},
+): Promise<KtxSetupAgentsResult> {
   if (args.skipAgents) {
     io.stdout.write('Agent integration skipped.\n');
     return { status: 'skipped', projectDir: args.projectDir };
@@ -286,7 +286,7 @@ export async function runKloSetupAgentsStep(
     args.inputMode === 'disabled'
       ? args.mode
       : ((await prompts.select({
-          message: 'How should agents use this KLO project?',
+          message: 'How should agents use this KTX project?',
           options: [
             { value: 'cli', label: 'CLI tools and skills' },
             { value: 'mcp', label: 'MCP server config' },
@@ -294,7 +294,7 @@ export async function runKloSetupAgentsStep(
             { value: 'skip', label: 'Skip' },
             { value: 'back', label: 'Back' },
           ],
-        })) as KloAgentInstallMode | 'skip' | 'back');
+        })) as KtxAgentInstallMode | 'skip' | 'back');
   if (mode === 'back') return { status: 'back', projectDir: args.projectDir };
   if (mode === 'skip') return { status: 'skipped', projectDir: args.projectDir };
 
@@ -304,7 +304,7 @@ export async function runKloSetupAgentsStep(
       : args.inputMode === 'disabled'
         ? []
         : ((await prompts.multiselect({
-            message: withMultiselectNavigation('Which agent targets should KLO install?'),
+            message: withMultiselectNavigation('Which agent targets should KTX install?'),
             options: [
               { value: 'claude-code', label: 'Claude Code' },
               { value: 'codex', label: 'Codex' },
@@ -314,8 +314,8 @@ export async function runKloSetupAgentsStep(
               { value: 'back', label: 'Back' },
             ],
             required: true,
-          })) as KloAgentTarget[]);
-  if (targets.includes('back' as KloAgentTarget)) return { status: 'back', projectDir: args.projectDir };
+          })) as KtxAgentTarget[]);
+  if (targets.includes('back' as KtxAgentTarget)) return { status: 'back', projectDir: args.projectDir };
   if (targets.length === 0) {
     io.stderr.write('Missing agent target: pass --target or use interactive setup.\n');
     return { status: 'missing-input', projectDir: args.projectDir };
@@ -325,7 +325,7 @@ export async function runKloSetupAgentsStep(
   const entries: InstallEntry[] = [];
   try {
     for (const install of installs) entries.push(...(await installTarget({ projectDir: args.projectDir, ...install })));
-    await writeManifest(args.projectDir, mergeManifest(args.projectDir, await readKloAgentInstallManifest(args.projectDir), installs, entries));
+    await writeManifest(args.projectDir, mergeManifest(args.projectDir, await readKtxAgentInstallManifest(args.projectDir), installs, entries));
     await markAgentsComplete(args.projectDir);
     io.stdout.write(`Agent integration installed for ${installs.map((install) => install.target).join(', ')}.\n`);
     return { status: 'ready', projectDir: args.projectDir, installs };

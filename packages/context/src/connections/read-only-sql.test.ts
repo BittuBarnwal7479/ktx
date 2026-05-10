@@ -20,7 +20,7 @@ describe('assertReadOnlySql', () => {
 describe('limitSqlForExecution', () => {
   it('wraps compiled SQL and strips trailing semicolons', () => {
     expect(limitSqlForExecution('select * from public.orders; ', 25)).toBe(
-      'select * from (select * from public.orders) as klo_query_result limit 25',
+      'select * from (select * from public.orders) as ktx_query_result limit 25',
     );
   });
 

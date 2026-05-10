@@ -2,10 +2,10 @@ import { stdin } from 'node:process';
 import type { Key } from 'node:readline';
 import { cancel, confirm, isCancel as isClackCancel } from '@clack/prompts';
 
-export class KloSetupExitError extends Error {
+export class KtxSetupExitError extends Error {
   constructor() {
-    super('KLO setup exit requested');
-    this.name = 'KloSetupExitError';
+    super('KTX setup exit requested');
+    this.name = 'KtxSetupExitError';
   }
 }
 
@@ -56,8 +56,8 @@ async function defaultConfirmExit(): Promise<boolean | symbol> {
   });
 }
 
-export function isKloSetupExitError(error: unknown): error is KloSetupExitError {
-  return error instanceof KloSetupExitError;
+export function isKtxSetupExitError(error: unknown): error is KtxSetupExitError {
+  return error instanceof KtxSetupExitError;
 }
 
 export async function withSetupInterruptConfirmation<T>(
@@ -84,7 +84,7 @@ export async function withSetupInterruptConfirmation<T>(
     const shouldExit = await confirmExit();
     if (isCancel(shouldExit) || shouldExit === true) {
       cancel('Setup cancelled.');
-      throw new KloSetupExitError();
+      throw new KtxSetupExitError();
     }
   }
 }

@@ -1,20 +1,20 @@
 import { cancel, isCancel, select } from '@clack/prompts';
 import { withMenuOptionsSpacing } from './prompt-navigation.js';
-import type { KloSetupStatus } from './setup.js';
+import type { KtxSetupStatus } from './setup.js';
 import { withSetupInterruptConfirmation } from './setup-interrupt.js';
 
-export type KloSetupReadyAction = 'models' | 'embeddings' | 'databases' | 'sources' | 'context' | 'agents' | 'exit';
+export type KtxSetupReadyAction = 'models' | 'embeddings' | 'databases' | 'sources' | 'context' | 'agents' | 'exit';
 
-export interface KloSetupReadyMenuPromptAdapter {
+export interface KtxSetupReadyMenuPromptAdapter {
   select(options: { message: string; options: Array<{ value: string; label: string }> }): Promise<string>;
   cancel(message: string): void;
 }
 
-export interface KloSetupReadyMenuDeps {
-  prompts?: KloSetupReadyMenuPromptAdapter;
+export interface KtxSetupReadyMenuDeps {
+  prompts?: KtxSetupReadyMenuPromptAdapter;
 }
 
-export function isKloSetupReady(status: KloSetupStatus): boolean {
+export function isKtxSetupReady(status: KtxSetupStatus): boolean {
   return (
     status.project.ready &&
     status.llm.ready &&
@@ -26,7 +26,7 @@ export function isKloSetupReady(status: KloSetupStatus): boolean {
   );
 }
 
-function createPromptAdapter(): KloSetupReadyMenuPromptAdapter {
+function createPromptAdapter(): KtxSetupReadyMenuPromptAdapter {
   return {
     async select(options) {
       const value = await withSetupInterruptConfirmation(() => select(withMenuOptionsSpacing(options)));
@@ -42,22 +42,22 @@ function createPromptAdapter(): KloSetupReadyMenuPromptAdapter {
   };
 }
 
-export async function runKloSetupReadyChangeMenu(
-  status: KloSetupStatus,
-  deps: KloSetupReadyMenuDeps = {},
-): Promise<{ action: KloSetupReadyAction }> {
+export async function runKtxSetupReadyChangeMenu(
+  status: KtxSetupStatus,
+  deps: KtxSetupReadyMenuDeps = {},
+): Promise<{ action: KtxSetupReadyAction }> {
   const prompts = deps.prompts ?? createPromptAdapter();
   const action = (await prompts.select({
-    message: `KLO is already set up for ${status.project.name ?? status.project.path}. What would you like to change?`,
+    message: `KTX is already set up for ${status.project.name ?? status.project.path}. What would you like to change?`,
     options: [
       { value: 'models', label: 'Models' },
       { value: 'embeddings', label: 'Embeddings' },
       { value: 'databases', label: 'Primary sources' },
       { value: 'sources', label: 'Context sources' },
-      { value: 'context', label: 'Rebuild KLO context' },
+      { value: 'context', label: 'Rebuild KTX context' },
       { value: 'agents', label: 'Agent integration' },
       { value: 'exit', label: 'Exit' },
     ],
-  })) as KloSetupReadyAction;
+  })) as KtxSetupReadyAction;
   return { action };
 }

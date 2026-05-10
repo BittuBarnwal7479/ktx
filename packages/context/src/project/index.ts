@@ -1,15 +1,15 @@
 export type {
-  KloProjectConfig,
-  KloProjectConnectionConfig,
-  KloProjectEmbeddingConfig,
-  KloProjectLlmConfig,
-  KloSearchBackend,
-  KloStorageState,
+  KtxProjectConfig,
+  KtxProjectConnectionConfig,
+  KtxProjectEmbeddingConfig,
+  KtxProjectLlmConfig,
+  KtxSearchBackend,
+  KtxStorageState,
 } from './config.js';
-export { buildDefaultKloProjectConfig, parseKloProjectConfig, serializeKloProjectConfig } from './config.js';
+export { buildDefaultKtxProjectConfig, parseKtxProjectConfig, serializeKtxProjectConfig } from './config.js';
 export type { LocalGitFileStoreDeps } from './local-git-file-store.js';
 export { LocalGitFileStore } from './local-git-file-store.js';
-export { kloLocalStateDbPath } from './local-state-db.js';
+export { ktxLocalStateDbPath } from './local-state-db.js';
 export type {
   ConnectionMappingBootstrap,
   LookerMappingBootstrap,
@@ -22,12 +22,12 @@ export {
   parseLookmlMappingBootstrap,
   parseMetabaseMappingBootstrap,
 } from './mappings-yaml-schema.js';
-export type { InitKloProjectOptions, InitKloProjectResult, KloLocalProject, LoadKloProjectOptions } from './project.js';
-export { initKloProject, loadKloProject } from './project.js';
-export type { KloSetupStep } from './setup-config.js';
+export type { InitKtxProjectOptions, InitKtxProjectResult, KtxLocalProject, LoadKtxProjectOptions } from './project.js';
+export { initKtxProject, loadKtxProject } from './project.js';
+export type { KtxSetupStep } from './setup-config.js';
 export {
-  KLO_SETUP_STEPS,
-  markKloSetupStepComplete,
-  mergeKloSetupGitignoreEntries,
-  setKloSetupDatabaseConnectionIds,
+  KTX_SETUP_STEPS,
+  markKtxSetupStepComplete,
+  mergeKtxSetupGitignoreEntries,
+  setKtxSetupDatabaseConnectionIds,
 } from './setup-config.js';

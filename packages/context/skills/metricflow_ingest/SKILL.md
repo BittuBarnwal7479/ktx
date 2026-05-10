@@ -1,16 +1,16 @@
 ---
 name: metricflow_ingest
-description: Map a MetricFlow semantic_model or metric into KLO semantic layer sources. Covers the MetricFlow to KLO primitive table, `extends:` inheritance flattening, metric-type handling (simple / derived / ratio / cumulative / conversion), `model: ref('x')` resolution, and four worked examples. Load when the turn contains `.yml`/`.yaml` files with top-level `semantic_models:` or `metrics:`.
+description: Map a MetricFlow semantic_model or metric into KTX semantic layer sources. Covers the MetricFlow to KTX primitive table, `extends:` inheritance flattening, metric-type handling (simple / derived / ratio / cumulative / conversion), `model: ref('x')` resolution, and four worked examples. Load when the turn contains `.yml`/`.yaml` files with top-level `semantic_models:` or `metrics:`.
 callers: [memory_agent]
 ---
 
-# MetricFlow to KLO Semantic Layer
+# MetricFlow to KTX Semantic Layer
 
-A MetricFlow `semantic_model` maps to an SL source; MetricFlow `measures` map to KLO measures; MetricFlow `entities` map to KLO `joins`; MetricFlow `metrics` (top-level) map to KLO measures OR to cross-model derived measures. Files in one WorkUnit are ALWAYS part of the same logical entity (a connected component, possibly spanning `extends:` + cross-model metric refs). Flatten inheritance and cross-file references at write time.
+A MetricFlow `semantic_model` maps to an SL source; MetricFlow `measures` map to KTX measures; MetricFlow `entities` map to KTX `joins`; MetricFlow `metrics` (top-level) map to KTX measures OR to cross-model derived measures. Files in one WorkUnit are ALWAYS part of the same logical entity (a connected component, possibly spanning `extends:` + cross-model metric refs). Flatten inheritance and cross-file references at write time.
 
 ## Mapping table
 
-| MetricFlow | KLO form | Notes |
+| MetricFlow | KTX form | Notes |
 |---|---|---|
 | `semantic_model: X { model: ref('t') }` with measures + dimensions | **Overlay** at `<connId>/X.yaml` with `measures`, `columns` (computed), `joins` | The `model:` ref resolves to a manifest table. |
 | `semantic_model: X { model: source('s','t') }` | **Overlay** at `<connId>/X.yaml` over table `t`. | Same shape; `source()` still resolves to a physical table. |
@@ -23,11 +23,11 @@ A MetricFlow `semantic_model` maps to an SL source; MetricFlow `measures` map to
 | `metrics: [{ type: simple, filter: <jinja> }]` | **New measure** on the same source, with the filter translated to SQL and attached via `filter:` | Translate Jinja `{{ Dimension('x__y') }}` to the column name `y`. |
 | `metrics: [{ type: derived, type_params: { expr, metrics } }]` | **Derived measure** on whichever source owns the referenced measures, with `expr:` referencing measure names | If the metric spans models, still write it once on the source owning the "primary" measure (the one the agent judges most central). Mention the cross-model chain in the description. |
 | `metrics: [{ type: ratio, type_params: { numerator, denominator } }]` | Same as derived; `expr: "numerator / NULLIF(denominator, 0)"` if no explicit expr | Safe-division by default. |
-| `metrics: [{ type: cumulative, type_params: { window, grain_to_date } }]` | **Standalone** source with a window-function SQL; reference the resulting column as a normal measure | KLO SL has no first-class cumulative primitive (spec Non-goals). |
-| `metrics: [{ type: conversion }]` | **Flag for human** — do NOT write. Emit a wiki note describing the intended semantics. | No KLO equivalent in v1. |
+| `metrics: [{ type: cumulative, type_params: { window, grain_to_date } }]` | **Standalone** source with a window-function SQL; reference the resulting column as a normal measure | KTX SL has no first-class cumulative primitive (spec Non-goals). |
+| `metrics: [{ type: conversion }]` | **Flag for human** — do NOT write. Emit a wiki note describing the intended semantics. | No KTX equivalent in v1. |
 | Metric not mappable | Wiki page `<metric_name>-definition.md` with the full YAML body quoted | Capture the intent even if we can't emit SL. |
 
-Type map: MetricFlow `time` to KLO `time`; `categorical` to `string`; `number` to `number`; `boolean` to `boolean`. Follow `expr` over `name` when both differ — `expr` is the physical column.
+Type map: MetricFlow `time` to KTX `time`; `categorical` to `string`; `number` to `number`; `boolean` to `boolean`. Follow `expr` over `name` when both differ — `expr` is the physical column.
 
 ## Flattening `extends:`
 
@@ -55,7 +55,7 @@ After every `sl_write_source`, call `sl_validate`. The warehouse will reject inv
 
 ## Cumulative metrics — sql-standalone fallback
 
-KLO SL has no first-class `window:` or `grain_to_date:` primitive in v1 (spec Non-goals). Translate a MetricFlow cumulative metric to a standalone SL source with a window-function SQL:
+KTX SL has no first-class `window:` or `grain_to_date:` primitive in v1 (spec Non-goals). Translate a MetricFlow cumulative metric to a standalone SL source with a window-function SQL:
 
 ```yaml
 # MetricFlow input:
@@ -68,7 +68,7 @@ metrics:
 ```
 
 ```yaml
-# KLO standalone output:
+# KTX standalone output:
 name: cum_revenue_7d
 source_type: sql
 sql: |
@@ -106,7 +106,7 @@ Do NOT emit SL for this. Instead:
 - Write a wiki page at `knowledge/global/<metric_name>-intent.md` quoting the full YAML body and a one-line explanation of the intended semantics (base event → conversion event within window).
 - Call `emit_unmapped_fallback` with `rawPath` set to the MetricFlow file path, `reason: "conversion_metric_unsupported"`, and `fallback: "flagged"`.
 
-When KLO SL gains conversion primitives, re-ingesting will find the prior wiki note (via `priorProvenance`) and replace it with an SL source.
+When KTX SL gains conversion primitives, re-ingesting will find the prior wiki note (via `priorProvenance`) and replace it with an SL source.
 
 ## Provenance markers
 
@@ -137,7 +137,7 @@ semantic_models:
 ```
 
 ```yaml
-# KLO overlay at <connId>/orders.yaml:
+# KTX overlay at <connId>/orders.yaml:
 # <!-- from: raw-sources/.../models/orders.yml#L1-10 -->
 name: orders
 description: Order fact table.
@@ -179,7 +179,7 @@ metrics:
 ```
 
 ```yaml
-# KLO overlay at <connId>/orders_ext.yaml (one file; inheritance flattened):
+# KTX overlay at <connId>/orders_ext.yaml (one file; inheritance flattened):
 # <!-- from: raw-sources/.../models/orders.yml#L1-10 -->
 # <!-- from: raw-sources/.../models/orders_ext.yml#L1-8 -->
 # <!-- from: raw-sources/.../metrics/orders_final.yml#L1-10 -->
@@ -217,7 +217,7 @@ metrics:
       metrics: [{name: revenue}, {name: cost}]
 ```
 
-Because the WorkUnit bundles all three files (cross-component union via the metric), write the derived measure on ONE of the two sources — pick the source whose domain "owns" the metric (here, `sales` — margin is inherently a sales metric). Cross-source references aren't native in KLO SL; treat the metric's operands as already-resolvable in the target source's query context OR emit a standalone SQL that joins the two tables:
+Because the WorkUnit bundles all three files (cross-component union via the metric), write the derived measure on ONE of the two sources — pick the source whose domain "owns" the metric (here, `sales` — margin is inherently a sales metric). Cross-source references aren't native in KTX SL; treat the metric's operands as already-resolvable in the target source's query context OR emit a standalone SQL that joins the two tables:
 
 ```yaml
 # <connId>/sales.yaml

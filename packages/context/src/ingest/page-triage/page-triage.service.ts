@@ -1,11 +1,11 @@
 import { createHash } from 'node:crypto';
 import { readdir, readFile } from 'node:fs/promises';
 import { dirname, join, relative } from 'node:path';
-import { KloMessageBuilder, type KloLlmProvider } from '@klo/llm';
+import { KtxMessageBuilder, type KtxLlmProvider } from '@ktx/llm';
 import { generateText, type ToolSet } from 'ai';
 import pLimit from 'p-limit';
 import { z } from 'zod';
-import { type KloLogger, noopLogger } from '../../core/index.js';
+import { type KtxLogger, noopLogger } from '../../core/index.js';
 import type { PromptService } from '../../prompts/index.js';
 import type { InsertContextCandidateInput } from '../context-candidates/index.js';
 import type { JsonValue } from '../ports.js';
@@ -100,15 +100,15 @@ export interface PageTriageSettings {
 
 export interface PageTriageServiceDeps {
   store: PageTriageStorePort;
-  llmProvider: KloLlmProvider;
+  llmProvider: KtxLlmProvider;
   settings: PageTriageSettings;
   promptService: PromptService;
-  logger?: KloLogger;
+  logger?: KtxLogger;
   generateText?: typeof generateText;
 }
 
 export class PageTriageService {
-  private readonly logger: KloLogger;
+  private readonly logger: KtxLogger;
   private readonly runGenerateText: typeof generateText;
 
   constructor(private readonly deps: PageTriageServiceDeps) {
@@ -335,7 +335,7 @@ export class PageTriageService {
     unitKey: string;
   }): Promise<string> {
     const model = this.deps.llmProvider.getModel('triage');
-    const built = new KloMessageBuilder(this.deps.llmProvider).wrapSimple({
+    const built = new KtxMessageBuilder(this.deps.llmProvider).wrapSimple({
       messages: [{ role: 'user', content: params.prompt }],
       tools: {},
       model,

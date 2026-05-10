@@ -1,7 +1,7 @@
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import type { IngestReportSnapshot, LocalIngestResult, RunLocalIngestOptions } from '@klo/context/ingest';
+import type { IngestReportSnapshot, LocalIngestResult, RunLocalIngestOptions } from '@ktx/context/ingest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEMO_ADAPTER, DEMO_CONNECTION_ID, DEMO_FULL_JOB_ID, ensureDemoProject } from './demo-assets.js';
 import {
@@ -69,7 +69,7 @@ describe('full demo helpers', () => {
   let projectDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-demo-full-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-demo-full-'));
     projectDir = join(tempDir, 'demo');
     await ensureDemoProject({ projectDir, force: false });
   });
@@ -79,18 +79,18 @@ describe('full demo helpers', () => {
   });
 
   it('fails full mode with exact Anthropic env guidance when the key is missing', async () => {
-    const project = await import('@klo/context/project').then((mod) => mod.loadKloProject({ projectDir }));
+    const project = await import('@ktx/context/project').then((mod) => mod.loadKtxProject({ projectDir }));
 
     expect(() => assertFullDemoCredentials(project, {})).toThrow(
-      'klo setup demo --mode full needs ANTHROPIC_API_KEY. Export ANTHROPIC_API_KEY and rerun `klo setup demo --mode full --no-input`, or run `klo setup demo --mode seeded --no-input` without credentials.',
+      'ktx setup demo --mode full needs ANTHROPIC_API_KEY. Export ANTHROPIC_API_KEY and rerun `ktx setup demo --mode full --no-input`, or run `ktx setup demo --mode seeded --no-input` without credentials.',
     );
   });
 
   it('respects an existing gateway provider project for full mode', async () => {
     await writeFile(
-      join(projectDir, 'klo.yaml'),
+      join(projectDir, 'ktx.yaml'),
       [
-        'project: klo-demo-orbit',
+        'project: ktx-demo-orbit',
         'connections:',
         '  orbit_demo:',
         '    driver: sqlite',
@@ -109,22 +109,22 @@ describe('full demo helpers', () => {
       ].join('\n'),
       'utf-8',
     );
-    const project = await import('@klo/context/project').then((mod) => mod.loadKloProject({ projectDir }));
+    const project = await import('@ktx/context/project').then((mod) => mod.loadKtxProject({ projectDir }));
 
     expect(() => assertFullDemoCredentials(project, {})).not.toThrow();
     expect(fullDemoCredentialStatus(project, {})).toEqual({ status: 'ready' });
   });
 
   it('reports full-demo credential status without throwing', async () => {
-    const project = await import('@klo/context/project').then((mod) => mod.loadKloProject({ projectDir }));
+    const project = await import('@ktx/context/project').then((mod) => mod.loadKtxProject({ projectDir }));
 
     expect(fullDemoCredentialStatus(project, {})).toEqual({ status: 'missing-anthropic-key' });
     expect(fullDemoCredentialStatus(project, { ANTHROPIC_API_KEY: 'sk-ant-test' })).toEqual({ status: 'ready' }); // pragma: allowlist secret
 
     await writeFile(
-      join(projectDir, 'klo.yaml'),
+      join(projectDir, 'ktx.yaml'),
       [
-        'project: klo-demo-orbit',
+        'project: ktx-demo-orbit',
         'connections:',
         '  orbit_demo:',
         '    driver: sqlite',
@@ -136,7 +136,7 @@ describe('full demo helpers', () => {
       ].join('\n'),
       'utf-8',
     );
-    const disabledProject = await import('@klo/context/project').then((mod) => mod.loadKloProject({ projectDir }));
+    const disabledProject = await import('@ktx/context/project').then((mod) => mod.loadKtxProject({ projectDir }));
     expect(fullDemoCredentialStatus(disabledProject, {})).toEqual({ status: 'unsupported-provider', provider: 'none' });
   });
 
@@ -192,9 +192,9 @@ describe('full demo helpers', () => {
     expect(summary).toContain('Full demo ingest: done');
     expect(summary).toContain('Saved memory: 1 wiki, 1 semantic layer');
     expect(summary).toContain('Provenance rows: 2');
-    expect(summary).toContain('Next: klo setup demo inspect');
-    expect(summary).toContain('Shows the files, semantic-layer sources, and memory KLO just produced.');
-    expect(summary).toContain('Next: klo setup demo replay');
+    expect(summary).toContain('Next: ktx setup demo inspect');
+    expect(summary).toContain('Shows the files, semantic-layer sources, and memory KTX just produced.');
+    expect(summary).toContain('Next: ktx setup demo replay');
     expect(summary).toContain('Replays the same visual story without calling the LLM again.');
     expect(summary).not.toContain('--viz');
   });

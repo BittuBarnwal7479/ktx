@@ -1,6 +1,6 @@
 import type { IngestReportSnapshot, MemoryFlowReplayInput } from '../ingest/index.js';
 import type { MemoryCaptureService } from '../memory/index.js';
-import type { KloScanMode, KloScanReport } from '../scan/index.js';
+import type { KtxScanMode, KtxScanReport } from '../scan/index.js';
 import type {
   SemanticLayerQueryInput,
   SlDictionaryMatch,
@@ -9,13 +9,13 @@ import type {
 } from '../sl/index.js';
 import type { WikiSearchLaneSummary, WikiSearchMatchReason } from '../wiki/index.js';
 
-export interface KloMcpTextContent {
+export interface KtxMcpTextContent {
   type: 'text';
   text: string;
 }
 
-export interface KloMcpToolResult<T extends object = object> {
-  content: KloMcpTextContent[];
+export interface KtxMcpToolResult<T extends object = object> {
+  content: KtxMcpTextContent[];
   structuredContent?: T;
   isError?: true;
 }
@@ -25,11 +25,11 @@ export interface MemoryCapturePort {
   status: MemoryCaptureService['status'];
 }
 
-export interface KloMcpUserContext {
+export interface KtxMcpUserContext {
   userId: string;
 }
 
-export interface KloMcpServerLike {
+export interface KtxMcpServerLike {
   registerTool(
     name: string,
     config: {
@@ -41,13 +41,13 @@ export interface KloMcpServerLike {
   ): void;
 }
 
-export interface KloConnectionSummary {
+export interface KtxConnectionSummary {
   id: string;
   name: string;
   connectionType: string;
 }
 
-export interface KloConnectionTestResponse {
+export interface KtxConnectionTestResponse {
   id: string;
   connectionType: string;
   ok: boolean;
@@ -56,12 +56,12 @@ export interface KloConnectionTestResponse {
   warnings: string[];
 }
 
-export interface KloConnectionsMcpPort {
-  list(): Promise<KloConnectionSummary[]>;
-  test?(input: { connectionId: string }): Promise<KloConnectionTestResponse | null>;
+export interface KtxConnectionsMcpPort {
+  list(): Promise<KtxConnectionSummary[]>;
+  test?(input: { connectionId: string }): Promise<KtxConnectionTestResponse | null>;
 }
 
-export interface KloKnowledgeSearchResult {
+export interface KtxKnowledgeSearchResult {
   key: string;
   path: string;
   scope: 'GLOBAL' | 'USER';
@@ -71,12 +71,12 @@ export interface KloKnowledgeSearchResult {
   lanes?: WikiSearchLaneSummary[];
 }
 
-export interface KloKnowledgeSearchResponse {
-  results: KloKnowledgeSearchResult[];
+export interface KtxKnowledgeSearchResponse {
+  results: KtxKnowledgeSearchResult[];
   totalFound: number;
 }
 
-export interface KloKnowledgePage {
+export interface KtxKnowledgePage {
   key: string;
   summary: string;
   content: string;
@@ -86,7 +86,7 @@ export interface KloKnowledgePage {
   slRefs?: string[];
 }
 
-interface KloHistoricSqlKnowledgeUsage {
+interface KtxHistoricSqlKnowledgeUsage {
   executions: number;
   distinct_users: number;
   first_seen: string;
@@ -97,15 +97,15 @@ interface KloHistoricSqlKnowledgeUsage {
   rows_produced?: number;
 }
 
-export interface KloKnowledgeWriteResponse {
+export interface KtxKnowledgeWriteResponse {
   success: boolean;
   key: string;
   action: 'created' | 'updated';
 }
 
-export interface KloKnowledgeMcpPort {
-  search(input: { userId: string; query: string; limit: number }): Promise<KloKnowledgeSearchResponse>;
-  read(input: { userId: string; key: string }): Promise<KloKnowledgePage | null>;
+export interface KtxKnowledgeMcpPort {
+  search(input: { userId: string; query: string; limit: number }): Promise<KtxKnowledgeSearchResponse>;
+  read(input: { userId: string; key: string }): Promise<KtxKnowledgePage | null>;
   write(input: {
     userId: string;
     key: string;
@@ -118,12 +118,12 @@ export interface KloKnowledgeMcpPort {
     intent?: string;
     tables?: string[];
     representativeSql?: string;
-    usage?: KloHistoricSqlKnowledgeUsage;
+    usage?: KtxHistoricSqlKnowledgeUsage;
     fingerprints?: string[];
-  }): Promise<KloKnowledgeWriteResponse>;
+  }): Promise<KtxKnowledgeWriteResponse>;
 }
 
-export interface KloSemanticLayerSourceSummary {
+export interface KtxSemanticLayerSourceSummary {
   connectionId: string;
   connectionName: string;
   name: string;
@@ -137,17 +137,17 @@ export interface KloSemanticLayerSourceSummary {
   lanes?: SlSearchLaneSummary[];
 }
 
-export interface KloSemanticLayerListResponse {
-  sources: KloSemanticLayerSourceSummary[];
+export interface KtxSemanticLayerListResponse {
+  sources: KtxSemanticLayerSourceSummary[];
   totalSources: number;
 }
 
-export interface KloSemanticLayerReadResponse {
+export interface KtxSemanticLayerReadResponse {
   sourceName: string;
   yaml: string;
 }
 
-export interface KloSemanticLayerWriteResponse {
+export interface KtxSemanticLayerWriteResponse {
   success: boolean;
   sourceName: string;
   yaml?: string;
@@ -156,13 +156,13 @@ export interface KloSemanticLayerWriteResponse {
   commitHash?: string;
 }
 
-export interface KloSemanticLayerValidationResponse {
+export interface KtxSemanticLayerValidationResponse {
   success: boolean;
   errors: string[];
   warnings: string[];
 }
 
-export interface KloSemanticLayerQueryResponse {
+export interface KtxSemanticLayerQueryResponse {
   sql: string;
   headers: string[];
   rows: unknown[][];
@@ -170,23 +170,23 @@ export interface KloSemanticLayerQueryResponse {
   plan?: Record<string, unknown>;
 }
 
-export interface KloSemanticLayerMcpPort {
-  listSources(input: { connectionId?: string; query?: string }): Promise<KloSemanticLayerListResponse>;
-  readSource(input: { connectionId: string; sourceName: string }): Promise<KloSemanticLayerReadResponse | null>;
+export interface KtxSemanticLayerMcpPort {
+  listSources(input: { connectionId?: string; query?: string }): Promise<KtxSemanticLayerListResponse>;
+  readSource(input: { connectionId: string; sourceName: string }): Promise<KtxSemanticLayerReadResponse | null>;
   writeSource(input: {
     connectionId: string;
     sourceName: string;
     yaml?: string;
     source?: Record<string, unknown>;
     delete?: boolean;
-  }): Promise<KloSemanticLayerWriteResponse>;
-  validate(input: { connectionId: string; names?: string[] }): Promise<KloSemanticLayerValidationResponse>;
-  query(input: { connectionId?: string; query: SemanticLayerQueryInput }): Promise<KloSemanticLayerQueryResponse>;
+  }): Promise<KtxSemanticLayerWriteResponse>;
+  validate(input: { connectionId: string; names?: string[] }): Promise<KtxSemanticLayerValidationResponse>;
+  query(input: { connectionId?: string; query: SemanticLayerQueryInput }): Promise<KtxSemanticLayerQueryResponse>;
 }
 
-export type KloIngestTriggerKind = 'upload' | 'scheduled_pull' | 'manual_resync';
+export type KtxIngestTriggerKind = 'upload' | 'scheduled_pull' | 'manual_resync';
 
-interface KloIngestTriggerFanoutChild {
+interface KtxIngestTriggerFanoutChild {
   runId: string;
   jobId: string;
   reportId: string;
@@ -194,31 +194,31 @@ interface KloIngestTriggerFanoutChild {
   metabaseDatabaseId: number;
 }
 
-export interface KloIngestTriggerResponse {
+export interface KtxIngestTriggerResponse {
   runId: string;
   jobId?: string;
   reportId?: string;
   fanout?: {
     status: 'all_succeeded' | 'partial_failure' | 'all_failed';
-    children: KloIngestTriggerFanoutChild[];
+    children: KtxIngestTriggerFanoutChild[];
   };
 }
 
-export interface KloIngestDiffSummary {
+export interface KtxIngestDiffSummary {
   added: number;
   modified: number;
   deleted: number;
   unchanged: number;
 }
 
-export interface KloIngestWorkUnitSummary {
+export interface KtxIngestWorkUnitSummary {
   unitKey: string;
   rawFiles: string[];
   peerFileIndex: string[];
   dependencyPaths: string[];
 }
 
-export interface KloIngestStatusResponse {
+export interface KtxIngestStatusResponse {
   runId: string;
   jobId?: string;
   reportId?: string;
@@ -234,93 +234,93 @@ export interface KloIngestStatusResponse {
   startedAt?: string;
   completedAt?: string;
   previousRunId?: string | null;
-  diffSummary?: KloIngestDiffSummary;
+  diffSummary?: KtxIngestDiffSummary;
   workUnitCount?: number;
   rawFileCount?: number;
-  workUnits?: KloIngestWorkUnitSummary[];
+  workUnits?: KtxIngestWorkUnitSummary[];
   evictionDeletedRawPaths?: string[];
 }
 
-export interface KloIngestMcpPort {
+export interface KtxIngestMcpPort {
   trigger(input: {
     adapter: string;
     connectionId: string;
     config?: unknown;
-    trigger: KloIngestTriggerKind;
-  }): Promise<KloIngestTriggerResponse>;
-  status(input: { runId: string }): Promise<KloIngestStatusResponse | null>;
+    trigger: KtxIngestTriggerKind;
+  }): Promise<KtxIngestTriggerResponse>;
+  status(input: { runId: string }): Promise<KtxIngestStatusResponse | null>;
   report?(input: { runId: string }): Promise<IngestReportSnapshot | null>;
   replay?(input: { runId: string }): Promise<MemoryFlowReplayInput | null>;
 }
 
-interface KloScanTriggerResponse {
+interface KtxScanTriggerResponse {
   runId: string;
   status: 'done';
   done: true;
   connectionId: string;
-  mode: KloScanMode;
+  mode: KtxScanMode;
   dryRun: boolean;
   syncId: string;
-  report: KloScanReport;
+  report: KtxScanReport;
 }
 
-interface KloScanStatusResponse {
+interface KtxScanStatusResponse {
   runId: string;
   status: string;
   done: boolean;
   connectionId: string;
-  mode: KloScanMode;
+  mode: KtxScanMode;
   dryRun: boolean;
   syncId: string;
   progress: number;
   startedAt: string;
   completedAt: string;
   reportPath: string | null;
-  warnings: KloScanReport['warnings'];
+  warnings: KtxScanReport['warnings'];
 }
 
-export type KloScanArtifactType = 'report' | 'raw_source' | 'manifest_shard' | 'enrichment_artifact';
+export type KtxScanArtifactType = 'report' | 'raw_source' | 'manifest_shard' | 'enrichment_artifact';
 
-export interface KloScanArtifactSummary {
+export interface KtxScanArtifactSummary {
   path: string;
-  type: KloScanArtifactType;
+  type: KtxScanArtifactType;
   size?: number;
 }
 
-export interface KloScanArtifactListResponse {
+export interface KtxScanArtifactListResponse {
   runId: string;
-  artifacts: KloScanArtifactSummary[];
+  artifacts: KtxScanArtifactSummary[];
 }
 
-export interface KloScanArtifactReadResponse extends KloScanArtifactSummary {
+export interface KtxScanArtifactReadResponse extends KtxScanArtifactSummary {
   runId: string;
   content: string;
 }
 
-export interface KloScanMcpPort {
+export interface KtxScanMcpPort {
   trigger(input: {
     connectionId: string;
-    mode?: KloScanMode;
+    mode?: KtxScanMode;
     detectRelationships: boolean;
     dryRun: boolean;
-  }): Promise<KloScanTriggerResponse>;
-  status(input: { runId: string }): Promise<KloScanStatusResponse | null>;
-  report(input: { runId: string }): Promise<KloScanReport | null>;
-  listArtifacts?(input: { runId: string }): Promise<KloScanArtifactListResponse | null>;
-  readArtifact?(input: { runId: string; path: string }): Promise<KloScanArtifactReadResponse | null>;
+  }): Promise<KtxScanTriggerResponse>;
+  status(input: { runId: string }): Promise<KtxScanStatusResponse | null>;
+  report(input: { runId: string }): Promise<KtxScanReport | null>;
+  listArtifacts?(input: { runId: string }): Promise<KtxScanArtifactListResponse | null>;
+  readArtifact?(input: { runId: string; path: string }): Promise<KtxScanArtifactReadResponse | null>;
 }
 
-export interface KloMcpContextPorts {
-  connections?: KloConnectionsMcpPort;
-  knowledge?: KloKnowledgeMcpPort;
-  semanticLayer?: KloSemanticLayerMcpPort;
-  ingest?: KloIngestMcpPort;
-  scan?: KloScanMcpPort;
+export interface KtxMcpContextPorts {
+  connections?: KtxConnectionsMcpPort;
+  knowledge?: KtxKnowledgeMcpPort;
+  semanticLayer?: KtxSemanticLayerMcpPort;
+  ingest?: KtxIngestMcpPort;
+  scan?: KtxScanMcpPort;
 }
 
-export interface KloMcpServerDeps {
-  server: KloMcpServerLike;
+export interface KtxMcpServerDeps {
+  server: KtxMcpServerLike;
   memoryCapture?: MemoryCapturePort;
-  userContext: KloMcpUserContext;
-  contextTools?: KloMcpContextPorts;
+  userContext: KtxMcpUserContext;
+  contextTools?: KtxMcpContextPorts;
 }

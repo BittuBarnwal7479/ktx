@@ -1,26 +1,26 @@
 import { describe, expect, it } from 'vitest';
 import {
-  REDACTED_KLO_CREDENTIAL_VALUE,
-  redactKloCredentialEnvelope,
-  redactKloCredentialValue,
-  redactKloScanMetadata,
-  redactKloScanReport,
-  redactKloScanWarning,
+  REDACTED_KTX_CREDENTIAL_VALUE,
+  redactKtxCredentialEnvelope,
+  redactKtxCredentialValue,
+  redactKtxScanMetadata,
+  redactKtxScanReport,
+  redactKtxScanWarning,
 } from './credentials.js';
-import type { KloCredentialEnvelope, KloScanReport, KloScanWarning } from './types.js';
+import type { KtxCredentialEnvelope, KtxScanReport, KtxScanWarning } from './types.js';
 
-describe('KLO scan credential redaction', () => {
+describe('KTX scan credential redaction', () => {
   it('keeps credential references inspectable', () => {
-    const envReference: KloCredentialEnvelope = { kind: 'env', name: 'DATABASE_URL' };
-    const fileReference: KloCredentialEnvelope = { kind: 'file', path: '~/.config/klo/warehouse' };
+    const envReference: KtxCredentialEnvelope = { kind: 'env', name: 'DATABASE_URL' };
+    const fileReference: KtxCredentialEnvelope = { kind: 'file', path: '~/.config/ktx/warehouse' };
 
-    expect(redactKloCredentialEnvelope(envReference)).toEqual(envReference);
-    expect(redactKloCredentialEnvelope(fileReference)).toEqual(fileReference);
+    expect(redactKtxCredentialEnvelope(envReference)).toEqual(envReference);
+    expect(redactKtxCredentialEnvelope(fileReference)).toEqual(fileReference);
   });
 
   it('redacts resolved credential envelope values recursively', () => {
     expect(
-      redactKloCredentialEnvelope({
+      redactKtxCredentialEnvelope({
         kind: 'resolved',
         source: 'host',
         values: {
@@ -39,19 +39,19 @@ describe('KLO scan credential redaction', () => {
       redacted: true,
       values: {
         username: 'readonly',
-        password: REDACTED_KLO_CREDENTIAL_VALUE,
+        password: REDACTED_KTX_CREDENTIAL_VALUE,
         nested: {
-          api_key: REDACTED_KLO_CREDENTIAL_VALUE,
+          api_key: REDACTED_KTX_CREDENTIAL_VALUE,
           warehouse: 'compute_wh',
         },
-        headers: [{ authorizationToken: REDACTED_KLO_CREDENTIAL_VALUE }, { label: 'safe' }],
+        headers: [{ authorizationToken: REDACTED_KTX_CREDENTIAL_VALUE }, { label: 'safe' }],
       },
     });
   });
 
   it('redacts scan metadata fields that commonly contain secrets', () => {
     expect(
-      redactKloScanMetadata({
+      redactKtxScanMetadata({
         driver: 'postgres',
         url: 'postgres://user:pass@example.test/db', // pragma: allowlist secret
         serviceAccountJson: {
@@ -62,17 +62,17 @@ describe('KLO scan credential redaction', () => {
       }),
     ).toEqual({
       driver: 'postgres',
-      url: REDACTED_KLO_CREDENTIAL_VALUE,
+      url: REDACTED_KTX_CREDENTIAL_VALUE,
       serviceAccountJson: {
         client_email: 'reader@example.test',
-        private_key: REDACTED_KLO_CREDENTIAL_VALUE,
+        private_key: REDACTED_KTX_CREDENTIAL_VALUE,
       },
       safeCount: 3,
     });
   });
 
   it('redacts scan warning messages and metadata without hiding safe context', () => {
-    const warning: KloScanWarning = {
+    const warning: KtxScanWarning = {
       code: 'sampling_failed',
       message: 'sample failed for postgres://reader:secret@example.test/db', // pragma: allowlist secret
       recoverable: true,
@@ -86,15 +86,15 @@ describe('KLO scan credential redaction', () => {
       },
     };
 
-    expect(redactKloScanWarning(warning)).toEqual({
+    expect(redactKtxScanWarning(warning)).toEqual({
       code: 'sampling_failed',
       message: 'sample failed for postgres://reader:<redacted>@example.test/db',
       recoverable: true,
       metadata: {
         table: 'orders',
-        url: REDACTED_KLO_CREDENTIAL_VALUE,
+        url: REDACTED_KTX_CREDENTIAL_VALUE,
         nested: {
-          api_key: REDACTED_KLO_CREDENTIAL_VALUE,
+          api_key: REDACTED_KTX_CREDENTIAL_VALUE,
           schema: 'public',
         },
       },
@@ -102,7 +102,7 @@ describe('KLO scan credential redaction', () => {
   });
 
   it('redacts scan report warning metadata recursively', () => {
-    const report: KloScanReport = {
+    const report: KtxScanReport = {
       connectionId: 'warehouse',
       driver: 'postgres',
       syncId: 'sync-1',
@@ -164,10 +164,10 @@ describe('KLO scan credential redaction', () => {
       createdAt: '2026-04-29T00:00:00.000Z',
     };
 
-    const redacted = redactKloScanReport(report);
+    const redacted = redactKtxScanReport(report);
 
     expect(redacted.warnings[0]?.metadata).toEqual({
-      credentials_json: REDACTED_KLO_CREDENTIAL_VALUE,
+      credentials_json: REDACTED_KTX_CREDENTIAL_VALUE,
       safeCount: 2,
     });
     expect(report.warnings[0]?.metadata).toEqual({
@@ -177,7 +177,7 @@ describe('KLO scan credential redaction', () => {
   });
 
   it('redacts standalone primitive credential values only when the field key is sensitive', () => {
-    expect(redactKloCredentialValue('password', 'abc')).toBe(REDACTED_KLO_CREDENTIAL_VALUE);
-    expect(redactKloCredentialValue('schema', 'public')).toBe('public');
+    expect(redactKtxCredentialValue('password', 'abc')).toBe(REDACTED_KTX_CREDENTIAL_VALUE);
+    expect(redactKtxCredentialValue('schema', 'public')).toBe('public');
   });
 });

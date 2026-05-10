@@ -2,17 +2,17 @@ import { readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { resolve } from 'node:path';
 import { type NotionPullConfig, notionPullConfigSchema } from '../ingest/adapters/notion/types.js';
-import type { KloProjectConnectionConfig } from '../project/config.js';
+import type { KtxProjectConnectionConfig } from '../project/config.js';
 
-export const KLO_NOTION_ORG_KNOWLEDGE_WARNING =
+export const KTX_NOTION_ORG_KNOWLEDGE_WARNING =
   'Anything accessible to this Notion integration can become organization knowledge.';
 
-type KloNotionCrawlMode = 'all_accessible' | 'selected_roots';
+type KtxNotionCrawlMode = 'all_accessible' | 'selected_roots';
 
-export interface KloNotionConnectionConfig extends KloProjectConnectionConfig {
+export interface KtxNotionConnectionConfig extends KtxProjectConnectionConfig {
   driver: 'notion';
   auth_token_ref: string;
-  crawl_mode: KloNotionCrawlMode;
+  crawl_mode: KtxNotionCrawlMode;
   root_page_ids: string[];
   root_database_ids: string[];
   root_data_source_ids: string[];
@@ -22,17 +22,17 @@ export interface KloNotionConnectionConfig extends KloProjectConnectionConfig {
   last_successful_cursor: string | null;
 }
 
-export interface RedactedKloNotionConnectionConfig {
+export interface RedactedKtxNotionConnectionConfig {
   driver: 'notion';
   hasAuthToken: boolean;
-  crawlMode: KloNotionCrawlMode;
+  crawlMode: KtxNotionCrawlMode;
   rootPageIds: string[];
   rootDatabaseIds: string[];
   rootDataSourceIds: string[];
   maxPagesPerRun: number;
   maxKnowledgeCreatesPerRun: number;
   maxKnowledgeUpdatesPerRun: number;
-  warning: typeof KLO_NOTION_ORG_KNOWLEDGE_WARNING;
+  warning: typeof KTX_NOTION_ORG_KNOWLEDGE_WARNING;
 }
 
 interface ResolveNotionTokenOptions {
@@ -84,7 +84,7 @@ function boundedInteger(value: unknown, fallback: number, name: string, min: num
   return parsed;
 }
 
-export function parseNotionConnectionConfig(raw: unknown): KloNotionConnectionConfig {
+export function parseNotionConnectionConfig(raw: unknown): KtxNotionConnectionConfig {
   const input = record(raw);
   if (input.driver !== 'notion') {
     throw new Error('Notion connection config requires driver: notion');
@@ -135,7 +135,7 @@ export function parseNotionConnectionConfig(raw: unknown): KloNotionConnectionCo
   };
 }
 
-export function redactNotionConnectionConfig(config: KloNotionConnectionConfig): RedactedKloNotionConnectionConfig {
+export function redactNotionConnectionConfig(config: KtxNotionConnectionConfig): RedactedKtxNotionConnectionConfig {
   return {
     driver: 'notion',
     hasAuthToken: Boolean(config.auth_token_ref),
@@ -146,7 +146,7 @@ export function redactNotionConnectionConfig(config: KloNotionConnectionConfig):
     maxPagesPerRun: config.max_pages_per_run,
     maxKnowledgeCreatesPerRun: config.max_knowledge_creates_per_run,
     maxKnowledgeUpdatesPerRun: config.max_knowledge_updates_per_run,
-    warning: KLO_NOTION_ORG_KNOWLEDGE_WARNING,
+    warning: KTX_NOTION_ORG_KNOWLEDGE_WARNING,
   };
 }
 
@@ -179,7 +179,7 @@ export async function resolveNotionAuthToken(
 }
 
 export async function notionConnectionToPullConfig(
-  config: KloNotionConnectionConfig,
+  config: KtxNotionConnectionConfig,
   options: ResolveNotionTokenOptions = {},
 ): Promise<NotionPullConfig> {
   return notionPullConfigSchema.parse({

@@ -1,0 +1,50 @@
+[project]
+name = "ktx-daemon"
+version = "0.1.0"
+description = "Portable compute package for KTX semantic-layer operations"
+readme = "README.md"
+requires-python = ">=3.13"
+license = "Apache-2.0"
+dependencies = [
+    "fastapi>=0.115.0",
+    "ktx-sl",
+    "lkml>=1.3.7",
+    "numpy>=2.2.6",
+    "orjson>=3.11.4",
+    "pandas>=2.2.3",
+    "psycopg[binary]>=3.2.0",
+    "pydantic>=2.9.0",
+    "requests>=2.32.0",
+    "sentence-transformers>=5.1.1",
+    "sqlglot>=26",
+    "torch>=2.2.0",
+    "uvicorn[standard]>=0.32.0",
+]
+
+[project.scripts]
+ktx-daemon = "ktx_daemon.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/kaelio/ktx"
+Repository = "https://github.com/kaelio/ktx"
+Issues = "https://github.com/kaelio/ktx/issues"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ktx_daemon"]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.0.2",
+]
+
+[tool.uv.sources]
+ktx-sl = { workspace = true }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

@@ -1,6 +1,6 @@
 import type { Command } from '@commander-js/extra-typings';
-import { type CommandWithGlobalOptions, type KloCliCommandContext, resolveCommandProjectDir } from '../cli-program.js';
-import type { KloDoctorArgs } from '../doctor.js';
+import { type CommandWithGlobalOptions, type KtxCliCommandContext, resolveCommandProjectDir } from '../cli-program.js';
+import type { KtxDoctorArgs } from '../doctor.js';
 import { profileMark } from '../startup-profile.js';
 
 profileMark('module:commands/doctor-commands');
@@ -13,15 +13,15 @@ function inputMode(options: { input?: boolean }): { inputMode?: 'disabled' } {
   return options.input === false ? { inputMode: 'disabled' } : {};
 }
 
-async function runDoctorArgs(context: KloCliCommandContext, args: KloDoctorArgs): Promise<void> {
-  const runner = context.deps.doctor ?? (await import('../doctor.js')).runKloDoctor;
+async function runDoctorArgs(context: KtxCliCommandContext, args: KtxDoctorArgs): Promise<void> {
+  const runner = context.deps.doctor ?? (await import('../doctor.js')).runKtxDoctor;
   context.setExitCode(await runner(args, context.io));
 }
 
-export function registerDoctorCommands(program: Command, context: KloCliCommandContext): void {
+export function registerDoctorCommands(program: Command, context: KtxCliCommandContext): void {
   const doctor = program
     .command('doctor')
-    .description('Check KLO setup, project, and demo readiness')
+    .description('Check KTX setup, project, and demo readiness')
     .option('--json', 'Print JSON output', false)
     .option('--no-input', 'Disable interactive terminal input')
     .action(async (options: { json?: boolean; input?: boolean }, command) => {
@@ -35,7 +35,7 @@ export function registerDoctorCommands(program: Command, context: KloCliCommandC
 
   doctor
     .command('setup')
-    .description('Check KLO install, build, and local runtime readiness')
+    .description('Check KTX install, build, and local runtime readiness')
     .option('--json', 'Print JSON output', false)
     .option('--no-input', 'Disable interactive terminal input')
     .action(

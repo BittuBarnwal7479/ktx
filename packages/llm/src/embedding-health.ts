@@ -1,15 +1,15 @@
-import { createKloEmbeddingProvider, type KloEmbeddingProviderDeps } from './embedding-provider.js';
-import type { KloEmbeddingConfig } from './types.js';
+import { createKtxEmbeddingProvider, type KtxEmbeddingProviderDeps } from './embedding-provider.js';
+import type { KtxEmbeddingConfig } from './types.js';
 
-export type KloEmbeddingHealthCheckResult = { ok: true } | { ok: false; message: string };
+export type KtxEmbeddingHealthCheckResult = { ok: true } | { ok: false; message: string };
 
-export interface KloEmbeddingHealthCheckOptions {
+export interface KtxEmbeddingHealthCheckOptions {
   text?: string;
   timeoutMs?: number;
-  deps?: KloEmbeddingProviderDeps;
+  deps?: KtxEmbeddingProviderDeps;
 }
 
-function redactHealthCheckMessage(message: string, config: KloEmbeddingConfig): string {
+function redactHealthCheckMessage(message: string, config: KtxEmbeddingConfig): string {
   const secrets = [config.openai?.apiKey].filter(
     (value): value is string => typeof value === 'string' && value.length > 0,
   );
@@ -30,14 +30,14 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T
   }
 }
 
-export async function runKloEmbeddingHealthCheck(
-  config: KloEmbeddingConfig,
-  options: KloEmbeddingHealthCheckOptions = {},
-): Promise<KloEmbeddingHealthCheckResult> {
+export async function runKtxEmbeddingHealthCheck(
+  config: KtxEmbeddingConfig,
+  options: KtxEmbeddingHealthCheckOptions = {},
+): Promise<KtxEmbeddingHealthCheckResult> {
   try {
-    const provider = createKloEmbeddingProvider(config, options.deps);
+    const provider = createKtxEmbeddingProvider(config, options.deps);
     const embedding = await withTimeout(
-      provider.embed(options.text ?? 'KLO embedding health check'),
+      provider.embed(options.text ?? 'KTX embedding health check'),
       options.timeoutMs ?? 15_000,
     );
     if (embedding.length !== config.dimensions) {

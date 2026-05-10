@@ -7,8 +7,8 @@ import { gzipSync } from 'node:zlib';
 import { buildBenchmarkSnapshot, writeFixtureFiles } from './build-benchmark-snapshot.mjs';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
-const kloRoot = path.resolve(scriptDir, '..');
-const fixtureRoot = path.join(kloRoot, 'packages', 'context', 'test', 'fixtures', 'relationship-benchmarks');
+const ktxRoot = path.resolve(scriptDir, '..');
+const fixtureRoot = path.join(ktxRoot, 'packages', 'context', 'test', 'fixtures', 'relationship-benchmarks');
 const require = createRequire(new URL('../packages/context/package.json', import.meta.url));
 const Database = require('better-sqlite3');
 const { stringify: yamlStringify } = require('yaml');

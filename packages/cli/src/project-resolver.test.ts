@@ -3,13 +3,13 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { findNearestKloProjectDir, resolveKloProjectDir } from './project-resolver.js';
+import { findNearestKtxProjectDir, resolveKtxProjectDir } from './project-resolver.js';
 
-describe('resolveKloProjectDir', () => {
+describe('resolveKtxProjectDir', () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-project-resolver-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-project-resolver-'));
   });
 
   afterEach(async () => {
@@ -23,48 +23,48 @@ describe('resolveKloProjectDir', () => {
     await mkdir(envProject, { recursive: true });
 
     expect(
-      resolveKloProjectDir({
+      resolveKtxProjectDir({
         explicitProjectDir: explicit,
-        env: { KLO_PROJECT_DIR: envProject },
+        env: { KTX_PROJECT_DIR: envProject },
         cwd: tempDir,
       }),
     ).toBe(resolve(explicit));
   });
 
-  it('uses KLO_PROJECT_DIR when no explicit project directory is set', async () => {
+  it('uses KTX_PROJECT_DIR when no explicit project directory is set', async () => {
     const envProject = join(tempDir, 'env-project');
     await mkdir(envProject, { recursive: true });
 
-    expect(resolveKloProjectDir({ env: { KLO_PROJECT_DIR: envProject }, cwd: tempDir })).toBe(resolve(envProject));
+    expect(resolveKtxProjectDir({ env: { KTX_PROJECT_DIR: envProject }, cwd: tempDir })).toBe(resolve(envProject));
   });
 
-  it('resolves a relative KLO_PROJECT_DIR value from cwd', () => {
-    expect(resolveKloProjectDir({ env: { KLO_PROJECT_DIR: 'env-project' }, cwd: tempDir })).toBe(
+  it('resolves a relative KTX_PROJECT_DIR value from cwd', () => {
+    expect(resolveKtxProjectDir({ env: { KTX_PROJECT_DIR: 'env-project' }, cwd: tempDir })).toBe(
       resolve(tempDir, 'env-project'),
     );
   });
 
-  it('uses the nearest ancestor containing klo.yaml', async () => {
+  it('uses the nearest ancestor containing ktx.yaml', async () => {
     const project = join(tempDir, 'warehouse');
     const nested = join(project, 'nested', 'deeper');
     await mkdir(nested, { recursive: true });
-    await writeFile(join(project, 'klo.yaml'), 'project: warehouse\n', 'utf-8');
+    await writeFile(join(project, 'ktx.yaml'), 'project: warehouse\n', 'utf-8');
 
-    expect(resolveKloProjectDir({ env: {}, cwd: nested })).toBe(resolve(project));
-    expect(findNearestKloProjectDir(nested)).toBe(resolve(project));
+    expect(resolveKtxProjectDir({ env: {}, cwd: nested })).toBe(resolve(project));
+    expect(findNearestKtxProjectDir(nested)).toBe(resolve(project));
   });
 
   it('falls back to the current directory when no project marker exists', () => {
-    expect(resolveKloProjectDir({ env: {}, cwd: tempDir })).toBe(resolve(tempDir));
-    expect(findNearestKloProjectDir(tempDir)).toBeUndefined();
+    expect(resolveKtxProjectDir({ env: {}, cwd: tempDir })).toBe(resolve(tempDir));
+    expect(findNearestKtxProjectDir(tempDir)).toBeUndefined();
   });
 
   it('rejects empty explicit and environment project directory values', () => {
-    expect(() => resolveKloProjectDir({ explicitProjectDir: ' ', cwd: tempDir })).toThrow(
+    expect(() => resolveKtxProjectDir({ explicitProjectDir: ' ', cwd: tempDir })).toThrow(
       '--project-dir requires a value',
     );
-    expect(() => resolveKloProjectDir({ env: { KLO_PROJECT_DIR: ' ' }, cwd: tempDir })).toThrow(
-      'KLO_PROJECT_DIR must not be empty',
+    expect(() => resolveKtxProjectDir({ env: { KTX_PROJECT_DIR: ' ' }, cwd: tempDir })).toThrow(
+      'KTX_PROJECT_DIR must not be empty',
     );
   });
 });

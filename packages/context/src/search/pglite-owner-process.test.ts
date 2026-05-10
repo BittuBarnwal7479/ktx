@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { Client } from 'pg';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { assertSearchBackendCapabilities, assertSearchBackendConformanceCase } from './index.js';
-import { KloPGliteOwnerProcess, PGLITE_OWNER_PROCESS_BACKEND_CAPABILITIES } from './pglite-owner-process.js';
+import { KtxPGliteOwnerProcess, PGLITE_OWNER_PROCESS_BACKEND_CAPABILITIES } from './pglite-owner-process.js';
 
 async function allocatePort(): Promise<number> {
   const server = createServer();
@@ -26,7 +26,7 @@ async function allocatePort(): Promise<number> {
   return address.port;
 }
 
-async function createHybridSearchFixture(owner: KloPGliteOwnerProcess): Promise<void> {
+async function createHybridSearchFixture(owner: KtxPGliteOwnerProcess): Promise<void> {
   await owner.query(`
     CREATE TABLE prototype_documents (
       id TEXT PRIMARY KEY,
@@ -58,7 +58,7 @@ async function createHybridSearchFixture(owner: KloPGliteOwnerProcess): Promise<
   `);
 }
 
-async function seedHybridSearchFixture(owner: KloPGliteOwnerProcess): Promise<void> {
+async function seedHybridSearchFixture(owner: KtxPGliteOwnerProcess): Promise<void> {
   await owner.query(
     `
       INSERT INTO prototype_documents (id, search_text, metadata, embedding)
@@ -92,13 +92,13 @@ async function seedHybridSearchFixture(owner: KloPGliteOwnerProcess): Promise<vo
   `);
 }
 
-describe('KloPGliteOwnerProcess', () => {
+describe('KtxPGliteOwnerProcess', () => {
   let tempDir: string;
   let dataDir: string;
   let port: number;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'klo-pglite-owner-process-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'ktx-pglite-owner-process-'));
     dataDir = join(tempDir, 'pgdata');
     port = await allocatePort();
   });
@@ -122,7 +122,7 @@ describe('KloPGliteOwnerProcess', () => {
   });
 
   it('starts a socket owner process and serves PostgreSQL clients', async () => {
-    const owner = await KloPGliteOwnerProcess.start({
+    const owner = await KtxPGliteOwnerProcess.start({
       dataDir,
       host: '127.0.0.1',
       port,
@@ -163,7 +163,7 @@ describe('KloPGliteOwnerProcess', () => {
   });
 
   it('runs lexical, semantic, and dictionary conformance probes through socket clients', async () => {
-    const owner = await KloPGliteOwnerProcess.start({
+    const owner = await KtxPGliteOwnerProcess.start({
       dataDir,
       host: '127.0.0.1',
       port,
@@ -266,7 +266,7 @@ describe('KloPGliteOwnerProcess', () => {
   });
 
   it('persists indexed rows after stopping and restarting the owner process', async () => {
-    const firstOwner = await KloPGliteOwnerProcess.start({
+    const firstOwner = await KtxPGliteOwnerProcess.start({
       dataDir,
       host: '127.0.0.1',
       port,
@@ -279,7 +279,7 @@ describe('KloPGliteOwnerProcess', () => {
       await firstOwner.stop();
     }
 
-    const secondOwner = await KloPGliteOwnerProcess.start({
+    const secondOwner = await KtxPGliteOwnerProcess.start({
       dataDir,
       host: '127.0.0.1',
       port,
@@ -298,7 +298,7 @@ describe('KloPGliteOwnerProcess', () => {
   });
 
   it('serves concurrent PostgreSQL clients through one owner process', async () => {
-    const owner = await KloPGliteOwnerProcess.start({
+    const owner = await KtxPGliteOwnerProcess.start({
       dataDir,
       host: '127.0.0.1',
       port,

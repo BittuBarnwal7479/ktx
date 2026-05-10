@@ -1,14 +1,14 @@
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createVertexAnthropic } from '@ai-sdk/google-vertex/anthropic';
 import { createGateway, generateText, type LanguageModel } from 'ai';
-import { createKloToolCallRepairHandler } from './repair.js';
+import { createKtxToolCallRepairHandler } from './repair.js';
 import type {
-  KloLlmConfig,
-  KloLlmProvider,
-  KloModelRole,
-  KloPromptCacheTtl,
-  KloPromptCachingConfig,
-  KloProviderOptions,
+  KtxLlmConfig,
+  KtxLlmProvider,
+  KtxModelRole,
+  KtxPromptCacheTtl,
+  KtxPromptCachingConfig,
+  KtxProviderOptions,
 } from './types.js';
 
 type AnthropicFactory = typeof createAnthropic;
@@ -16,14 +16,14 @@ type AnthropicModelFactory = (modelId: string) => LanguageModel;
 type VertexAnthropicFactory = (options?: Parameters<typeof createVertexAnthropic>[0]) => AnthropicModelFactory;
 type GatewayFactory = (options?: Parameters<typeof createGateway>[0]) => AnthropicModelFactory;
 
-export interface KloLlmProviderFactoryDeps {
+export interface KtxLlmProviderFactoryDeps {
   createAnthropic?: (options?: Parameters<AnthropicFactory>[0]) => AnthropicModelFactory;
   createVertexAnthropic?: VertexAnthropicFactory;
   createGateway?: GatewayFactory;
   generateText?: typeof generateText;
 }
 
-const DEFAULT_PROMPT_CACHING: KloPromptCachingConfig = {
+const DEFAULT_PROMPT_CACHING: KtxPromptCachingConfig = {
   enabled: true,
   systemTtl: '1h',
   toolsTtl: '1h',
@@ -36,7 +36,7 @@ const DEFAULT_PROMPT_CACHING: KloPromptCachingConfig = {
 
 const DIRECT_ANTHROPIC_BETA_HEADER = 'interleaved-thinking-2025-05-14,extended-cache-ttl-2025-04-11';
 
-function resolvePromptCaching(config: KloLlmConfig): KloPromptCachingConfig {
+function resolvePromptCaching(config: KtxLlmConfig): KtxPromptCachingConfig {
   return { ...DEFAULT_PROMPT_CACHING, ...config.promptCaching };
 }
 
@@ -49,21 +49,21 @@ export function isAnthropicProtocolModel(model: LanguageModel | string): boolean
   return modelId.startsWith('claude-') || modelId.startsWith('anthropic/') || modelId.includes('/claude-');
 }
 
-class DefaultKloLlmProvider implements KloLlmProvider {
-  private readonly promptCaching: KloPromptCachingConfig;
+class DefaultKtxLlmProvider implements KtxLlmProvider {
+  private readonly promptCaching: KtxPromptCachingConfig;
   private readonly getModelByResolvedName: (modelId: string) => LanguageModel;
   private readonly runGenerateText: typeof generateText;
 
   constructor(
-    private readonly config: KloLlmConfig,
-    deps: KloLlmProviderFactoryDeps,
+    private readonly config: KtxLlmConfig,
+    deps: KtxLlmProviderFactoryDeps,
   ) {
     this.promptCaching = resolvePromptCaching(config);
     this.runGenerateText = deps.generateText ?? generateText;
     this.getModelByResolvedName = this.createModelFactory(config, deps);
   }
 
-  getModel(role: KloModelRole): LanguageModel {
+  getModel(role: KtxModelRole): LanguageModel {
     return this.getModelByName(this.resolveRole(role));
   }
 
@@ -71,7 +71,7 @@ class DefaultKloLlmProvider implements KloLlmProvider {
     return this.getModelByResolvedName(modelId);
   }
 
-  cacheMarker(ttl: KloPromptCacheTtl, model?: LanguageModel | string) {
+  cacheMarker(ttl: KtxPromptCacheTtl, model?: LanguageModel | string) {
     if (!this.promptCaching.enabled) {
       return undefined;
     }
@@ -82,14 +82,14 @@ class DefaultKloLlmProvider implements KloLlmProvider {
   }
 
   repairToolCallHandler(options: { source?: string } = {}) {
-    return createKloToolCallRepairHandler({
-      source: options.source ?? 'klo-llm',
+    return createKtxToolCallRepairHandler({
+      source: options.source ?? 'ktx-llm',
       getRepairModel: () => this.getModel('repair'),
       generateText: this.runGenerateText,
     });
   }
 
-  thinkingProviderOptions(_role: KloModelRole, budgetTokens: number): KloProviderOptions {
+  thinkingProviderOptions(_role: KtxModelRole, budgetTokens: number): KtxProviderOptions {
     return {
       anthropic: {
         thinking: { type: 'enabled', budgetTokens },
@@ -101,7 +101,7 @@ class DefaultKloLlmProvider implements KloLlmProvider {
     return this.config.telemetry?.experimentalTelemetry;
   }
 
-  promptCachingConfig(): KloPromptCachingConfig {
+  promptCachingConfig(): KtxPromptCachingConfig {
     return this.promptCaching;
   }
 
@@ -109,11 +109,11 @@ class DefaultKloLlmProvider implements KloLlmProvider {
     return this.config.backend;
   }
 
-  private resolveRole(role: KloModelRole): string {
+  private resolveRole(role: KtxModelRole): string {
     return this.config.modelSlots[role] ?? this.config.modelSlots.default;
   }
 
-  private createModelFactory(config: KloLlmConfig, deps: KloLlmProviderFactoryDeps): (modelId: string) => LanguageModel {
+  private createModelFactory(config: KtxLlmConfig, deps: KtxLlmProviderFactoryDeps): (modelId: string) => LanguageModel {
     if (config.backend === 'anthropic') {
       const anthropic = (deps.createAnthropic ?? createAnthropic)({
         ...(config.anthropic?.apiKey ? { apiKey: config.anthropic.apiKey } : {}),
@@ -127,7 +127,7 @@ class DefaultKloLlmProvider implements KloLlmProvider {
 
     if (config.backend === 'vertex') {
       if (!config.vertex?.location) {
-        throw new Error('vertex.location is required when KLO LLM backend is vertex');
+        throw new Error('vertex.location is required when KTX LLM backend is vertex');
       }
       const vertex = (deps.createVertexAnthropic ?? createVertexAnthropic)({
         ...(config.vertex.project ? { project: config.vertex.project } : {}),
@@ -144,9 +144,9 @@ class DefaultKloLlmProvider implements KloLlmProvider {
   }
 }
 
-export function createKloLlmProvider(config: KloLlmConfig, deps: KloLlmProviderFactoryDeps = {}): KloLlmProvider {
+export function createKtxLlmProvider(config: KtxLlmConfig, deps: KtxLlmProviderFactoryDeps = {}): KtxLlmProvider {
   if (!config.modelSlots.default) {
     throw new Error('modelSlots.default is required');
   }
-  return new DefaultKloLlmProvider(config, deps);
+  return new DefaultKtxLlmProvider(config, deps);
 }

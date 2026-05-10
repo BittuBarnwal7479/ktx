@@ -1,6 +1,6 @@
-import { buildDefaultKloProjectConfig, type KloProjectConfig } from '@klo/context/project';
+import { buildDefaultKtxProjectConfig, type KtxProjectConfig } from '@ktx/context/project';
 import { describe, expect, it, vi } from 'vitest';
-import type { KloPublicIngestProject, KloPublicIngestTargetResult } from './public-ingest.js';
+import type { KtxPublicIngestProject, KtxPublicIngestTargetResult } from './public-ingest.js';
 import {
   extractProgressMessage,
   initViewState,
@@ -32,17 +32,17 @@ function makeIo(options: { isTTY?: boolean } = {}) {
   };
 }
 
-function projectWithConnections(connections: KloProjectConfig['connections']): KloPublicIngestProject {
+function projectWithConnections(connections: KtxProjectConfig['connections']): KtxPublicIngestProject {
   return {
     projectDir: '/tmp/project',
     config: {
-      ...buildDefaultKloProjectConfig('warehouse'),
+      ...buildDefaultKtxProjectConfig('warehouse'),
       connections,
     },
   };
 }
 
-function successResult(connectionId: string, driver: string, operation: 'scan' | 'source-ingest'): KloPublicIngestTargetResult {
+function successResult(connectionId: string, driver: string, operation: 'scan' | 'source-ingest'): KtxPublicIngestTargetResult {
   return {
     connectionId,
     driver,
@@ -55,7 +55,7 @@ function successResult(connectionId: string, driver: string, operation: 'scan' |
   };
 }
 
-function failedResult(connectionId: string, driver: string, operation: 'scan' | 'source-ingest'): KloPublicIngestTargetResult {
+function failedResult(connectionId: string, driver: string, operation: 'scan' | 'source-ingest'): KtxPublicIngestTargetResult {
   return {
     connectionId,
     driver,
@@ -78,7 +78,7 @@ describe('extractProgressMessage', () => {
   });
 
   it('returns null for non-progress output', () => {
-    expect(extractProgressMessage('KLO scan completed\n')).toBeNull();
+    expect(extractProgressMessage('KTX scan completed\n')).toBeNull();
   });
 });
 
@@ -137,7 +137,7 @@ describe('renderContextBuildView', () => {
     ]);
 
     const output = renderContextBuildView(state, { styled: false });
-    expect(output).toContain('Building KLO context');
+    expect(output).toContain('Building KTX context');
     expect(output).toContain('Primary sources:');
     expect(output).toContain('warehouse');
     expect(output).toContain('queued');
@@ -237,7 +237,7 @@ describe('runContextBuild', () => {
     );
 
     const output = io.stdout();
-    expect(output).toContain('Building KLO context');
+    expect(output).toContain('Building KTX context');
     expect(output).toContain('Primary sources:');
     expect(output).toContain('warehouse');
     expect(output).toContain('Context sources:');
@@ -297,7 +297,7 @@ describe('runContextBuild', () => {
 
     expect(mockExit).toHaveBeenCalledWith(0);
     expect(io.stdout()).toContain('Context build continuing in the background.');
-    expect(io.stdout()).toContain('Resume: klo setup --project-dir /tmp/project');
+    expect(io.stdout()).toContain('Resume: ktx setup --project-dir /tmp/project');
     mockExit.mockRestore();
   });
 });

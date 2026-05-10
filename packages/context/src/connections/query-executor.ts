@@ -1,14 +1,14 @@
-import type { KloProjectConnectionConfig } from '../project/index.js';
+import type { KtxProjectConnectionConfig } from '../project/index.js';
 
-export interface KloSqlQueryExecutionInput {
+export interface KtxSqlQueryExecutionInput {
   connectionId: string;
   projectDir?: string;
-  connection: KloProjectConnectionConfig | undefined;
+  connection: KtxProjectConnectionConfig | undefined;
   sql: string;
   maxRows?: number;
 }
 
-export interface KloSqlQueryExecutionResult {
+export interface KtxSqlQueryExecutionResult {
   headers: string[];
   rows: unknown[][];
   totalRows: number;
@@ -16,8 +16,8 @@ export interface KloSqlQueryExecutionResult {
   rowCount: number | null;
 }
 
-export interface KloSqlQueryExecutorPort {
-  execute(input: KloSqlQueryExecutionInput): Promise<KloSqlQueryExecutionResult>;
+export interface KtxSqlQueryExecutorPort {
+  execute(input: KtxSqlQueryExecutionInput): Promise<KtxSqlQueryExecutionResult>;
 }
 
 export function normalizeQueryRows(rows: unknown[]): unknown[][] {

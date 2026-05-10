@@ -1,10 +1,10 @@
 import type { CommandUnknownOpts } from '@commander-js/extra-typings';
-import type { KloCliCommandContext } from '../cli-program.js';
+import type { KtxCliCommandContext } from '../cli-program.js';
 import { completeCommanderInput, installZshCompletion, zshCompletionScript } from '../completion.js';
 
 export function registerCompletionCommands(
   program: CommandUnknownOpts,
-  context: KloCliCommandContext,
+  context: KtxCliCommandContext,
   completionRoot: CommandUnknownOpts = program,
 ): void {
   program

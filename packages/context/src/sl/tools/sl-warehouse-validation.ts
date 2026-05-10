@@ -1,5 +1,5 @@
 import YAML from 'yaml';
-import type { GitService, KloFileStorePort } from '../../core/index.js';
+import type { GitService, KtxFileStorePort } from '../../core/index.js';
 import { SYSTEM_GIT_AUTHOR } from '../../tools/index.js';
 import type { SlConnectionCatalogPort, SlSourcesIndexPort } from '../ports.js';
 import { sourceOverlaySchema } from '../schemas.js';
@@ -9,7 +9,7 @@ import { sourceDefinitionSchema } from './base-semantic-layer.tool.js';
 export interface SlValidationDeps {
   semanticLayerService: SemanticLayerService;
   connections: SlConnectionCatalogPort;
-  configService: KloFileStorePort;
+  configService: KtxFileStorePort;
   gitService: GitService;
   slSourcesRepository: SlSourcesIndexPort;
   probeRowCount: number;

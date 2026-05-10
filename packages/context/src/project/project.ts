@@ -1,59 +1,59 @@
 import { promises as fs } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
-import { GitService, type KloCoreConfig, type KloLogger, noopLogger } from '../core/index.js';
-import type { KloProjectConfig } from './config.js';
-import { buildDefaultKloProjectConfig, parseKloProjectConfig, serializeKloProjectConfig } from './config.js';
+import { GitService, type KtxCoreConfig, type KtxLogger, noopLogger } from '../core/index.js';
+import type { KtxProjectConfig } from './config.js';
+import { buildDefaultKtxProjectConfig, parseKtxProjectConfig, serializeKtxProjectConfig } from './config.js';
 import { LocalGitFileStore } from './local-git-file-store.js';
 
-export interface InitKloProjectOptions {
+export interface InitKtxProjectOptions {
   projectDir: string;
   projectName?: string;
   force?: boolean;
   authorName?: string;
   authorEmail?: string;
-  logger?: KloLogger;
+  logger?: KtxLogger;
 }
 
-export interface LoadKloProjectOptions {
+export interface LoadKtxProjectOptions {
   projectDir: string;
   authorName?: string;
   authorEmail?: string;
-  logger?: KloLogger;
+  logger?: KtxLogger;
 }
 
-export interface KloLocalProject {
+export interface KtxLocalProject {
   projectDir: string;
   configPath: string;
-  config: KloProjectConfig;
-  coreConfig: KloCoreConfig;
+  config: KtxProjectConfig;
+  coreConfig: KtxCoreConfig;
   git: GitService;
   fileStore: LocalGitFileStore;
 }
 
-export interface InitKloProjectResult extends KloLocalProject {
+export interface InitKtxProjectResult extends KtxLocalProject {
   commitHash: string | null;
 }
 
 const TRACKED_SCAFFOLD_FILES: Array<{ path: string; content: string }> = [
-  { path: '.klo/.gitignore', content: 'cache/\ndb.sqlite\nsecrets/\nsetup/\nagents/\n' },
-  { path: '.klo/prompts/.gitkeep', content: '' },
-  { path: '.klo/skills/.gitkeep', content: '' },
+  { path: '.ktx/.gitignore', content: 'cache/\ndb.sqlite\nsecrets/\nsetup/\nagents/\n' },
+  { path: '.ktx/prompts/.gitkeep', content: '' },
+  { path: '.ktx/skills/.gitkeep', content: '' },
   { path: 'knowledge/global/.gitkeep', content: '' },
   { path: 'semantic-layer/.gitkeep', content: '' },
   { path: 'raw-sources/.gitkeep', content: '' },
 ];
 
-function createCoreConfig(projectDir: string, authorName: string, authorEmail: string): KloCoreConfig {
+function createCoreConfig(projectDir: string, authorName: string, authorEmail: string): KtxCoreConfig {
   return {
     storage: {
       configDir: projectDir,
       homeDir: dirname(projectDir),
-      worktreesDir: join(projectDir, '.klo/worktrees'),
+      worktreesDir: join(projectDir, '.ktx/worktrees'),
     },
     git: {
       userName: authorName,
       userEmail: authorEmail,
-      bootstrapMessage: 'Initialize klo project repository',
+      bootstrapMessage: 'Initialize ktx project repository',
       bootstrapAuthor: authorName,
       bootstrapAuthorEmail: authorEmail,
     },
@@ -77,18 +77,18 @@ async function writeProjectFile(projectDir: string, relativePath: string, conten
 
 async function createRuntime(
   projectDir: string,
-  config: KloProjectConfig,
+  config: KtxProjectConfig,
   authorName: string,
   authorEmail: string,
-  logger: KloLogger,
-): Promise<KloLocalProject> {
+  logger: KtxLogger,
+): Promise<KtxLocalProject> {
   const coreConfig = createCoreConfig(projectDir, authorName, authorEmail);
   const git = new GitService(coreConfig, logger);
   await git.onModuleInit();
 
   return {
     projectDir,
-    configPath: join(projectDir, 'klo.yaml'),
+    configPath: join(projectDir, 'ktx.yaml'),
     config,
     coreConfig,
     git,
@@ -96,31 +96,31 @@ async function createRuntime(
   };
 }
 
-export async function initKloProject(options: InitKloProjectOptions): Promise<InitKloProjectResult> {
+export async function initKtxProject(options: InitKtxProjectOptions): Promise<InitKtxProjectResult> {
   const projectDir = resolve(options.projectDir);
-  const projectName = options.projectName?.trim() || basename(projectDir) || 'klo-project';
-  const authorName = options.authorName ?? 'klo';
-  const authorEmail = options.authorEmail ?? 'klo@example.com';
+  const projectName = options.projectName?.trim() || basename(projectDir) || 'ktx-project';
+  const authorName = options.authorName ?? 'ktx';
+  const authorEmail = options.authorEmail ?? 'ktx@example.com';
   const logger = options.logger ?? noopLogger;
-  const configPath = join(projectDir, 'klo.yaml');
+  const configPath = join(projectDir, 'ktx.yaml');
 
   await fs.mkdir(projectDir, { recursive: true });
   if (!options.force && (await fileExists(configPath))) {
-    throw new Error(`Project already contains klo.yaml: ${configPath}`);
+    throw new Error(`Project already contains ktx.yaml: ${configPath}`);
   }
 
-  const config = buildDefaultKloProjectConfig(projectName);
+  const config = buildDefaultKtxProjectConfig(projectName);
   const runtime = await createRuntime(projectDir, config, authorName, authorEmail, logger);
 
-  await writeProjectFile(projectDir, 'klo.yaml', serializeKloProjectConfig(config));
-  await fs.mkdir(join(projectDir, '.klo/cache'), { recursive: true });
+  await writeProjectFile(projectDir, 'ktx.yaml', serializeKtxProjectConfig(config));
+  await fs.mkdir(join(projectDir, '.ktx/cache'), { recursive: true });
   for (const file of TRACKED_SCAFFOLD_FILES) {
     await writeProjectFile(projectDir, file.path, file.content);
   }
 
   const commit = await runtime.git.commitFiles(
-    ['klo.yaml', ...TRACKED_SCAFFOLD_FILES.map((file) => file.path)],
-    `Initialize KLO project: ${projectName}`,
+    ['ktx.yaml', ...TRACKED_SCAFFOLD_FILES.map((file) => file.path)],
+    `Initialize KTX project: ${projectName}`,
     authorName,
     authorEmail,
   );
@@ -131,13 +131,13 @@ export async function initKloProject(options: InitKloProjectOptions): Promise<In
   };
 }
 
-export async function loadKloProject(options: LoadKloProjectOptions): Promise<KloLocalProject> {
+export async function loadKtxProject(options: LoadKtxProjectOptions): Promise<KtxLocalProject> {
   const projectDir = resolve(options.projectDir);
-  const authorName = options.authorName ?? 'klo';
-  const authorEmail = options.authorEmail ?? 'klo@example.com';
+  const authorName = options.authorName ?? 'ktx';
+  const authorEmail = options.authorEmail ?? 'ktx@example.com';
   const logger = options.logger ?? noopLogger;
-  const configPath = join(projectDir, 'klo.yaml');
+  const configPath = join(projectDir, 'ktx.yaml');
   const raw = await fs.readFile(configPath, 'utf-8');
-  const config = parseKloProjectConfig(raw);
+  const config = parseKtxProjectConfig(raw);
   return createRuntime(projectDir, config, authorName, authorEmail, logger);
 }

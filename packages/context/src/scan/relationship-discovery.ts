@@ -1,63 +1,63 @@
-import type { KloLlmProvider } from '@klo/llm';
-import type { KloScanRelationshipConfig } from '../project/config.js';
-import type { KloEnrichedRelationship, KloEnrichedSchema, KloRelationshipUpdate } from './enrichment-types.js';
+import type { KtxLlmProvider } from '@ktx/llm';
+import type { KtxScanRelationshipConfig } from '../project/config.js';
+import type { KtxEnrichedRelationship, KtxEnrichedSchema, KtxRelationshipUpdate } from './enrichment-types.js';
 import {
-  generateKloRelationshipDiscoveryCandidates,
-  type KloRelationshipDiscoveryCandidate,
-  mergeKloRelationshipDiscoveryCandidates,
+  generateKtxRelationshipDiscoveryCandidates,
+  type KtxRelationshipDiscoveryCandidate,
+  mergeKtxRelationshipDiscoveryCandidates,
 } from './relationship-candidates.js';
 import {
-  discoverKloCompositeRelationships,
-  type KloCompositeRelationshipCandidate,
+  discoverKtxCompositeRelationships,
+  type KtxCompositeRelationshipCandidate,
 } from './relationship-composite-candidates.js';
-import { collectKloFormalMetadataRelationships } from './relationship-formal-metadata.js';
+import { collectKtxFormalMetadataRelationships } from './relationship-formal-metadata.js';
 import {
-  type KloResolvedRelationshipDiscoveryCandidate,
-  resolveKloRelationshipGraph,
+  type KtxResolvedRelationshipDiscoveryCandidate,
+  resolveKtxRelationshipGraph,
 } from './relationship-graph-resolver.js';
 import {
-  type KloRelationshipLlmProposalGenerateText,
-  proposeKloRelationshipCandidatesWithLlm,
+  type KtxRelationshipLlmProposalGenerateText,
+  proposeKtxRelationshipCandidatesWithLlm,
 } from './relationship-llm-proposal.js';
 import {
-  createKloRelationshipProfileCache,
-  type KloRelationshipProfileArtifact,
-  type KloRelationshipReadOnlyExecutor,
-  profileKloRelationshipSchema,
+  createKtxRelationshipProfileCache,
+  type KtxRelationshipProfileArtifact,
+  type KtxRelationshipReadOnlyExecutor,
+  profileKtxRelationshipSchema,
 } from './relationship-profiling.js';
-import { validateKloRelationshipDiscoveryCandidates } from './relationship-validation.js';
+import { validateKtxRelationshipDiscoveryCandidates } from './relationship-validation.js';
 import type {
-  KloConnectionDriver,
-  KloScanConnector,
-  KloScanContext,
-  KloScanEnrichmentSummary,
-  KloScanRelationshipSummary,
-  KloScanWarning,
+  KtxConnectionDriver,
+  KtxScanConnector,
+  KtxScanContext,
+  KtxScanEnrichmentSummary,
+  KtxScanRelationshipSummary,
+  KtxScanWarning,
 } from './types.js';
 
-export interface DiscoverKloRelationshipsInput {
+export interface DiscoverKtxRelationshipsInput {
   connectionId: string;
-  driver: KloConnectionDriver;
-  connector: KloScanConnector;
-  schema: KloEnrichedSchema;
-  context: KloScanContext;
-  settings: KloScanRelationshipConfig;
-  llmProvider?: KloLlmProvider | null;
-  generateText?: KloRelationshipLlmProposalGenerateText;
+  driver: KtxConnectionDriver;
+  connector: KtxScanConnector;
+  schema: KtxEnrichedSchema;
+  context: KtxScanContext;
+  settings: KtxScanRelationshipConfig;
+  llmProvider?: KtxLlmProvider | null;
+  generateText?: KtxRelationshipLlmProposalGenerateText;
 }
 
-export interface DiscoverKloRelationshipsResult {
-  relationshipUpdate: KloRelationshipUpdate;
-  relationships: KloScanRelationshipSummary;
-  profile: KloRelationshipProfileArtifact;
-  resolvedRelationships: KloResolvedRelationshipDiscoveryCandidate[];
-  compositeRelationships: KloCompositeRelationshipCandidate[];
-  statisticalValidation: KloScanEnrichmentSummary['statisticalValidation'];
-  llmRelationshipValidation: KloScanEnrichmentSummary['llmRelationshipValidation'];
-  warnings: KloScanWarning[];
+export interface DiscoverKtxRelationshipsResult {
+  relationshipUpdate: KtxRelationshipUpdate;
+  relationships: KtxScanRelationshipSummary;
+  profile: KtxRelationshipProfileArtifact;
+  resolvedRelationships: KtxResolvedRelationshipDiscoveryCandidate[];
+  compositeRelationships: KtxCompositeRelationshipCandidate[];
+  statisticalValidation: KtxScanEnrichmentSummary['statisticalValidation'];
+  llmRelationshipValidation: KtxScanEnrichmentSummary['llmRelationshipValidation'];
+  warnings: KtxScanWarning[];
 }
 
-function relationshipFromResolved(candidate: KloResolvedRelationshipDiscoveryCandidate): KloEnrichedRelationship {
+function relationshipFromResolved(candidate: KtxResolvedRelationshipDiscoveryCandidate): KtxEnrichedRelationship {
   return {
     id: candidate.id,
     source: 'inferred',
@@ -69,7 +69,7 @@ function relationshipFromResolved(candidate: KloResolvedRelationshipDiscoveryCan
   };
 }
 
-function relationshipFromComposite(candidate: KloCompositeRelationshipCandidate): KloEnrichedRelationship {
+function relationshipFromComposite(candidate: KtxCompositeRelationshipCandidate): KtxEnrichedRelationship {
   return {
     id: candidate.id,
     source: 'inferred',
@@ -91,22 +91,22 @@ function relationshipFromComposite(candidate: KloCompositeRelationshipCandidate)
   };
 }
 
-function relationshipId(input: Pick<KloEnrichedRelationship, 'from' | 'to'>): string {
+function relationshipId(input: Pick<KtxEnrichedRelationship, 'from' | 'to'>): string {
   return `${input.from.tableId}:(${input.from.columnIds.join(',')})->${input.to.tableId}:(${input.to.columnIds.join(',')})`;
 }
 
 function nonFormalAcceptedRelationships(input: {
   formalIds: ReadonlySet<string>;
-  resolvedRelationships: readonly KloResolvedRelationshipDiscoveryCandidate[];
-}): KloEnrichedRelationship[] {
+  resolvedRelationships: readonly KtxResolvedRelationshipDiscoveryCandidate[];
+}): KtxEnrichedRelationship[] {
   return input.resolvedRelationships
     .filter((candidate) => candidate.status === 'accepted' && !input.formalIds.has(candidate.id))
     .map(relationshipFromResolved);
 }
 
 function relationshipSummary(
-  resolvedRelationships: readonly KloResolvedRelationshipDiscoveryCandidate[],
-): KloScanRelationshipSummary {
+  resolvedRelationships: readonly KtxResolvedRelationshipDiscoveryCandidate[],
+): KtxScanRelationshipSummary {
   return {
     accepted: resolvedRelationships.filter((candidate) => candidate.status === 'accepted').length,
     review: resolvedRelationships.filter((candidate) => candidate.status === 'review').length,
@@ -115,7 +115,7 @@ function relationshipSummary(
   };
 }
 
-function compositeSummary(relationships: readonly KloCompositeRelationshipCandidate[]): KloScanRelationshipSummary {
+function compositeSummary(relationships: readonly KtxCompositeRelationshipCandidate[]): KtxScanRelationshipSummary {
   return {
     accepted: relationships.filter((candidate) => candidate.status === 'accepted').length,
     review: relationships.filter((candidate) => candidate.status === 'review').length,
@@ -126,18 +126,18 @@ function compositeSummary(relationships: readonly KloCompositeRelationshipCandid
 
 async function detectCompositeRelationships(input: {
   connectionId: string;
-  driver: DiscoverKloRelationshipsInput['driver'];
-  schema: KloEnrichedSchema;
-  profile: KloRelationshipProfileArtifact;
-  executor: KloRelationshipReadOnlyExecutor | null;
-  context: DiscoverKloRelationshipsInput['context'];
-  warnings: KloScanWarning[];
-}): Promise<KloCompositeRelationshipCandidate[]> {
+  driver: DiscoverKtxRelationshipsInput['driver'];
+  schema: KtxEnrichedSchema;
+  profile: KtxRelationshipProfileArtifact;
+  executor: KtxRelationshipReadOnlyExecutor | null;
+  context: DiscoverKtxRelationshipsInput['context'];
+  warnings: KtxScanWarning[];
+}): Promise<KtxCompositeRelationshipCandidate[]> {
   if (!input.executor || !input.profile.sqlAvailable) {
     return [];
   }
   try {
-    const compositeDetection = await discoverKloCompositeRelationships({
+    const compositeDetection = await discoverKtxCompositeRelationships({
       connectionId: input.connectionId,
       driver: input.driver,
       schema: input.schema,
@@ -157,7 +157,7 @@ async function detectCompositeRelationships(input: {
   } catch (error) {
     input.warnings.push({
       code: 'relationship_validation_failed',
-      message: `KLO composite relationship detection failed: ${error instanceof Error ? error.message : String(error)}`,
+      message: `KTX composite relationship detection failed: ${error instanceof Error ? error.message : String(error)}`,
       recoverable: true,
       metadata: { source: 'composite_relationship_detection' },
     });
@@ -168,8 +168,8 @@ async function detectCompositeRelationships(input: {
 function combinedRelationshipSummary(input: {
   formalAccepted: number;
   formalSkipped: number;
-  resolvedRelationships: readonly KloResolvedRelationshipDiscoveryCandidate[];
-}): KloScanRelationshipSummary {
+  resolvedRelationships: readonly KtxResolvedRelationshipDiscoveryCandidate[];
+}): KtxScanRelationshipSummary {
   const graph = relationshipSummary(input.resolvedRelationships);
   return {
     accepted: input.formalAccepted + graph.accepted,
@@ -179,9 +179,9 @@ function combinedRelationshipSummary(input: {
   };
 }
 
-function sqlExecutor(input: DiscoverKloRelationshipsInput): {
-  executor: KloRelationshipReadOnlyExecutor | null;
-  warnings: KloScanWarning[];
+function sqlExecutor(input: DiscoverKtxRelationshipsInput): {
+  executor: KtxRelationshipReadOnlyExecutor | null;
+  warnings: KtxScanWarning[];
 } {
   if (!input.connector.capabilities.readOnlySql) {
     return {
@@ -189,7 +189,7 @@ function sqlExecutor(input: DiscoverKloRelationshipsInput): {
       warnings: [
         {
           code: 'connector_capability_missing',
-          message: 'KLO scan connector cannot run read-only SQL relationship validation',
+          message: 'KTX scan connector cannot run read-only SQL relationship validation',
           recoverable: true,
           metadata: { capability: 'readOnlySql' },
         },
@@ -203,7 +203,7 @@ function sqlExecutor(input: DiscoverKloRelationshipsInput): {
       warnings: [
         {
           code: 'relationship_validation_failed',
-          message: 'KLO scan connector advertises readOnlySql but does not expose executeReadOnly',
+          message: 'KTX scan connector advertises readOnlySql but does not expose executeReadOnly',
           recoverable: true,
           metadata: { capability: 'readOnlySql' },
         },
@@ -219,13 +219,13 @@ function sqlExecutor(input: DiscoverKloRelationshipsInput): {
   };
 }
 
-export async function discoverKloRelationships(
-  input: DiscoverKloRelationshipsInput,
-): Promise<DiscoverKloRelationshipsResult> {
+export async function discoverKtxRelationships(
+  input: DiscoverKtxRelationshipsInput,
+): Promise<DiscoverKtxRelationshipsResult> {
   const { executor, warnings } = sqlExecutor(input);
-  const formalMetadata = collectKloFormalMetadataRelationships(input.schema);
-  const profileCache = createKloRelationshipProfileCache();
-  const profile = await profileKloRelationshipSchema({
+  const formalMetadata = collectKtxFormalMetadataRelationships(input.schema);
+  const profileCache = createKtxRelationshipProfileCache();
+  const profile = await profileKtxRelationshipSchema({
     connectionId: input.connectionId,
     driver: input.driver,
     schema: input.schema,
@@ -234,7 +234,7 @@ export async function discoverKloRelationships(
     profileSampleRows: input.settings.profileSampleRows,
     cache: profileCache,
   });
-  const deterministicCandidates: KloRelationshipDiscoveryCandidate[] = generateKloRelationshipDiscoveryCandidates(
+  const deterministicCandidates: KtxRelationshipDiscoveryCandidate[] = generateKtxRelationshipDiscoveryCandidates(
     input.schema,
     {
       maxCandidatesPerColumn: input.settings.maxCandidatesPerColumn,
@@ -242,7 +242,7 @@ export async function discoverKloRelationships(
     },
   );
   const llmProposalResult = input.settings.llmProposals
-    ? await proposeKloRelationshipCandidatesWithLlm({
+    ? await proposeKtxRelationshipCandidatesWithLlm({
         connectionId: input.connectionId,
         schema: input.schema,
         profile,
@@ -253,12 +253,12 @@ export async function discoverKloRelationships(
         generateText: input.generateText,
       })
     : { candidates: [], warnings: [], llmCalls: 0, summary: 'skipped' as const };
-  const candidates = mergeKloRelationshipDiscoveryCandidates([
+  const candidates = mergeKtxRelationshipDiscoveryCandidates([
     ...deterministicCandidates,
     ...llmProposalResult.candidates,
   ]).filter((candidate) => !formalMetadata.acceptedIds.has(candidate.id));
   warnings.push(...llmProposalResult.warnings);
-  const validated = await validateKloRelationshipDiscoveryCandidates({
+  const validated = await validateKtxRelationshipDiscoveryCandidates({
     connectionId: input.connectionId,
     driver: input.driver,
     candidates,
@@ -274,7 +274,7 @@ export async function discoverKloRelationships(
       validationBudget: input.settings.validationBudget,
     },
   });
-  const graph = resolveKloRelationshipGraph({
+  const graph = resolveKtxRelationshipGraph({
     schema: input.schema,
     profiles: profile,
     candidates: validated,

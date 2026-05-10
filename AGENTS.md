@@ -22,7 +22,7 @@ database migrations, ORPC contracts, or `python-service/` layout exist here.
 - **MUST**: Remove dead code; do not leave commented-out code, unused wrappers,
   or empty directories.
 - **MUST**: Keep package/public API changes intentional. Do not add compatibility
-  wrappers for old KLO names unless the user explicitly asks for a migration
+  wrappers for old KTX names unless the user explicitly asks for a migration
   bridge.
 
 ### Absolute Prohibitions
@@ -65,14 +65,14 @@ KTX is a pnpm + uv workspace.
 - Core context package: `packages/context`
 - LLM package: `packages/llm`
 - Database connectors: `packages/connector-*`
-- Python semantic layer: `python/klo-sl`
-- Python daemon: `python/klo-daemon`
+- Python semantic layer: `python/ktx-sl`
+- Python daemon: `python/ktx-daemon`
 - Examples and fixtures: `examples/`
 - Workspace scripts: `scripts/`
 - Local agent skills are private overlays. Do not commit `.agents/` or
   `.claude/` to this public repository.
 
-Some package names still contain `klo` during the split. Do not mass-rename
+Some package names still contain `ktx` during the split. Do not mass-rename
 symbols, package names, paths, or docs to `ktx` unless the task asks for that
 rename.
 
@@ -86,7 +86,7 @@ pnpm run build
 pnpm run type-check
 pnpm run test
 pnpm run check
-pnpm --filter @klo/cli run smoke
+pnpm --filter @ktx/cli run smoke
 pnpm --filter './packages/*' run build
 pnpm --filter './packages/*' run test
 pnpm --filter './packages/*' run type-check
@@ -97,8 +97,8 @@ pnpm --filter './packages/*' run type-check
 ```bash
 uv sync --all-groups
 uv run pytest -q
-uv run pytest python/klo-sl/tests -q
-uv run pytest python/klo-daemon/tests -q
+uv run pytest python/ktx-sl/tests -q
+uv run pytest python/ktx-daemon/tests -q
 uv run pre-commit run --files [FILES]
 ```
 
@@ -127,8 +127,8 @@ shared contracts or package exports are affected.
 - Build/export changes: `pnpm run build`
 - Workspace scripts: `node --test scripts/*.test.mjs` or the specific script
   test file
-- Python semantic layer: `uv run pytest python/klo-sl/tests -q`
-- Python daemon: `uv run pytest python/klo-daemon/tests -q`
+- Python semantic layer: `uv run pytest python/ktx-sl/tests -q`
+- Python daemon: `uv run pytest python/ktx-daemon/tests -q`
 - Python files: also run `uv run pre-commit run --files [FILES]` when
   pre-commit is configured
 
@@ -178,15 +178,15 @@ use `PascalCase` without the suffix.
 - Use `pathlib` instead of `os.path`.
 - Use `logger.exception()` when catching and logging exceptions.
 - Prefer explicit exception types over broad `except Exception`.
-- Keep `python/klo-sl` focused on semantic-layer planning and SQL generation.
-- Keep `python/klo-daemon` focused on portable daemon/API behavior around the
+- Keep `python/ktx-sl` focused on semantic-layer planning and SQL generation.
+- Keep `python/ktx-daemon` focused on portable daemon/API behavior around the
   semantic layer.
 
 ### SQL and Structured Parsing
 
 - Prefer AST-based parsing over regex for structured input.
 - For SQL, use `sqlglot`; it is already a dependency.
-- In `python/klo-sl`, follow the local `python/klo-sl/AGENTS.md` guidance:
+- In `python/ktx-sl`, follow the local `python/ktx-sl/AGENTS.md` guidance:
   parse expressions with sqlglot, quote reserved identifiers before parsing,
   and generate postgres-shaped SQL before final dialect transpilation.
 - Regex may be used for non-structural sanitization, but not to interpret SQL

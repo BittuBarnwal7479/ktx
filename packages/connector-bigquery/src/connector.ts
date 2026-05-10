@@ -1,29 +1,29 @@
 import { BigQuery, type TableField } from '@google-cloud/bigquery';
-import { assertReadOnlySql, limitSqlForExecution } from '@klo/context/connections';
+import { assertReadOnlySql, limitSqlForExecution } from '@ktx/context/connections';
 import {
-  createKloConnectorCapabilities,
-  type KloColumnSampleInput,
-  type KloColumnSampleResult,
-  type KloColumnStatsInput,
-  type KloColumnStatsResult,
-  type KloQueryResult,
-  type KloReadOnlyQueryInput,
-  type KloScanConnector,
-  type KloScanContext,
-  type KloScanInput,
-  type KloSchemaColumn,
-  type KloSchemaSnapshot,
-  type KloSchemaTable,
-  type KloTableRef,
-  type KloTableSampleInput,
-  type KloTableSampleResult,
-} from '@klo/context/scan';
+  createKtxConnectorCapabilities,
+  type KtxColumnSampleInput,
+  type KtxColumnSampleResult,
+  type KtxColumnStatsInput,
+  type KtxColumnStatsResult,
+  type KtxQueryResult,
+  type KtxReadOnlyQueryInput,
+  type KtxScanConnector,
+  type KtxScanContext,
+  type KtxScanInput,
+  type KtxSchemaColumn,
+  type KtxSchemaSnapshot,
+  type KtxSchemaTable,
+  type KtxTableRef,
+  type KtxTableSampleInput,
+  type KtxTableSampleResult,
+} from '@ktx/context/scan';
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { resolve } from 'node:path';
-import { KloBigQueryDialect } from './dialect.js';
+import { KtxBigQueryDialect } from './dialect.js';
 
-export interface KloBigQueryConnectionConfig {
+export interface KtxBigQueryConnectionConfig {
   driver?: string;
   dataset_id?: string;
   dataset_ids?: string[];
@@ -33,35 +33,35 @@ export interface KloBigQueryConnectionConfig {
   [key: string]: unknown;
 }
 
-export interface KloBigQueryResolvedConnectionConfig {
+export interface KtxBigQueryResolvedConnectionConfig {
   projectId: string;
   credentials: Record<string, unknown>;
   datasetIds: string[];
   location?: string;
 }
 
-export interface KloBigQueryReadOnlyQueryInput extends KloReadOnlyQueryInput {
+export interface KtxBigQueryReadOnlyQueryInput extends KtxReadOnlyQueryInput {
   params?: Record<string, unknown>;
 }
 
-export interface KloBigQueryColumnDistinctValuesOptions {
+export interface KtxBigQueryColumnDistinctValuesOptions {
   maxCardinality: number;
   limit: number;
   sampleSize?: number;
 }
 
-export interface KloBigQueryColumnDistinctValuesResult {
+export interface KtxBigQueryColumnDistinctValuesResult {
   values: string[] | null;
   cardinality: number;
 }
 
-export interface KloBigQueryQueryJob {
+export interface KtxBigQueryQueryJob {
   getQueryResults(): Promise<
     [Array<Record<string, unknown>>, unknown, { schema?: { fields?: TableField[] } }?, ...unknown[]]
   >;
 }
 
-export interface KloBigQueryTableRef {
+export interface KtxBigQueryTableRef {
   id?: string;
   get(): Promise<
     [
@@ -78,39 +78,39 @@ export interface KloBigQueryTableRef {
   >;
 }
 
-export interface KloBigQueryDataset {
+export interface KtxBigQueryDataset {
   get(): Promise<unknown>;
-  getTables(): Promise<[KloBigQueryTableRef[], ...unknown[]]>;
+  getTables(): Promise<[KtxBigQueryTableRef[], ...unknown[]]>;
 }
 
-export interface KloBigQueryClient {
+export interface KtxBigQueryClient {
   getDatasets(input?: { maxResults?: number }): Promise<[Array<{ id?: string }>, ...unknown[]]>;
-  dataset(datasetId: string): KloBigQueryDataset;
+  dataset(datasetId: string): KtxBigQueryDataset;
   createQueryJob(input: {
     query: string;
     location?: string;
     params?: Record<string, unknown>;
     maximumBytesBilled?: string;
     jobTimeoutMs?: number;
-  }): Promise<[KloBigQueryQueryJob, ...unknown[]]>;
+  }): Promise<[KtxBigQueryQueryJob, ...unknown[]]>;
 }
 
-export interface KloBigQueryClientFactory {
-  createClient(input: { projectId: string; credentials: Record<string, unknown> }): KloBigQueryClient;
+export interface KtxBigQueryClientFactory {
+  createClient(input: { projectId: string; credentials: Record<string, unknown> }): KtxBigQueryClient;
 }
 
-export interface KloBigQueryScanConnectorOptions {
+export interface KtxBigQueryScanConnectorOptions {
   connectionId: string;
-  connection: KloBigQueryConnectionConfig | undefined;
-  clientFactory?: KloBigQueryClientFactory;
+  connection: KtxBigQueryConnectionConfig | undefined;
+  clientFactory?: KtxBigQueryClientFactory;
   env?: NodeJS.ProcessEnv;
   now?: () => Date;
   maxBytesBilled?: number | string;
   queryTimeoutMs?: number;
 }
 
-class DefaultBigQueryClientFactory implements KloBigQueryClientFactory {
-  createClient(input: { projectId: string; credentials: Record<string, unknown> }): KloBigQueryClient {
+class DefaultBigQueryClientFactory implements KtxBigQueryClientFactory {
+  createClient(input: { projectId: string; credentials: Record<string, unknown> }): KtxBigQueryClient {
     const client = new BigQuery(input);
     return {
       getDatasets: (options) => client.getDatasets(options) as Promise<[Array<{ id?: string }>, ...unknown[]]>,
@@ -118,10 +118,10 @@ class DefaultBigQueryClientFactory implements KloBigQueryClientFactory {
         const dataset = client.dataset(datasetId);
         return {
           get: () => dataset.get() as Promise<unknown>,
-          getTables: () => dataset.getTables() as Promise<[KloBigQueryTableRef[], ...unknown[]]>,
+          getTables: () => dataset.getTables() as Promise<[KtxBigQueryTableRef[], ...unknown[]]>,
         };
       },
-      createQueryJob: (options) => client.createQueryJob(options) as Promise<[KloBigQueryQueryJob, ...unknown[]]>,
+      createQueryJob: (options) => client.createQueryJob(options) as Promise<[KtxBigQueryQueryJob, ...unknown[]]>,
     };
   }
 }
@@ -139,15 +139,15 @@ function resolveStringReference(value: string, env: NodeJS.ProcessEnv): string {
 }
 
 function stringConfigValue(
-  connection: KloBigQueryConnectionConfig | undefined,
-  key: keyof KloBigQueryConnectionConfig,
+  connection: KtxBigQueryConnectionConfig | undefined,
+  key: keyof KtxBigQueryConnectionConfig,
   env: NodeJS.ProcessEnv,
 ): string | undefined {
   const value = connection?.[key];
   return typeof value === 'string' && value.trim().length > 0 ? resolveStringReference(value.trim(), env) : undefined;
 }
 
-function datasetIds(connection: KloBigQueryConnectionConfig, env: NodeJS.ProcessEnv): string[] {
+function datasetIds(connection: KtxBigQueryConnectionConfig, env: NodeJS.ProcessEnv): string[] {
   if (Array.isArray(connection.dataset_ids) && connection.dataset_ids.length > 0) {
     return connection.dataset_ids
       .filter((dataset) => dataset.trim().length > 0)
@@ -157,7 +157,7 @@ function datasetIds(connection: KloBigQueryConnectionConfig, env: NodeJS.Process
   return datasetId ? [datasetId] : [];
 }
 
-function tableKind(metadataType: string | undefined): KloSchemaTable['kind'] {
+function tableKind(metadataType: string | undefined): KtxSchemaTable['kind'] {
   const type = String(metadataType ?? '').toUpperCase();
   if (type === 'VIEW' || type === 'MATERIALIZED_VIEW') {
     return 'view';
@@ -192,16 +192,16 @@ function normalizeValue(value: unknown): unknown {
   return value;
 }
 
-export function isKloBigQueryConnectionConfig(connection: KloBigQueryConnectionConfig | undefined): boolean {
+export function isKtxBigQueryConnectionConfig(connection: KtxBigQueryConnectionConfig | undefined): boolean {
   return String(connection?.driver ?? '').toLowerCase() === 'bigquery';
 }
 
 export function bigQueryConnectionConfigFromConfig(input: {
   connectionId: string;
-  connection: KloBigQueryConnectionConfig | undefined;
+  connection: KtxBigQueryConnectionConfig | undefined;
   env?: NodeJS.ProcessEnv;
-}): KloBigQueryResolvedConnectionConfig {
-  if (!isKloBigQueryConnectionConfig(input.connection)) {
+}): KtxBigQueryResolvedConnectionConfig {
+  if (!isKtxBigQueryConnectionConfig(input.connection)) {
     throw new Error(`Native BigQuery connector cannot run driver "${input.connection?.driver ?? 'unknown'}"`);
   }
   if (input.connection?.readonly !== true) {
@@ -226,10 +226,10 @@ export function bigQueryConnectionConfigFromConfig(input: {
   return { projectId, credentials, datasetIds: resolvedDatasetIds, ...(location ? { location } : {}) };
 }
 
-export class KloBigQueryScanConnector implements KloScanConnector {
+export class KtxBigQueryScanConnector implements KtxScanConnector {
   readonly id: string;
   readonly driver = 'bigquery' as const;
-  readonly capabilities = createKloConnectorCapabilities({
+  readonly capabilities = createKtxConnectorCapabilities({
     tableSampling: true,
     columnSampling: true,
     columnStats: false,
@@ -240,15 +240,15 @@ export class KloBigQueryScanConnector implements KloScanConnector {
   });
 
   private readonly connectionId: string;
-  private readonly resolved: KloBigQueryResolvedConnectionConfig;
-  private readonly clientFactory: KloBigQueryClientFactory;
+  private readonly resolved: KtxBigQueryResolvedConnectionConfig;
+  private readonly clientFactory: KtxBigQueryClientFactory;
   private readonly now: () => Date;
   private readonly maxBytesBilled?: number | string;
   private readonly queryTimeoutMs?: number;
-  private readonly dialect = new KloBigQueryDialect();
-  private client: KloBigQueryClient | null = null;
+  private readonly dialect = new KtxBigQueryDialect();
+  private client: KtxBigQueryClient | null = null;
 
-  constructor(options: KloBigQueryScanConnectorOptions) {
+  constructor(options: KtxBigQueryScanConnectorOptions) {
     this.connectionId = options.connectionId;
     this.resolved = bigQueryConnectionConfigFromConfig({
       connectionId: options.connectionId,
@@ -275,9 +275,9 @@ export class KloBigQueryScanConnector implements KloScanConnector {
     }
   }
 
-  async introspect(input: KloScanInput, _ctx: KloScanContext): Promise<KloSchemaSnapshot> {
+  async introspect(input: KtxScanInput, _ctx: KtxScanContext): Promise<KtxSchemaSnapshot> {
     this.assertConnection(input.connectionId);
-    const tables: KloSchemaTable[] = [];
+    const tables: KtxSchemaTable[] = [];
     for (const datasetId of this.resolved.datasetIds) {
       tables.push(...(await this.introspectDataset(datasetId)));
     }
@@ -296,13 +296,13 @@ export class KloBigQueryScanConnector implements KloScanConnector {
     };
   }
 
-  async sampleTable(input: KloTableSampleInput, _ctx: KloScanContext): Promise<KloTableSampleResult & { headerTypes?: string[] }> {
+  async sampleTable(input: KtxTableSampleInput, _ctx: KtxScanContext): Promise<KtxTableSampleResult & { headerTypes?: string[] }> {
     this.assertConnection(input.connectionId);
     const result = await this.query(this.dialect.generateSampleQuery(this.qTableName(input.table), input.limit, input.columns));
     return { headers: result.headers, headerTypes: result.headerTypes, rows: result.rows, totalRows: result.totalRows };
   }
 
-  async sampleColumn(input: KloColumnSampleInput, _ctx: KloScanContext): Promise<KloColumnSampleResult> {
+  async sampleColumn(input: KtxColumnSampleInput, _ctx: KtxScanContext): Promise<KtxColumnSampleResult> {
     this.assertConnection(input.connectionId);
     const result = await this.query(
       this.dialect.generateColumnSampleQuery(this.qTableName(input.table), input.column, input.limit),
@@ -310,11 +310,11 @@ export class KloBigQueryScanConnector implements KloScanConnector {
     return { values: result.rows.filter((row) => row.length > 0 && row[0] !== null).map((row) => row[0]), nullCount: null, distinctCount: null };
   }
 
-  async columnStats(_input: KloColumnStatsInput, _ctx: KloScanContext): Promise<KloColumnStatsResult | null> {
+  async columnStats(_input: KtxColumnStatsInput, _ctx: KtxScanContext): Promise<KtxColumnStatsResult | null> {
     return null;
   }
 
-  async executeReadOnly(input: KloBigQueryReadOnlyQueryInput, _ctx: KloScanContext): Promise<KloQueryResult> {
+  async executeReadOnly(input: KtxBigQueryReadOnlyQueryInput, _ctx: KtxScanContext): Promise<KtxQueryResult> {
     this.assertConnection(input.connectionId);
     const limitedSql = limitSqlForExecution(assertReadOnlySql(input.sql), input.maxRows);
     const prepared = this.dialect.prepareQuery(limitedSql, input.params);
@@ -323,10 +323,10 @@ export class KloBigQueryScanConnector implements KloScanConnector {
   }
 
   async getColumnDistinctValues(
-    table: KloTableRef,
+    table: KtxTableRef,
     columnName: string,
-    options: KloBigQueryColumnDistinctValuesOptions,
-  ): Promise<KloBigQueryColumnDistinctValuesResult | null> {
+    options: KtxBigQueryColumnDistinctValuesOptions,
+  ): Promise<KtxBigQueryColumnDistinctValuesResult | null> {
     const tableName = this.qTableName(table);
     const quotedColumn = this.dialect.quoteIdentifier(columnName);
     const cardinality = await this.singleNumber(
@@ -356,7 +356,7 @@ export class KloBigQueryScanConnector implements KloScanConnector {
     return tables.find((table) => table.name === tableName)?.estimatedRows ?? 0;
   }
 
-  qTableName(table: Pick<KloTableRef, 'name'> & Partial<Pick<KloTableRef, 'catalog' | 'db'>>): string {
+  qTableName(table: Pick<KtxTableRef, 'name'> & Partial<Pick<KtxTableRef, 'catalog' | 'db'>>): string {
     return this.dialect.formatTableName(table);
   }
 
@@ -373,7 +373,7 @@ export class KloBigQueryScanConnector implements KloScanConnector {
     this.client = null;
   }
 
-  private getClient(): KloBigQueryClient {
+  private getClient(): KtxBigQueryClient {
     if (!this.client) {
       this.client = this.clientFactory.createClient({
         projectId: this.resolved.projectId,
@@ -383,7 +383,7 @@ export class KloBigQueryScanConnector implements KloScanConnector {
     return this.client;
   }
 
-  private async query(sql: string, params?: Record<string, unknown>): Promise<KloQueryResult> {
+  private async query(sql: string, params?: Record<string, unknown>): Promise<KtxQueryResult> {
     const [job] = await this.getClient().createQueryJob({
       query: sql,
       ...(this.resolved.location ? { location: this.resolved.location } : {}),
@@ -416,11 +416,11 @@ export class KloBigQueryScanConnector implements KloScanConnector {
     return firstNumber(rows[0]?.[header]);
   }
 
-  private async introspectDataset(datasetId: string): Promise<KloSchemaTable[]> {
+  private async introspectDataset(datasetId: string): Promise<KtxSchemaTable[]> {
     const dataset = this.getClient().dataset(datasetId);
     const [tableRefs] = await dataset.getTables();
     const primaryKeys = await this.primaryKeys(datasetId);
-    const tables: KloSchemaTable[] = [];
+    const tables: KtxSchemaTable[] = [];
     for (const tableRef of tableRefs) {
       const tableName = tableRef.id || '';
       const [table] = await tableRef.get();
@@ -471,7 +471,7 @@ export class KloBigQueryScanConnector implements KloScanConnector {
     return grouped;
   }
 
-  private toSchemaColumn(tableName: string, field: TableField, primaryKeys: Map<string, Set<string>>): KloSchemaColumn {
+  private toSchemaColumn(tableName: string, field: TableField, primaryKeys: Map<string, Set<string>>): KtxSchemaColumn {
     const nativeType = String(field.type || 'STRING').toUpperCase();
     return {
       name: field.name || '',

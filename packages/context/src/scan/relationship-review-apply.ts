@@ -1,4 +1,4 @@
-import type { KloLocalProject } from '../project/index.js';
+import type { KtxLocalProject } from '../project/index.js';
 import {
   readLocalScanRelationshipArtifacts,
   type ReadLocalScanRelationshipArtifactsResult,
@@ -12,10 +12,10 @@ import {
   type WriteLocalScanManifestShardsInput,
   type WriteLocalScanManifestShardsResult,
 } from './local-enrichment-artifacts.js';
-import type { KloEnrichedRelationship, KloRelationshipUpdate } from './enrichment-types.js';
+import type { KtxEnrichedRelationship, KtxRelationshipUpdate } from './enrichment-types.js';
 import type {
-  KloRelationshipReviewDecisionArtifact,
-  KloRelationshipReviewDecisionEntry,
+  KtxRelationshipReviewDecisionArtifact,
+  KtxRelationshipReviewDecisionEntry,
 } from './relationship-review-decisions.js';
 
 const DECISIONS_FILE = 'relationship-review-decisions.json';
@@ -39,7 +39,7 @@ export interface AppliedRelationshipReviewDecision {
   decidedAt: string;
   reviewer: string;
   note: string | null;
-  relationship: KloEnrichedRelationship;
+  relationship: KtxEnrichedRelationship;
 }
 
 export interface ApplyLocalScanRelationshipReviewDecisionsResult {
@@ -50,7 +50,7 @@ export interface ApplyLocalScanRelationshipReviewDecisionsResult {
   decisionsPath: string;
   selectedDecisions: number;
   appliedRelationships: number;
-  relationships: KloEnrichedRelationship[];
+  relationships: KtxEnrichedRelationship[];
   manifestShards: string[];
   manifestShardsWritten: number;
 }
@@ -60,17 +60,17 @@ function decisionsPathFromRelationshipsPath(relationshipsPath: string): string {
 }
 
 async function readDecisionArtifact(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   path: string,
   runId: string,
-): Promise<KloRelationshipReviewDecisionArtifact> {
+): Promise<KtxRelationshipReviewDecisionArtifact> {
   let raw: { content: string };
   try {
     raw = await project.fileStore.readFile(path);
   } catch {
     throw new Error(`Relationship review decisions were not found for scan run "${runId}"`);
   }
-  const parsed = JSON.parse(raw.content) as KloRelationshipReviewDecisionArtifact;
+  const parsed = JSON.parse(raw.content) as KtxRelationshipReviewDecisionArtifact;
   return {
     connectionId: parsed.connectionId,
     runId: parsed.runId,
@@ -91,16 +91,16 @@ function assertSelection(input: ApplyLocalScanRelationshipReviewDecisionsInput):
 }
 
 function selectAcceptedDecisions(
-  artifact: KloRelationshipReviewDecisionArtifact,
+  artifact: KtxRelationshipReviewDecisionArtifact,
   input: ApplyLocalScanRelationshipReviewDecisionsInput,
-): KloRelationshipReviewDecisionEntry[] {
+): KtxRelationshipReviewDecisionEntry[] {
   assertSelection(input);
   if (input.applyAllAccepted === true) {
     return artifact.decisions.filter((decision) => decision.decision === 'accepted');
   }
 
   const decisionsById = new Map(artifact.decisions.map((decision) => [decision.candidateId, decision]));
-  const selected: KloRelationshipReviewDecisionEntry[] = [];
+  const selected: KtxRelationshipReviewDecisionEntry[] = [];
   for (const candidateId of input.candidateIds ?? []) {
     const decision = decisionsById.get(candidateId);
     if (!decision) {
@@ -114,16 +114,16 @@ function selectAcceptedDecisions(
   return selected;
 }
 
-function tableId(table: KloRelationshipReviewDecisionEntry['from']['table']): string {
+function tableId(table: KtxRelationshipReviewDecisionEntry['from']['table']): string {
   return [table.catalog, table.db, table.name].filter((part): part is string => Boolean(part)).join('.');
 }
 
-function columnIds(table: KloRelationshipReviewDecisionEntry['from']['table'], columns: readonly string[]): string[] {
+function columnIds(table: KtxRelationshipReviewDecisionEntry['from']['table'], columns: readonly string[]): string[] {
   const prefix = tableId(table);
   return columns.map((column) => `${prefix}.${column}`);
 }
 
-function relationshipFromDecision(decision: KloRelationshipReviewDecisionEntry): KloEnrichedRelationship {
+function relationshipFromDecision(decision: KtxRelationshipReviewDecisionEntry): KtxEnrichedRelationship {
   return {
     id: decision.candidateId,
     source: 'manual',
@@ -147,8 +147,8 @@ function relationshipFromDecision(decision: KloRelationshipReviewDecisionEntry):
 
 function relationshipUpdate(
   connectionId: string,
-  relationships: readonly KloEnrichedRelationship[],
-): KloRelationshipUpdate {
+  relationships: readonly KtxEnrichedRelationship[],
+): KtxRelationshipUpdate {
   return {
     connectionId,
     accepted: [...relationships],
@@ -166,7 +166,7 @@ function assertApplyableArtifacts(artifacts: ReadLocalScanRelationshipArtifactsR
 }
 
 export async function applyLocalScanRelationshipReviewDecisions(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   input: ApplyLocalScanRelationshipReviewDecisionsInput,
 ): Promise<ApplyLocalScanRelationshipReviewDecisionsResult> {
   const readArtifacts = input.readLocalScanRelationshipArtifacts ?? readLocalScanRelationshipArtifacts;

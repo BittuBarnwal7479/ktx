@@ -1,12 +1,12 @@
 ---
 name: metabase_ingest
-description: Convert Metabase questions, models, and metrics into KLO Semantic Layer source definitions. Covers result-metadata to KSL column type mapping, FK/PK detection, near-duplicate deduplication, pre-aggregation decomposition, join-graph connectivity, and how to react to priorProvenance from earlier ingest syncs. Load when the WorkUnit contains `cards/<id>.json` files under a Metabase bundle.
+description: Convert Metabase questions, models, and metrics into KTX Semantic Layer source definitions. Covers result-metadata to KSL column type mapping, FK/PK detection, near-duplicate deduplication, pre-aggregation decomposition, join-graph connectivity, and how to react to priorProvenance from earlier ingest syncs. Load when the WorkUnit contains `cards/<id>.json` files under a Metabase bundle.
 callers: [memory_agent]
 ---
 
-# Metabase to KLO Semantic Layer
+# Metabase to KTX Semantic Layer
 
-Each WorkUnit represents one Metabase collection's cards for one Metabase database (mapped to exactly one KLO connection). Every `cards/<id>.json` file carries the resolved SQL, result_metadata, card type, collection path, and referenced-card ids. The WU's `sync-config.json` tells you which sync mode is active and which selections apply. `databases/<id>.json` tells you the target KLO connection.
+Each WorkUnit represents one Metabase collection's cards for one Metabase database (mapped to exactly one KTX connection). Every `cards/<id>.json` file carries the resolved SQL, result_metadata, card type, collection path, and referenced-card ids. The WU's `sync-config.json` tells you which sync mode is active and which selections apply. `databases/<id>.json` tells you the target KTX connection.
 
 ## Context format
 
@@ -194,7 +194,7 @@ If a source is derived from multiple cards (e.g. a generalized source for a near
 
 ## Quality standards
 
-Source definitions must follow klo-sl YAML conventions:
+Source definitions must follow ktx-sl YAML conventions:
 - `source_type`: `"table"` (physical table/view) or `"sql"` (arbitrary SQL / derived view).
 - `table`: required when `source_type: "table"` (e.g. `"public.orders"`).
 - `sql`: required when `source_type: "sql"`.

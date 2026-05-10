@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { KloPostgresDialect } from './dialect.js';
+import { KtxPostgresDialect } from './dialect.js';
 
-describe('KloPostgresDialect', () => {
-  const dialect = new KloPostgresDialect();
+describe('KtxPostgresDialect', () => {
+  const dialect = new KtxPostgresDialect();
 
   it('quotes identifiers and formats schema-qualified tables', () => {
     expect(dialect.quoteIdentifier('order"items')).toBe('"order""items"');
@@ -10,7 +10,7 @@ describe('KloPostgresDialect', () => {
     expect(dialect.formatTableName({ catalog: null, db: null, name: 'orders' })).toBe('"orders"');
   });
 
-  it('maps native PostgreSQL types to KLO dimension types', () => {
+  it('maps native PostgreSQL types to KTX dimension types', () => {
     expect(dialect.mapToDimensionType('timestamp with time zone')).toBe('time');
     expect(dialect.mapToDimensionType('numeric(12,2)')).toBe('number');
     expect(dialect.mapToDimensionType('uuid')).toBe('string');

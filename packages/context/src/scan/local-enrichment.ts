@@ -1,43 +1,43 @@
-import type { KloLlmProvider } from '@klo/llm';
-import { buildDefaultKloProjectConfig, type KloScanRelationshipConfig } from '../project/config.js';
-import { type KloDescriptionColumnTable, KloDescriptionGenerator } from './description-generation.js';
-import { buildKloColumnEmbeddingText } from './embedding-text.js';
+import type { KtxLlmProvider } from '@ktx/llm';
+import { buildDefaultKtxProjectConfig, type KtxScanRelationshipConfig } from '../project/config.js';
+import { type KtxDescriptionColumnTable, KtxDescriptionGenerator } from './description-generation.js';
+import { buildKtxColumnEmbeddingText } from './embedding-text.js';
 import {
-  completedKloScanEnrichmentStateSummary,
-  computeKloScanEnrichmentInputHash,
-  type KloScanEnrichmentStateStore,
-  summarizeKloScanEnrichmentState,
+  completedKtxScanEnrichmentStateSummary,
+  computeKtxScanEnrichmentInputHash,
+  type KtxScanEnrichmentStateStore,
+  summarizeKtxScanEnrichmentState,
 } from './enrichment-state.js';
-import { skippedKloScanEnrichmentSummary } from './enrichment-summary.js';
+import { skippedKtxScanEnrichmentSummary } from './enrichment-summary.js';
 import type {
-  KloEmbeddingUpdate,
-  KloEnrichedColumn,
-  KloEnrichedRelationship,
-  KloEnrichedSchema,
-  KloEnrichedTable,
-  KloRelationshipEndpoint,
-  KloRelationshipUpdate,
+  KtxEmbeddingUpdate,
+  KtxEnrichedColumn,
+  KtxEnrichedRelationship,
+  KtxEnrichedSchema,
+  KtxEnrichedTable,
+  KtxRelationshipEndpoint,
+  KtxRelationshipUpdate,
 } from './enrichment-types.js';
-import type { KloCompositeRelationshipCandidate } from './relationship-composite-candidates.js';
-import type { KloResolvedRelationshipDiscoveryCandidate } from './relationship-graph-resolver.js';
-import { discoverKloRelationships } from './relationship-discovery.js';
-import type { KloRelationshipProfileArtifact } from './relationship-profiling.js';
+import type { KtxCompositeRelationshipCandidate } from './relationship-composite-candidates.js';
+import type { KtxResolvedRelationshipDiscoveryCandidate } from './relationship-graph-resolver.js';
+import { discoverKtxRelationships } from './relationship-discovery.js';
+import type { KtxRelationshipProfileArtifact } from './relationship-profiling.js';
 import type {
-  KloEmbeddingPort,
-  KloProgressPort,
-  KloScanConnector,
-  KloScanContext,
-  KloScanEnrichmentStage,
-  KloScanEnrichmentStateSummary,
-  KloScanEnrichmentSummary,
-  KloScanMode,
-  KloScanRelationshipSummary,
-  KloScanWarning,
-  KloSchemaColumn,
-  KloSchemaForeignKey,
-  KloSchemaSnapshot,
-  KloSchemaTable,
-  KloTableRef,
+  KtxEmbeddingPort,
+  KtxProgressPort,
+  KtxScanConnector,
+  KtxScanContext,
+  KtxScanEnrichmentStage,
+  KtxScanEnrichmentStateSummary,
+  KtxScanEnrichmentSummary,
+  KtxScanMode,
+  KtxScanRelationshipSummary,
+  KtxScanWarning,
+  KtxSchemaColumn,
+  KtxSchemaForeignKey,
+  KtxSchemaSnapshot,
+  KtxSchemaTable,
+  KtxTableRef,
 } from './types.js';
 
 export interface DeterministicLocalScanEnrichmentProviderOptions {
@@ -45,52 +45,52 @@ export interface DeterministicLocalScanEnrichmentProviderOptions {
   maxBatchSize?: number;
 }
 
-export interface KloLocalScanEnrichmentProviders {
-  llm: KloLlmProvider;
-  embedding: KloEmbeddingPort;
+export interface KtxLocalScanEnrichmentProviders {
+  llm: KtxLlmProvider;
+  embedding: KtxEmbeddingPort;
 }
 
-export interface KloLocalScanEnrichmentInput {
+export interface KtxLocalScanEnrichmentInput {
   connectionId: string;
-  mode: KloScanMode;
+  mode: KtxScanMode;
   detectRelationships?: boolean;
-  connector: KloScanConnector;
-  context: KloScanContext;
-  providers: KloLocalScanEnrichmentProviders | null;
-  stateStore?: KloScanEnrichmentStateStore | null;
+  connector: KtxScanConnector;
+  context: KtxScanContext;
+  providers: KtxLocalScanEnrichmentProviders | null;
+  stateStore?: KtxScanEnrichmentStateStore | null;
   syncId?: string;
   providerIdentity?: Record<string, unknown>;
-  relationshipSettings?: KloScanRelationshipConfig;
+  relationshipSettings?: KtxScanRelationshipConfig;
   now?: () => Date;
 }
 
-export interface KloLocalScanEnrichmentResult {
-  snapshot: KloSchemaSnapshot;
-  summary: KloScanEnrichmentSummary;
-  relationships: KloScanRelationshipSummary;
-  state: KloScanEnrichmentStateSummary;
-  warnings: KloScanWarning[];
+export interface KtxLocalScanEnrichmentResult {
+  snapshot: KtxSchemaSnapshot;
+  summary: KtxScanEnrichmentSummary;
+  relationships: KtxScanRelationshipSummary;
+  state: KtxScanEnrichmentStateSummary;
+  warnings: KtxScanWarning[];
   descriptionUpdates: Array<{
-    table: KloTableRef;
+    table: KtxTableRef;
     tableDescription: string | null;
     columnDescriptions: Record<string, string | null>;
   }>;
-  embeddingUpdates: KloEmbeddingUpdate[];
-  relationshipUpdate: KloRelationshipUpdate | null;
-  relationshipProfile: KloRelationshipProfileArtifact | null;
-  resolvedRelationships: KloResolvedRelationshipDiscoveryCandidate[] | null;
-  compositeRelationships: KloCompositeRelationshipCandidate[] | null;
+  embeddingUpdates: KtxEmbeddingUpdate[];
+  relationshipUpdate: KtxRelationshipUpdate | null;
+  relationshipProfile: KtxRelationshipProfileArtifact | null;
+  resolvedRelationships: KtxResolvedRelationshipDiscoveryCandidate[] | null;
+  compositeRelationships: KtxCompositeRelationshipCandidate[] | null;
 }
 
-function tableId(table: KloSchemaTable): string {
+function tableId(table: KtxSchemaTable): string {
   return [table.catalog, table.db, table.name].filter((value): value is string => Boolean(value)).join('.');
 }
 
-function columnId(table: KloSchemaTable, column: KloSchemaColumn): string {
+function columnId(table: KtxSchemaTable, column: KtxSchemaColumn): string {
   return `${tableId(table)}.${column.name}`;
 }
 
-function tableRef(table: KloSchemaTable): KloTableRef {
+function tableRef(table: KtxSchemaTable): KtxTableRef {
   return {
     catalog: table.catalog,
     db: table.db,
@@ -98,7 +98,7 @@ function tableRef(table: KloSchemaTable): KloTableRef {
   };
 }
 
-function endpoint(table: KloEnrichedTable, column: KloEnrichedColumn): KloRelationshipEndpoint {
+function endpoint(table: KtxEnrichedTable, column: KtxEnrichedColumn): KtxRelationshipEndpoint {
   return {
     tableId: table.id,
     columnIds: [column.id],
@@ -107,11 +107,11 @@ function endpoint(table: KloEnrichedTable, column: KloEnrichedColumn): KloRelati
   };
 }
 
-function relationshipId(from: KloRelationshipEndpoint, to: KloRelationshipEndpoint): string {
+function relationshipId(from: KtxRelationshipEndpoint, to: KtxRelationshipEndpoint): string {
   return `${from.tableId}:(${from.columnIds.join(',')})->${to.tableId}:(${to.columnIds.join(',')})`;
 }
 
-function targetMatchesForeignKey(table: KloEnrichedTable, foreignKey: KloSchemaForeignKey): boolean {
+function targetMatchesForeignKey(table: KtxEnrichedTable, foreignKey: KtxSchemaForeignKey): boolean {
   return (
     table.ref.name === foreignKey.toTable &&
     (foreignKey.toCatalog === null || table.ref.catalog === foreignKey.toCatalog) &&
@@ -120,11 +120,11 @@ function targetMatchesForeignKey(table: KloEnrichedTable, foreignKey: KloSchemaF
 }
 
 function formalRelationshipsFromSnapshot(
-  snapshot: KloSchemaSnapshot,
-  tables: readonly KloEnrichedTable[],
-): KloEnrichedRelationship[] {
+  snapshot: KtxSchemaSnapshot,
+  tables: readonly KtxEnrichedTable[],
+): KtxEnrichedRelationship[] {
   const tableById = new Map(tables.map((table) => [table.id, table]));
-  const relationships: KloEnrichedRelationship[] = [];
+  const relationships: KtxEnrichedRelationship[] = [];
 
   for (const sourceTableSnapshot of snapshot.tables) {
     const sourceTable = tableById.get(tableId(sourceTableSnapshot));
@@ -157,7 +157,7 @@ function formalRelationshipsFromSnapshot(
   return relationships.sort((left, right) => left.id.localeCompare(right.id));
 }
 
-function providerlessEnrichedWarning(relationshipDetection: boolean): KloScanWarning {
+function providerlessEnrichedWarning(relationshipDetection: boolean): KtxScanWarning {
   return {
     code: 'scan_enrichment_backend_not_configured',
     message:
@@ -183,7 +183,7 @@ function hashEmbedding(text: string, dimensions: number): number[] {
 
 export function createDeterministicLocalScanEnrichmentProviders(
   options: DeterministicLocalScanEnrichmentProviderOptions = {},
-): KloLocalScanEnrichmentProviders {
+): KtxLocalScanEnrichmentProviders {
   const dimensions = options.embeddingDimensions ?? 8;
   const maxBatchSize = options.maxBatchSize ?? 64;
   return {
@@ -198,14 +198,14 @@ export function createDeterministicLocalScanEnrichmentProviders(
   };
 }
 
-function deterministicLlmProvider(): KloLlmProvider {
+function deterministicLlmProvider(): KtxLlmProvider {
   const model = { modelId: 'deterministic-scan', provider: 'deterministic' };
   return {
     getModel() {
-      return model as ReturnType<KloLlmProvider['getModel']>;
+      return model as ReturnType<KtxLlmProvider['getModel']>;
     },
     getModelByName() {
-      return model as ReturnType<KloLlmProvider['getModelByName']>;
+      return model as ReturnType<KtxLlmProvider['getModelByName']>;
     },
     cacheMarker() {
       return undefined;
@@ -237,14 +237,14 @@ function deterministicLlmProvider(): KloLlmProvider {
   };
 }
 
-export function snapshotToKloEnrichedSchema(
-  snapshot: KloSchemaSnapshot,
+export function snapshotToKtxEnrichedSchema(
+  snapshot: KtxSchemaSnapshot,
   embeddingsByColumnId: ReadonlyMap<string, number[]> = new Map(),
-): KloEnrichedSchema {
-  const tables: KloEnrichedTable[] = snapshot.tables.map((table) => {
+): KtxEnrichedSchema {
+  const tables: KtxEnrichedTable[] = snapshot.tables.map((table) => {
     const id = tableId(table);
     const ref = tableRef(table);
-    const columns: KloEnrichedColumn[] = table.columns.map((column) => {
+    const columns: KtxEnrichedColumn[] = table.columns.map((column) => {
       const idForColumn = columnId(table, column);
       return {
         id: idForColumn,
@@ -283,7 +283,7 @@ export function snapshotToKloEnrichedSchema(
   };
 }
 
-function descriptionTable(table: KloSchemaTable): KloDescriptionColumnTable {
+function descriptionTable(table: KtxSchemaTable): KtxDescriptionColumnTable {
   return {
     catalog: table.catalog,
     db: table.db,
@@ -300,13 +300,13 @@ function embeddingBatchSize(maxBatchSize: number): number {
 }
 
 async function generateDescriptions(input: {
-  snapshot: KloSchemaSnapshot;
-  connector: KloScanConnector;
-  context: KloScanContext;
-  providers: KloLocalScanEnrichmentProviders;
-  progress?: KloProgressPort;
-}): Promise<KloLocalScanEnrichmentResult['descriptionUpdates']> {
-  const generator = new KloDescriptionGenerator({
+  snapshot: KtxSchemaSnapshot;
+  connector: KtxScanConnector;
+  context: KtxScanContext;
+  providers: KtxLocalScanEnrichmentProviders;
+  progress?: KtxProgressPort;
+}): Promise<KtxLocalScanEnrichmentResult['descriptionUpdates']> {
+  const generator = new KtxDescriptionGenerator({
     llmProvider: input.providers.llm,
     settings: {
       columnMaxWords: 16,
@@ -316,7 +316,7 @@ async function generateDescriptions(input: {
     },
   });
 
-  const updates: KloLocalScanEnrichmentResult['descriptionUpdates'] = [];
+  const updates: KtxLocalScanEnrichmentResult['descriptionUpdates'] = [];
   const totalTables = input.snapshot.tables.length;
   if (totalTables === 0) {
     await input.progress?.update(1, 'No tables to describe');
@@ -362,11 +362,11 @@ async function generateDescriptions(input: {
 }
 
 async function buildEmbeddings(input: {
-  snapshot: KloSchemaSnapshot;
-  providers: KloLocalScanEnrichmentProviders;
-  descriptions: KloLocalScanEnrichmentResult['descriptionUpdates'];
-  progress?: KloProgressPort;
-}): Promise<{ updates: KloEmbeddingUpdate[]; byColumnId: Map<string, number[]> }> {
+  snapshot: KtxSchemaSnapshot;
+  providers: KtxLocalScanEnrichmentProviders;
+  descriptions: KtxLocalScanEnrichmentResult['descriptionUpdates'];
+  progress?: KtxProgressPort;
+}): Promise<{ updates: KtxEmbeddingUpdate[]; byColumnId: Map<string, number[]> }> {
   const descriptionByTable = new Map(input.descriptions.map((item) => [item.table.name, item]));
   const texts: Array<{ columnId: string; text: string }> = [];
 
@@ -374,7 +374,7 @@ async function buildEmbeddings(input: {
     const tableDescriptions = descriptionByTable.get(table.name);
     for (const column of table.columns) {
       const id = columnId(table, column);
-      const text = buildKloColumnEmbeddingText({
+      const text = buildKtxColumnEmbeddingText({
         tableName: table.name,
         columnName: column.name,
         columnType: column.nativeType,
@@ -429,17 +429,17 @@ async function buildEmbeddings(input: {
 }
 
 async function runEnrichmentStage<TOutput>(input: {
-  stateStore: KloScanEnrichmentStateStore | null | undefined;
+  stateStore: KtxScanEnrichmentStateStore | null | undefined;
   runId: string;
   connectionId: string;
   syncId: string;
-  mode: KloScanMode;
-  stage: KloScanEnrichmentStage;
+  mode: KtxScanMode;
+  stage: KtxScanEnrichmentStage;
   inputHash: string;
   now: () => Date;
-  resumedStages: KloScanEnrichmentStage[];
-  completedStages: KloScanEnrichmentStage[];
-  failedStages: KloScanEnrichmentStage[];
+  resumedStages: KtxScanEnrichmentStage[];
+  completedStages: KtxScanEnrichmentStage[];
+  failedStages: KtxScanEnrichmentStage[];
   compute: () => Promise<TOutput>;
 }): Promise<TOutput> {
   const existing = await input.stateStore?.findCompletedStage<TOutput>({
@@ -483,13 +483,13 @@ async function runEnrichmentStage<TOutput>(input: {
   }
 }
 
-function embeddingsByColumnId(updates: KloEmbeddingUpdate[]): Map<string, number[]> {
+function embeddingsByColumnId(updates: KtxEmbeddingUpdate[]): Map<string, number[]> {
   return new Map(updates.map((update) => [update.columnId, update.embedding]));
 }
 
 export async function runLocalScanEnrichment(
-  input: KloLocalScanEnrichmentInput,
-): Promise<KloLocalScanEnrichmentResult> {
+  input: KtxLocalScanEnrichmentInput,
+): Promise<KtxLocalScanEnrichmentResult> {
   const progress = input.context.progress;
   await progress?.update(0, 'Loading enrichment schema snapshot');
   const snapshot = await input.connector.introspect(
@@ -504,22 +504,22 @@ export async function runLocalScanEnrichment(
   await progress?.update(0.05, `Loaded schema snapshot with ${snapshot.tables.length} tables`);
 
   const now = input.now ?? (() => new Date());
-  const state = completedKloScanEnrichmentStateSummary();
+  const state = completedKtxScanEnrichmentStateSummary();
   const syncId = input.syncId ?? input.context.runId;
   const relationshipSettings =
-    input.relationshipSettings ?? buildDefaultKloProjectConfig(input.connectionId).scan.relationships;
-  const inputHash = computeKloScanEnrichmentInputHash({
+    input.relationshipSettings ?? buildDefaultKtxProjectConfig(input.connectionId).scan.relationships;
+  const inputHash = computeKtxScanEnrichmentInputHash({
     snapshot,
     mode: input.mode,
     detectRelationships: input.detectRelationships ?? false,
     providerIdentity: input.providerIdentity ?? {},
     relationshipSettings,
   });
-  const warnings: KloScanWarning[] = [];
-  let descriptions: KloLocalScanEnrichmentResult['descriptionUpdates'] = [];
-  let embeddingUpdates: KloEmbeddingUpdate[] = [];
-  let schema = snapshotToKloEnrichedSchema(snapshot);
-  const summary: KloScanEnrichmentSummary = { ...skippedKloScanEnrichmentSummary };
+  const warnings: KtxScanWarning[] = [];
+  let descriptions: KtxLocalScanEnrichmentResult['descriptionUpdates'] = [];
+  let embeddingUpdates: KtxEmbeddingUpdate[] = [];
+  let schema = snapshotToKtxEnrichedSchema(snapshot);
+  const summary: KtxScanEnrichmentSummary = { ...skippedKtxScanEnrichmentSummary };
   const relationshipDetectionEnabled = relationshipSettings.enabled;
   const shouldDetectRelationships =
     relationshipDetectionEnabled &&
@@ -576,18 +576,18 @@ export async function runLocalScanEnrichment(
         return embeddings.updates;
       },
     });
-    schema = snapshotToKloEnrichedSchema(snapshot, embeddingsByColumnId(embeddingUpdates));
+    schema = snapshotToKtxEnrichedSchema(snapshot, embeddingsByColumnId(embeddingUpdates));
     summary.dataDictionary = input.connector.sampleColumn ? 'completed' : 'skipped';
     summary.tableDescriptions = 'completed';
     summary.columnDescriptions = 'completed';
     summary.embeddings = 'completed';
   }
 
-  let relationshipUpdate: KloRelationshipUpdate | null = null;
-  let relationshipProfile: KloRelationshipProfileArtifact | null = null;
-  let resolvedRelationships: KloResolvedRelationshipDiscoveryCandidate[] | null = null;
-  let compositeRelationships: KloCompositeRelationshipCandidate[] | null = null;
-  let relationships: KloScanRelationshipSummary = { accepted: 0, review: 0, rejected: 0, skipped: 0 };
+  let relationshipUpdate: KtxRelationshipUpdate | null = null;
+  let relationshipProfile: KtxRelationshipProfileArtifact | null = null;
+  let resolvedRelationships: KtxResolvedRelationshipDiscoveryCandidate[] | null = null;
+  let compositeRelationships: KtxCompositeRelationshipCandidate[] | null = null;
+  let relationships: KtxScanRelationshipSummary = { accepted: 0, review: 0, rejected: 0, skipped: 0 };
   if (shouldDetectRelationships) {
     const relationshipProgress = progress?.startPhase(0.25);
     const relationshipStage = await runEnrichmentStage({
@@ -604,7 +604,7 @@ export async function runLocalScanEnrichment(
       failedStages: state.failedStages,
       compute: async () => {
         await relationshipProgress?.update(0, 'Detecting relationships');
-        const detection = await discoverKloRelationships({
+        const detection = await discoverKtxRelationships({
           connectionId: input.connectionId,
           driver: snapshot.driver,
           connector: input.connector,
@@ -647,7 +647,7 @@ export async function runLocalScanEnrichment(
     snapshot,
     summary,
     relationships,
-    state: summarizeKloScanEnrichmentState(state),
+    state: summarizeKtxScanEnrichmentState(state),
     warnings,
     descriptionUpdates: descriptions,
     embeddingUpdates,

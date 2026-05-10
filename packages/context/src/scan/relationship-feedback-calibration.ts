@@ -1,36 +1,36 @@
-import type { KloLocalProject } from '../project/index.js';
+import type { KtxLocalProject } from '../project/index.js';
 import {
   exportLocalRelationshipFeedbackLabels,
   type ExportLocalRelationshipFeedbackLabelsInput,
   type ExportLocalRelationshipFeedbackLabelsResult,
-  type KloRelationshipFeedbackExportWarning,
-  type KloRelationshipFeedbackLabel,
+  type KtxRelationshipFeedbackExportWarning,
+  type KtxRelationshipFeedbackLabel,
 } from './relationship-feedback-export.js';
-import type { KloResolvedRelationshipStatus } from './relationship-graph-resolver.js';
-import type { KloRelationshipReviewDecisionValue } from './relationship-review-decisions.js';
+import type { KtxResolvedRelationshipStatus } from './relationship-graph-resolver.js';
+import type { KtxRelationshipReviewDecisionValue } from './relationship-review-decisions.js';
 
 const DEFAULT_ACCEPT_THRESHOLD = 0.85;
 const DEFAULT_REVIEW_THRESHOLD = 0.55;
 
-type CalibrationPredictedStatus = KloResolvedRelationshipStatus | 'unscored';
+type CalibrationPredictedStatus = KtxResolvedRelationshipStatus | 'unscored';
 
 interface Thresholds {
   accept: number;
   review: number;
 }
 
-export interface BuildKloRelationshipFeedbackCalibrationReportInput {
+export interface BuildKtxRelationshipFeedbackCalibrationReportInput {
   acceptThreshold?: number;
   reviewThreshold?: number;
 }
 
 export interface CalibrateLocalRelationshipFeedbackLabelsInput
   extends ExportLocalRelationshipFeedbackLabelsInput,
-    BuildKloRelationshipFeedbackCalibrationReportInput {
+    BuildKtxRelationshipFeedbackCalibrationReportInput {
   exportLocalRelationshipFeedbackLabels?: typeof exportLocalRelationshipFeedbackLabels;
 }
 
-export interface KloRelationshipFeedbackCalibrationBucket {
+export interface KtxRelationshipFeedbackCalibrationBucket {
   label: string;
   minInclusive: number;
   maxInclusive: number;
@@ -40,10 +40,10 @@ export interface KloRelationshipFeedbackCalibrationBucket {
   acceptanceRate: number | null;
 }
 
-export interface KloRelationshipFeedbackCalibrationLabel {
+export interface KtxRelationshipFeedbackCalibrationLabel {
   candidateId: string;
-  decision: KloRelationshipReviewDecisionValue;
-  previousStatus: KloRelationshipFeedbackLabel['previousStatus'];
+  decision: KtxRelationshipReviewDecisionValue;
+  previousStatus: KtxRelationshipFeedbackLabel['previousStatus'];
   predictedStatus: CalibrationPredictedStatus;
   bucket: string;
   score: number | null;
@@ -59,7 +59,7 @@ export interface KloRelationshipFeedbackCalibrationLabel {
   reasons: string[];
 }
 
-export interface KloRelationshipFeedbackCalibrationReport {
+export interface KtxRelationshipFeedbackCalibrationReport {
   generatedAt: string;
   filters: ExportLocalRelationshipFeedbackLabelsResult['filters'];
   thresholds: Thresholds;
@@ -78,9 +78,9 @@ export interface KloRelationshipFeedbackCalibrationReport {
     meanAcceptedScore: number | null;
     meanRejectedScore: number | null;
   };
-  buckets: KloRelationshipFeedbackCalibrationBucket[];
-  labels: KloRelationshipFeedbackCalibrationLabel[];
-  warnings: KloRelationshipFeedbackExportWarning[];
+  buckets: KtxRelationshipFeedbackCalibrationBucket[];
+  labels: KtxRelationshipFeedbackCalibrationLabel[];
+  warnings: KtxRelationshipFeedbackExportWarning[];
 }
 
 const BUCKETS = [
@@ -90,7 +90,7 @@ const BUCKETS = [
   { label: '0.75-1.00', minInclusive: 0.75, maxInclusive: 1 },
 ] as const;
 
-function thresholds(input: BuildKloRelationshipFeedbackCalibrationReportInput): Thresholds {
+function thresholds(input: BuildKtxRelationshipFeedbackCalibrationReportInput): Thresholds {
   return {
     accept: input.acceptThreshold ?? DEFAULT_ACCEPT_THRESHOLD,
     review: input.reviewThreshold ?? DEFAULT_REVIEW_THRESHOLD,
@@ -133,9 +133,9 @@ function predictedStatus(score: number | null, currentThresholds: Thresholds): C
 }
 
 function calibrationLabel(
-  label: KloRelationshipFeedbackLabel,
+  label: KtxRelationshipFeedbackLabel,
   currentThresholds: Thresholds,
-): KloRelationshipFeedbackCalibrationLabel {
+): KtxRelationshipFeedbackCalibrationLabel {
   return {
     candidateId: label.candidateId,
     decision: label.decision,
@@ -157,8 +157,8 @@ function calibrationLabel(
 }
 
 function summarize(
-  labels: readonly KloRelationshipFeedbackCalibrationLabel[],
-): KloRelationshipFeedbackCalibrationReport['summary'] {
+  labels: readonly KtxRelationshipFeedbackCalibrationLabel[],
+): KtxRelationshipFeedbackCalibrationReport['summary'] {
   const scored = labels.filter((label) => label.score !== null);
   const predictedAccepted = scored.filter((label) => label.predictedStatus === 'accepted');
   const predictedReview = scored.filter((label) => label.predictedStatus === 'review');
@@ -193,8 +193,8 @@ function summarize(
 }
 
 function buildBuckets(
-  labels: readonly KloRelationshipFeedbackCalibrationLabel[],
-): KloRelationshipFeedbackCalibrationBucket[] {
+  labels: readonly KtxRelationshipFeedbackCalibrationLabel[],
+): KtxRelationshipFeedbackCalibrationBucket[] {
   return BUCKETS.map((bucket) => {
     const bucketLabels = labels.filter((label) => label.bucket === bucket.label);
     const accepted = bucketLabels.filter((label) => label.decision === 'accepted').length;
@@ -218,10 +218,10 @@ function buildBuckets(
   });
 }
 
-export function buildKloRelationshipFeedbackCalibrationReport(
+export function buildKtxRelationshipFeedbackCalibrationReport(
   feedback: ExportLocalRelationshipFeedbackLabelsResult,
-  input: BuildKloRelationshipFeedbackCalibrationReportInput = {},
-): KloRelationshipFeedbackCalibrationReport {
+  input: BuildKtxRelationshipFeedbackCalibrationReportInput = {},
+): KtxRelationshipFeedbackCalibrationReport {
   const currentThresholds = thresholds(input);
   const labels = feedback.labels
     .map((label) => calibrationLabel(label, currentThresholds))
@@ -244,26 +244,26 @@ export function buildKloRelationshipFeedbackCalibrationReport(
 }
 
 export async function calibrateLocalRelationshipFeedbackLabels(
-  project: KloLocalProject,
+  project: KtxLocalProject,
   input: CalibrateLocalRelationshipFeedbackLabelsInput = {},
-): Promise<KloRelationshipFeedbackCalibrationReport> {
+): Promise<KtxRelationshipFeedbackCalibrationReport> {
   const exporter = input.exportLocalRelationshipFeedbackLabels ?? exportLocalRelationshipFeedbackLabels;
   const feedback = await exporter(project, {
     connectionId: input.connectionId,
     decision: input.decision,
   });
-  return buildKloRelationshipFeedbackCalibrationReport(feedback, input);
+  return buildKtxRelationshipFeedbackCalibrationReport(feedback, input);
 }
 
 function formatMetric(value: number | null): string {
   return value === null ? 'n/a' : value.toFixed(3);
 }
 
-export function formatKloRelationshipFeedbackCalibrationMarkdown(
-  report: KloRelationshipFeedbackCalibrationReport,
+export function formatKtxRelationshipFeedbackCalibrationMarkdown(
+  report: KtxRelationshipFeedbackCalibrationReport,
 ): string {
   const lines = [
-    'KLO relationship feedback calibration',
+    'KTX relationship feedback calibration',
     `Generated: ${report.generatedAt}`,
     `Filter connection: ${report.filters.connectionId ?? 'all'}`,
     `Filter decision: ${report.filters.decision}`,

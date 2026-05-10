@@ -1,4 +1,4 @@
-import { type KloLogger, noopLogger } from '../../core/index.js';
+import { type KtxLogger, noopLogger } from '../../core/index.js';
 import type { CandidateDedupResult, ContextCandidateForDedup, JsonValue } from '../ports.js';
 import { buildContextCandidateEmbeddingText } from './embedding-text.js';
 import type { ContextCandidateStorePort } from './store.js';
@@ -17,11 +17,11 @@ export interface CandidateDedupServiceDeps {
   store: ContextCandidateStorePort;
   embeddings: ContextCandidateEmbeddingPort;
   settings: CandidateDedupSettings;
-  logger?: KloLogger;
+  logger?: KtxLogger;
 }
 
 export class CandidateDedupService {
-  private readonly logger: KloLogger;
+  private readonly logger: KtxLogger;
 
   constructor(private readonly deps: CandidateDedupServiceDeps) {
     this.logger = deps.logger ?? noopLogger;

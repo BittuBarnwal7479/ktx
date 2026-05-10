@@ -1,20 +1,20 @@
 import { writeFile } from 'node:fs/promises';
 import { cancel, isCancel, multiselect, password, select, text } from '@clack/prompts';
-import type { HistoricSqlDialect } from '@klo/context/ingest';
+import type { HistoricSqlDialect } from '@ktx/context/ingest';
 import {
-  type KloProjectConnectionConfig,
-  loadKloProject,
-  serializeKloProjectConfig,
-  setKloSetupDatabaseConnectionIds,
-} from '@klo/context/project';
-import type { KloCliIo } from './cli-runtime.js';
-import { runKloConnection } from './connection.js';
+  type KtxProjectConnectionConfig,
+  loadKtxProject,
+  serializeKtxProjectConfig,
+  setKtxSetupDatabaseConnectionIds,
+} from '@ktx/context/project';
+import type { KtxCliIo } from './cli-runtime.js';
+import { runKtxConnection } from './connection.js';
 import { withMenuOptionsSpacing, withMultiselectNavigation, withTextInputNavigation } from './prompt-navigation.js';
-import { runKloScan } from './scan.js';
+import { runKtxScan } from './scan.js';
 import { withSetupInterruptConfirmation } from './setup-interrupt.js';
 import { writeProjectLocalSecretReference } from './setup-secrets.js';
 
-export type KloSetupDatabaseDriver =
+export type KtxSetupDatabaseDriver =
   | 'sqlite'
   | 'postgres'
   | 'mysql'
@@ -23,10 +23,10 @@ export type KloSetupDatabaseDriver =
   | 'bigquery'
   | 'snowflake';
 
-export interface KloSetupDatabasesArgs {
+export interface KtxSetupDatabasesArgs {
   projectDir: string;
   inputMode: 'auto' | 'disabled';
-  databaseDrivers?: KloSetupDatabaseDriver[];
+  databaseDrivers?: KtxSetupDatabaseDriver[];
   databaseConnectionIds?: string[];
   databaseConnectionId?: string;
   databaseUrl?: string;
@@ -40,14 +40,14 @@ export interface KloSetupDatabasesArgs {
   skipDatabases: boolean;
 }
 
-export type KloSetupDatabasesResult =
+export type KtxSetupDatabasesResult =
   | { status: 'ready'; projectDir: string; connectionIds: string[] }
   | { status: 'skipped'; projectDir: string }
   | { status: 'back'; projectDir: string }
   | { status: 'missing-input'; projectDir: string }
   | { status: 'failed'; projectDir: string };
 
-export interface KloSetupDatabasesPromptAdapter {
+export interface KtxSetupDatabasesPromptAdapter {
   multiselect(options: {
     message: string;
     options: Array<{ value: string; label: string }>;
@@ -59,27 +59,27 @@ export interface KloSetupDatabasesPromptAdapter {
   cancel(message: string): void;
 }
 
-interface KloSetupHistoricSqlProbeInput {
+interface KtxSetupHistoricSqlProbeInput {
   projectDir: string;
   connectionId: string;
   dialect: HistoricSqlDialect;
 }
 
-interface KloSetupHistoricSqlProbeResult {
+interface KtxSetupHistoricSqlProbeResult {
   ok: boolean;
   lines: string[];
 }
 
-type KloSetupHistoricSqlProbe = (input: KloSetupHistoricSqlProbeInput) => Promise<KloSetupHistoricSqlProbeResult>;
+type KtxSetupHistoricSqlProbe = (input: KtxSetupHistoricSqlProbeInput) => Promise<KtxSetupHistoricSqlProbeResult>;
 
-export interface KloSetupDatabasesDeps {
-  prompts?: KloSetupDatabasesPromptAdapter;
-  testConnection?: (projectDir: string, connectionId: string, io: KloCliIo) => Promise<number>;
-  scanConnection?: (projectDir: string, connectionId: string, io: KloCliIo) => Promise<number>;
-  historicSqlProbe?: KloSetupHistoricSqlProbe;
+export interface KtxSetupDatabasesDeps {
+  prompts?: KtxSetupDatabasesPromptAdapter;
+  testConnection?: (projectDir: string, connectionId: string, io: KtxCliIo) => Promise<number>;
+  scanConnection?: (projectDir: string, connectionId: string, io: KtxCliIo) => Promise<number>;
+  historicSqlProbe?: KtxSetupHistoricSqlProbe;
 }
 
-const DRIVER_OPTIONS: Array<{ value: KloSetupDatabaseDriver; label: string }> = [
+const DRIVER_OPTIONS: Array<{ value: KtxSetupDatabaseDriver; label: string }> = [
   { value: 'sqlite', label: 'SQLite' },
   { value: 'postgres', label: 'PostgreSQL' },
   { value: 'mysql', label: 'MySQL' },
@@ -90,17 +90,17 @@ const DRIVER_OPTIONS: Array<{ value: KloSetupDatabaseDriver; label: string }> = 
 ];
 
 const DRIVER_LABELS = Object.fromEntries(DRIVER_OPTIONS.map((option) => [option.value, option.label])) as Record<
-  KloSetupDatabaseDriver,
+  KtxSetupDatabaseDriver,
   string
 >;
 
-const HISTORIC_SQL_DIALECT_BY_DRIVER: Partial<Record<KloSetupDatabaseDriver, HistoricSqlDialect>> = {
+const HISTORIC_SQL_DIALECT_BY_DRIVER: Partial<Record<KtxSetupDatabaseDriver, HistoricSqlDialect>> = {
   snowflake: 'snowflake',
   bigquery: 'bigquery',
   postgres: 'postgres',
 };
 
-const DEFAULT_CONNECTION_IDS: Record<KloSetupDatabaseDriver, string> = {
+const DEFAULT_CONNECTION_IDS: Record<KtxSetupDatabaseDriver, string> = {
   sqlite: 'sqlite-local',
   postgres: 'postgres-warehouse',
   mysql: 'mysql-warehouse',
@@ -110,7 +110,7 @@ const DEFAULT_CONNECTION_IDS: Record<KloSetupDatabaseDriver, string> = {
   snowflake: 'snowflake-warehouse',
 };
 
-type UrlDriverType = Extract<KloSetupDatabaseDriver, 'postgres' | 'mysql' | 'clickhouse' | 'sqlserver'>;
+type UrlDriverType = Extract<KtxSetupDatabaseDriver, 'postgres' | 'mysql' | 'clickhouse' | 'sqlserver'>;
 
 const DRIVER_CONNECTION_DEFAULTS: Record<UrlDriverType, { port: string }> = {
   postgres: { port: '5432' },
@@ -119,12 +119,12 @@ const DRIVER_CONNECTION_DEFAULTS: Record<UrlDriverType, { port: string }> = {
   sqlserver: { port: '1433' },
 };
 
-function driverLabel(driver: KloSetupDatabaseDriver): string {
+function driverLabel(driver: KtxSetupDatabaseDriver): string {
   return DRIVER_LABELS[driver];
 }
 
 function connectionNamePrompt(label: string): string {
-  return `Name this ${label} connection\nKLO will use this short name in commands and config. You can rename it now.`;
+  return `Name this ${label} connection\nKTX will use this short name in commands and config. You can rename it now.`;
 }
 
 function missingConnectionDetailsPrompt(
@@ -143,7 +143,7 @@ function missingConnectionDetailsPrompt(
   };
 }
 
-function createPromptAdapter(): KloSetupDatabasesPromptAdapter {
+function createPromptAdapter(): KtxSetupDatabasesPromptAdapter {
   return {
     async multiselect(options) {
       const value = await withSetupInterruptConfirmation(() => multiselect(withMenuOptionsSpacing(options)));
@@ -179,18 +179,18 @@ function createPromptAdapter(): KloSetupDatabasesPromptAdapter {
   };
 }
 
-function normalizeDriver(driver: string | undefined): KloSetupDatabaseDriver | null {
+function normalizeDriver(driver: string | undefined): KtxSetupDatabaseDriver | null {
   const normalized = String(driver ?? '').toLowerCase();
   if (normalized === 'postgresql') return 'postgres';
   if (normalized === 'sqlite3') return 'sqlite';
-  return DRIVER_OPTIONS.some((option) => option.value === normalized) ? (normalized as KloSetupDatabaseDriver) : null;
+  return DRIVER_OPTIONS.some((option) => option.value === normalized) ? (normalized as KtxSetupDatabaseDriver) : null;
 }
 
 function unique(values: string[]): string[] {
   return [...new Set(values.filter((value) => value.trim().length > 0))];
 }
 
-function historicSqlConfigRecord(connection: KloProjectConnectionConfig | undefined): Record<string, unknown> | null {
+function historicSqlConfigRecord(connection: KtxProjectConnectionConfig | undefined): Record<string, unknown> | null {
   const historicSql = connection?.historicSql;
   return historicSql && typeof historicSql === 'object' && !Array.isArray(historicSql)
     ? (historicSql as Record<string, unknown>)
@@ -217,25 +217,25 @@ function historicSqlProbeFailureLines(error: unknown): string[] {
   return [`  FAIL Historic SQL probe failed: ${error instanceof Error ? error.message : String(error)}`];
 }
 
-async function defaultHistoricSqlProbe(input: KloSetupHistoricSqlProbeInput): Promise<KloSetupHistoricSqlProbeResult> {
+async function defaultHistoricSqlProbe(input: KtxSetupHistoricSqlProbeInput): Promise<KtxSetupHistoricSqlProbeResult> {
   if (input.dialect !== 'postgres') {
     return { ok: true, lines: [] };
   }
 
-  const project = await loadKloProject({ projectDir: input.projectDir });
+  const project = await loadKtxProject({ projectDir: input.projectDir });
   const connection = project.config.connections[input.connectionId];
-  const [{ PostgresPgssQueryHistoryReader }, { KloPostgresHistoricSqlQueryClient, isKloPostgresConnectionConfig }] =
-    await Promise.all([import('@klo/context/ingest'), import('@klo/connector-postgres')]);
+  const [{ PostgresPgssQueryHistoryReader }, { KtxPostgresHistoricSqlQueryClient, isKtxPostgresConnectionConfig }] =
+    await Promise.all([import('@ktx/context/ingest'), import('@ktx/connector-postgres')]);
 
-  const postgresConnection = connection as Parameters<typeof isKloPostgresConnectionConfig>[0];
-  if (!isKloPostgresConnectionConfig(postgresConnection)) {
+  const postgresConnection = connection as Parameters<typeof isKtxPostgresConnectionConfig>[0];
+  if (!isKtxPostgresConnectionConfig(postgresConnection)) {
     return {
       ok: false,
       lines: [`  FAIL Connection ${input.connectionId} is not a native Postgres connection.`],
     };
   }
 
-  const client = new KloPostgresHistoricSqlQueryClient({
+  const client = new KtxPostgresHistoricSqlQueryClient({
     connectionId: input.connectionId,
     connection: postgresConnection,
   });
@@ -256,8 +256,8 @@ async function defaultHistoricSqlProbe(input: KloSetupHistoricSqlProbeInput): Pr
 }
 
 function existingConnectionIdsByDriver(
-  connections: Record<string, KloProjectConnectionConfig>,
-  driver: KloSetupDatabaseDriver,
+  connections: Record<string, KtxProjectConnectionConfig>,
+  driver: KtxSetupDatabaseDriver,
 ): string[] {
   return Object.entries(connections)
     .filter(([, connection]) => normalizeDriver(connection.driver) === driver)
@@ -266,7 +266,7 @@ function existingConnectionIdsByDriver(
 }
 
 function configuredPrimaryConnectionIds(
-  connections: Record<string, KloProjectConnectionConfig>,
+  connections: Record<string, KtxProjectConnectionConfig>,
   setupConnectionIds: string[] | undefined,
 ): string[] {
   const configuredIds =
@@ -303,8 +303,8 @@ function pushUniqueConnectionId(connectionIds: string[], connectionId: string): 
 }
 
 function defaultConnectionIdForDriver(
-  connections: Record<string, KloProjectConnectionConfig>,
-  driver: KloSetupDatabaseDriver,
+  connections: Record<string, KtxProjectConnectionConfig>,
+  driver: KtxSetupDatabaseDriver,
 ): string {
   const base = DEFAULT_CONNECTION_IDS[driver];
   if (!connections[base]) {
@@ -318,7 +318,7 @@ function defaultConnectionIdForDriver(
 }
 
 async function promptText(
-  prompts: KloSetupDatabasesPromptAdapter,
+  prompts: KtxSetupDatabasesPromptAdapter,
   message: string,
   fallback?: string,
 ): Promise<string | undefined> {
@@ -352,7 +352,7 @@ function normalizeFileReference(value: string): string {
 }
 
 async function promptCredential(input: {
-  prompts: KloSetupDatabasesPromptAdapter;
+  prompts: KtxSetupDatabasesPromptAdapter;
   message: string;
   projectDir: string;
   connectionId: string;
@@ -379,9 +379,9 @@ async function promptCredential(input: {
 async function buildFieldsConnectionConfig(input: {
   driver: UrlDriverType;
   connectionId: string;
-  args: KloSetupDatabasesArgs;
-  prompts: KloSetupDatabasesPromptAdapter;
-}): Promise<KloProjectConnectionConfig | null | 'back'> {
+  args: KtxSetupDatabasesArgs;
+  prompts: KtxSetupDatabasesPromptAdapter;
+}): Promise<KtxProjectConnectionConfig | null | 'back'> {
   const label = driverLabel(input.driver);
   const defaults = DRIVER_CONNECTION_DEFAULTS[input.driver];
 
@@ -429,9 +429,9 @@ async function buildFieldsConnectionConfig(input: {
 async function buildPastedUrlConnectionConfig(input: {
   driver: UrlDriverType;
   connectionId: string;
-  args: KloSetupDatabasesArgs;
-  prompts: KloSetupDatabasesPromptAdapter;
-}): Promise<KloProjectConnectionConfig | null | 'back'> {
+  args: KtxSetupDatabasesArgs;
+  prompts: KtxSetupDatabasesPromptAdapter;
+}): Promise<KtxProjectConnectionConfig | null | 'back'> {
   const label = driverLabel(input.driver);
   const rawUrl = await promptText(input.prompts, `${label} connection URL`);
   if (rawUrl === undefined) return 'back';
@@ -473,9 +473,9 @@ async function buildPastedUrlConnectionConfig(input: {
 async function buildUrlConnectionConfig(input: {
   driver: UrlDriverType;
   connectionId: string;
-  args: KloSetupDatabasesArgs;
-  prompts: KloSetupDatabasesPromptAdapter;
-}): Promise<KloProjectConnectionConfig | null | 'back'> {
+  args: KtxSetupDatabasesArgs;
+  prompts: KtxSetupDatabasesPromptAdapter;
+}): Promise<KtxProjectConnectionConfig | null | 'back'> {
   if (input.args.inputMode === 'disabled' && !input.args.databaseUrl) return null;
 
   if (input.args.databaseUrl) {
@@ -520,11 +520,11 @@ async function buildUrlConnectionConfig(input: {
 }
 
 async function buildConnectionConfig(input: {
-  driver: KloSetupDatabaseDriver;
+  driver: KtxSetupDatabaseDriver;
   connectionId: string;
-  args: KloSetupDatabasesArgs;
-  prompts: KloSetupDatabasesPromptAdapter;
-}): Promise<KloProjectConnectionConfig | null | 'back'> {
+  args: KtxSetupDatabasesArgs;
+  prompts: KtxSetupDatabasesPromptAdapter;
+}): Promise<KtxProjectConnectionConfig | null | 'back'> {
   const { driver, args, prompts } = input;
   if (driver === 'sqlite') {
     if (args.inputMode === 'disabled' && !args.databaseUrl) return null;
@@ -603,11 +603,11 @@ async function buildConnectionConfig(input: {
 }
 
 async function maybeApplyHistoricSqlConfig(input: {
-  connection: KloProjectConnectionConfig;
-  driver: KloSetupDatabaseDriver;
-  args: KloSetupDatabasesArgs;
-  prompts: KloSetupDatabasesPromptAdapter;
-}): Promise<KloProjectConnectionConfig | 'back'> {
+  connection: KtxProjectConnectionConfig;
+  driver: KtxSetupDatabaseDriver;
+  args: KtxSetupDatabasesArgs;
+  prompts: KtxSetupDatabasesPromptAdapter;
+}): Promise<KtxProjectConnectionConfig | 'back'> {
   const dialect = HISTORIC_SQL_DIALECT_BY_DRIVER[input.driver];
   if (!dialect) {
     if (input.args.enableHistoricSql === true) {
@@ -675,12 +675,12 @@ async function maybeApplyHistoricSqlConfig(input: {
   };
 }
 
-async function defaultTestConnection(projectDir: string, connectionId: string, io: KloCliIo): Promise<number> {
-  return await runKloConnection({ command: 'test', projectDir, connectionId }, io);
+async function defaultTestConnection(projectDir: string, connectionId: string, io: KtxCliIo): Promise<number> {
+  return await runKtxConnection({ command: 'test', projectDir, connectionId }, io);
 }
 
-async function defaultScanConnection(projectDir: string, connectionId: string, io: KloCliIo): Promise<number> {
-  return await runKloScan(
+async function defaultScanConnection(projectDir: string, connectionId: string, io: KtxCliIo): Promise<number> {
+  return await runKtxScan(
     {
       command: 'run',
       projectDir,
@@ -693,7 +693,7 @@ async function defaultScanConnection(projectDir: string, connectionId: string, i
   );
 }
 
-interface BufferedCommandIo extends KloCliIo {
+interface BufferedCommandIo extends KtxCliIo {
   stdoutText(): string;
   stderrText(): string;
 }
@@ -722,7 +722,7 @@ function createBufferedCommandIo(): BufferedCommandIo {
   };
 }
 
-function flushBufferedCommandOutput(io: KloCliIo, bufferedIo: BufferedCommandIo): void {
+function flushBufferedCommandOutput(io: KtxCliIo, bufferedIo: BufferedCommandIo): void {
   const stdout = bufferedIo.stdoutText();
   const stderr = bufferedIo.stderrText();
   if (stdout.length > 0) {
@@ -780,7 +780,7 @@ function shortenScanReportPath(path: string): string {
   return `${normalized.slice(0, markerIndex + liveDatabaseMarker.length)}.../${filename}`;
 }
 
-function writeSetupSection(io: KloCliIo, title: string, lines: string[]): void {
+function writeSetupSection(io: KtxCliIo, title: string, lines: string[]): void {
   io.stdout.write(`◇  ${title}\n`);
   for (const line of lines) {
     io.stdout.write(`│  ${line}\n`);
@@ -791,9 +791,9 @@ function writeSetupSection(io: KloCliIo, title: string, lines: string[]): void {
 async function writeConnectionConfig(input: {
   projectDir: string;
   connectionId: string;
-  connection: KloProjectConnectionConfig;
+  connection: KtxProjectConnectionConfig;
 }): Promise<void> {
-  const project = await loadKloProject({ projectDir: input.projectDir });
+  const project = await loadKtxProject({ projectDir: input.projectDir });
   const config = {
     ...project.config,
     connections: {
@@ -801,7 +801,7 @@ async function writeConnectionConfig(input: {
       [input.connectionId]: input.connection,
     },
   };
-  await writeFile(project.configPath, serializeKloProjectConfig(config), 'utf-8');
+  await writeFile(project.configPath, serializeKtxProjectConfig(config), 'utf-8');
 
   const historicSql =
     typeof input.connection.historicSql === 'object' &&
@@ -815,13 +815,13 @@ async function writeConnectionConfig(input: {
 }
 
 async function ensureHistoricSqlAdapterEnabled(projectDir: string): Promise<void> {
-  const project = await loadKloProject({ projectDir });
+  const project = await loadKtxProject({ projectDir });
   if (project.config.ingest.adapters.includes('historic-sql')) {
     return;
   }
   await writeFile(
     project.configPath,
-    serializeKloProjectConfig({
+    serializeKtxProjectConfig({
       ...project.config,
       ingest: {
         ...project.config.ingest,
@@ -833,18 +833,18 @@ async function ensureHistoricSqlAdapterEnabled(projectDir: string): Promise<void
 }
 
 async function markDatabasesComplete(projectDir: string, connectionIds: string[]): Promise<void> {
-  const project = await loadKloProject({ projectDir });
-  const config = setKloSetupDatabaseConnectionIds(project.config, unique(connectionIds), { complete: true });
-  await writeFile(project.configPath, serializeKloProjectConfig(config), 'utf-8');
+  const project = await loadKtxProject({ projectDir });
+  const config = setKtxSetupDatabaseConnectionIds(project.config, unique(connectionIds), { complete: true });
+  await writeFile(project.configPath, serializeKtxProjectConfig(config), 'utf-8');
 }
 
 async function maybeRunHistoricSqlSetupProbe(input: {
   projectDir: string;
   connectionId: string;
-  io: KloCliIo;
-  deps: KloSetupDatabasesDeps;
+  io: KtxCliIo;
+  deps: KtxSetupDatabasesDeps;
 }): Promise<void> {
-  const project = await loadKloProject({ projectDir: input.projectDir });
+  const project = await loadKtxProject({ projectDir: input.projectDir });
   const connection = project.config.connections[input.connectionId];
   const historicSql = historicSqlConfigRecord(connection);
   if (historicSql?.enabled !== true || historicSql.dialect !== 'postgres') {
@@ -869,14 +869,14 @@ async function maybeRunHistoricSqlSetupProbe(input: {
 async function applyHistoricSqlConfigToExistingConnection(input: {
   projectDir: string;
   connectionId: string;
-  args: KloSetupDatabasesArgs;
-  prompts: KloSetupDatabasesPromptAdapter;
+  args: KtxSetupDatabasesArgs;
+  prompts: KtxSetupDatabasesPromptAdapter;
 }): Promise<'back' | void> {
   if (input.args.enableHistoricSql !== true && input.args.disableHistoricSql !== true) {
     return;
   }
 
-  const project = await loadKloProject({ projectDir: input.projectDir });
+  const project = await loadKtxProject({ projectDir: input.projectDir });
   const existing = project.config.connections[input.connectionId];
   const driver = normalizeDriver(existing?.driver);
   if (!existing || !driver) {
@@ -900,12 +900,12 @@ async function applyHistoricSqlConfigToExistingConnection(input: {
 async function validateAndScanConnection(input: {
   projectDir: string;
   connectionId: string;
-  io: KloCliIo;
-  deps: KloSetupDatabasesDeps;
+  io: KtxCliIo;
+  deps: KtxSetupDatabasesDeps;
 }): Promise<boolean> {
   const testConnection = input.deps.testConnection ?? defaultTestConnection;
   const scanConnection = input.deps.scanConnection ?? defaultScanConnection;
-  const project = await loadKloProject({ projectDir: input.projectDir });
+  const project = await loadKtxProject({ projectDir: input.projectDir });
   const configuredDriver = normalizeDriver(project.config.connections[input.connectionId]?.driver);
   const configuredDriverLabel = configuredDriver ? driverLabel(configuredDriver) : undefined;
   const testIo = createBufferedCommandIo();
@@ -934,7 +934,7 @@ async function validateAndScanConnection(input: {
   if (scanCode !== 0) {
     flushBufferedCommandOutput(input.io, scanIo);
     input.io.stderr.write(`Structural scan failed for ${input.connectionId}.\n`);
-    input.io.stderr.write(`Debug command: klo dev scan --project-dir ${input.projectDir} ${input.connectionId}\n`);
+    input.io.stderr.write(`Debug command: ktx dev scan --project-dir ${input.projectDir} ${input.connectionId}\n`);
     return false;
   }
   const scanOutput = scanIo.stdoutText();
@@ -955,11 +955,11 @@ async function validateAndScanConnection(input: {
 }
 
 async function chooseDrivers(
-  args: KloSetupDatabasesArgs,
-  io: KloCliIo,
-  prompts: KloSetupDatabasesPromptAdapter,
+  args: KtxSetupDatabasesArgs,
+  io: KtxCliIo,
+  prompts: KtxSetupDatabasesPromptAdapter,
   options?: { hasPrimarySources?: boolean },
-): Promise<KloSetupDatabaseDriver[] | 'back' | 'missing-input'> {
+): Promise<KtxSetupDatabaseDriver[] | 'back' | 'missing-input'> {
   if (args.databaseDrivers && args.databaseDrivers.length > 0) {
     return [...new Set(args.databaseDrivers)];
   }
@@ -968,13 +968,13 @@ async function chooseDrivers(
   }
   if (args.inputMode === 'disabled') {
     io.stderr.write(
-      'KLO cannot work without a primary source. Pass --database or --database-connection-id, or pass --skip-databases to leave setup incomplete.\n',
+      'KTX cannot work without a primary source. Pass --database or --database-connection-id, or pass --skip-databases to leave setup incomplete.\n',
     );
     return 'missing-input';
   }
   while (true) {
     const choices = await prompts.multiselect({
-      message: withMultiselectNavigation('Which primary sources should KLO connect to?'),
+      message: withMultiselectNavigation('Which primary sources should KTX connect to?'),
       options: [...DRIVER_OPTIONS],
       required: false,
     });
@@ -982,22 +982,22 @@ async function chooseDrivers(
       return 'back';
     }
     if (choices.length > 0) {
-      return choices as KloSetupDatabaseDriver[];
+      return choices as KtxSetupDatabaseDriver[];
     }
 
     if (options?.hasPrimarySources) {
       return 'back';
     }
 
-    io.stdout.write('KLO cannot work without at least one primary source. Select a source or press Escape to go back.\n');
+    io.stdout.write('KTX cannot work without at least one primary source. Select a source or press Escape to go back.\n');
   }
 }
 
 async function chooseConnectionIdForDriver(input: {
-  driver: KloSetupDatabaseDriver;
-  connections: Record<string, KloProjectConnectionConfig>;
-  args: KloSetupDatabasesArgs;
-  prompts: KloSetupDatabasesPromptAdapter;
+  driver: KtxSetupDatabaseDriver;
+  connections: Record<string, KtxProjectConnectionConfig>;
+  args: KtxSetupDatabasesArgs;
+  prompts: KtxSetupDatabasesPromptAdapter;
 }): Promise<{ kind: 'existing' | 'new'; connectionId: string } | 'back' | 'missing-input'> {
   if (input.args.databaseConnectionId) {
     return { kind: 'new', connectionId: input.args.databaseConnectionId };
@@ -1047,13 +1047,13 @@ async function chooseConnectionIdForDriver(input: {
   }
 }
 
-export async function runKloSetupDatabasesStep(
-  args: KloSetupDatabasesArgs,
-  io: KloCliIo,
-  deps: KloSetupDatabasesDeps = {},
-): Promise<KloSetupDatabasesResult> {
+export async function runKtxSetupDatabasesStep(
+  args: KtxSetupDatabasesArgs,
+  io: KtxCliIo,
+  deps: KtxSetupDatabasesDeps = {},
+): Promise<KtxSetupDatabasesResult> {
   if (args.skipDatabases) {
-    io.stdout.write('Primary source setup skipped. KLO cannot work until you add a primary source.\n');
+    io.stdout.write('Primary source setup skipped. KTX cannot work until you add a primary source.\n');
     return { status: 'skipped', projectDir: args.projectDir };
   }
 
@@ -1079,7 +1079,7 @@ export async function runKloSetupDatabasesStep(
   }
 
   const canReturnToDriverSelection = args.databaseDrivers === undefined || args.databaseDrivers.length === 0;
-  const initialProject = await loadKloProject({ projectDir: args.projectDir });
+  const initialProject = await loadKtxProject({ projectDir: args.projectDir });
   const selectedConnectionIds =
     args.inputMode !== 'disabled' && canReturnToDriverSelection
       ? configuredPrimaryConnectionIds(initialProject.config.connections, initialProject.config.setup?.database_connection_ids)
@@ -1110,14 +1110,14 @@ export async function runKloSetupDatabasesStep(
     if (drivers === 'missing-input') return { status: 'missing-input', projectDir: args.projectDir };
     if (drivers.length === 0) {
       await markDatabasesComplete(args.projectDir, []);
-      io.stdout.write('KLO cannot work without a primary source.\n');
+      io.stdout.write('KTX cannot work without a primary source.\n');
       return { status: 'skipped', projectDir: args.projectDir };
     }
 
     let returnToDriverSelection = false;
 
     for (const driver of drivers) {
-      const project = await loadKloProject({ projectDir: args.projectDir });
+      const project = await loadKtxProject({ projectDir: args.projectDir });
       const connectionChoice = await chooseConnectionIdForDriver({
         driver,
         connections: project.config.connections,

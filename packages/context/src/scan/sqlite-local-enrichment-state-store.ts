@@ -2,13 +2,13 @@ import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import Database from 'better-sqlite3';
 import type {
-  KloScanEnrichmentCompletedStage,
-  KloScanEnrichmentFailedStage,
-  KloScanEnrichmentStageLookup,
-  KloScanEnrichmentStageRecord,
-  KloScanEnrichmentStateStore,
+  KtxScanEnrichmentCompletedStage,
+  KtxScanEnrichmentFailedStage,
+  KtxScanEnrichmentStageLookup,
+  KtxScanEnrichmentStageRecord,
+  KtxScanEnrichmentStateStore,
 } from './enrichment-state.js';
-import type { KloScanEnrichmentStage, KloScanMode } from './types.js';
+import type { KtxScanEnrichmentStage, KtxScanMode } from './types.js';
 
 export interface SqliteLocalScanEnrichmentStateStoreOptions {
   dbPath: string;
@@ -18,8 +18,8 @@ interface StageRow {
   run_id: string;
   connection_id: string;
   sync_id: string;
-  mode: KloScanMode;
-  stage: KloScanEnrichmentStage;
+  mode: KtxScanMode;
+  stage: KtxScanEnrichmentStage;
   input_hash: string;
   status: 'completed' | 'failed';
   output_json: string | null;
@@ -27,7 +27,7 @@ interface StageRow {
   updated_at: string;
 }
 
-function parseStageRow<TOutput = unknown>(row: StageRow): KloScanEnrichmentStageRecord<TOutput> {
+function parseStageRow<TOutput = unknown>(row: StageRow): KtxScanEnrichmentStageRecord<TOutput> {
   if (row.status === 'completed') {
     return {
       runId: row.run_id,
@@ -61,7 +61,7 @@ function isSafeRunId(runId: string): boolean {
   return /^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/.test(runId);
 }
 
-export class SqliteLocalScanEnrichmentStateStore implements KloScanEnrichmentStateStore {
+export class SqliteLocalScanEnrichmentStateStore implements KtxScanEnrichmentStateStore {
   private readonly db: Database.Database;
 
   constructor(options: SqliteLocalScanEnrichmentStateStoreOptions) {
@@ -89,8 +89,8 @@ export class SqliteLocalScanEnrichmentStateStore implements KloScanEnrichmentSta
   }
 
   async findCompletedStage<TOutput = unknown>(
-    input: KloScanEnrichmentStageLookup,
-  ): Promise<KloScanEnrichmentCompletedStage<TOutput> | null> {
+    input: KtxScanEnrichmentStageLookup,
+  ): Promise<KtxScanEnrichmentCompletedStage<TOutput> | null> {
     if (!isSafeRunId(input.runId)) {
       return null;
     }
@@ -115,7 +115,7 @@ export class SqliteLocalScanEnrichmentStateStore implements KloScanEnrichmentSta
   }
 
   async saveCompletedStage<TOutput = unknown>(
-    input: Omit<KloScanEnrichmentCompletedStage<TOutput>, 'status' | 'errorMessage'>,
+    input: Omit<KtxScanEnrichmentCompletedStage<TOutput>, 'status' | 'errorMessage'>,
   ): Promise<void> {
     this.db
       .prepare(
@@ -167,7 +167,7 @@ export class SqliteLocalScanEnrichmentStateStore implements KloScanEnrichmentSta
       });
   }
 
-  async saveFailedStage(input: Omit<KloScanEnrichmentFailedStage, 'status' | 'output'>): Promise<void> {
+  async saveFailedStage(input: Omit<KtxScanEnrichmentFailedStage, 'status' | 'output'>): Promise<void> {
     this.db
       .prepare(
         `
@@ -218,7 +218,7 @@ export class SqliteLocalScanEnrichmentStateStore implements KloScanEnrichmentSta
       });
   }
 
-  async listRunStages(runId: string): Promise<KloScanEnrichmentStageRecord[]> {
+  async listRunStages(runId: string): Promise<KtxScanEnrichmentStageRecord[]> {
     if (!isSafeRunId(runId)) {
       return [];
     }

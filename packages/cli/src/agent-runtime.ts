@@ -1,38 +1,38 @@
 import { readFile } from 'node:fs/promises';
-import { createDefaultLocalQueryExecutor, type KloSqlQueryExecutorPort } from '@klo/context/connections';
-import { createPythonSemanticLayerComputePort, type KloSemanticLayerComputePort } from '@klo/context/daemon';
-import { createLocalProjectMcpContextPorts, type KloMcpContextPorts } from '@klo/context/mcp';
-import { type KloLocalProject, loadKloProject } from '@klo/context/project';
-import type { KloCliIo } from './cli-runtime.js';
+import { createDefaultLocalQueryExecutor, type KtxSqlQueryExecutorPort } from '@ktx/context/connections';
+import { createPythonSemanticLayerComputePort, type KtxSemanticLayerComputePort } from '@ktx/context/daemon';
+import { createLocalProjectMcpContextPorts, type KtxMcpContextPorts } from '@ktx/context/mcp';
+import { type KtxLocalProject, loadKtxProject } from '@ktx/context/project';
+import type { KtxCliIo } from './cli-runtime.js';
 
-export const KLO_AGENT_MAX_ROWS_CAP = 1000;
+export const KTX_AGENT_MAX_ROWS_CAP = 1000;
 
-export interface KloAgentRuntimeOptions {
+export interface KtxAgentRuntimeOptions {
   projectDir: string;
   enableSemanticCompute: boolean;
   enableQueryExecution: boolean;
 }
 
-export interface KloAgentRuntime {
-  project: KloLocalProject;
-  ports: KloMcpContextPorts;
-  semanticLayerCompute?: KloSemanticLayerComputePort;
-  queryExecutor?: KloSqlQueryExecutorPort;
+export interface KtxAgentRuntime {
+  project: KtxLocalProject;
+  ports: KtxMcpContextPorts;
+  semanticLayerCompute?: KtxSemanticLayerComputePort;
+  queryExecutor?: KtxSqlQueryExecutorPort;
 }
 
-export interface KloAgentRuntimeDeps {
-  loadProject?: typeof loadKloProject;
+export interface KtxAgentRuntimeDeps {
+  loadProject?: typeof loadKtxProject;
   createContextTools?: typeof createLocalProjectMcpContextPorts;
-  createSemanticLayerCompute?: () => KloSemanticLayerComputePort;
-  createQueryExecutor?: () => KloSqlQueryExecutorPort;
+  createSemanticLayerCompute?: () => KtxSemanticLayerComputePort;
+  createQueryExecutor?: () => KtxSqlQueryExecutorPort;
 }
 
-export function writeAgentJson(io: KloCliIo, value: unknown): void {
+export function writeAgentJson(io: KtxCliIo, value: unknown): void {
   io.stdout.write(`${JSON.stringify(value, null, 2)}\n`);
 }
 
 export function writeAgentJsonError(
-  io: KloCliIo,
+  io: KtxCliIo,
   message: string,
   detail: Record<string, unknown> = {},
 ): void {
@@ -51,17 +51,17 @@ export function parseAgentMaxRows(value: number | undefined): number {
   if (!Number.isInteger(value) || value === undefined || value <= 0) {
     throw new Error('maxRows is required and must be a positive integer.');
   }
-  if (value > KLO_AGENT_MAX_ROWS_CAP) {
-    throw new Error(`maxRows must be less than or equal to ${KLO_AGENT_MAX_ROWS_CAP}.`);
+  if (value > KTX_AGENT_MAX_ROWS_CAP) {
+    throw new Error(`maxRows must be less than or equal to ${KTX_AGENT_MAX_ROWS_CAP}.`);
   }
   return value;
 }
 
-export async function createKloAgentRuntime(
-  options: KloAgentRuntimeOptions,
-  deps: KloAgentRuntimeDeps = {},
-): Promise<KloAgentRuntime> {
-  const project = await (deps.loadProject ?? loadKloProject)({ projectDir: options.projectDir });
+export async function createKtxAgentRuntime(
+  options: KtxAgentRuntimeOptions,
+  deps: KtxAgentRuntimeDeps = {},
+): Promise<KtxAgentRuntime> {
+  const project = await (deps.loadProject ?? loadKtxProject)({ projectDir: options.projectDir });
   const semanticLayerCompute = options.enableSemanticCompute
     ? (deps.createSemanticLayerCompute ?? createPythonSemanticLayerComputePort)()
     : undefined;
