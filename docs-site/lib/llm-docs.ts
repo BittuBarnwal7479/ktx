@@ -97,5 +97,9 @@ function toLlmDocsPage(page: ReturnType<typeof source.getPages>[number]) {
 }
 
 function normalizeMarkdown(markdown: string) {
-  return markdown.trim().replace(/\n{3,}/g, "\n\n");
+  return markdown
+    .trim()
+    .replace(/^---\n[\s\S]*?\n---\n?/, "")
+    .trim()
+    .replace(/\n{3,}/g, "\n\n");
 }

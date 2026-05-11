@@ -5,6 +5,18 @@ description: Expose your context to Claude Code, Cursor, Codex, and other coding
 
 Once you've built and refined your context, the final step is exposing it to coding agents. KTX provides two channels: an **MCP server** for persistent integration with tools like Claude Code and Cursor, and **CLI commands** for direct terminal access.
 
+## Agent workflow summary
+
+Agents should use KTX in this order:
+
+1. Discover connections with `connection_list` or `ktx agent context --json`.
+2. Discover semantic sources with `sl_list_sources` or `ktx agent sl list --json`.
+3. Search knowledge with `knowledge_search` or `ktx agent wiki search`.
+4. Query through the semantic layer with `sl_query` or `ktx agent sl query`.
+5. Execute SQL only when execution is explicitly enabled and row limits are set.
+
+Use the semantic layer first for analytics questions. Direct SQL is a fallback for read-only inspection, not the default path.
+
 ## MCP Server
 
 The MCP (Model Context Protocol) server gives agents structured access to your entire context layer — semantic sources, knowledge pages, scans, and ingestion — through a standard tool-calling interface.
@@ -85,6 +97,27 @@ When an agent connects via MCP, it can call these tools:
 | `memory_capture` | Capture knowledge and semantic updates from a conversation |
 | `memory_capture_status` | Check the status of a memory capture run |
 
+### Tool input reference
+
+| Tool | Required inputs | Optional inputs | Output shape |
+|------|-----------------|-----------------|--------------|
+| `connection_list` | none | none | JSON list of configured connections |
+| `connection_test` | `connectionId` | none | JSON test result with driver metadata or an error |
+| `sl_list_sources` | none | `connectionId`, `query` | JSON list of semantic source summaries |
+| `sl_read_source` | `sourceName`, `connectionId` | none | YAML source content and metadata |
+| `sl_write_source` | `sourceName`, `connectionId`, source YAML or delete operation | none | Write result and validation details |
+| `sl_validate` | `sourceName`, `connectionId` | none | Validation result with schema and join issues |
+| `sl_query` | `connectionId`, measures or query payload | dimensions, filters, segments, order, limit, execute, maxRows | Compiled SQL, query plan, and rows when execution is enabled |
+| `knowledge_search` | `query` | `limit`, `userId` | Ranked knowledge results with summaries |
+| `knowledge_read` | `pageId` or key | `userId` | Full Markdown knowledge page |
+| `knowledge_write` | key, summary, content | tags, refs, semantic-layer refs, scope, userId | Write result |
+| `scan_trigger` | `connectionId`, mode | daemon URLs, dry-run options | Scan run id and status |
+| `scan_status` | `runId` | none | Scan progress and current state |
+| `scan_report` | `runId` | none | Completed scan report |
+| `ingest_trigger` | connection/source adapter selection | limits and introspection URLs | Ingest run id and status |
+| `ingest_status` | `runId` | none | Ingest progress, work units, and diff summary |
+| `memory_capture` | conversation input | model and user options | Memory capture run id |
+
 ### How agents use these tools
 
 A typical agent interaction flows like this:
@@ -96,6 +129,16 @@ A typical agent interaction flows like this:
 5. Agent presents results with the business context it found
 
 Agents should use the semantic layer for analytics questions because it enforces correct joins, grain-aware aggregation, and consistent metric definitions. If SQL execution is enabled, KTX only allows read-only SQL with row limits.
+
+### Workflow: answer an analytics question through MCP
+
+1. `connection_list` — choose the relevant warehouse connection.
+2. `sl_list_sources` with a search query — find candidate semantic sources.
+3. `knowledge_search` with the user's business terms — find metric definitions and caveats.
+4. `sl_read_source` for each candidate source — inspect measures, dimensions, joins, and grain.
+5. `sl_query` with `execute: false` — compile SQL and inspect the generated query.
+6. `sl_query` with `execute: true` and a bounded `maxRows` — execute only when the user asked for data and execution is enabled.
+7. Cite the semantic source and knowledge pages used in the answer.
 
 ## CLI Commands
 
@@ -148,6 +191,28 @@ ktx agent sql execute --json \
   --sql-file query.sql \
   --max-rows 500
 ```
+
+### CLI input reference
+
+| Command | Required inputs | Optional inputs | Output |
+|---------|-----------------|-----------------|--------|
+| `ktx agent tools --json` | `--json` | none | JSON list of available agent commands |
+| `ktx agent context --json` | `--json` | none | JSON project context and readiness state |
+| `ktx agent sl list --json` | `--json` | `--connection-id`, `--query` | JSON semantic source list |
+| `ktx agent sl read <sourceName> --json --connection-id <id>` | source name, `--json`, `--connection-id` | none | JSON payload containing source YAML |
+| `ktx agent sl query --json --connection-id <id> --query-file <path>` | `--json`, `--connection-id`, `--query-file` | `--execute`, `--max-rows` | JSON compiled query, SQL, plan, and optional rows |
+| `ktx agent wiki search <query> --json` | query, `--json` | `--limit` | JSON ranked knowledge results |
+| `ktx agent wiki read <pageId> --json` | page id, `--json` | none | JSON full knowledge page |
+| `ktx agent sql execute --json --connection-id <id> --sql-file <path> --max-rows <n>` | `--json`, `--connection-id`, `--sql-file`, `--max-rows` | none | JSON rows and execution metadata |
+
+### Workflow: answer an analytics question through CLI
+
+1. `ktx agent context --json` — verify the KTX project is ready for agents.
+2. `ktx agent sl list --json --query "revenue"` — find semantic sources related to the question.
+3. `ktx agent wiki search "revenue recognition" --json --limit 5` — retrieve business definitions.
+4. Write a query JSON file with measures, dimensions, filters, and limits.
+5. `ktx agent sl query --json --connection-id my-postgres --query-file query.json` — compile and inspect SQL.
+6. Add `--execute --max-rows 100` only when the user needs rows and execution is allowed.
 
 ### When to use CLI vs MCP
 
@@ -205,3 +270,13 @@ The agents step auto-detects installed tools and generates the right configurati
 ```
 
 After configuration, the agent can immediately start calling KTX tools — listing sources, searching knowledge, and querying your semantic layer.
+
+## Common errors
+
+| Error or symptom | Likely cause | Recovery |
+|------------------|--------------|----------|
+| Agent cannot find the MCP server | Agent config points to a missing `ktx` binary or wrong project directory | Run `ktx setup --agents` again, then verify the generated MCP config contains the intended `KTX_PROJECT_DIR` |
+| MCP tools list but semantic queries fail | `--semantic-compute` was not enabled or the daemon URL is wrong | Start `ktx serve --mcp stdio --semantic-compute` or set `--semantic-compute-url` to the running daemon |
+| Query execution is rejected | The MCP server was started without `--execute-queries` or the SQL is not read-only | Restart with `--execute-queries` only when execution is intended, and keep `maxRows` bounded |
+| `ktx agent` command exits without JSON | `--json` was omitted | Re-run the command with `--json`; all `ktx agent` subcommands require it |
+| SQL execution exceeds limits | `--max-rows` is missing or too high | Re-run with an explicit value from 1 to 1000 |
