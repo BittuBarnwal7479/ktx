@@ -8,21 +8,19 @@ COMPOSE_FILE="$EXAMPLE_DIR/docker-compose.yml"
 PROJECT_PARENT="${KTX_POSTGRES_HISTORIC_PROJECT_PARENT:-$(mktemp -d)}"
 PROJECT_DIR="$PROJECT_PARENT/postgres-historic-ktx"
 KTX_BIN="$KTX_ROOT/packages/cli/dist/bin.js"
+export KTX_RUNTIME_ROOT="$PROJECT_PARENT/managed-runtime"
+unset KTX_DAEMON_URL
+unset KTX_SQL_ANALYSIS_URL
 
 cleanup() {
+  if [[ -f "$KTX_BIN" ]]; then
+    node "$KTX_BIN" runtime stop >/dev/null 2>&1 || true
+  fi
   if [[ "${KTX_POSTGRES_HISTORIC_KEEP_DOCKER:-0}" != "1" ]]; then
     docker compose -f "$COMPOSE_FILE" down -v >/dev/null 2>&1 || true
   fi
 }
 trap cleanup EXIT
-
-require_sql_analysis_url() {
-  if [[ -n "${KTX_SQL_ANALYSIS_URL:-}" || -n "${KTX_DAEMON_URL:-}" ]]; then
-    return
-  fi
-  echo "Set KTX_SQL_ANALYSIS_URL or KTX_DAEMON_URL before running this smoke." >&2
-  exit 1
-}
 
 latest_manifest() {
   find "$PROJECT_DIR/raw-sources/warehouse/historic-sql" -name manifest.json | sort | tail -n 1
@@ -60,9 +58,19 @@ const jobId = process.argv[4];
 const { loadKtxProject } = await import(join(ktxRoot, 'packages/context/dist/project/index.js'));
 const { runLocalStageOnlyIngest } = await import(join(ktxRoot, 'packages/context/dist/ingest/index.js'));
 const { createKtxCliLocalIngestAdapters } = await import(join(ktxRoot, 'packages/cli/dist/local-adapters.js'));
+const { getKtxCliPackageInfo } = await import(join(ktxRoot, 'packages/cli/dist/index.js'));
 
 const project = await loadKtxProject({ projectDir });
-const adapters = createKtxCliLocalIngestAdapters(project, { historicSqlConnectionId: 'warehouse' });
+const cliVersion = getKtxCliPackageInfo().version;
+const managedRuntimeIo = { stdout: process.stdout, stderr: process.stderr };
+const adapters = createKtxCliLocalIngestAdapters(project, {
+  historicSqlConnectionId: 'warehouse',
+  managedDaemon: {
+    cliVersion,
+    installPolicy: 'auto',
+    io: managedRuntimeIo,
+  },
+});
 const adapter = adapters.find((candidate) => candidate.source === 'historic-sql');
 if (!adapter) throw new Error('historic-sql adapter was not registered for local run');
 const record = await runLocalStageOnlyIngest({
@@ -88,7 +96,6 @@ NODE
 cd "$KTX_ROOT"
 pnpm --filter @ktx/context run build
 pnpm --filter @ktx/cli run build
-require_sql_analysis_url
 
 docker compose -f "$COMPOSE_FILE" up -d --wait
 "$EXAMPLE_DIR/scripts/generate-workload.sh" base

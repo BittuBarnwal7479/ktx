@@ -5,6 +5,8 @@ import { describe, it } from 'node:test';
 import {
   buildPublishedPackageNpxCommand,
   buildPublishedPackageSmokeCommands,
+  isPublishedPackageSemanticQueryLabel,
+  isPublishedPackageVersionLabel,
   publishedPackageSpec,
   readPublishedPackageSmokeConfig,
 } from './published-package-smoke.mjs';
@@ -32,7 +34,7 @@ describe('published package smoke config', () => {
     assert.deepEqual(
       readPublishedPackageSmokeConfig(
         {
-          KTX_PUBLISHED_KTX_PACKAGE: '@ktx/cli-public',
+          KTX_PUBLISHED_KTX_PACKAGE: '@kaelio/ktx',
           KTX_PUBLISHED_KTX_VERSION: 'latest',
           KTX_PUBLISHED_KTX_REGISTRY: 'https://registry.npmjs.org/',
         },
@@ -42,7 +44,7 @@ describe('published package smoke config', () => {
         enabled: true,
         requireConfig: false,
         configSource: 'environment',
-        packageName: '@ktx/cli-public',
+        packageName: '@kaelio/ktx',
         packageVersion: 'latest',
         registry: 'https://registry.npmjs.org/',
       },
@@ -55,7 +57,7 @@ describe('published package smoke config', () => {
         {},
         [],
         {
-          packageName: '@ktx/cli-public',
+          packageName: '@kaelio/ktx',
           version: '2026.5.8',
           registry: 'https://registry.npmjs.org/',
         },
@@ -64,7 +66,7 @@ describe('published package smoke config', () => {
         enabled: true,
         requireConfig: false,
         configSource: 'release-policy',
-        packageName: '@ktx/cli-public',
+        packageName: '@kaelio/ktx',
         packageVersion: '2026.5.8',
         registry: 'https://registry.npmjs.org/',
       },
@@ -75,12 +77,12 @@ describe('published package smoke config', () => {
     assert.deepEqual(
       readPublishedPackageSmokeConfig(
         {
-          KTX_PUBLISHED_KTX_PACKAGE: '@ktx/cli-from-env',
+          KTX_PUBLISHED_KTX_PACKAGE: '@kaelio/ktx',
           KTX_PUBLISHED_KTX_VERSION: 'latest',
         },
         [],
         {
-          packageName: '@ktx/cli-from-policy',
+          packageName: '@kaelio/ktx',
           version: '2026.5.8',
           registry: 'https://registry.npmjs.org/',
         },
@@ -89,7 +91,7 @@ describe('published package smoke config', () => {
         enabled: true,
         requireConfig: false,
         configSource: 'environment',
-        packageName: '@ktx/cli-from-env',
+        packageName: '@kaelio/ktx',
         packageVersion: 'latest',
         registry: 'https://registry.npmjs.org/',
       },
@@ -125,7 +127,7 @@ describe('published package smoke config', () => {
       () =>
         readPublishedPackageSmokeConfig(
           {
-            KTX_PUBLISHED_KTX_PACKAGE: '@ktx/cli-public',
+            KTX_PUBLISHED_KTX_PACKAGE: '@kaelio/ktx',
             KTX_PUBLISHED_KTX_VERSION: '--tag latest',
           },
           [],
@@ -136,7 +138,7 @@ describe('published package smoke config', () => {
       () =>
         readPublishedPackageSmokeConfig(
           {
-            KTX_PUBLISHED_KTX_PACKAGE: '@ktx/cli-public',
+            KTX_PUBLISHED_KTX_PACKAGE: '@kaelio/ktx',
             KTX_PUBLISHED_KTX_REGISTRY: 'file:///tmp/npm',
           },
           [],
@@ -146,103 +148,166 @@ describe('published package smoke config', () => {
   });
 });
 
+describe('published package smoke output validation labels', () => {
+  it('classifies version and semantic query commands', () => {
+    assert.equal(isPublishedPackageVersionLabel('published package npx version'), true);
+    assert.equal(isPublishedPackageVersionLabel('published package local version'), true);
+    assert.equal(isPublishedPackageVersionLabel('published package global version'), true);
+    assert.equal(isPublishedPackageVersionLabel('published package setup demo'), false);
+
+    assert.equal(isPublishedPackageSemanticQueryLabel('published package npx sl query'), true);
+    assert.equal(isPublishedPackageSemanticQueryLabel('published package local sl query'), true);
+    assert.equal(isPublishedPackageSemanticQueryLabel('published package global sl query'), true);
+    assert.equal(isPublishedPackageSemanticQueryLabel('published package local install'), false);
+  });
+});
+
 describe('published package smoke command construction', () => {
   const config = {
     enabled: true,
     requireConfig: false,
-    packageName: '@ktx/cli-public',
+    packageName: '@kaelio/ktx',
     packageVersion: 'latest',
     registry: 'https://registry.npmjs.org/',
   };
 
   it('builds the npx package spec from package name and version tag', () => {
-    assert.equal(publishedPackageSpec(config), '@ktx/cli-public@latest');
+    assert.equal(publishedPackageSpec(config), '@kaelio/ktx@latest');
   });
 
   it('builds npx commands with a registry env patch instead of shell interpolation', () => {
     assert.deepEqual(buildPublishedPackageNpxCommand(config, ['--version']), {
       label: 'published package command',
       command: 'npx',
-      args: ['--yes', '@ktx/cli-public@latest', '--version'],
+      args: ['--yes', '@kaelio/ktx@latest', '--version'],
       env: { npm_config_registry: 'https://registry.npmjs.org/' },
     });
   });
 
-  it('builds the full hybrid-search smoke command list', () => {
-    assert.deepEqual(buildPublishedPackageSmokeCommands(config, '/tmp/ktx-smoke/demo', '/tmp/ktx-smoke/empty'), [
-      {
-        label: 'published package version',
-        command: 'npx',
-        args: ['--yes', '@ktx/cli-public@latest', '--version'],
-        env: { npm_config_registry: 'https://registry.npmjs.org/' },
-      },
-      {
-        label: 'published package demo',
-        command: 'npx',
-        args: [
-          '--yes',
-          '@ktx/cli-public@latest',
-          'demo',
-          '--project-dir',
-          '/tmp/ktx-smoke/demo',
-          '--no-input',
-          '--plain',
-        ],
-        env: { npm_config_registry: 'https://registry.npmjs.org/' },
-      },
-      {
-        label: 'published package wiki hybrid search',
-        command: 'npx',
-        args: [
-          '--yes',
-          '@ktx/cli-public@latest',
-          'agent',
-          'wiki',
-          'search',
-          'ARR contract',
-          '--json',
-          '--limit',
-          '5',
-          '--project-dir',
-          '/tmp/ktx-smoke/demo',
-        ],
-        env: { npm_config_registry: 'https://registry.npmjs.org/' },
-      },
-      {
-        label: 'published package semantic-layer hybrid search',
-        command: 'npx',
-        args: [
-          '--yes',
-          '@ktx/cli-public@latest',
-          'agent',
-          'sl',
-          'list',
-          '--json',
-          '--query',
-          'ARR',
-          '--project-dir',
-          '/tmp/ktx-smoke/demo',
-        ],
-        env: { npm_config_registry: 'https://registry.npmjs.org/' },
-      },
-      {
-        label: 'published package missing-project readiness',
-        command: 'npx',
-        args: [
-          '--yes',
-          '@ktx/cli-public@latest',
-          'agent',
-          'sl',
-          'list',
-          '--json',
-          '--query',
-          'revenue',
-          '--project-dir',
-          '/tmp/ktx-smoke/empty',
-        ],
-        env: { npm_config_registry: 'https://registry.npmjs.org/' },
-      },
-    ]);
+  it('builds the full public package smoke command list', () => {
+    assert.deepEqual(
+      buildPublishedPackageSmokeCommands(
+        config,
+        '/tmp/ktx-smoke/demo',
+        '/tmp/ktx-smoke/managed-runtime',
+      ),
+      [
+        {
+          label: 'published package npx version',
+          command: 'npx',
+          args: ['--yes', '@kaelio/ktx@latest', '--version'],
+          env: { npm_config_registry: 'https://registry.npmjs.org/' },
+        },
+        {
+          label: 'published package setup demo',
+          command: 'npx',
+          args: [
+            '--yes',
+            '@kaelio/ktx@latest',
+            'setup',
+            'demo',
+            '--project-dir',
+            '/tmp/ktx-smoke/demo',
+            '--no-input',
+            '--plain',
+          ],
+          env: {
+            npm_config_registry: 'https://registry.npmjs.org/',
+            KTX_RUNTIME_ROOT: '/tmp/ktx-smoke/managed-runtime',
+          },
+        },
+        {
+          label: 'published package npx sl query',
+          command: 'npx',
+          args: [
+            '--yes',
+            '@kaelio/ktx@latest',
+            'sl',
+            'query',
+            '--project-dir',
+            '/tmp/ktx-smoke/demo',
+            '--connection-id',
+            'orbit_demo',
+            '--measure',
+            'contracts.contract_count',
+            '--format',
+            'sql',
+            '--yes',
+          ],
+          env: {
+            npm_config_registry: 'https://registry.npmjs.org/',
+            KTX_RUNTIME_ROOT: '/tmp/ktx-smoke/managed-runtime',
+          },
+        },
+        {
+          label: 'published package local install',
+          command: 'pnpm',
+          args: ['add', '@kaelio/ktx@latest'],
+          env: { npm_config_registry: 'https://registry.npmjs.org/' },
+        },
+        {
+          label: 'published package local version',
+          command: 'npx',
+          args: ['ktx', '--version'],
+          env: { npm_config_registry: 'https://registry.npmjs.org/' },
+        },
+        {
+          label: 'published package local sl query',
+          command: 'npx',
+          args: [
+            'ktx',
+            'sl',
+            'query',
+            '--project-dir',
+            '/tmp/ktx-smoke/demo',
+            '--connection-id',
+            'orbit_demo',
+            '--measure',
+            'contracts.contract_count',
+            '--format',
+            'sql',
+            '--yes',
+          ],
+          env: {
+            npm_config_registry: 'https://registry.npmjs.org/',
+            KTX_RUNTIME_ROOT: '/tmp/ktx-smoke/managed-runtime',
+          },
+        },
+        {
+          label: 'published package global install',
+          command: 'pnpm',
+          args: ['add', '--global', '@kaelio/ktx@latest'],
+          env: { npm_config_registry: 'https://registry.npmjs.org/' },
+        },
+        {
+          label: 'published package global version',
+          command: 'ktx',
+          args: ['--version'],
+          env: { npm_config_registry: 'https://registry.npmjs.org/' },
+        },
+        {
+          label: 'published package global sl query',
+          command: 'ktx',
+          args: [
+            'sl',
+            'query',
+            '--project-dir',
+            '/tmp/ktx-smoke/demo',
+            '--connection-id',
+            'orbit_demo',
+            '--measure',
+            'contracts.contract_count',
+            '--format',
+            'sql',
+            '--yes',
+          ],
+          env: {
+            npm_config_registry: 'https://registry.npmjs.org/',
+            KTX_RUNTIME_ROOT: '/tmp/ktx-smoke/managed-runtime',
+          },
+        },
+      ],
+    );
   });
 
   it('exposes the smoke through the package release script', async () => {

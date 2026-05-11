@@ -5,6 +5,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { packageArtifactLayout, packageReleaseMetadata, verifyArtifactManifest } from './package-artifacts.mjs';
+import { PUBLIC_NPM_PACKAGE_VERSION } from './build-public-npm-package.mjs';
 import { readPublishedPackageSmokeConfig } from './published-package-smoke-config.mjs';
 
 function scriptRootDir() {
@@ -21,9 +22,11 @@ async function readJson(path) {
 
 const CI_ARTIFACT_ONLY_RELEASE_MODE = 'ci-artifact-only';
 const PUBLISHED_PACKAGE_SMOKE_REQUIRED_RELEASE_MODE = 'published-package-smoke-required';
+const NPM_PUBLIC_RELEASE_READY_MODE = 'npm-public-release-ready';
 const SUPPORTED_RELEASE_MODES = new Set([
   CI_ARTIFACT_ONLY_RELEASE_MODE,
   PUBLISHED_PACKAGE_SMOKE_REQUIRED_RELEASE_MODE,
+  NPM_PUBLIC_RELEASE_READY_MODE,
 ]);
 
 export async function readReleasePolicy(rootDir = scriptRootDir()) {
@@ -64,6 +67,19 @@ function assertStringArray(value, label) {
   }
 }
 
+function assertNpmAccess(value) {
+  if (value !== 'public') {
+    throw new Error('Release policy npm.access must be public');
+  }
+}
+
+function assertNpmTag(value) {
+  assertString(value, 'Release policy npm.tag');
+  if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(value)) {
+    throw new Error(`Invalid Release policy npm.tag: ${value}`);
+  }
+}
+
 function assertSupportedReleaseMode(releaseMode) {
   assertString(releaseMode, 'Release policy releaseMode');
   if (!SUPPORTED_RELEASE_MODES.has(releaseMode)) {
@@ -79,10 +95,31 @@ function assertRequiredBeforePublishing(policy) {
   }
 
   if (
-    policy.releaseMode === PUBLISHED_PACKAGE_SMOKE_REQUIRED_RELEASE_MODE &&
+    (policy.releaseMode === PUBLISHED_PACKAGE_SMOKE_REQUIRED_RELEASE_MODE ||
+      policy.releaseMode === NPM_PUBLIC_RELEASE_READY_MODE) &&
     policy.requiredBeforePublishing.length > 0
   ) {
-    throw new Error('published-package-smoke-required release mode requires requiredBeforePublishing to be empty');
+    throw new Error(`${policy.releaseMode} release mode requires requiredBeforePublishing to be empty`);
+  }
+}
+
+function assertRuntimeInstallerPolicy(policy) {
+  assertPlainObject(policy.runtimeInstaller, 'Release policy runtimeInstaller');
+  assertString(policy.runtimeInstaller.uvStrategy, 'Release policy runtimeInstaller.uvStrategy');
+  assertBoolean(policy.runtimeInstaller.bootstrapUv, 'Release policy runtimeInstaller.bootstrapUv');
+  assertString(
+    policy.runtimeInstaller.missingUvBehavior,
+    'Release policy runtimeInstaller.missingUvBehavior',
+  );
+
+  if (policy.runtimeInstaller.uvStrategy !== 'path-prerequisite') {
+    throw new Error('Release policy runtimeInstaller.uvStrategy must be path-prerequisite');
+  }
+  if (policy.runtimeInstaller.bootstrapUv !== false) {
+    throw new Error('Release policy runtimeInstaller.bootstrapUv must be false');
+  }
+  if (policy.runtimeInstaller.missingUvBehavior !== 'focused-error') {
+    throw new Error('Release policy runtimeInstaller.missingUvBehavior must be focused-error');
   }
 }
 
@@ -107,6 +144,8 @@ export function validateReleasePolicy(policy) {
 
   assertBoolean(policy.npm.publish, 'Release policy npm.publish');
   assertNullableString(policy.npm.registry, 'Release policy npm.registry');
+  assertNpmAccess(policy.npm.access);
+  assertNpmTag(policy.npm.tag);
   assertStringArray(policy.npm.packages, 'Release policy npm.packages');
 
   assertBoolean(policy.python.publish, 'Release policy python.publish');
@@ -117,6 +156,7 @@ export function validateReleasePolicy(policy) {
   assertNullableString(policy.publishedPackageSmoke.registry, 'Release policy publishedPackageSmoke.registry');
   readPublishedPackageSmokeConfig({}, [], policy.publishedPackageSmoke);
   assertRequiredBeforePublishing(policy);
+  assertRuntimeInstallerPolicy(policy);
 
   return policy;
 }
@@ -128,10 +168,12 @@ function metadataNames(metadata, ecosystem) {
 function publishedPackageSmokeGate(policy) {
   const config = readPublishedPackageSmokeConfig({}, [], policy.publishedPackageSmoke);
 
-  if (policy.releaseMode === PUBLISHED_PACKAGE_SMOKE_REQUIRED_RELEASE_MODE && !config.enabled) {
-    throw new Error(
-      'published-package-smoke-required release mode requires release-policy.json publishedPackageSmoke.packageName',
-    );
+  if (
+    (policy.releaseMode === PUBLISHED_PACKAGE_SMOKE_REQUIRED_RELEASE_MODE ||
+      policy.releaseMode === NPM_PUBLIC_RELEASE_READY_MODE) &&
+    !config.enabled
+  ) {
+    throw new Error(`${policy.releaseMode} release mode requires release-policy.json publishedPackageSmoke.packageName`);
   }
 
   const base =
@@ -140,6 +182,11 @@ function publishedPackageSmokeGate(policy) {
           status: 'not_required',
           reason: 'Published package smoke remains pending until release-policy.json enables npm registry publishing.',
         }
+      : policy.releaseMode === NPM_PUBLIC_RELEASE_READY_MODE
+        ? {
+            status: 'required',
+            reason: 'Run the published package smoke after the npm package is published.',
+          }
       : {
           status: 'required',
           reason: 'Run the published package smoke before accepting the hybrid-search release.',
@@ -180,13 +227,54 @@ function assertNonPublishingArtifactPolicy(policy, metadata) {
       throw new Error(`Package ${entry.packageName} releaseMode must remain ci-artifact-only`);
     }
     if (entry.ecosystem === 'npm') {
-      if (entry.private !== true) {
+      const isPublicKtxPackage = entry.packageName === '@kaelio/ktx';
+      if (isPublicKtxPackage) {
+        if (entry.private !== false) {
+          throw new Error(`${policyLabel} npm package @kaelio/ktx must be publishable when npm.publish is false`);
+        }
+        if (entry.packageVersion !== PUBLIC_NPM_PACKAGE_VERSION) {
+          throw new Error(`${policyLabel} npm package @kaelio/ktx must use public version ${PUBLIC_NPM_PACKAGE_VERSION}`);
+        }
+      } else if (entry.private !== true) {
         throw new Error(`${policyLabel} npm package ${entry.packageName} must remain private`);
-      }
-      if (!entry.packageVersion.endsWith('-private')) {
+      } else if (!entry.packageVersion.endsWith('-private')) {
         throw new Error(`${policyLabel} npm package ${entry.packageName} must use a private version suffix`);
       }
     }
+  }
+}
+
+function assertNpmPublicReleaseReadyPolicy(policy, metadata) {
+  if (policy.npm.publish !== true) {
+    throw new Error('npm-public-release-ready policy requires npm.publish true');
+  }
+  if (policy.python.publish !== false) {
+    throw new Error('npm-public-release-ready policy keeps python.publish false');
+  }
+  if (policy.python.repository !== null) {
+    throw new Error('npm-public-release-ready policy keeps python.repository null');
+  }
+
+  assertSameMembers(policy.npm.packages, ['@kaelio/ktx'], 'Release policy npm.packages');
+  assertSameMembers(policy.python.packages, metadataNames(metadata, 'python'), 'Release policy python.packages');
+
+  const npmMetadata = metadata.find((entry) => entry.ecosystem === 'npm' && entry.packageName === '@kaelio/ktx');
+  if (!npmMetadata) {
+    throw new Error('npm-public-release-ready policy requires @kaelio/ktx artifact metadata');
+  }
+  if (npmMetadata.private !== false) {
+    throw new Error('npm-public-release-ready policy requires @kaelio/ktx to be publishable');
+  }
+  if (npmMetadata.packageVersion !== PUBLIC_NPM_PACKAGE_VERSION) {
+    throw new Error(
+      `npm-public-release-ready policy expected @kaelio/ktx ${PUBLIC_NPM_PACKAGE_VERSION}, got ${npmMetadata.packageVersion}`,
+    );
+  }
+  if (policy.publishedPackageSmoke.packageName !== '@kaelio/ktx') {
+    throw new Error('npm-public-release-ready policy requires publishedPackageSmoke.packageName @kaelio/ktx');
+  }
+  if (policy.publishedPackageSmoke.version !== PUBLIC_NPM_PACKAGE_VERSION) {
+    throw new Error(`npm-public-release-ready policy requires publishedPackageSmoke.version ${PUBLIC_NPM_PACKAGE_VERSION}`);
   }
 }
 
@@ -196,7 +284,11 @@ export async function releaseReadinessReport(rootDir = scriptRootDir()) {
   const manifest = await verifyArtifactManifest(layout);
   const metadata = await packageReleaseMetadata(rootDir);
 
-  assertNonPublishingArtifactPolicy(policy, metadata);
+  if (policy.releaseMode === NPM_PUBLIC_RELEASE_READY_MODE) {
+    assertNpmPublicReleaseReadyPolicy(policy, metadata);
+  } else {
+    assertNonPublishingArtifactPolicy(policy, metadata);
+  }
 
   return {
     schemaVersion: 1,
@@ -206,6 +298,17 @@ export async function releaseReadinessReport(rootDir = scriptRootDir()) {
     pythonPublishEnabled: policy.python.publish,
     packageNames: metadata.map((entry) => entry.packageName),
     publishedPackageSmokeGate: publishedPackageSmokeGate(policy),
+    runtimeInstaller: policy.runtimeInstaller,
+    npmPublish:
+      policy.releaseMode === NPM_PUBLIC_RELEASE_READY_MODE
+        ? {
+            packageName: '@kaelio/ktx',
+            version: PUBLIC_NPM_PACKAGE_VERSION,
+            access: policy.npm.access,
+            tag: policy.npm.tag,
+            registry: policy.npm.registry,
+          }
+        : null,
     blockedPublishingDecisions: policy.requiredBeforePublishing,
   };
 }
@@ -229,7 +332,17 @@ async function main() {
   process.stdout.write(
     `Published package smoke registry: ${report.publishedPackageSmokeGate.registry ?? 'default npm registry'}\n`,
   );
-  process.stdout.write('Registry publishing remains disabled by release-policy.json.\n');
+  process.stdout.write(`Runtime uv strategy: ${report.runtimeInstaller.uvStrategy}\n`);
+  process.stdout.write(
+    `Runtime uv bootstrap: ${report.runtimeInstaller.bootstrapUv ? 'enabled' : 'disabled'}\n`,
+  );
+  if (report.npmPublish) {
+    process.stdout.write(
+      `NPM publish target: ${report.npmPublish.packageName}@${report.npmPublish.version} (${report.npmPublish.tag})\n`,
+    );
+  } else {
+    process.stdout.write('Registry publishing remains disabled by release-policy.json.\n');
+  }
   process.stdout.write('Required decisions before publishing:\n');
   for (const decision of report.blockedPublishingDecisions) {
     process.stdout.write(`- ${decision}\n`);

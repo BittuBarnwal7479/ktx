@@ -2,6 +2,7 @@ import { profileMark } from './startup-profile.js';
 
 export {
   getKtxCliPackageInfo,
+  packageInfoFromJson,
   runInitForCommander,
   runKtxCli,
   type KtxCliDeps,
@@ -42,6 +43,26 @@ export type {
   KtxSetupSourceType,
 } from './setup-sources.js';
 export { runKtxSetupSourcesStep } from './setup-sources.js';
+export { runKtxRuntime, type KtxRuntimeArgs, type KtxRuntimeDeps } from './runtime.js';
+export {
+  allocateDaemonPort,
+  readManagedPythonDaemonStatus,
+  startManagedPythonDaemon,
+  stopManagedPythonDaemon,
+} from './managed-python-daemon.js';
+export type {
+  ManagedPythonDaemonStartResult,
+  ManagedPythonDaemonState,
+  ManagedPythonDaemonStatus,
+  ManagedPythonDaemonStopResult,
+} from './managed-python-daemon.js';
+export {
+  ensureManagedLocalEmbeddingsDaemon,
+  managedLocalEmbeddingHealthConfig,
+  managedLocalEmbeddingProjectConfig,
+  type ManagedLocalEmbeddingsDaemon,
+  type ManagedLocalEmbeddingsOptions,
+} from './managed-local-embeddings.js';
 export type { KtxMemoryFlowTuiIo, MemoryFlowTuiLiveSession } from './memory-flow-tui.js';
 export {
   renderMemoryFlowTui,

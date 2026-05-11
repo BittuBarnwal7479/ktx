@@ -6,6 +6,7 @@ import {
   resolveCommandProjectDir,
 } from '../cli-program.js';
 import { slQueryCommandSchema } from '../command-schemas.js';
+import { runtimeInstallPolicyFromFlags } from '../managed-python-command.js';
 import type { KtxSlArgs } from '../sl.js';
 import { profileMark } from '../startup-profile.js';
 
@@ -121,6 +122,8 @@ export function registerSlCommands(program: Command, context: KtxCliCommandConte
     .option('--include-empty', 'Include empty rows', false)
     .addOption(new Option('--format <format>', 'json or sql').choices(['json', 'sql']).default('json'))
     .option('--execute', 'Execute the compiled query', false)
+    .option('--yes', 'Install the managed Python runtime without prompting when required', false)
+    .option('--no-input', 'Disable interactive managed runtime installation')
     .option('--max-rows <n>', 'Maximum rows to return when executing', parsePositiveIntegerOption)
     .action(async (options, command) => {
       if (options.measure.length === 0) {
@@ -141,6 +144,8 @@ export function registerSlCommands(program: Command, context: KtxCliCommandConte
         },
         format: options.format,
         execute: options.execute === true,
+        cliVersion: context.packageInfo.version,
+        runtimeInstallPolicy: runtimeInstallPolicyFromFlags(options),
         ...(options.maxRows !== undefined ? { maxRows: options.maxRows } : {}),
       });
       await runSlArgs(context, args);

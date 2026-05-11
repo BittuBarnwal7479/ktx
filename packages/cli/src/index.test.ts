@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   getKtxCliPackageInfo,
+  packageInfoFromJson,
   rendererUnavailableVizFallback,
   renderMemoryFlowTui,
   resolveVizFallback,
@@ -54,6 +55,19 @@ describe('getKtxCliPackageInfo', () => {
     expect(packageJson).toMatchObject({
       name: '@ktx/cli',
       version: '0.0.0-private',
+    });
+  });
+
+  it('normalizes public package metadata from package.json contents', () => {
+    expect(
+      packageInfoFromJson({
+        name: '@kaelio/ktx',
+        version: '0.1.0',
+      }),
+    ).toEqual({
+      name: '@kaelio/ktx',
+      version: '0.1.0',
+      contextPackageName: '@ktx/context',
     });
   });
 });
@@ -108,7 +122,7 @@ describe('runKtxCli', () => {
     await expect(runKtxCli(['--help'], testIo.io)).resolves.toBe(0);
 
     expect(testIo.stdout()).toContain('Usage: ktx [options] [command]');
-    for (const command of ['setup', 'connection', 'ingest', 'wiki', 'sl', 'serve', 'status']) {
+    for (const command of ['setup', 'connection', 'ingest', 'wiki', 'sl', 'runtime', 'serve', 'status']) {
       expect(testIo.stdout()).toContain(`${command}`);
     }
     for (const removed of ['demo', 'init', 'connect', 'scan', 'ask', 'knowledge', 'agent', 'completion']) {
@@ -122,6 +136,151 @@ describe('runKtxCli', () => {
     expect(testIo.stdout()).toContain('Advanced:');
     expect(testIo.stdout()).toContain('ktx dev');
     expect(testIo.stderr()).toBe('');
+  });
+
+  it('routes runtime management commands with the CLI package version', async () => {
+    const runtime = vi.fn(async () => 0);
+    const installIo = makeIo();
+    const startIo = makeIo();
+    const stopIo = makeIo();
+    const statusIo = makeIo();
+    const doctorIo = makeIo();
+    const pruneIo = makeIo();
+
+    await expect(
+      runKtxCli(['runtime', 'install', '--feature', 'local-embeddings', '--force', '--yes'], installIo.io, {
+        runtime,
+      }),
+    ).resolves.toBe(0);
+    await expect(
+      runKtxCli(['runtime', 'start', '--feature', 'local-embeddings', '--force'], startIo.io, { runtime }),
+    ).resolves.toBe(0);
+    await expect(runKtxCli(['runtime', 'stop'], stopIo.io, { runtime })).resolves.toBe(0);
+    await expect(runKtxCli(['runtime', 'status', '--json'], statusIo.io, { runtime })).resolves.toBe(0);
+    await expect(runKtxCli(['runtime', 'doctor'], doctorIo.io, { runtime })).resolves.toBe(0);
+    await expect(runKtxCli(['runtime', 'prune', '--dry-run'], pruneIo.io, { runtime })).resolves.toBe(0);
+
+    expect(runtime).toHaveBeenNthCalledWith(
+      1,
+      {
+        command: 'install',
+        cliVersion: '0.0.0-private',
+        feature: 'local-embeddings',
+        force: true,
+      },
+      installIo.io,
+    );
+    expect(runtime).toHaveBeenNthCalledWith(
+      2,
+      {
+        command: 'start',
+        cliVersion: '0.0.0-private',
+        feature: 'local-embeddings',
+        force: true,
+      },
+      startIo.io,
+    );
+    expect(runtime).toHaveBeenNthCalledWith(
+      3,
+      {
+        command: 'stop',
+        cliVersion: '0.0.0-private',
+      },
+      stopIo.io,
+    );
+    expect(runtime).toHaveBeenNthCalledWith(
+      4,
+      {
+        command: 'status',
+        cliVersion: '0.0.0-private',
+        json: true,
+      },
+      statusIo.io,
+    );
+    expect(runtime).toHaveBeenNthCalledWith(
+      5,
+      {
+        command: 'doctor',
+        cliVersion: '0.0.0-private',
+        json: false,
+      },
+      doctorIo.io,
+    );
+    expect(runtime).toHaveBeenNthCalledWith(
+      6,
+      {
+        command: 'prune',
+        cliVersion: '0.0.0-private',
+        dryRun: true,
+        yes: false,
+      },
+      pruneIo.io,
+    );
+  });
+
+  it('routes sl query managed runtime install policies', async () => {
+    const sl = vi.fn(async () => 0);
+
+    const promptIo = makeIo();
+    await expect(
+      runKtxCli(['--project-dir', tempDir, 'sl', 'query', '--measure', 'orders.order_count'], promptIo.io, { sl }),
+    ).resolves.toBe(0);
+    expect(sl).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        command: 'query',
+        projectDir: tempDir,
+        cliVersion: '0.0.0-private',
+        runtimeInstallPolicy: 'prompt',
+        query: expect.objectContaining({ measures: ['orders.order_count'], dimensions: [] }),
+      }),
+      promptIo.io,
+    );
+
+    const autoIo = makeIo();
+    await expect(
+      runKtxCli(['--project-dir', tempDir, 'sl', 'query', '--measure', 'orders.order_count', '--yes'], autoIo.io, {
+        sl,
+      }),
+    ).resolves.toBe(0);
+    expect(sl).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        cliVersion: '0.0.0-private',
+        runtimeInstallPolicy: 'auto',
+      }),
+      autoIo.io,
+    );
+
+    const noInputIo = makeIo();
+    await expect(
+      runKtxCli(
+        ['--project-dir', tempDir, 'sl', 'query', '--measure', 'orders.order_count', '--no-input'],
+        noInputIo.io,
+        { sl },
+      ),
+    ).resolves.toBe(0);
+    expect(sl).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        cliVersion: '0.0.0-private',
+        runtimeInstallPolicy: 'never',
+      }),
+      noInputIo.io,
+    );
+  });
+
+  it('rejects conflicting sl query runtime install flags', async () => {
+    const io = makeIo();
+    const sl = vi.fn(async () => 0);
+
+    await expect(
+      runKtxCli(
+        ['--project-dir', tempDir, 'sl', 'query', '--measure', 'orders.order_count', '--yes', '--no-input'],
+        io.io,
+        { sl },
+      ),
+    ).resolves.toBe(1);
+
+    expect(sl).not.toHaveBeenCalled();
+    expect(io.stderr()).toContain('Choose only one runtime install mode: --yes or --no-input');
   });
 
   it('exposes demo under setup help instead of root help', async () => {
@@ -179,6 +338,7 @@ describe('runKtxCli', () => {
           skipAgents: false,
           inputMode: 'auto',
           yes: false,
+          cliVersion: '0.0.0-private',
           skipLlm: false,
           skipEmbeddings: false,
           databaseSchemas: [],
@@ -439,6 +599,8 @@ describe('runKtxCli', () => {
       executeQueries: false,
       memoryCapture: false,
       memoryModel: undefined,
+      cliVersion: '0.0.0-private',
+      runtimeInstallPolicy: 'prompt',
     });
   });
 
@@ -757,6 +919,8 @@ describe('runKtxCli', () => {
         adapter: 'fake',
         sourceDir: tempDir,
         databaseIntrospectionUrl: undefined,
+        cliVersion: '0.0.0-private',
+        runtimeInstallPolicy: 'never',
         debugLlmRequestFile: `${tempDir}/debug.jsonl`,
         outputMode: 'json',
         inputMode: 'disabled',
@@ -768,6 +932,60 @@ describe('runKtxCli', () => {
     expect(doctorIo.stderr()).toBe('');
     expect(ingestRunIo.stderr()).toBe('');
     expect(ingestReplayHelpIo.stderr()).toBe('');
+  });
+
+  it('routes ingest managed runtime install policies', async () => {
+    const autoIo = makeIo();
+    const conflictIo = makeIo();
+    const ingest = vi.fn(async () => 0);
+
+    await expect(
+      runKtxCli(
+        [
+          'dev',
+          'ingest',
+          'run',
+          '--project-dir',
+          tempDir,
+          '--connection-id',
+          'warehouse',
+          '--adapter',
+          'looker',
+          '--yes',
+        ],
+        autoIo.io,
+        { ingest },
+      ),
+    ).resolves.toBe(0);
+    await expect(
+      runKtxCli(
+        [
+          'dev',
+          'ingest',
+          'run',
+          '--project-dir',
+          tempDir,
+          '--connection-id',
+          'warehouse',
+          '--adapter',
+          'looker',
+          '--yes',
+          '--no-input',
+        ],
+        conflictIo.io,
+        { ingest },
+      ),
+    ).resolves.toBe(1);
+
+    expect(ingest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        command: 'run',
+        cliVersion: '0.0.0-private',
+        runtimeInstallPolicy: 'auto',
+      }),
+      autoIo.io,
+    );
+    expect(conflictIo.stderr()).toContain('Choose only one runtime install mode: --yes or --no-input');
   });
 
   it('dispatches public connection through the existing connection implementation', async () => {
@@ -870,6 +1088,7 @@ describe('runKtxCli', () => {
         command: 'run',
         projectDir: tempDir,
         inputMode: 'disabled',
+        cliVersion: '0.0.0-private',
         anthropicApiKeyEnv: 'ANTHROPIC_API_KEY',
         anthropicModel: 'claude-sonnet-4-6',
         skipLlm: false,
@@ -977,6 +1196,7 @@ describe('runKtxCli', () => {
         projectDir: '/tmp/project',
         inputMode: 'disabled',
         yes: true,
+        cliVersion: '0.0.0-private',
         skipLlm: true,
         skipEmbeddings: true,
         databaseDrivers: ['postgres'],
@@ -1239,6 +1459,8 @@ describe('runKtxCli', () => {
           queryFile: '/tmp/query.json',
           execute: true,
           maxRows: 100,
+          cliVersion: '0.0.0-private',
+          runtimeInstallPolicy: 'prompt',
         },
       },
       {
@@ -1285,6 +1507,104 @@ describe('runKtxCli', () => {
     const helpIo = makeIo();
     await expect(runKtxCli(['--help'], helpIo.io, { agent })).resolves.toBe(0);
     expect(helpIo.stdout()).not.toContain('agent ');
+  });
+
+  it('routes hidden agent SL query managed runtime policies', async () => {
+    const autoIo = makeIo();
+    const neverIo = makeIo();
+    const conflictIo = makeIo();
+    const agent = vi.fn(async () => 0);
+
+    await expect(
+      runKtxCli(
+        [
+          '--project-dir',
+          tempDir,
+          'agent',
+          'sl',
+          'query',
+          '--json',
+          '--connection-id',
+          'warehouse',
+          '--query-file',
+          '/tmp/query.json',
+          '--yes',
+        ],
+        autoIo.io,
+        { agent },
+      ),
+    ).resolves.toBe(0);
+
+    await expect(
+      runKtxCli(
+        [
+          '--project-dir',
+          tempDir,
+          'agent',
+          'sl',
+          'query',
+          '--json',
+          '--connection-id',
+          'warehouse',
+          '--query-file',
+          '/tmp/query.json',
+          '--no-input',
+        ],
+        neverIo.io,
+        { agent },
+      ),
+    ).resolves.toBe(0);
+
+    await expect(
+      runKtxCli(
+        [
+          '--project-dir',
+          tempDir,
+          'agent',
+          'sl',
+          'query',
+          '--json',
+          '--connection-id',
+          'warehouse',
+          '--query-file',
+          '/tmp/query.json',
+          '--yes',
+          '--no-input',
+        ],
+        conflictIo.io,
+        { agent },
+      ),
+    ).resolves.toBe(1);
+
+    expect(agent).toHaveBeenNthCalledWith(
+      1,
+      {
+        command: 'sl-query',
+        projectDir: tempDir,
+        json: true,
+        connectionId: 'warehouse',
+        queryFile: '/tmp/query.json',
+        execute: false,
+        cliVersion: '0.0.0-private',
+        runtimeInstallPolicy: 'auto',
+      },
+      autoIo.io,
+    );
+    expect(agent).toHaveBeenNthCalledWith(
+      2,
+      {
+        command: 'sl-query',
+        projectDir: tempDir,
+        json: true,
+        connectionId: 'warehouse',
+        queryFile: '/tmp/query.json',
+        execute: false,
+        cliVersion: '0.0.0-private',
+        runtimeInstallPolicy: 'never',
+      },
+      neverIo.io,
+    );
+    expect(conflictIo.stderr()).toContain('Choose only one runtime install mode: --yes or --no-input');
   });
 
   it('prints semantic-layer hybrid search metadata from the hidden agent sl list command', async () => {
@@ -1797,9 +2117,46 @@ describe('runKtxCli', () => {
         detectRelationships: false,
         dryRun: false,
         databaseIntrospectionUrl: undefined,
+        cliVersion: '0.0.0-private',
+        runtimeInstallPolicy: 'prompt',
       },
       testIo.io,
     );
+  });
+
+  it('routes scan managed runtime install policies', async () => {
+    const autoIo = makeIo();
+    const neverIo = makeIo();
+    const conflictIo = makeIo();
+    const scan = vi.fn().mockResolvedValue(0);
+
+    await expect(runKtxCli(['--project-dir', tempDir, 'dev', 'scan', 'warehouse', '--yes'], autoIo.io, { scan }))
+      .resolves.toBe(0);
+    await expect(runKtxCli(['--project-dir', tempDir, 'dev', 'scan', 'warehouse', '--no-input'], neverIo.io, { scan }))
+      .resolves.toBe(0);
+    await expect(
+      runKtxCli(['--project-dir', tempDir, 'dev', 'scan', 'warehouse', '--yes', '--no-input'], conflictIo.io, {
+        scan,
+      }),
+    ).resolves.toBe(1);
+
+    expect(scan).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        command: 'run',
+        runtimeInstallPolicy: 'auto',
+      }),
+      autoIo.io,
+    );
+    expect(scan).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        command: 'run',
+        runtimeInstallPolicy: 'never',
+      }),
+      neverIo.io,
+    );
+    expect(conflictIo.stderr()).toContain('Choose only one runtime install mode: --yes or --no-input');
   });
 
   it('dispatches serve public command options through Commander', async () => {
@@ -1836,8 +2193,63 @@ describe('runKtxCli', () => {
       executeQueries: true,
       memoryCapture: true,
       memoryModel: 'openai/gpt-5.2',
+      cliVersion: '0.0.0-private',
+      runtimeInstallPolicy: 'prompt',
     });
     expect(serveIo.stderr()).toBe('');
+  });
+
+  it('routes serve managed runtime install policies', async () => {
+    const autoIo = makeIo();
+    const neverIo = makeIo();
+    const conflictIo = makeIo();
+    const serveStdio = vi.fn(async () => 0);
+
+    await expect(
+      runKtxCli(['serve', '--mcp', 'stdio', '--project-dir', tempDir, '--semantic-compute', '--yes'], autoIo.io, {
+        serveStdio,
+      }),
+    ).resolves.toBe(0);
+    await expect(
+      runKtxCli(['serve', '--mcp', 'stdio', '--project-dir', tempDir, '--semantic-compute', '--no-input'], neverIo.io, {
+        serveStdio,
+      }),
+    ).resolves.toBe(0);
+    await expect(
+      runKtxCli(
+        ['serve', '--mcp', 'stdio', '--project-dir', tempDir, '--semantic-compute', '--yes', '--no-input'],
+        conflictIo.io,
+        { serveStdio },
+      ),
+    ).resolves.toBe(1);
+
+    expect(serveStdio).toHaveBeenNthCalledWith(1, {
+      mcp: 'stdio',
+      projectDir: tempDir,
+      userId: 'local',
+      semanticCompute: true,
+      semanticComputeUrl: undefined,
+      databaseIntrospectionUrl: undefined,
+      executeQueries: false,
+      memoryCapture: false,
+      memoryModel: undefined,
+      cliVersion: '0.0.0-private',
+      runtimeInstallPolicy: 'auto',
+    });
+    expect(serveStdio).toHaveBeenNthCalledWith(2, {
+      mcp: 'stdio',
+      projectDir: tempDir,
+      userId: 'local',
+      semanticCompute: true,
+      semanticComputeUrl: undefined,
+      databaseIntrospectionUrl: undefined,
+      executeQueries: false,
+      memoryCapture: false,
+      memoryModel: undefined,
+      cliVersion: '0.0.0-private',
+      runtimeInstallPolicy: 'never',
+    });
+    expect(conflictIo.stderr()).toContain('Choose only one runtime install mode: --yes or --no-input');
   });
 
   it('prints dev help for bare dev commands', async () => {

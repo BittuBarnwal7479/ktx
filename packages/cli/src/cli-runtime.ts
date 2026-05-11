@@ -1,3 +1,5 @@
+import { createRequire } from 'node:module';
+
 import type { KtxConnectionMetabaseSetupArgs } from './commands/connection-metabase-setup.js';
 import type { KtxConnectionNotionArgs } from './commands/connection-notion.js';
 import type { KtxAgentArgs } from './agent.js';
@@ -7,6 +9,7 @@ import type { KtxDoctorArgs } from './doctor.js';
 import type { KtxIngestArgs } from './ingest.js';
 import type { KtxKnowledgeArgs } from './knowledge.js';
 import type { KtxPublicIngestArgs } from './public-ingest.js';
+import type { KtxRuntimeArgs } from './runtime.js';
 import type { KtxScanArgs } from './scan.js';
 import type { KtxServeArgs } from './serve.js';
 import type { KtxSetupArgs } from './setup.js';
@@ -15,9 +18,11 @@ import { profileMark, profileSpan } from './startup-profile.js';
 
 profileMark('module:cli-runtime');
 
+const requirePackageJson = createRequire(import.meta.url);
+
 export interface KtxCliPackageInfo {
-  name: '@ktx/cli';
-  version: '0.0.0-private';
+  name: string;
+  version: string;
   contextPackageName: '@ktx/context';
 }
 
@@ -37,15 +42,31 @@ export interface KtxCliDeps {
   doctor?: (args: KtxDoctorArgs, io: KtxCliIo) => Promise<number>;
   ingest?: (args: KtxIngestArgs, io: KtxCliIo) => Promise<number>;
   publicIngest?: (args: KtxPublicIngestArgs, io: KtxCliIo) => Promise<number>;
+  runtime?: (args: KtxRuntimeArgs, io: KtxCliIo) => Promise<number>;
   scan?: (args: KtxScanArgs, io: KtxCliIo) => Promise<number>;
   knowledge?: (args: KtxKnowledgeArgs, io: KtxCliIo) => Promise<number>;
   sl?: (args: KtxSlArgs, io: KtxCliIo) => Promise<number>;
 }
 
 export function getKtxCliPackageInfo(): KtxCliPackageInfo {
+  return packageInfoFromJson(requirePackageJson('../package.json'));
+}
+
+export function packageInfoFromJson(packageJson: unknown): KtxCliPackageInfo {
+  if (
+    typeof packageJson !== 'object' ||
+    packageJson === null ||
+    !('name' in packageJson) ||
+    !('version' in packageJson) ||
+    typeof packageJson.name !== 'string' ||
+    typeof packageJson.version !== 'string'
+  ) {
+    throw new Error('Invalid KTX CLI package metadata');
+  }
+
   return {
-    name: '@ktx/cli',
-    version: '0.0.0-private',
+    name: packageJson.name,
+    version: packageJson.version,
     contextPackageName: '@ktx/context',
   };
 }

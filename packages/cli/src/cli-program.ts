@@ -4,6 +4,7 @@ import { registerAgentCommands } from './commands/agent-commands.js';
 import { registerConnectionCommands } from './commands/connection-commands.js';
 import { registerWikiCommands } from './commands/knowledge-commands.js';
 import { registerPublicIngestCommands } from './commands/public-ingest-commands.js';
+import { registerRuntimeCommands } from './commands/runtime-commands.js';
 import { registerServeCommands } from './commands/serve-commands.js';
 import { registerSetupCommands } from './commands/setup-commands.js';
 import { registerSlCommands } from './commands/sl-commands.js';
@@ -17,6 +18,7 @@ profileMark('module:cli-program');
 export interface KtxCliCommandContext {
   io: KtxCliIo;
   deps: KtxCliDeps;
+  packageInfo: KtxCliPackageInfo;
   setExitCode: (code: number) => void;
   runInit: (args: { projectDir: string; projectName?: string; force: boolean }, io: KtxCliIo) => Promise<number>;
   writeDebug?: (command: string, commandContext: CommandWithGlobalOptions) => void;
@@ -177,6 +179,7 @@ async function runBareInteractiveCommand(
         skipAgents: false,
         inputMode: 'auto',
         yes: false,
+        cliVersion: context.packageInfo.version,
         skipLlm: false,
         skipEmbeddings: false,
         databaseSchemas: [],
@@ -205,6 +208,7 @@ export async function runCommanderKtxCli(
   const context: KtxCliCommandContext = {
     io,
     deps,
+    packageInfo: info,
     setExitCode: (code: number) => {
       exitCode = code;
     },
@@ -228,6 +232,9 @@ export async function runCommanderKtxCli(
 
   registerSlCommands(program, context);
   profileMark('commander:register-sl');
+
+  registerRuntimeCommands(program, context);
+  profileMark('commander:register-runtime');
 
   registerServeCommands(program, context);
   profileMark('commander:register-serve');

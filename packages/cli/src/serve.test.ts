@@ -6,6 +6,19 @@ import { initKtxProject } from '@ktx/context/project';
 import { describe, expect, it, vi } from 'vitest';
 import { runKtxServeStdio } from './serve.js';
 
+function makeManagedRuntimeIo() {
+  let stdout = '';
+  let stderr = '';
+  return {
+    io: {
+      stdout: { write: (chunk: string) => (stdout += chunk) },
+      stderr: { write: (chunk: string) => (stderr += chunk) },
+    },
+    stdout: () => stdout,
+    stderr: () => stderr,
+  };
+}
+
 describe('runKtxServeStdio', () => {
   it('loads the project, creates local ports, and connects the server to stdio', async () => {
     const connect = vi.fn().mockResolvedValue(undefined);
@@ -149,6 +162,9 @@ describe('runKtxServeStdio', () => {
       expect.objectContaining({
         localIngest: expect.objectContaining({
           adapters: expect.any(Array),
+          pullConfigOptions: {
+            databaseIntrospectionUrl: 'http://127.0.0.1:8765',
+          },
         }),
         localScan: expect.objectContaining({
           adapters: createdAdapters,
@@ -159,6 +175,63 @@ describe('runKtxServeStdio', () => {
     expect(createIngestAdapters).toHaveBeenCalledWith(project, {
       databaseIntrospectionUrl: 'http://127.0.0.1:8765',
     });
+  });
+
+  it('passes managed daemon options to MCP local ingest adapters and pull-config options', async () => {
+    const project = { projectDir: '/tmp/ktx-project', config: { connections: {} } } as never;
+    const adapters: SourceAdapter[] = [
+      { source: 'looker', skillNames: [], detect: async () => true, chunk: async () => ({ workUnits: [] }) },
+    ];
+    const createIngestAdapters = vi.fn(() => adapters);
+    const createContextTools = vi.fn(() => ({ connections: { list: async () => [] } }));
+    const managedRuntimeIo = makeManagedRuntimeIo();
+
+    await expect(
+      runKtxServeStdio(
+        {
+          mcp: 'stdio',
+          projectDir: '/tmp/ktx-project',
+          userId: 'agent',
+          semanticCompute: false,
+          semanticComputeUrl: undefined,
+          databaseIntrospectionUrl: undefined,
+          executeQueries: false,
+          memoryCapture: false,
+          memoryModel: undefined,
+          cliVersion: '0.2.0',
+          runtimeInstallPolicy: 'auto',
+        },
+        {
+          loadProject: async () => project,
+          createContextTools,
+          createIngestAdapters,
+          managedRuntimeIo: managedRuntimeIo.io,
+          createServer: vi.fn(() => ({ connect: vi.fn(async () => undefined) }) as never),
+          createTransport: vi.fn(() => ({}) as never),
+          stderr: { write: vi.fn() },
+        },
+      ),
+    ).resolves.toBe(0);
+
+    const expectedManagedDaemon = {
+      cliVersion: '0.2.0',
+      installPolicy: 'auto',
+      io: managedRuntimeIo.io,
+    };
+    expect(createIngestAdapters).toHaveBeenCalledWith(project, {
+      managedDaemon: expectedManagedDaemon,
+    });
+    expect(createContextTools).toHaveBeenCalledWith(
+      project,
+      expect.objectContaining({
+        localIngest: expect.objectContaining({
+          adapters,
+          pullConfigOptions: {
+            managedDaemon: expectedManagedDaemon,
+          },
+        }),
+      }),
+    );
   });
 
   it('uses CLI-native local ingest adapters for standalone scan tools', async () => {
@@ -239,6 +312,53 @@ describe('runKtxServeStdio', () => {
     } finally {
       await rm(tempDir, { recursive: true, force: true });
     }
+  });
+
+  it('uses managed semantic compute when MCP semantic compute has no explicit HTTP URL', async () => {
+    const project = { projectDir: '/tmp/ktx-project', config: { connections: {} } } as never;
+    const semanticLayerCompute = { query: vi.fn(), validateSources: vi.fn(), generateSources: vi.fn() };
+    const createManagedSemanticLayerCompute = vi.fn(async () => semanticLayerCompute);
+    const createContextTools = vi.fn(() => ({ connections: { list: async () => [] } }));
+    const managedRuntimeIo = makeManagedRuntimeIo();
+
+    await expect(
+      runKtxServeStdio(
+        {
+          mcp: 'stdio',
+          projectDir: '/tmp/ktx-project',
+          userId: 'agent',
+          semanticCompute: true,
+          semanticComputeUrl: undefined,
+          databaseIntrospectionUrl: undefined,
+          executeQueries: false,
+          memoryCapture: false,
+          memoryModel: undefined,
+          cliVersion: '0.2.0',
+          runtimeInstallPolicy: 'auto',
+        },
+        {
+          loadProject: async () => project,
+          createContextTools,
+          createManagedSemanticLayerCompute,
+          managedRuntimeIo: managedRuntimeIo.io,
+          createServer: vi.fn(() => ({ connect: vi.fn(async () => undefined) }) as never),
+          createTransport: vi.fn(() => ({}) as never),
+          stderr: { write: vi.fn() },
+        },
+      ),
+    ).resolves.toBe(0);
+
+    expect(createManagedSemanticLayerCompute).toHaveBeenCalledWith({
+      cliVersion: '0.2.0',
+      installPolicy: 'auto',
+      io: managedRuntimeIo.io,
+    });
+    expect(createContextTools).toHaveBeenCalledWith(
+      project,
+      expect.objectContaining({
+        semanticLayerCompute,
+      }),
+    );
   });
 
   it('uses the HTTP semantic compute port when a daemon URL is provided', async () => {
