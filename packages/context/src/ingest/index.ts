@@ -367,7 +367,6 @@ export type {
   KtxPostgresQueryClient,
   PostgresPgssAggregateRow,
   PostgresPgssProbeResult,
-  PostgresPgssReader,
   PostgresPgssRow,
   PostgresPgssSnapshot,
   StagedManifest,

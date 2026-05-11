@@ -50,7 +50,7 @@ export const historicSqlUnifiedPullConfigSchema = z.preprocess((value) => {
       errorRate: z.number().min(0).max(1),
       executions: z.number().int().nonnegative(),
     }).optional(),
-  }).default({}),
+  }).default({ dropTrivialProbes: true }),
   redactionPatterns: z.array(z.string()).default([]),
   staleArchiveAfterDays: z.number().int().positive().default(90),
 }));

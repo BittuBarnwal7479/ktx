@@ -152,14 +152,14 @@ function addTemplate(acc: TableAccumulator, parsed: ParsedTemplate): void {
 
 function toStagedTable(acc: TableAccumulator, now: Date): StagedTableInput {
   const errorRate = acc.executions > 0 ? acc.errorRateNumerator / acc.executions : 0;
-  const columnsByClause = Object.fromEntries(
+  const columnsByClause: Record<string, Array<[string, string]>> = Object.fromEntries(
     [...acc.columnsByClause.entries()]
       .sort(([left], [right]) => left.localeCompare(right))
       .map(([clause, counts]) => [
         clause,
         [...counts.entries()]
           .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
-          .map(([column, count]) => [column, bucketFrequency(count, acc.executions)]),
+          .map(([column, count]) => [column, bucketFrequency(count, acc.executions)] as [string, string]),
       ]),
   );
   const observedJoins = [...acc.observedJoins.entries()]
