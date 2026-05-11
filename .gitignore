@@ -50,9 +50,9 @@ yarn-error.log*
 !packages/context/test/fixtures/relationship-benchmarks/**/data.sqlite
 
 # Private local agent overlays
-.agents/
-.claude/
-.superpowers/
+.agents
+.claude
+.superpowers
 
 # Editors and OS files
 .idea/
