@@ -10,6 +10,11 @@ import {
   bucketRecency,
 } from './buckets.js';
 import {
+  compileHistoricSqlRedactionPatterns,
+  redactHistoricSqlText,
+  type HistoricSqlRedactionPattern,
+} from './redaction.js';
+import {
   HISTORIC_SQL_SOURCE_KEY,
   aggregatedTemplateSchema,
   historicSqlUnifiedPullConfigSchema,
@@ -95,6 +100,19 @@ function shouldDropTemplate(template: AggregatedTemplate, config: HistoricSqlUni
   if (shouldDropByUsers(template, config)) return true;
   if (shouldDropByFailure(template, config)) return true;
   return false;
+}
+
+function redactTemplateSql(
+  template: AggregatedTemplate,
+  redactors: readonly HistoricSqlRedactionPattern[],
+): AggregatedTemplate {
+  if (redactors.length === 0) {
+    return template;
+  }
+  return {
+    ...template,
+    canonicalSql: redactHistoricSqlText(template.canonicalSql, redactors),
+  };
 }
 
 function recordColumn(acc: TableAccumulator, clause: string, column: string, executions: number): void {
@@ -212,6 +230,7 @@ function toPatternsInput(parsedTemplates: ParsedTemplate[]): StagedPatternsInput
 
 export async function stageHistoricSqlAggregatedSnapshot(input: StageHistoricSqlAggregatedSnapshotInput): Promise<void> {
   const config = historicSqlUnifiedPullConfigSchema.parse(input.pullConfig);
+  const redactors = compileHistoricSqlRedactionPatterns(config.redactionPatterns);
   const now = input.now ?? new Date();
   const windowStart = new Date(now.getTime() - config.windowDays * 24 * 60 * 60 * 1000);
   const probe = await input.reader.probe(input.queryClient);
@@ -243,7 +262,7 @@ export async function stageHistoricSqlAggregatedSnapshot(input: StageHistoricSql
       continue;
     }
     parsedTemplates.push({
-      template,
+      template: redactTemplateSql(template, redactors),
       tablesTouched,
       columnsByClause: Object.fromEntries(
         Object.entries(parsed.columnsByClause).map(([clause, columns]) => [clause, [...new Set(columns)].sort()]),

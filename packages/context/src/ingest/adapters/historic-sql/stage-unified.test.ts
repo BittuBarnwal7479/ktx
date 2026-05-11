@@ -165,4 +165,75 @@ describe('stageHistoricSqlAggregatedSnapshot', () => {
       },
     ]);
   });
+
+  it('redacts configured SQL substrings in staged artifacts while analyzing original SQL', async () => {
+    const stagedDir = await tempDir();
+    const originalSql =
+      "select * from public.api_events where api_key = 'sk_live_abc123' and note = 'Secret_Token_9f'";
+    const reader: HistoricSqlReader = {
+      async probe() {
+        return { warnings: [], info: [] };
+      },
+      async *fetchAggregated() {
+        yield aggregate({
+          templateId: 'api-events-with-secret',
+          canonicalSql: originalSql,
+          stats: {
+            executions: 15,
+            distinctUsers: 2,
+            firstSeen: '2026-05-01T00:00:00.000Z',
+            lastSeen: '2026-05-11T00:00:00.000Z',
+            p50RuntimeMs: 12,
+            p95RuntimeMs: 25,
+            errorRate: 0,
+            rowsProduced: 15,
+          },
+        });
+      },
+    };
+    const sqlAnalysis: SqlAnalysisPort = {
+      analyzeForFingerprint: vi.fn(),
+      analyzeBatch: vi.fn(async () => new Map([
+        [
+          'api-events-with-secret',
+          {
+            tablesTouched: ['public.api_events'],
+            columnsByClause: {
+              select: [],
+              where: ['api_key', 'note'],
+              join: [],
+              groupBy: [],
+            },
+          },
+        ],
+      ])),
+    };
+
+    await stageHistoricSqlAggregatedSnapshot({
+      stagedDir,
+      connectionId: 'warehouse',
+      queryClient: {},
+      reader,
+      sqlAnalysis,
+      pullConfig: {
+        dialect: 'postgres',
+        redactionPatterns: ['sk_live_[A-Za-z0-9]+', '(?i)secret_token_[a-z0-9]+'],
+      },
+      now: new Date('2026-05-11T12:00:00.000Z'),
+    });
+
+    expect(sqlAnalysis.analyzeBatch).toHaveBeenCalledWith(
+      [{ id: 'api-events-with-secret', sql: originalSql }],
+      'postgres',
+    );
+
+    const tableJson = await readFile(join(stagedDir, 'tables/public.api_events.json'), 'utf-8');
+    const patternsJson = await readFile(join(stagedDir, 'patterns-input.json'), 'utf-8');
+    expect(tableJson).not.toContain('sk_live_abc123');
+    expect(tableJson).not.toContain('Secret_Token_9f');
+    expect(patternsJson).not.toContain('sk_live_abc123');
+    expect(patternsJson).not.toContain('Secret_Token_9f');
+    expect(tableJson).toContain('[REDACTED]');
+    expect(patternsJson).toContain('[REDACTED]');
+  });
 });
