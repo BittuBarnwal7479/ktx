@@ -93,7 +93,7 @@ describe('standalone example docs', () => {
     assert.match(smoke, /assertPatternShards/);
     assert.match(smoke, /historic-sql-patterns-part-/);
     assert.match(smoke, /patterns-input\/part-/);
-    assert.doesNotMatch(smoke, /unitKey === 'historic-sql-patterns'/);
+    assert.doesNotMatch(smoke, new RegExp(["unitKey === 'historic", 'sql', "patterns'"].join('-')));
     assert.match(smoke, /--historic-sql-min-executions 2/);
     assert.match(smoke, /KTX_RUNTIME_ROOT/);
     assert.match(smoke, /managedDaemon/);
