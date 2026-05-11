@@ -347,10 +347,10 @@ describe('setup status', () => {
       expect(labels).toEqual([
         'Set up KTX for my data',
         'Check setup status',
-        'Try KTX with packaged demo data',
+        'Explore a pre-built KTX project',
         'Exit',
       ]);
-      expect(labels.indexOf('Try KTX with packaged demo data')).toBe(labels.length - 2);
+      expect(labels.indexOf('Explore a pre-built KTX project')).toBe(labels.length - 2);
       return 'exit';
     });
     const cancel = vi.fn();
@@ -396,7 +396,7 @@ describe('setup status', () => {
         'Create a new KTX project',
         'Connect a coding agent to KTX',
         'Check setup status',
-        'Try KTX with packaged demo data',
+        'Explore a pre-built KTX project',
         'Exit',
       ]);
       return 'exit';

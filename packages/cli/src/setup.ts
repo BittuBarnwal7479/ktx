@@ -198,13 +198,13 @@ async function runKtxSetupEntryMenu(
         { value: 'new-project', label: 'Create a new KTX project' },
         { value: 'agents', label: 'Connect a coding agent to KTX' },
         { value: 'status', label: 'Check setup status' },
-        { value: 'demo', label: 'Try KTX with packaged demo data' },
+        { value: 'demo', label: 'Explore a pre-built KTX project' },
         { value: 'exit', label: 'Exit' },
       ]
     : [
         { value: 'setup', label: 'Set up KTX for my data' },
         { value: 'status', label: 'Check setup status' },
-        { value: 'demo', label: 'Try KTX with packaged demo data' },
+        { value: 'demo', label: 'Explore a pre-built KTX project' },
         { value: 'exit', label: 'Exit' },
       ];
   const action = (await prompts.select({
