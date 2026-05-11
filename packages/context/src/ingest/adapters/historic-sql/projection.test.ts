@@ -291,4 +291,82 @@ describe('projectHistoricSqlEvidence', () => {
       code: 'ENOENT',
     });
   });
+
+  it('marks missing table usage stale and deletes legacy historic SQL query pages', async () => {
+    const workdir = await tempWorkdir();
+    await writeText(
+      workdir,
+      'semantic-layer/warehouse/_schema/public.yaml',
+      YAML.stringify({
+        tables: {
+          orders: {
+            table: 'public.orders',
+            usage: {
+              narrative: 'Orders were active before.',
+              frequencyTier: 'high',
+              commonFilters: ['status'],
+              commonGroupBys: ['status'],
+              commonJoins: [{ table: 'public.customers', on: ['customer_id'] }],
+              ownerNote: 'keep analyst annotation',
+            },
+            columns: [{ name: 'id', type: 'string' }],
+          },
+        },
+      }),
+    );
+    await writeJson(workdir, 'raw-sources/warehouse/historic-sql/sync-1/manifest.json', {
+      source: 'historic-sql',
+      connectionId: 'warehouse',
+      dialect: 'postgres',
+      fetchedAt: '2026-05-11T00:00:00.000Z',
+      windowStart: '2026-02-10T00:00:00.000Z',
+      windowEnd: '2026-05-11T00:00:00.000Z',
+      snapshotRowCount: 0,
+      touchedTableCount: 0,
+      parseFailures: 0,
+      warnings: [],
+      probeWarnings: [],
+      staleArchiveAfterDays: 90,
+    });
+    await writeText(
+      workdir,
+      'knowledge/global/historic-sql/legacy-template.md',
+      [
+        '---',
+        YAML.stringify({
+          summary: 'Legacy template page',
+          tags: ['historic-sql', 'query-pattern'],
+          refs: [],
+          sl_refs: ['orders'],
+          usage_mode: 'auto',
+          source: 'historic-sql',
+          tables: ['public.orders'],
+          fingerprints: ['legacy:1'],
+        }).trimEnd(),
+        '---',
+        '',
+        'Legacy body',
+        '',
+      ].join('\n'),
+    );
+
+    const result = await projectHistoricSqlEvidence({ workdir, connectionId: 'warehouse', syncId: 'sync-1', runId: 'run-1' });
+
+    expect(result.staleTablesMarked).toBe(1);
+    expect(result.legacyPagesDeleted).toBe(1);
+    expect(result.touchedSources).toEqual([{ connectionId: 'warehouse', sourceName: 'orders' }]);
+    const shard = YAML.parse(await readFile(join(workdir, 'semantic-layer/warehouse/_schema/public.yaml'), 'utf-8'));
+    expect(shard.tables.orders.usage).toEqual({
+      ownerNote: 'keep analyst annotation',
+      narrative: 'No recent historic SQL usage was observed in the latest snapshot.',
+      frequencyTier: 'unused',
+      commonFilters: [],
+      commonGroupBys: [],
+      commonJoins: [],
+      staleSince: '2026-05-11T00:00:00.000Z',
+    });
+    await expect(readFile(join(workdir, 'knowledge/global/historic-sql/legacy-template.md'), 'utf-8')).rejects.toMatchObject({
+      code: 'ENOENT',
+    });
+  });
 });
