@@ -79,9 +79,6 @@ importers:
       '@ktx/connector-postgres':
         specifier: workspace:*
         version: file:packages/connector-postgres(js-yaml@4.1.1)(ws@8.20.0)
-      '@ktx/connector-posthog':
-        specifier: workspace:*
-        version: file:packages/connector-posthog(js-yaml@4.1.1)(ws@8.20.0)
       '@ktx/connector-snowflake':
         specifier: workspace:*
         version: file:packages/connector-snowflake(asn1.js@5.4.1)(js-yaml@4.1.1)(ws@8.20.0)
@@ -207,22 +204,6 @@ importers:
       '@types/pg':
         specifier: ^8.16.0
         version: 8.20.0
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-      vitest:
-        specifier: ^4.0.18
-        version: 4.1.5(@opentelemetry/api@1.9.0)(@types/node@24.12.2)(vite@8.0.10(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.7.0)(yaml@2.8.3))
-
-  packages/connector-posthog:
-    dependencies:
-      '@ktx/context':
-        specifier: workspace:*
-        version: file:packages/context(js-yaml@4.1.1)
-    devDependencies:
-      '@types/node':
-        specifier: ^24.3.0
-        version: 24.12.2
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
@@ -1282,10 +1263,6 @@ packages:
 
   '@ktx/connector-postgres@file:packages/connector-postgres':
     resolution: {directory: packages/connector-postgres, type: directory}
-    engines: {node: '>=22.0.0'}
-
-  '@ktx/connector-posthog@file:packages/connector-posthog':
-    resolution: {directory: packages/connector-posthog, type: directory}
     engines: {node: '>=22.0.0'}
 
   '@ktx/connector-snowflake@file:packages/connector-snowflake':
@@ -5822,16 +5799,6 @@ snapshots:
     dependencies:
       '@ktx/context': file:packages/context(js-yaml@4.1.1)(ws@8.20.0)
       pg: 8.20.0
-    transitivePeerDependencies:
-      - '@cfworker/json-schema'
-      - js-yaml
-      - pg-native
-      - supports-color
-      - ws
-
-  '@ktx/connector-posthog@file:packages/connector-posthog(js-yaml@4.1.1)(ws@8.20.0)':
-    dependencies:
-      '@ktx/context': file:packages/context(js-yaml@4.1.1)(ws@8.20.0)
     transitivePeerDependencies:
       - '@cfworker/json-schema'
       - js-yaml
