@@ -277,5 +277,6 @@ export async function stageHistoricSqlAggregatedSnapshot(input: StageHistoricSql
     parseFailures: warnings.filter((warning) => warning.startsWith('parse_failed:')).length,
     warnings,
     probeWarnings: probe.warnings,
+    staleArchiveAfterDays: config.staleArchiveAfterDays,
   });
 }

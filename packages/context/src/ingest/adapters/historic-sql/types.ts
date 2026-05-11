@@ -125,6 +125,7 @@ export const stagedManifestSchema = z.object({
   parseFailures: z.number().int().nonnegative(),
   warnings: z.array(z.string()),
   probeWarnings: z.array(z.string()),
+  staleArchiveAfterDays: z.number().int().positive().default(90),
 });
 export type StagedManifest = z.infer<typeof stagedManifestSchema>;
 

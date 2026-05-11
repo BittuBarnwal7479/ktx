@@ -124,6 +124,7 @@ describe('stageHistoricSqlAggregatedSnapshot', () => {
       parseFailures: 1,
       warnings: ['parse_failed:bad-parse'],
       probeWarnings: ['pg_stat_statements.max is low; aggregation still proceeds'],
+      staleArchiveAfterDays: 90,
     });
 
     const orders = await readJson<Record<string, any>>(stagedDir, 'tables/public.orders.json');

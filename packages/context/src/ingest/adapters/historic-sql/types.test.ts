@@ -91,7 +91,8 @@ describe('historic-sql unified contracts', () => {
         parseFailures: 1,
         warnings: ['parse_failed:bad'],
         probeWarnings: [],
-      }).parseFailures,
-    ).toBe(1);
+        staleArchiveAfterDays: 90,
+      }).staleArchiveAfterDays,
+    ).toBe(90);
   });
 });
