@@ -22,7 +22,7 @@ importers:
         specifier: ^4.0.18
         version: 4.1.5(@opentelemetry/api@1.9.0)(@types/node@24.12.2)(vite@8.0.10(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.7.0)(yaml@2.8.3))
 
-  docs:
+  docs-site:
     dependencies:
       fumadocs-core:
         specifier: 15.7.13
