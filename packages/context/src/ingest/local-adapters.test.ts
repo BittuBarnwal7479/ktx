@@ -92,6 +92,9 @@ describe('local ingest adapters', () => {
           literalSlots: [],
         };
       },
+      async analyzeBatch() {
+        return new Map();
+      },
     };
     const adapters = createDefaultLocalIngestAdapters(project, {
       historicSql: {
@@ -120,6 +123,9 @@ describe('local ingest adapters', () => {
               tablesTouched: ['public.orders'],
               literalSlots: [],
             };
+          },
+          async analyzeBatch() {
+            return new Map();
           },
         },
         postgresQueryClient: {
@@ -165,6 +171,9 @@ describe('local ingest adapters', () => {
               tablesTouched: [],
               literalSlots: [],
             };
+          },
+          async analyzeBatch() {
+            return new Map();
           },
         },
         postgresQueryClient: {

@@ -89,6 +89,9 @@ const sqlAnalysis: SqlAnalysisPort = {
       literalSlots: [],
     };
   },
+  async analyzeBatch() {
+    return new Map();
+  },
 };
 
 function postgresPullConfig(maxTemplatesPerRun = 5000) {

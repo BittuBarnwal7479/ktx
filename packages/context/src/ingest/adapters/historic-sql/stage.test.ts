@@ -51,6 +51,9 @@ const fakeSqlAnalysis: SqlAnalysisPort = {
       literalSlots: [{ position: 1, type: 'string', exampleValue: 'complete' }],
     };
   },
+  async analyzeBatch() {
+    return new Map();
+  },
 };
 
 const categoricalSqlAnalysis: SqlAnalysisPort = {
@@ -62,6 +65,9 @@ const categoricalSqlAnalysis: SqlAnalysisPort = {
       tablesTouched: ['analytics.orders'],
       literalSlots: [{ position: 1, type: 'string', exampleValue: status }],
     };
+  },
+  async analyzeBatch() {
+    return new Map();
   },
 };
 
@@ -146,6 +152,9 @@ const diverseSqlAnalysis: SqlAnalysisPort = {
       literalSlots: [{ position: 1, type: 'string', exampleValue: value }],
     };
   },
+  async analyzeBatch() {
+    return new Map();
+  },
 };
 
 const classificationMatrixSqlAnalysis: SqlAnalysisPort = {
@@ -176,6 +185,9 @@ const classificationMatrixSqlAnalysis: SqlAnalysisPort = {
         { position: 5, type: 'date', exampleValue: asOf },
       ],
     };
+  },
+  async analyzeBatch() {
+    return new Map();
   },
 };
 
@@ -699,6 +711,9 @@ describe('stageHistoricSqlTemplates', () => {
           literalSlots: [],
         };
       },
+      async analyzeBatch() {
+        return new Map();
+      },
     };
 
     await stageHistoricSqlTemplates({
@@ -774,6 +789,9 @@ describe('stageHistoricSqlTemplates', () => {
             tablesTouched: ['analytics.orders'],
             literalSlots: [{ position: 1, type: 'string', exampleValue: 'analyst@example.com' }],
           };
+        },
+        async analyzeBatch() {
+          return new Map();
         },
       },
       pullConfig: {

@@ -26,6 +26,9 @@ const sqlAnalysis: SqlAnalysisPort = {
       literalSlots: [{ position: 1, type: 'string', exampleValue: 'paid' }],
     };
   },
+  async analyzeBatch() {
+    return new Map();
+  },
 };
 
 const reader: HistoricSqlQueryHistoryReader = {

@@ -83,6 +83,9 @@ function fixtureSqlAnalysis(fixture: GoldenFixture): SqlAnalysisPort {
       }
       return result;
     },
+    async analyzeBatch() {
+      return new Map();
+    },
   };
 }
 
