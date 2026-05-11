@@ -82,63 +82,39 @@ resolve_uv_for_project() {
   printf '%s\n' "$workspace_uv"
 }
 
-link_agent_overlays() {
-  if [ -z "${KTX_AGENT_OVERLAYS_ROOT:-}" ] || [ ! -d "${KTX_AGENT_OVERLAYS_ROOT}/.agents" ]; then
+link_shared_path() {
+  local source_path="$1"
+  local link_path="$2"
+
+  if [ ! -e "$source_path" ] && [ ! -L "$source_path" ]; then
+    return 1
+  fi
+
+  if [ -L "$link_path" ]; then
+    ln -sfn "$source_path" "$link_path"
+    echo "Linked $link_path"
     return 0
   fi
 
-  if [ -L .agents ]; then
-    return 0
+  if [ -e "$link_path" ]; then
+    echo "Skipping $link_path symlink because $link_path already exists and is not a symlink." >&2
+    return 1
   fi
 
-  if [ -e .agents ]; then
-    echo "Skipping .agents symlink because .agents already exists and is not a symlink." >&2
-    return 0
-  fi
-
-  ln -s "${KTX_AGENT_OVERLAYS_ROOT}/.agents" .agents
+  ln -s "$source_path" "$link_path"
+  echo "Linked $link_path"
 }
 
-# Expose .agents/skills/* to Claude Code by symlinking each entry under
-# .claude/skills/. Codex CLI reads .agents/skills/ directly; Claude Code only
-# scans .claude/skills/, so the overlay needs both sides to be visible to both
-# tools.
-link_agent_skills_for_claude() {
-  if [ ! -d .agents/skills ]; then
-    return 0
+link_agent_overlays() {
+  if [ -n "${CONDUCTOR_ROOT_PATH:-}" ]; then
+    link_shared_path "$CONDUCTOR_ROOT_PATH/.agents" .agents || true
+    link_shared_path "$CONDUCTOR_ROOT_PATH/.claude" .claude || true
   fi
-
-  mkdir -p .claude/skills
-
-  for skill_path in .agents/skills/*; do
-    [ -e "$skill_path" ] || continue
-
-    local skill_name
-    skill_name="$(basename "$skill_path")"
-    local link_path=".claude/skills/$skill_name"
-    local target="../../.agents/skills/$skill_name"
-
-    if [ -L "$link_path" ]; then
-      if [ "$(readlink "$link_path")" = "$target" ]; then
-        continue
-      fi
-      echo "Skipping $link_path: existing symlink points elsewhere." >&2
-      continue
-    fi
-
-    if [ -e "$link_path" ]; then
-      echo "Skipping $link_path: already exists and is not a symlink." >&2
-      continue
-    fi
-
-    ln -s "$target" "$link_path"
-  done
 }
 
 echo "=== Conductor KTX workspace setup ==="
 
 link_agent_overlays
-link_agent_skills_for_claude
 
 if [ -n "${CONDUCTOR_ROOT_PATH:-}" ] && [ -f "$CONDUCTOR_ROOT_PATH/.env" ]; then
   ln -sf "$CONDUCTOR_ROOT_PATH/.env" .env

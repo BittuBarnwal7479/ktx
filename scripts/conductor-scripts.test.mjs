@@ -32,11 +32,13 @@ describe('Conductor workspace scripts', () => {
     assert.doesNotMatch(setupScript, /scripts\/conductor\//);
   });
 
-  it('links private agent overlays when KTX_AGENT_OVERLAYS_ROOT is set', async () => {
+  it('links private agent overlays from the Conductor root checkout', async () => {
     const workspaceScript = await readText('scripts/conductor-setup.sh');
 
-    assert.match(workspaceScript, /KTX_AGENT_OVERLAYS_ROOT/);
-    assert.match(workspaceScript, /ln -s "\$\{KTX_AGENT_OVERLAYS_ROOT\}\/\.agents" \.agents/);
+    assert.match(workspaceScript, /link_shared_path "\$CONDUCTOR_ROOT_PATH\/\.agents" \.agents/);
+    assert.match(workspaceScript, /link_shared_path "\$CONDUCTOR_ROOT_PATH\/\.claude" \.claude/);
+    assert.doesNotMatch(workspaceScript, /KTX_AGENT_OVERLAYS_ROOT/);
+    assert.doesNotMatch(workspaceScript, /link_agent_skills_for_claude/);
   });
 
   it('runs the KTX daemon on the documented fixed local port', async () => {
