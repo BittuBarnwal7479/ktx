@@ -47,7 +47,8 @@ describe('HistoricSqlSourceAdapter', () => {
       async *fetchAggregated() {
         yield {
           templateId: 'pg:1',
-          canonicalSql: 'select status, count(*) from public.orders group by status',
+          canonicalSql:
+            'select o.status, count(*) from public.orders o join public.customers c on c.id = o.customer_id group by o.status',
           dialect: 'postgres',
           stats: {
             executions: 25,
@@ -72,8 +73,8 @@ describe('HistoricSqlSourceAdapter', () => {
           [
             'pg:1',
             {
-              tablesTouched: ['public.orders'],
-              columnsByClause: { select: ['status'], groupBy: ['status'] },
+              tablesTouched: ['public.orders', 'public.customers'],
+              columnsByClause: { select: ['status'], join: ['customer_id', 'id'], groupBy: ['status'] },
             },
           ],
         ]);
@@ -94,8 +95,9 @@ describe('HistoricSqlSourceAdapter', () => {
     await expect(adapter.detect(stagedDir)).resolves.toBe(true);
     await expect(adapter.chunk(stagedDir)).resolves.toMatchObject({
       workUnits: [
+        { unitKey: 'historic-sql-table-public-customers' },
         { unitKey: 'historic-sql-table-public-orders' },
-        { unitKey: 'historic-sql-patterns' },
+        { unitKey: 'historic-sql-patterns-part-0001' },
       ],
     });
   });
