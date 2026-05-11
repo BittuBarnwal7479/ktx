@@ -317,6 +317,7 @@ export type {
 export { NOTION_ORG_KNOWLEDGE_WARNING } from './adapters/notion/chunk.js';
 export { NotionSourceAdapter, type NotionSourceAdapterDeps } from './adapters/notion/notion.adapter.js';
 export { NotionClient, type NotionApi, type NotionBotInfo } from './adapters/notion/notion-client.js';
+export { bucketDistinctUsers, bucketErrorRate, bucketExecutions, bucketP95Runtime, bucketRecency } from './adapters/historic-sql/buckets.js';
 export { chunkHistoricSqlStagedDir, describeHistoricSqlScope } from './adapters/historic-sql/chunk.js';
 export { detectHistoricSqlStagedDir } from './adapters/historic-sql/detect.js';
 export {
