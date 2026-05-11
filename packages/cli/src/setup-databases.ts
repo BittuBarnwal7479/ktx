@@ -665,12 +665,13 @@ async function maybeApplyHistoricSqlConfig(input: {
     return { ...input.connection, historicSql: { ...existing, enabled: false, dialect } };
   }
 
-  const common = {
+  const common: Record<string, unknown> = {
     ...existing,
     enabled: true,
     dialect,
-    serviceAccountUserPatterns: input.args.historicSqlServiceAccountPatterns ?? [],
+    filters: historicSqlFiltersForSetup(input.args.historicSqlServiceAccountPatterns),
   };
+  delete common.serviceAccountUserPatterns;
 
   if (dialect === 'postgres') {
     return {
@@ -689,6 +690,21 @@ async function maybeApplyHistoricSqlConfig(input: {
       windowDays: input.args.historicSqlWindowDays ?? 90,
       redactionPatterns: input.args.historicSqlRedactionPatterns ?? [],
     },
+  };
+}
+
+function historicSqlFiltersForSetup(patterns: string[] | undefined) {
+  const serviceAccountPatterns = patterns ?? [];
+  return {
+    dropTrivialProbes: true,
+    ...(serviceAccountPatterns.length > 0
+      ? {
+          serviceAccounts: {
+            patterns: serviceAccountPatterns,
+            mode: 'exclude' as const,
+          },
+        }
+      : {}),
   };
 }
 

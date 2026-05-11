@@ -1230,10 +1230,17 @@ describe('setup databases step', () => {
         enabled: true,
         dialect: 'snowflake',
         windowDays: 30,
-        serviceAccountUserPatterns: ['^svc_'],
+        filters: {
+          dropTrivialProbes: true,
+          serviceAccounts: {
+            patterns: ['^svc_'],
+            mode: 'exclude',
+          },
+        },
         redactionPatterns: ['(?i)secret'],
       },
     });
+    expect(config.connections.snowflake.historicSql).not.toHaveProperty('serviceAccountUserPatterns');
     expect(config.ingest.adapters).toContain('historic-sql');
   });
 
@@ -1272,12 +1279,19 @@ describe('setup databases step', () => {
         enabled: true,
         dialect: 'postgres',
         minExecutions: 12,
-        serviceAccountUserPatterns: ['^svc_'],
+        filters: {
+          dropTrivialProbes: true,
+          serviceAccounts: {
+            patterns: ['^svc_'],
+            mode: 'exclude',
+          },
+        },
       },
     });
     expect(config.connections.warehouse.historicSql).not.toHaveProperty('minCalls');
     expect(config.connections.warehouse.historicSql).not.toHaveProperty('windowDays');
     expect(config.connections.warehouse.historicSql).not.toHaveProperty('redactionPatterns');
+    expect(config.connections.warehouse.historicSql).not.toHaveProperty('serviceAccountUserPatterns');
     expect(config.ingest.adapters).toContain('historic-sql');
     expect(io.stdout()).toContain('Historic SQL probe...');
     expect(io.stdout()).toContain('pg_stat_statements ready');
@@ -1324,10 +1338,13 @@ describe('setup databases step', () => {
         enabled: true,
         dialect: 'bigquery',
         windowDays: 45,
-        serviceAccountUserPatterns: [],
+        filters: {
+          dropTrivialProbes: true,
+        },
         redactionPatterns: [],
       },
     });
+    expect(config.connections.analytics.historicSql).not.toHaveProperty('serviceAccountUserPatterns');
     expect(config.ingest.adapters).toContain('historic-sql');
   });
 
@@ -1372,9 +1389,12 @@ describe('setup databases step', () => {
         enabled: true,
         dialect: 'postgres',
         minExecutions: 8,
-        serviceAccountUserPatterns: [],
+        filters: {
+          dropTrivialProbes: true,
+        },
       },
     });
+    expect(config.connections.warehouse.historicSql).not.toHaveProperty('serviceAccountUserPatterns');
   });
 
   it('prints a non-blocking Postgres Historic SQL probe failure after connection test succeeds', async () => {
