@@ -132,10 +132,11 @@ if (expectedWorkUnits === 'zero') {
 } else if (expectedWorkUnits === 'nonzero') {
   assert(record.workUnitCount > 0, `${label}: expected nonzero WorkUnits`);
   const patternUnits = record.workUnits.filter((unit) => /^historic-sql-patterns-part-\d{4}$/.test(unit.unitKey));
+  const patternShardRawFilePattern = new RegExp('^patterns-input/part-\\d{4}\\.json$');
   assert(patternUnits.length > 0, `${label}: expected sharded patterns WorkUnit`);
   for (const unit of patternUnits) {
     assert(
-      unit.rawFiles.some((rawFile) => /^patterns-input\/part-\d{4}\.json$/.test(rawFile)),
+      unit.rawFiles.some((rawFile) => patternShardRawFilePattern.test(rawFile)),
       `${label}: expected ${unit.unitKey} to read a pattern shard`,
     );
     assert(
