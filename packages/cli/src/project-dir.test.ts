@@ -46,54 +46,63 @@ describe('project directory defaults', () => {
       spy: ReturnType<typeof vi.fn>;
       expected: Record<string, unknown>;
       runnerType: 'cli' | 'serve';
+      expectedStderr: string;
     }> = [
       {
         argv: ['connection', 'list'],
         spy: connection,
         expected: { command: 'list', projectDir: '/tmp/ktx-env-project' },
         runnerType: 'cli',
+        expectedStderr: 'Project: /tmp/ktx-env-project\n',
       },
       {
         argv: ['setup', 'demo', 'scan', '--no-input'],
         spy: demo,
         expected: { command: 'scan', projectDir: '/tmp/ktx-env-project' },
         runnerType: 'cli',
+        expectedStderr: 'Project: /tmp/ktx-env-project\n',
       },
       {
         argv: ['dev', 'doctor', '--no-input'],
         spy: doctor,
         expected: { command: 'project', projectDir: '/tmp/ktx-env-project' },
         runnerType: 'cli',
+        expectedStderr: 'Project: /tmp/ktx-env-project\n',
       },
       {
         argv: ['ingest', 'status', 'run-1'],
         spy: publicIngest,
         expected: { command: 'status', projectDir: '/tmp/ktx-env-project', runId: 'run-1' },
         runnerType: 'cli',
+        expectedStderr: 'Project: /tmp/ktx-env-project\n',
       },
       {
         argv: ['setup', 'status'],
         spy: setup,
         expected: { command: 'status', projectDir: '/tmp/ktx-env-project' },
         runnerType: 'cli',
+        expectedStderr: 'Project: /tmp/ktx-env-project\n',
       },
       {
         argv: ['dev', 'scan', 'warehouse'],
         spy: scan,
         expected: { command: 'run', projectDir: '/tmp/ktx-env-project', connectionId: 'warehouse' },
         runnerType: 'cli',
+        expectedStderr: 'Project: /tmp/ktx-env-project\n',
       },
       {
         argv: ['serve', '--mcp', 'stdio'],
         spy: serveStdio,
         expected: { mcp: 'stdio', projectDir: '/tmp/ktx-env-project' },
         runnerType: 'serve',
+        expectedStderr: '',
       },
       {
         argv: ['agent', 'tools', '--json'],
         spy: agent,
         expected: { command: 'tools', projectDir: '/tmp/ktx-env-project' },
         runnerType: 'cli',
+        expectedStderr: '',
       },
     ];
 
@@ -105,7 +114,7 @@ describe('project directory defaults', () => {
       } else {
         expect(item.spy).toHaveBeenLastCalledWith(expect.objectContaining(item.expected), testIo.io);
       }
-      expect(testIo.stderr()).toBe('');
+      expect(testIo.stderr()).toBe(item.expectedStderr);
     }
   });
 
@@ -134,8 +143,8 @@ describe('project directory defaults', () => {
       expect.objectContaining({ command: 'status', projectDir: '/tmp/ktx-explicit-project' }),
       ingestIo.io,
     );
-    expect(scanIo.stderr()).toBe('');
-    expect(ingestIo.stderr()).toBe('');
+    expect(scanIo.stderr()).toBe('Project: /tmp/ktx-explicit-project\n');
+    expect(ingestIo.stderr()).toBe('Project: /tmp/ktx-explicit-project\n');
   });
 
   it('uses nearest ancestor containing ktx.yaml when no explicit or environment project-dir exists', async () => {
@@ -167,6 +176,6 @@ describe('project directory defaults', () => {
       expect.objectContaining({ command: 'run', projectDir: expectedProjectDir }),
       testIo.io,
     );
-    expect(testIo.stderr()).toBe('');
+    expect(testIo.stderr()).toBe(`Project: ${expectedProjectDir}\n`);
   });
 });

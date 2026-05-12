@@ -42,6 +42,13 @@ interface KtxGlobalOptionValues {
   debug?: boolean;
 }
 
+type CommandPathNode = CommandWithGlobalOptions & {
+  name: () => string;
+  parent?: CommandPathNode | null;
+};
+
+const PROJECT_AWARE_ROOT_COMMANDS = new Set(['setup', 'connection', 'ingest', 'wiki', 'sl', 'status']);
+
 export interface CommandWithGlobalOptions {
   opts: () => object;
   optsWithGlobals?: () => object;
@@ -115,6 +122,80 @@ function optionsWithGlobals(command: CommandWithGlobalOptions): KtxGlobalOptionV
   };
 }
 
+function commandOptions(command: CommandWithGlobalOptions): Record<string, unknown> {
+  return (command.optsWithGlobals ? command.optsWithGlobals() : command.opts()) as Record<string, unknown>;
+}
+
+function commandPath(command: CommandPathNode): string[] {
+  const path: string[] = [];
+  let current: CommandPathNode | null | undefined = command;
+
+  while (current) {
+    path.unshift(current.name());
+    current = current.parent;
+  }
+
+  return path;
+}
+
+function isProjectAwareCommand(path: string[]): boolean {
+  if (path.includes('__complete')) {
+    return false;
+  }
+
+  const rootCommand = path[1];
+  if (rootCommand === 'dev') {
+    return path[2] !== undefined && path[2] !== 'completion';
+  }
+  return rootCommand !== undefined && PROJECT_AWARE_ROOT_COMMANDS.has(rootCommand);
+}
+
+function shouldSuppressProjectDirLine(path: string[], options: Record<string, unknown>): boolean {
+  if (path.join(' ') === 'ktx dev init') {
+    return true;
+  }
+
+  if (options.viz === true) {
+    return true;
+  }
+
+  const commandPathKey = path.join(' ');
+  if (commandPathKey === 'ktx ingest watch') {
+    return options.json !== true;
+  }
+  if (commandPathKey === 'ktx dev ingest watch') {
+    return options.json !== true && options.plain !== true;
+  }
+  if (commandPathKey === 'ktx connection notion pick') {
+    return options.input !== false;
+  }
+  const demoIndex = path.indexOf('demo');
+  if (demoIndex >= 0) {
+    const demoCommand = path[demoIndex + 1];
+    return (
+      options.json !== true &&
+      options.plain !== true &&
+      (demoCommand === undefined || demoCommand === 'replay' || demoCommand === 'ingest')
+    );
+  }
+
+  return false;
+}
+
+function shouldPrintProjectDir(command: CommandPathNode): boolean {
+  const path = commandPath(command);
+  if (!isProjectAwareCommand(path)) {
+    return false;
+  }
+
+  const options = commandOptions(command);
+  if (options.json === true || options.output === 'json' || options.format === 'json') {
+    return false;
+  }
+
+  return !shouldSuppressProjectDirLine(path, options);
+}
+
 export function resolveCommandProjectDir(command: CommandWithGlobalOptions): string {
   return resolveKtxProjectDir({ explicitProjectDir: optionsWithGlobals(command).projectDir });
 }
@@ -152,6 +233,13 @@ function writeDebug(io: KtxCliIo, commandContext: CommandWithGlobalOptions, comm
   }
   io.stderr.write(`[debug] projectDir=${resolveCommandProjectDir(commandContext)}\n`);
   io.stderr.write(`[debug] dispatch=${command}\n`);
+}
+
+function writeProjectDir(io: KtxCliIo, commandContext: CommandPathNode): void {
+  if (!shouldPrintProjectDir(commandContext)) {
+    return;
+  }
+  io.stderr.write(`Project: ${resolveCommandProjectDir(commandContext)}\n`);
 }
 
 function formatCliError(error: unknown): string {
@@ -204,6 +292,9 @@ export async function runCommanderKtxCli(
   profileMark('commander:entry');
   let exitCode = 0;
   const program = createBaseProgram(info, io);
+  program.hook('preAction', (_thisCommand, actionCommand) => {
+    writeProjectDir(io, actionCommand as CommandPathNode);
+  });
   profileMark('commander:base-program');
   const context: KtxCliCommandContext = {
     io,

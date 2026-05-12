@@ -239,7 +239,7 @@ describe('dev Commander tree', () => {
       },
       scanIo.io,
     );
-    expect(scanIo.stderr()).toBe('');
+    expect(scanIo.stderr()).toBe('Project: /tmp/project\n');
   });
 
   it('dispatches dev scan --mode relationships through Commander', async () => {
@@ -266,7 +266,7 @@ describe('dev Commander tree', () => {
       },
       io.io,
     );
-    expect(io.stderr()).toBe('');
+    expect(io.stderr()).toBe('Project: /tmp/project\n');
   });
 
   it.each(['--enrich', '--detect-relationships'])('rejects removed scan shorthand option %s', async (option) => {
