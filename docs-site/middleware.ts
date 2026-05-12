@@ -38,7 +38,7 @@ function isMarkdownPreferred(acceptHeader: string | null) {
         .find((parameter) => parameter.startsWith("q="));
 
       return {
-        type: type.toLowerCase(),
+        type: type.trim().toLowerCase(),
         quality: quality ? Number.parseFloat(quality.slice(2)) : 1,
         index,
       };
