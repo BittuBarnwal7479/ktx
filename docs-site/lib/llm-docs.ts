@@ -53,7 +53,8 @@ KTX provides semantic-layer files, warehouse scans, knowledge pages, provenance,
 
 ${link("/docs/ai-resources", "AI Resources", "Machine-readable docs, prompt recipes, and agent setup paths")}
 ${link("/docs/ai-resources/agent-quickstart", "Agent Quickstart", "Task-first route for coding assistants using KTX")}
-${link("/docs/ai-resources/mcp-boundaries", "Docs vs Product MCP", "Choose docs access or product integration correctly")}
+${link("/docs/ai-resources/markdown-access", "Markdown Access", "Fetch KTX docs as llms.txt, llms-full.txt, or per-page Markdown")}
+${link("/docs/ai-resources/agent-instructions", "Agent Instructions", "Suggested instructions for coding assistants that need to read and cite KTX docs")}
 
 ## Start Here
 
@@ -67,13 +68,6 @@ ${link("/docs/guides/writing-context", "Writing Context", "Write semantic source
 - [Markdown access guide](/docs/ai-resources/markdown-access.md): How to fetch llms.txt, llms-full.txt, and per-page Markdown
 - [Quickstart markdown](/docs/getting-started/quickstart.md): Human setup walkthrough
 - [Agent CLI markdown](/docs/cli-reference/ktx-agent.md): Machine-readable agent commands
-
-## Product Integration
-
-Use these pages only when the task is to connect an agent client to a KTX project. For documentation lookup, use the AI Resources pages above.
-
-${link("/docs/guides/serving-agents", "Serving Agents", "Expose KTX context through MCP and CLI tools")}
-${link("/docs/integrations/agent-clients", "Agent Clients", "Configure Claude Code, Cursor, Codex, and OpenCode")}
 
 ## CLI Reference
 

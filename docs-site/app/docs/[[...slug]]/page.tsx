@@ -8,6 +8,7 @@ import {
 import { notFound } from "next/navigation";
 import defaultMdxComponents from "fumadocs-ui/mdx";
 import { CodeBlock } from "@/components/code-block";
+import { DocsPageActions } from "@/components/docs-page-actions";
 
 export default async function Page(props: {
   params: Promise<{ slug?: string[] }>;
@@ -22,6 +23,10 @@ export default async function Page(props: {
     <DocsPage toc={page.data.toc}>
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription>{page.data.description}</DocsDescription>
+      <DocsPageActions
+        markdownUrl={`${page.url}.md`}
+        mdxSource={page.data.content}
+      />
       <DocsBody>
         <MDX components={{ ...defaultMdxComponents, pre: CodeBlock }} />
       </DocsBody>

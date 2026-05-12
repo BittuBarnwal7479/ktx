@@ -5,8 +5,7 @@
     "index",
     "agent-quickstart",
     "markdown-access",
-    "ktx-skills",
-    "prompt-recipes",
-    "mcp-boundaries"
+    "agent-instructions",
+    "prompt-recipes"
   ]
 }
