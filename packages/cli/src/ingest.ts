@@ -18,6 +18,7 @@ import {
 } from '@ktx/context/ingest';
 import { loadKtxProject } from '@ktx/context/project';
 import { readIngestReportSnapshotFile } from './ingest-report-file.js';
+import { createCliOperationalLogger } from './io/logger.js';
 import { createKtxCliLocalIngestAdapters } from './local-adapters.js';
 import type { KtxManagedPythonInstallPolicy } from './managed-python-command.js';
 import { type KtxMemoryFlowStdin, renderMemoryFlowInteractively } from './memory-flow-interactive.js';
@@ -475,11 +476,13 @@ export async function runKtxIngest(
       const executeLocalIngest = deps.runLocalIngest ?? runLocalIngest;
       const localIngestOptions = deps.localIngestOptions ?? {};
       const managedDaemon = managedDaemonOptionsForIngestRun(args, io);
+      const operationalLogger = createCliOperationalLogger(io, args.outputMode);
       const adapterOptions = {
         ...(localIngestOptions.pullConfigOptions ?? {}),
         ...(args.databaseIntrospectionUrl ? { databaseIntrospectionUrl: args.databaseIntrospectionUrl } : {}),
         ...(managedDaemon ? { managedDaemon } : {}),
         ...(args.adapter === 'historic-sql' ? { historicSqlConnectionId: args.connectionId } : {}),
+        logger: operationalLogger,
       };
       if (args.adapter === 'metabase' && args.sourceDir) {
         throw new Error('source-dir uploads are not supported for the Metabase fan-out adapter');
