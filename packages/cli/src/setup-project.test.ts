@@ -206,7 +206,7 @@ describe('setup project step', () => {
     expect(result.projectDir).toBe(projectDir);
     expect(prompts.text).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: 'Project folder path\nPress Escape to go back.\n',
+        message: 'Project folder path\n│  Press Escape to go back.\n│',
         placeholder: './analytics-ktx, ~/analytics-ktx, or /Users/you/projects/analytics-ktx',
       }),
     );
