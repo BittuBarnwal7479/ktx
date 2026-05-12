@@ -231,6 +231,38 @@ describe('runKtxCli', () => {
     );
   });
 
+  it('prints the resolved project directory for ordinary project commands', async () => {
+    const connection = vi.fn(async () => 0);
+    const testIo = makeIo();
+
+    await expect(runKtxCli(['--project-dir', tempDir, 'connection', 'list'], testIo.io, { connection })).resolves.toBe(
+      0,
+    );
+
+    expect(connection).toHaveBeenCalledWith({ command: 'list', projectDir: tempDir }, testIo.io);
+    expect(testIo.stderr()).toBe(`Project: ${tempDir}\n`);
+  });
+
+  it('skips the project directory line for JSON and TUI output modes', async () => {
+    const publicIngest = vi.fn(async () => 0);
+    const ingest = vi.fn(async () => 0);
+    const jsonIo = makeIo();
+    const vizIo = makeIo({ stdoutIsTty: true });
+
+    await expect(runKtxCli(['--project-dir', tempDir, 'ingest', '--all', '--json'], jsonIo.io, { publicIngest }))
+      .resolves.toBe(0);
+    await expect(
+      runKtxCli(
+        ['--project-dir', tempDir, 'dev', 'ingest', 'status', 'run-1', '--viz'],
+        vizIo.io,
+        { ingest },
+      ),
+    ).resolves.toBe(0);
+
+    expect(jsonIo.stderr()).toBe('');
+    expect(vizIo.stderr()).toBe('');
+  });
+
   it('documents runtime stop all in command help', async () => {
     const testIo = makeIo();
 
@@ -1035,7 +1067,7 @@ describe('runKtxCli', () => {
       }),
       nonInteractiveIo.io,
     );
-    expect(nonInteractiveIo.stderr()).toBe('');
+    expect(nonInteractiveIo.stderr()).toBe(`Project: ${tempDir}\n`);
   });
 
   it('dispatches public connection through the existing connection implementation', async () => {
@@ -1047,7 +1079,7 @@ describe('runKtxCli', () => {
     );
 
     expect(connection).toHaveBeenCalledWith({ command: 'list', projectDir: tempDir }, testIo.io);
-    expect(testIo.stderr()).toBe('');
+    expect(testIo.stderr()).toBe(`Project: ${tempDir}\n`);
   });
 
   it('dispatches setup status and top-level status through the setup runner', async () => {
@@ -1893,7 +1925,7 @@ describe('runKtxCli', () => {
       },
       expect.anything(),
     );
-    expect(setupIo.stderr()).toBe('');
+    expect(setupIo.stderr()).toBe(`Project: ${tempDir}\n`);
   });
 
   it('validates connection metabase setup option values before runner dispatch', async () => {
@@ -2044,7 +2076,7 @@ describe('runKtxCli', () => {
       },
       testIo.io,
     );
-    expect(testIo.stderr()).toBe('');
+    expect(testIo.stderr()).toBe(`Project: ${tempDir}\n`);
   });
 
   it('prints generated connection notion pick help without invoking execution', async () => {
@@ -2101,7 +2133,7 @@ describe('runKtxCli', () => {
       },
       testIo.io,
     );
-    expect(testIo.stderr()).toBe('');
+    expect(testIo.stderr()).toBe(`Project: ${tempDir}\n`);
   });
 
   it('ignores connection notion pick root page flags in interactive mode', async () => {
