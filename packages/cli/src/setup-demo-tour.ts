@@ -190,43 +190,45 @@ export interface DemoReplayEvent {
 
 export const DEMO_REPLAY_TARGETS = {
   primarySources: [
-    createDemoTarget('demo-warehouse', 'scan', 'postgres'),
+    createDemoTarget('postgres-warehouse', 'scan', 'postgres'),
   ],
   contextSources: [
-    createDemoTarget('dbt', 'source-ingest', 'dbt'),
-    createDemoTarget('metabase', 'source-ingest', 'metabase'),
-    createDemoTarget('notion', 'source-ingest', 'notion'),
+    createDemoTarget('dbt-main', 'source-ingest', 'dbt'),
+    createDemoTarget('metabase-main', 'source-ingest', 'metabase'),
+    createDemoTarget('notion-main', 'source-ingest', 'notion'),
   ],
 } as const;
 
 export function buildDemoReplayTimeline(): DemoReplayEvent[] {
   return [
-    // demo-warehouse: scan
-    { delayMs: 0, connectionId: 'demo-warehouse', status: 'running', detailLine: null, summaryText: null },
-    { delayMs: 1200, connectionId: 'demo-warehouse', status: 'running', detailLine: '[50%] Scanning tables...', summaryText: null },
-    { delayMs: 2400, connectionId: 'demo-warehouse', status: 'done', detailLine: null, summaryText: '12 tables' },
-    // dbt
-    { delayMs: 2400, connectionId: 'dbt', status: 'running', detailLine: null, summaryText: null },
-    { delayMs: 3600, connectionId: 'dbt', status: 'running', detailLine: '[60%] Ingesting models...', summaryText: null },
-    { delayMs: 4400, connectionId: 'dbt', status: 'done', detailLine: null, summaryText: '8 models' },
-    // metabase
-    { delayMs: 4400, connectionId: 'metabase', status: 'running', detailLine: null, summaryText: null },
-    { delayMs: 5600, connectionId: 'metabase', status: 'done', detailLine: null, summaryText: '5 dashboards' },
-    // notion
-    { delayMs: 5600, connectionId: 'notion', status: 'running', detailLine: null, summaryText: null },
-    { delayMs: 6800, connectionId: 'notion', status: 'done', detailLine: null, summaryText: '3 pages' },
+    // postgres-warehouse: scan
+    { delayMs: 0, connectionId: 'postgres-warehouse', status: 'running', detailLine: null, summaryText: null },
+    { delayMs: 1200, connectionId: 'postgres-warehouse', status: 'running', detailLine: '[50%] scanning tables...', summaryText: null },
+    { delayMs: 2400, connectionId: 'postgres-warehouse', status: 'done', detailLine: null, summaryText: '56 tables scanned' },
+    // dbt-main
+    { delayMs: 2400, connectionId: 'dbt-main', status: 'running', detailLine: null, summaryText: null },
+    { delayMs: 3600, connectionId: 'dbt-main', status: 'running', detailLine: '[60%] ingesting models...', summaryText: null },
+    { delayMs: 4400, connectionId: 'dbt-main', status: 'done', detailLine: null, summaryText: '34 models ingested' },
+    // metabase-main
+    { delayMs: 4400, connectionId: 'metabase-main', status: 'running', detailLine: null, summaryText: null },
+    { delayMs: 5600, connectionId: 'metabase-main', status: 'done', detailLine: null, summaryText: '80 cards ingested' },
+    // notion-main
+    { delayMs: 5600, connectionId: 'notion-main', status: 'running', detailLine: null, summaryText: null },
+    { delayMs: 6800, connectionId: 'notion-main', status: 'done', detailLine: null, summaryText: '9 pages ingested' },
   ];
 }
 
 function renderDemoContextCompletionSummary(): string {
   const lines = [
     '',
-    '┌  Context build complete',
-    '│',
-    '│  All sources have been processed.',
-    '│',
-    `│  ${dim('Press Enter to continue, Escape to go back')}`,
-    '└',
+    `${cyan('★')} KTX finished building context`,
+    '',
+    '  KTX created:',
+    `    ${cyan('📊')} 45 semantic layer definitions`,
+    `    ${cyan('📝')} 32 knowledge pages`,
+    '',
+    `  ${dim('Press Enter to continue, Escape to go back')}`,
+    '',
   ];
   return lines.join('\n');
 }
@@ -341,9 +343,9 @@ export async function runDemoTour(
     let direction: 'forward' | 'back';
 
     if (step === 'databases') {
-      direction = await renderDemoCard('Database connection', ['PostgreSQL (demo warehouse)'], io, undefined, waitNav);
+      direction = await renderDemoCard('Database connection', ['PostgreSQL — Orbit Analytics (56 tables, 2 schemas)'], io, undefined, waitNav);
     } else if (step === 'sources') {
-      direction = await renderDemoCard('Context sources', ['dbt', 'Metabase', 'Notion'], io, undefined, waitNav);
+      direction = await renderDemoCard('Context sources', ['dbt — 34 transformation models', 'Metabase — 80 dashboard cards', 'Notion — 9 knowledge pages'], io, undefined, waitNav);
     } else if (step === 'context') {
       io.stdout.write(renderDemoBanner() + '\n\n');
       if (deps.skipReplayAnimation) {

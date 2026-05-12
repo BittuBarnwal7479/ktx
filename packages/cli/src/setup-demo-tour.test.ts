@@ -115,10 +115,10 @@ describe('buildDemoReplayTimeline', () => {
 
   it('produces events for all 4 targets', () => {
     expect(connectionIds.size).toBe(4);
-    expect(connectionIds).toContain('demo-warehouse');
-    expect(connectionIds).toContain('dbt');
-    expect(connectionIds).toContain('metabase');
-    expect(connectionIds).toContain('notion');
+    expect(connectionIds).toContain('postgres-warehouse');
+    expect(connectionIds).toContain('dbt-main');
+    expect(connectionIds).toContain('metabase-main');
+    expect(connectionIds).toContain('notion-main');
   });
 
   it('all targets end as done', () => {
