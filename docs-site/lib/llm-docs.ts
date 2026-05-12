@@ -39,7 +39,8 @@ export function buildLlmsTxt() {
   const link = (url: string, label: string, fallbackDescription: string) => {
     const page = byUrl.get(url);
     const description = page?.description ?? fallbackDescription;
-    return `- [${label}](${url}): ${description}`;
+    const markdownUrl = page?.markdownUrl ?? `${url}.md`;
+    return `- [${label}](${markdownUrl}): ${description}`;
   };
 
   return `# KTX
@@ -48,19 +49,31 @@ export function buildLlmsTxt() {
 
 KTX provides semantic-layer files, warehouse scans, knowledge pages, provenance, and agent-facing tools that help coding agents answer analytics questions without inventing metrics or joins.
 
+## Agent Entry Points
+
+${link("/docs/ai-resources", "AI Resources", "Machine-readable docs, prompt recipes, and agent setup paths")}
+${link("/docs/ai-resources/agent-quickstart", "Agent Quickstart", "Task-first route for coding assistants using KTX")}
+${link("/docs/ai-resources/mcp-boundaries", "Docs vs Product MCP", "Choose docs access or product integration correctly")}
+
 ## Start Here
 
 ${link("/docs/getting-started/introduction", "Introduction", "What KTX is and who it is for")}
 ${link("/docs/getting-started/quickstart", "Quickstart", "Set up KTX and build your first context")}
-${link("/docs/guides/serving-agents", "Serving Agents", "Expose KTX context through MCP and CLI tools")}
 ${link("/docs/guides/writing-context", "Writing Context", "Write semantic sources and knowledge pages")}
 
 ## Machine-Readable Documentation
 
 - [Full documentation](/llms-full.txt): All docs pages in one plain-text markdown response
-- [Quickstart markdown](/docs/getting-started/quickstart.md): Raw markdown for the setup guide
-- [Agent CLI markdown](/docs/cli-reference/ktx-agent.md): Raw markdown for machine-readable agent commands
-- [Serving Agents markdown](/docs/guides/serving-agents.md): Raw markdown for MCP and CLI workflows
+- [Markdown access guide](/docs/ai-resources/markdown-access.md): How to fetch llms.txt, llms-full.txt, and per-page Markdown
+- [Quickstart markdown](/docs/getting-started/quickstart.md): Human setup walkthrough
+- [Agent CLI markdown](/docs/cli-reference/ktx-agent.md): Machine-readable agent commands
+
+## Product Integration
+
+Use these pages only when the task is to connect an agent client to a KTX project. For documentation lookup, use the AI Resources pages above.
+
+${link("/docs/guides/serving-agents", "Serving Agents", "Expose KTX context through MCP and CLI tools")}
+${link("/docs/integrations/agent-clients", "Agent Clients", "Configure Claude Code, Cursor, Codex, and OpenCode")}
 
 ## CLI Reference
 
@@ -72,9 +85,12 @@ ${link("/docs/cli-reference/ktx-connection", "ktx connection", "Connection manag
 
 ## Integrations
 
-${link("/docs/integrations/agent-clients", "Agent Clients", "Configure Claude Code, Cursor, Codex, and OpenCode")}
 ${link("/docs/integrations/primary-sources", "Primary Sources", "Connect KTX to databases and warehouses")}
 ${link("/docs/integrations/context-sources", "Context Sources", "Ingest dbt, LookML, Metabase, Looker, MetricFlow, and Notion")}
+
+## All Documentation
+
+${buildPageIndex(pages)}
 `;
 }
 
@@ -102,4 +118,44 @@ function normalizeMarkdown(markdown: string) {
     .replace(/^---\n[\s\S]*?\n---\n?/, "")
     .trim()
     .replace(/\n{3,}/g, "\n\n");
+}
+
+function buildPageIndex(pages: LlmDocsPage[]) {
+  const grouped = new Map<string, LlmDocsPage[]>();
+
+  for (const page of pages) {
+    const category = page.slug[0] ?? "general";
+    grouped.set(category, [...(grouped.get(category) ?? []), page]);
+  }
+
+  return [...grouped.entries()]
+    .map(([category, categoryPages]) => {
+      const links = categoryPages
+        .map((page) => {
+          const description = page.description ? `: ${page.description}` : "";
+          return `- [${page.title}](${page.markdownUrl})${description}`;
+        })
+        .join("\n");
+
+      return `### ${formatCategoryName(category)}
+
+${links}`;
+    })
+    .join("\n\n");
+}
+
+function formatCategoryName(category: string) {
+  const labels: Record<string, string> = {
+    "ai-resources": "AI Resources",
+    "cli-reference": "CLI Reference",
+  };
+
+  if (labels[category]) {
+    return labels[category];
+  }
+
+  return category
+    .split("-")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 }

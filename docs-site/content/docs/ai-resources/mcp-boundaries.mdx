@@ -1,0 +1,62 @@
+---
+title: Docs vs Product MCP
+description: Understand the difference between reading KTX docs and connecting an agent to a KTX project.
+---
+
+There are two agent-facing surfaces in KTX. Keep them separate.
+
+## Docs access
+
+Docs access helps an assistant learn KTX:
+
+- `/llms.txt`
+- `/llms-full.txt`
+- `/docs/<path>.md`
+- prompt recipes
+- generated skills that point agents toward the right docs and commands
+
+Use docs access when the task is to explain KTX, look up command flags, write docs, or plan a setup.
+
+## Product MCP integration
+
+Product MCP integration lets an agent operate a KTX project:
+
+- list database connections
+- search knowledge pages
+- read and validate semantic sources
+- compile semantic-layer queries
+- optionally execute read-only SQL with row limits
+- trigger scans and ingests
+
+Use product MCP when the task is to connect Claude Code, Cursor, Codex, OpenCode, or another client to a local KTX project.
+
+The product MCP entry point is:
+
+```bash
+ktx serve --mcp stdio
+```
+
+Most users should configure it through:
+
+```bash
+ktx setup --agents --agent-install-mode both --project
+```
+
+## Which page should an agent read?
+
+| Need | Read |
+|------|------|
+| Understand KTX docs or choose the next page | [AI Resources](/docs/ai-resources) |
+| Operate KTX from a coding assistant | [Agent Quickstart](/docs/ai-resources/agent-quickstart) |
+| Fetch docs in machine-readable form | [Markdown Access](/docs/ai-resources/markdown-access) |
+| Install generated skill or rule files | [KTX Skills](/docs/ai-resources/ktx-skills) |
+| Expose a KTX project to agent tools | [Serving Agents](/docs/guides/serving-agents) |
+| Configure Claude Code, Cursor, Codex, or OpenCode | [Agent Clients](/docs/integrations/agent-clients) |
+
+## Agent rule
+
+If the user asks to "read the docs" or "understand KTX", use Markdown docs access.
+
+If the user asks to "connect my agent", "query my semantic layer", or "use KTX tools from Cursor/Claude/Codex", use product MCP integration.
+
+Do not configure product MCP just to answer a documentation question.

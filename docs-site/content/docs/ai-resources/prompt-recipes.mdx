@@ -1,0 +1,60 @@
+---
+title: Prompt Recipes
+description: Copyable prompts for common KTX agent workflows.
+---
+
+Use these prompts when asking a coding assistant to work with KTX. Replace project names, connection ids, and business terms with your own values.
+
+## Learn the docs
+
+```text
+Read https://ktx.dev/llms.txt first. Then fetch only the KTX Markdown pages needed for this task. Do not scrape rendered HTML unless no Markdown route exists.
+```
+
+## Set up a project
+
+```text
+Set up KTX in this repository. Start by reading /docs/ai-resources/agent-quickstart.md and /docs/getting-started/quickstart.md. Use pnpm, not npm. After setup, run ktx status and summarize which steps are complete, which files changed, and what still needs credentials or user input.
+```
+
+## Check readiness
+
+```text
+Check whether this KTX project is ready for agents. Find the project root, run ktx status and ktx agent context --json, then explain any missing setup step with the exact command to fix it.
+```
+
+## Build context
+
+```text
+Refresh KTX context for this project. Read the Building Context guide first. Run the smallest safe command that updates scans or ingests, monitor status, and report the semantic-layer and knowledge-page files that changed.
+```
+
+## Investigate an analytics question
+
+```text
+Use KTX to answer this analytics question: <question>. Discover connections and sources first. Search knowledge pages for the business terms in the question. Prefer ktx agent sl query over direct SQL. Execute only if the project allows it and max rows are bounded.
+```
+
+## Review semantic changes
+
+```text
+Review the KTX semantic-layer and knowledge changes in this branch. Check that measures have clear definitions, joins use valid keys, hidden/internal columns are not exposed to agents, and validation passes. List concrete file and line issues first.
+```
+
+## Connect an agent client
+
+```text
+Connect this KTX project to <Claude Code/Cursor/Codex/OpenCode>. This is product integration, not docs access. Read /docs/guides/serving-agents.md and /docs/integrations/agent-clients.md, then generate the project-scoped setup with ktx setup --agents.
+```
+
+## Troubleshoot MCP
+
+```text
+Troubleshoot why my agent cannot use KTX MCP tools. First distinguish docs access from product MCP integration. Then inspect the generated MCP config, verify the ktx command path, run ktx status, and check whether --semantic-compute and --execute-queries are appropriate for the task.
+```
+
+## Update docs
+
+```text
+Update the KTX docs for agent readability. Preserve the distinction between AI Resources for coding assistants and Serving Agents/Agent Clients for product integration. After editing, verify /llms.txt, /llms-full.txt, and the affected .md routes.
+```

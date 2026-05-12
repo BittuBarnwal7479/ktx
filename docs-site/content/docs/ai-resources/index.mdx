@@ -1,0 +1,46 @@
+---
+title: AI Resources
+description: Machine-readable docs, prompt recipes, and agent setup paths for coding assistants using KTX.
+---
+
+Use this section when a coding assistant, IDE agent, or automation system needs to understand KTX docs or work in a KTX project.
+
+> **Documentation index**
+>
+> Start with [`/llms.txt`](/llms.txt) to discover the available docs. Use [`/llms-full.txt`](/llms-full.txt) when the assistant needs the complete docs corpus in one Markdown response.
+
+## Choose the right path
+
+| Goal | Use this page |
+|------|---------------|
+| Tell a coding assistant how to approach KTX docs | [Agent Quickstart](/docs/ai-resources/agent-quickstart) |
+| Fetch docs as Markdown instead of HTML | [Markdown Access](/docs/ai-resources/markdown-access) |
+| Install or inspect KTX skill/rule files for an agent client | [KTX Skills](/docs/ai-resources/ktx-skills) |
+| Copy prompts for common agent workflows | [Prompt Recipes](/docs/ai-resources/prompt-recipes) |
+| Decide whether you need docs access or product MCP integration | [Docs vs Product MCP](/docs/ai-resources/mcp-boundaries) |
+
+## Available resources
+
+| Resource | What it gives agents |
+|----------|----------------------|
+| [`/llms.txt`](/llms.txt) | Curated index of high-value KTX docs and Markdown endpoints |
+| [`/llms-full.txt`](/llms-full.txt) | Complete docs corpus in one plain-text Markdown response |
+| `/docs/<path>.md` | Per-page Markdown for any docs page |
+| `ktx setup --agents` | Project-scoped skills, rules, commands, and MCP config for supported agent clients |
+| `ktx agent ... --json` | Machine-readable CLI commands for agents that operate through a shell |
+| `ktx serve --mcp stdio` | Product MCP server for agents that need to use KTX context in a local project |
+
+## Important distinction
+
+The **AI Resources** section is for agents that need to read the KTX docs or help a user operate a KTX project.
+
+The product-facing integration path is different: if you want Claude Code, Cursor, Codex, or OpenCode to query your KTX semantic layer, read [Serving Agents](/docs/guides/serving-agents) and [Agent Clients](/docs/integrations/agent-clients).
+
+## Agent usage notes
+
+When an assistant is unsure where to begin, use this order:
+
+1. Read [`/llms.txt`](/llms.txt).
+2. Fetch the specific Markdown page for the task.
+3. Use [Agent Quickstart](/docs/ai-resources/agent-quickstart) to choose the next command or page.
+4. Use [Docs vs Product MCP](/docs/ai-resources/mcp-boundaries) before configuring MCP.

@@ -1,0 +1,72 @@
+---
+title: Agent Quickstart
+description: A task-first route for coding agents that need to understand or operate KTX.
+---
+
+This page is for coding assistants working with KTX docs or a KTX project. It is not the product integration guide for connecting KTX to an agent client. For that, use [Serving Agents](/docs/guides/serving-agents) and [Agent Clients](/docs/integrations/agent-clients).
+
+## First read
+
+Agents should start with the smallest source that answers the task:
+
+1. [`/llms.txt`](/llms.txt) - discover the docs and preferred entry points.
+2. The relevant per-page Markdown URL, for example `/docs/getting-started/quickstart.md`.
+3. [`/llms-full.txt`](/llms-full.txt) - use only when the task needs broad context across many pages.
+
+## Task router
+
+| User asks the agent to... | Read first | Then use |
+|---------------------------|------------|----------|
+| Explain what KTX does | [Introduction](/docs/getting-started/introduction) | [The Context Layer](/docs/concepts/the-context-layer) |
+| Set up KTX from a checkout | [Quickstart](/docs/getting-started/quickstart) | [ktx setup](/docs/cli-reference/ktx-setup) |
+| Check whether a project is ready | [ktx status](/docs/cli-reference/ktx-status) | `ktx status` |
+| Build or refresh context | [Building Context](/docs/guides/building-context) | `ktx setup context build` |
+| Edit semantic YAML or knowledge pages | [Writing Context](/docs/guides/writing-context) | `ktx sl validate` and `ktx wiki ...` |
+| Query KTX through machine-readable commands | [ktx agent](/docs/cli-reference/ktx-agent) | `ktx agent ... --json` |
+| Connect an agent client to a KTX project | [Serving Agents](/docs/guides/serving-agents) | [Agent Clients](/docs/integrations/agent-clients) |
+
+## Operating workflow
+
+Use this workflow when the user asks an assistant to help inside a local KTX project:
+
+1. Confirm the project root by finding `ktx.yaml`.
+2. Run `ktx status` or `ktx agent context --json`.
+3. Read the docs page that matches the next task.
+4. Prefer semantic-layer commands before direct SQL.
+5. Use `--json` for agent CLI commands and parse stdout as JSON.
+6. Keep generated changes reviewable: semantic YAML, knowledge Markdown, and config files should appear as normal git diffs.
+
+## Safe command sequence
+
+For a new local checkout:
+
+```bash
+pnpm install
+pnpm run setup:dev
+pnpm run link:dev
+ktx setup
+ktx status
+```
+
+For an existing KTX project:
+
+```bash
+ktx status
+ktx agent context --json
+ktx agent tools --json
+```
+
+For semantic-layer exploration:
+
+```bash
+ktx agent sl list --json
+ktx agent wiki search "revenue definition" --json --limit 5
+```
+
+## Guardrails
+
+- Do not invent connection ids. Discover them with `ktx status`, `ktx connection list`, or `ktx agent context --json`.
+- Do not execute SQL unless the user asked for data and a bounded row limit is set.
+- Do not edit `.ktx/secrets/*` or commit local secret files.
+- Do not treat docs access as product MCP integration. Product MCP is only for connecting an agent client to a local KTX project.
+- When docs and local CLI behavior disagree, prefer the local CLI output and mention the mismatch.
