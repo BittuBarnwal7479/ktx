@@ -130,6 +130,10 @@ function expectProjectStderr(result: CliResult, projectDir: string): void {
   expect(result).toMatchObject({ code: 0, stderr: `Project: ${projectDir}\n` });
 }
 
+function expectSetupStderr(result: CliResult): void {
+  expect(result).toMatchObject({ code: 0, stderr: '' });
+}
+
 async function runSetupNewProject(projectDir: string): Promise<CliResult> {
   return await runBuiltCli([
     'setup',
@@ -162,7 +166,7 @@ describe('standalone built ktx CLI smoke', () => {
     const sourceDir = join(tempDir, 'source');
 
     const init = await runSetupNewProject(projectDir);
-    expectProjectStderr(init, projectDir);
+    expectSetupStderr(init);
     expect(init.stdout).toContain(`Project: ${projectDir}`);
 
     await writeWarehouseConfig(projectDir);
@@ -207,7 +211,7 @@ describe('standalone built ktx CLI smoke', () => {
   it('runs structural and enriched scans through the built binary with manifest artifacts', async () => {
     const projectDir = join(tempDir, 'scan-project');
     const init = await runSetupNewProject(projectDir);
-    expectProjectStderr(init, projectDir);
+    expectSetupStderr(init);
 
     const dbPath = join(projectDir, 'warehouse.db');
     createSqliteWarehouse(dbPath);
@@ -310,7 +314,7 @@ describe('standalone built ktx CLI smoke', () => {
   it('rejects the removed connection add command through the built binary', async () => {
     const projectDir = join(tempDir, 'notion-project');
     const init = await runSetupNewProject(projectDir);
-    expectProjectStderr(init, projectDir);
+    expectSetupStderr(init);
 
     const add = await runBuiltCli([
       'connection',

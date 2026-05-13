@@ -333,6 +333,22 @@ describe('runKtxCli', () => {
     expect(testIo.stderr()).toBe(`Project: ${tempDir}\n`);
   });
 
+  it('does not print the command-level project directory line for setup', async () => {
+    const setup = vi.fn(async () => 0);
+    const testIo = makeIo();
+
+    await expect(runKtxCli(['--project-dir', tempDir, 'setup', '--no-input'], testIo.io, { setup })).resolves.toBe(0);
+
+    expect(setup).toHaveBeenCalledWith(
+      expect.objectContaining({
+        command: 'run',
+        projectDir: tempDir,
+      }),
+      testIo.io,
+    );
+    expect(testIo.stderr()).toBe('');
+  });
+
   it('skips the project directory line for JSON and TUI output modes', async () => {
     const ingest = vi.fn(async () => 0);
     const jsonIo = makeIo();
