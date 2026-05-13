@@ -162,6 +162,10 @@ function shouldSuppressProjectDirLine(path: string[], options: Record<string, un
     return true;
   }
 
+  if (commandPathKey === 'ktx setup') {
+    return true;
+  }
+
   if (
     commandPathKey === 'ktx status' &&
     typeof options.projectDir !== 'string' &&
