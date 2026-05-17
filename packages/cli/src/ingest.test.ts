@@ -35,6 +35,11 @@ describe('runKtxIngest', () => {
   let tempDir: string;
   let originalTerm: string | undefined;
   const interactiveEnv = (): NodeJS.ProcessEnv => ({ ...process.env, CI: 'false' });
+  const runtimeReady = (projectDir: string) => ({
+    status: 'ready' as const,
+    projectDir,
+    requirements: { features: ['core' as const], requirements: [] },
+  });
 
   beforeEach(async () => {
     resetVizFallbackWarningsForTest();
@@ -285,6 +290,7 @@ describe('runKtxIngest', () => {
             historicSqlProbe: async () => ({ ok: true, lines: ['PASS Historic SQL probe skipped in test'] }),
           },
           context: async () => ({ status: 'skipped', projectDir }),
+          runtime: async () => runtimeReady(projectDir),
         },
       ),
     ).resolves.toBe(0);
@@ -977,6 +983,72 @@ describe('runKtxIngest', () => {
 
     expect(io.stderr()).toBe('');
     expect(io.stdout()).toContain('Status: error\n');
+  });
+
+  it('prints a clear first failure reason when query-history work units fail', async () => {
+    const projectDir = join(tempDir, 'project');
+    await writeWarehouseConfig(projectDir);
+    const rawReason =
+      '{"error":"invalid_grant","error_description":"reauth related error (invalid_rapt)","error_uri":"https://support.google.com/a/answer/9368756","error_subtype":"invalid_rapt"}';
+    const runLocal = vi.fn(async (input: RunLocalIngestOptions): Promise<LocalIngestResult> => {
+      const failedWorkUnit = {
+        ...localFakeBundleReport('query-history-failed').body.workUnits[0],
+        unitKey: 'historic-sql-table-orders',
+        rawFiles: ['tables/orders.json'],
+        status: 'failed' as const,
+        reason: rawReason,
+        actions: [],
+        touchedSlSources: [],
+      };
+      const report = localFakeBundleReport('query-history-failed', {
+        id: 'report-query-history-failed',
+        runId: 'run-query-history-failed',
+        connectionId: input.connectionId,
+        sourceKey: 'historic-sql',
+        body: {
+          workUnits: [failedWorkUnit],
+          failedWorkUnits: [failedWorkUnit.unitKey],
+        },
+      });
+      return {
+        result: {
+          jobId: 'query-history-failed',
+          runId: report.runId,
+          syncId: report.body.syncId,
+          diffSummary: report.body.diffSummary,
+          workUnitCount: report.body.workUnits.length,
+          failedWorkUnits: report.body.failedWorkUnits,
+          artifactsWritten: report.body.provenanceRows.length,
+          commitSha: report.body.commitSha,
+        },
+        report,
+      };
+    });
+
+    const io = makeIo();
+    await expect(
+      runKtxIngest(
+        {
+          command: 'run',
+          projectDir,
+          connectionId: 'warehouse',
+          adapter: 'historic-sql',
+          outputMode: 'plain',
+        },
+        io.io,
+        {
+          runLocalIngest: runLocal,
+          jobIdFactory: () => 'query-history-failed',
+        },
+      ),
+    ).resolves.toBe(1);
+
+    expect(io.stdout()).toContain('Status: error\n');
+    expect(io.stdout()).toContain('Failed tasks: 1\n');
+    expect(io.stdout()).toContain(
+      'Error: Query history failed for 1 task. First failure: Google Cloud authentication failed while analyzing query history: application-default credentials expired or require reauthentication (invalid_grant / invalid_rapt). Run `gcloud auth application-default login`, then retry.',
+    );
+    expect(io.stdout()).not.toContain('error_uri');
   });
 
   it('passes the debug LLM request file to local ingest runs', async () => {
