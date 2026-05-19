@@ -27,10 +27,21 @@ describe('semantic-release config', () => {
     ]);
 
     const config = createReleaseConfig({ KTX_RELEASE_KIND: 'rc', GITHUB_REF_NAME: 'main' });
+    assert.deepEqual(
+      config.plugins.find((plugin) => Array.isArray(plugin) && plugin[0] === '@semantic-release/npm'),
+      [
+        '@semantic-release/npm',
+        {
+          pkgRoot: 'dist/public-npm-package',
+          tarballDir: 'dist/artifacts/npm',
+        },
+      ],
+    );
     assert.match(
       releaseExecOptions(config).prepareCmd,
       /update-public-release-version\.mjs "\$\{nextRelease\.version\}" "next"/,
     );
+    assert.doesNotMatch(JSON.stringify(config.plugins), /release:npm-publish/);
     const releaseFilePluginNames = pluginNames(config).filter(
       (plugin) => plugin === '@semantic-release/changelog' || plugin === '@semantic-release/git',
     );
@@ -51,7 +62,7 @@ describe('semantic-release config', () => {
       releaseExecOptions(config).prepareCmd,
       /update-public-release-version\.mjs "\$\{nextRelease\.version\}" "latest"/,
     );
-    assert.ok(config.plugins.includes('./scripts/semantic-release-version-policy.cjs'));
+    assert.equal(config.plugins.includes('./scripts/semantic-release-version-policy.cjs'), false);
   });
 
   it('does not commit release files back to protected main during stable releases', () => {
@@ -85,6 +96,13 @@ describe('semantic-release config', () => {
     assert.equal(
       analyzer[1].releaseRules.some((rule) => rule.release === 'major'),
       false,
+    );
+    assert.deepEqual(
+      analyzer[1].releaseRules.filter((rule) => rule.breaking || rule.type === 'major'),
+      [
+        { breaking: true, release: 'minor' },
+        { type: 'major', release: 'minor' },
+      ],
     );
   });
 });
