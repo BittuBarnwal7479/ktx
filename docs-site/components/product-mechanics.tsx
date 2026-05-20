@@ -96,7 +96,7 @@ const sourceData: SourceNodeData[] = [
 
 const stageData: Omit<StageNodeData, "index">[] = [
   {
-    title: "Source adapters",
+    title: "Source connectors",
     body: "Read each configured system in its native shape.",
   },
   {
@@ -105,7 +105,7 @@ const stageData: Omit<StageNodeData, "index">[] = [
   },
   {
     title: "Reconciliation",
-    body: "Merge new evidence with the context that already exists.",
+    body: "Reconcile new evidence with the context that already exists.",
   },
   {
     title: "Validation",
@@ -125,7 +125,7 @@ const outputData: OutputNodeData[] = [
     title: "Semantic layer",
     path: "semantic-layer/*.yaml",
     tags: ["structured", "executable", "auto-maintained"],
-    body: "Metrics, joins, tables, dimensions, filters, and segments that KTX can validate and compile into SQL.",
+    body: "Metrics, joins, tables, dimensions, filters, and segments that ktx can validate and compile into SQL.",
     accent: "#3b82f6",
   },
 ];
@@ -511,7 +511,7 @@ export function ProductMechanics() {
           How ingestion works
         </h2>
         <p className="mt-3 text-sm leading-6 text-fd-muted-foreground">
-          KTX ingests source evidence, reconciles it with your existing project,
+          ktx ingests source evidence, reconciles it with your existing project,
           and produces durable context that agents can search, review, and
           execute.
         </p>
@@ -519,7 +519,7 @@ export function ProductMechanics() {
 
       <article
         className="max-w-full min-w-0 overflow-hidden rounded-lg border border-fd-border bg-fd-card shadow-sm"
-        aria-label="KTX ingestion flow from source systems to durable context outputs"
+        aria-label="ktx ingestion flow from source systems to durable context outputs"
       >
         <div className="border-b border-fd-border bg-fd-muted/35 px-5 py-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-fd-primary">
