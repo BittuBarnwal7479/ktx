@@ -12,10 +12,14 @@ import { isKtxSqliteConnectionConfig } from './connectors/sqlite/connector.js';
 import { createSqlServerLiveDatabaseIntrospection } from './connectors/sqlserver/live-database-introspection.js';
 import { isKtxSqlServerConnectionConfig } from './connectors/sqlserver/connector.js';
 import { BigQueryHistoricSqlQueryHistoryReader } from './context/ingest/adapters/historic-sql/bigquery-query-history-reader.js';
+import { queryHistoryDialectForConnection } from './context/ingest/adapters/historic-sql/connection-dialect.js';
 import { createDaemonLiveDatabaseIntrospection } from './context/ingest/adapters/live-database/daemon-introspection.js';
 import { createDefaultLocalIngestAdapters, type DefaultLocalIngestAdaptersOptions } from './context/ingest/local-adapters.js';
 import type { HistoricSqlReader } from './context/ingest/adapters/historic-sql/types.js';
-import type { LiveDatabaseIntrospectionPort } from './context/ingest/adapters/live-database/types.js';
+import type {
+  LiveDatabaseIntrospectionOptions,
+  LiveDatabaseIntrospectionPort,
+} from './context/ingest/adapters/live-database/types.js';
 import { LiveDatabaseSourceAdapter } from './context/ingest/adapters/live-database/live-database.adapter.js';
 import { PostgresPgssReader } from './context/ingest/adapters/historic-sql/postgres-pgss-reader.js';
 import { SnowflakeHistoricSqlQueryHistoryReader } from './context/ingest/adapters/historic-sql/snowflake-query-history-reader.js';
@@ -116,38 +120,39 @@ function createKtxCliLiveDatabaseIntrospection(
     connections: project.config.connections,
   });
   return {
-    async extractSchema(connectionId: string) {
+    async extractSchema(connectionId: string, options?: LiveDatabaseIntrospectionOptions) {
       const connection = project.config.connections[connectionId];
       if (isKtxPostgresConnectionConfig(connection)) {
-        return postgres.extractSchema(connectionId);
+        return postgres.extractSchema(connectionId, options);
       }
       if (isKtxSqliteConnectionConfig(connection)) {
-        return sqlite.extractSchema(connectionId);
+        return sqlite.extractSchema(connectionId, options);
       }
       if (isKtxMysqlConnectionConfig(connection)) {
-        return mysql.extractSchema(connectionId);
+        return mysql.extractSchema(connectionId, options);
       }
       if (isKtxClickHouseConnectionConfig(connection)) {
-        return clickhouse.extractSchema(connectionId);
+        return clickhouse.extractSchema(connectionId, options);
       }
       if (isKtxSqlServerConnectionConfig(connection)) {
-        return sqlserver.extractSchema(connectionId);
+        return sqlserver.extractSchema(connectionId, options);
       }
       if (isKtxBigQueryConnectionConfig(connection)) {
-        return bigquery.extractSchema(connectionId);
+        return bigquery.extractSchema(connectionId, options);
       }
       if (hasSnowflakeDriver(connection)) {
         const { createSnowflakeLiveDatabaseIntrospection } = await import('./connectors/snowflake/live-database-introspection.js');
         const { isKtxSnowflakeConnectionConfig } = await import('./connectors/snowflake/connector.js');;
         if (!isKtxSnowflakeConnectionConfig(connection)) {
-          return daemon.extractSchema(connectionId);
+          return daemon.extractSchema(connectionId, options);
         }
         const snowflake = createSnowflakeLiveDatabaseIntrospection({
           connections: project.config.connections,
+          projectDir: project.projectDir,
         });
-        return snowflake.extractSchema(connectionId);
+        return snowflake.extractSchema(connectionId, options);
       }
-      return daemon.extractSchema(connectionId);
+      return daemon.extractSchema(connectionId, options);
     },
   };
 }
@@ -158,47 +163,6 @@ export interface KtxCliLocalIngestAdaptersOptions extends DefaultLocalIngestAdap
   sqlAnalysisUrl?: string;
   managedDaemon?: ManagedPythonCoreDaemonOptions;
   logger?: KtxOperationalLogger;
-}
-
-function historicSqlRecord(connection: unknown): Record<string, unknown> | null {
-  if (
-    connection &&
-    typeof connection === 'object' &&
-    'historicSql' in connection &&
-    typeof (connection as { historicSql?: unknown }).historicSql === 'object' &&
-    (connection as { historicSql?: unknown }).historicSql !== null &&
-    !Array.isArray((connection as { historicSql?: unknown }).historicSql)
-  ) {
-    return (connection as { historicSql: Record<string, unknown> }).historicSql;
-  }
-  return null;
-}
-
-function enabledHistoricSqlDialect(connection: unknown): 'postgres' | 'bigquery' | 'snowflake' | null {
-  const direct = historicSqlRecord(connection);
-  const context =
-    connection && typeof connection === 'object' && !Array.isArray(connection)
-      ? (connection as { context?: unknown }).context
-      : null;
-  const queryHistory =
-    context && typeof context === 'object' && !Array.isArray(context)
-      ? (context as { queryHistory?: unknown }).queryHistory
-      : null;
-  const enabled =
-    queryHistory && typeof queryHistory === 'object' && !Array.isArray(queryHistory)
-      ? (queryHistory as { enabled?: unknown }).enabled === true
-      : direct?.enabled === true;
-  if (!enabled) {
-    return null;
-  }
-  const driver = String((connection as { driver?: unknown })?.driver ?? '').toLowerCase();
-  if (driver === 'postgres' || driver === 'postgresql') return 'postgres';
-  if (driver === 'bigquery') return 'bigquery';
-  if (driver === 'snowflake') return 'snowflake';
-  const legacyDialect = String(direct?.dialect ?? '').toLowerCase();
-  return legacyDialect === 'postgres' || legacyDialect === 'bigquery' || legacyDialect === 'snowflake'
-    ? legacyDialect
-    : null;
 }
 
 function createEphemeralPostgresHistoricSqlClient(project: KtxLocalProject, connectionId: string) {
@@ -263,6 +227,7 @@ async function createEphemeralSnowflakeHistoricSqlClient(
       const connector = new connectorModule.KtxSnowflakeScanConnector({
         connectionId,
         connection,
+        projectDir: project.projectDir,
       });
       try {
         const result = await connector.executeReadOnly({ connectionId, sql: query }, {} as never);
@@ -303,7 +268,7 @@ function historicSqlOptionsForLocalRun(project: KtxLocalProject, options: KtxCli
     return undefined;
   }
   const connection = project.config.connections[connectionId];
-  const dialect = enabledHistoricSqlDialect(connection);
+  const dialect = queryHistoryDialectForConnection(connection);
   if (!dialect) {
     return undefined;
   }

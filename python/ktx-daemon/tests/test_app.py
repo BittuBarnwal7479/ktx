@@ -155,6 +155,7 @@ def test_database_introspect_endpoint_returns_snapshot() -> None:
             "driver": "postgres",
             "url": "postgresql://readonly@example.test/warehouse",
             "schemas": ["public"],
+            "table_scope": [{"db": "public", "name": "orders"}],
         },
     )
 
@@ -162,6 +163,8 @@ def test_database_introspect_endpoint_returns_snapshot() -> None:
     assert response.json()["connection_id"] == "warehouse"
     assert response.json()["tables"][0]["name"] == "orders"
     assert calls[0].connection_id == "warehouse"
+    assert calls[0].table_scope[0].db == "public"
+    assert calls[0].table_scope[0].name == "orders"
 
 
 def test_database_introspect_endpoint_maps_value_error_to_400() -> None:

@@ -4,9 +4,12 @@ import { homedir } from 'node:os';
 import { resolve } from 'node:path';
 import { assertReadOnlySql, limitSqlForExecution } from '../../context/connections/read-only-sql.js';
 import { createKtxConnectorCapabilities, type KtxColumnSampleInput, type KtxColumnSampleResult, type KtxColumnStatsInput, type KtxColumnStatsResult, type KtxQueryResult, type KtxReadOnlyQueryInput, type KtxScanConnector, type KtxScanContext, type KtxScanInput, type KtxSchemaColumn, type KtxSchemaSnapshot, type KtxSchemaTable, type KtxTableRef, type KtxTableSampleInput, type KtxTableListEntry, type KtxTableSampleResult } from '../../context/scan/types.js';
-import * as snowflake from 'snowflake-sdk';
+import { scopedTableNames } from '../../context/scan/table-ref.js';
+import snowflake from 'snowflake-sdk';
+import type { Bind, Binds, Connection, ConnectionOptions } from 'snowflake-sdk';
 import { KtxSnowflakeDialect } from './dialect.js';
 import { assertSafeSnowflakeIdentifier, quoteSnowflakeIdentifier } from './identifiers.js';
+import { configureSnowflakeSdkLogger } from './sdk-logger.js';
 
 export interface KtxSnowflakeConnectionConfig {
   driver?: string;
@@ -21,6 +24,7 @@ export interface KtxSnowflakeConnectionConfig {
   privateKey?: string;
   passphrase?: string;
   role?: string;
+  maxSessions?: number;
   [key: string]: unknown;
 }
 
@@ -35,6 +39,7 @@ export interface KtxSnowflakeResolvedConnectionConfig {
   privateKey?: string;
   passphrase?: string;
   role?: string;
+  maxSessions: number;
 }
 
 export interface KtxSnowflakeRawColumnMetadata {
@@ -56,7 +61,7 @@ export interface KtxSnowflakeRawTableMetadata {
 export interface KtxSnowflakeDriver {
   test(): Promise<{ success: boolean; error?: string }>;
   query(sql: string, params?: unknown): Promise<KtxQueryResult>;
-  getSchemaMetadata(schemaName?: string): Promise<KtxSnowflakeRawTableMetadata[]>;
+  getSchemaMetadata(schemaName?: string, scopedTableNames?: readonly string[] | null): Promise<KtxSnowflakeRawTableMetadata[]>;
   listSchemas(): Promise<string[]>;
   listTables(schemas?: string[]): Promise<KtxTableListEntry[]>;
   cleanup(): Promise<void>;
@@ -79,6 +84,12 @@ export interface KtxSnowflakeSdkOptionsProvider {
 export interface KtxSnowflakeScanConnectorOptions {
   connectionId: string;
   connection: KtxSnowflakeConnectionConfig | undefined;
+  /**
+   * KTX project directory. When provided, snowflake-sdk's logger is redirected to
+   * `<projectDir>/.ktx/logs/snowflake.log` so its JSON output does not bleed into
+   * the CLI's TTY. Tests that use a fake driverFactory can leave this undefined.
+   */
+  projectDir?: string;
   driverFactory?: KtxSnowflakeDriverFactory;
   sdkOptionsProvider?: KtxSnowflakeSdkOptionsProvider;
   env?: NodeJS.ProcessEnv;
@@ -123,13 +134,31 @@ function stringConfigValue(
   return typeof value === 'string' && value.trim().length > 0 ? resolveStringReference(value.trim(), env) : undefined;
 }
 
+function positiveIntegerConfigValue(input: {
+  connection: KtxSnowflakeConnectionConfig;
+  key: keyof KtxSnowflakeConnectionConfig;
+  connectionId: string;
+  defaultValue: number;
+}): number {
+  const value = input.connection[input.key];
+  if (value === undefined) {
+    return input.defaultValue;
+  }
+  const numberValue = Number(value);
+  if (!Number.isInteger(numberValue) || numberValue < 1) {
+    throw new Error(`connections.${input.connectionId}.${String(input.key)} must be a positive integer`);
+  }
+  return numberValue;
+}
+
 function schemaNames(connection: KtxSnowflakeConnectionConfig, env: NodeJS.ProcessEnv): string[] {
   if (Array.isArray(connection.schema_names) && connection.schema_names.length > 0) {
     return connection.schema_names
       .filter((schema) => schema.trim().length > 0)
       .map((schema) => resolveStringReference(schema, env));
   }
-  return [stringConfigValue(connection, 'schema_name', env) ?? 'PUBLIC'];
+  const single = stringConfigValue(connection, 'schema_name', env);
+  return single ? [single] : [];
 }
 
 function firstNumber(value: unknown): number | null {
@@ -159,7 +188,7 @@ function normalizeSnowflakeValue(value: unknown, columnType?: string): unknown {
   return value;
 }
 
-function toSnowflakeBind(value: unknown): snowflake.Bind {
+function toSnowflakeBind(value: unknown): Bind {
   if (value === null || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
     return value;
   }
@@ -169,7 +198,7 @@ function toSnowflakeBind(value: unknown): snowflake.Bind {
   return String(value);
 }
 
-function toSnowflakeBinds(params: unknown[] | undefined): snowflake.Binds | undefined {
+function toSnowflakeBinds(params: unknown[] | undefined): Binds | undefined {
   return params?.map((value) => toSnowflakeBind(value));
 }
 
@@ -220,6 +249,12 @@ export function snowflakeConnectionConfigFromConfig(input: {
     database,
     schemas: resolvedSchemas,
     username,
+    maxSessions: positiveIntegerConfigValue({
+      connection: input.connection,
+      key: 'maxSessions',
+      connectionId: input.connectionId,
+      defaultValue: 4,
+    }),
   };
   const role = stringConfigValue(input.connection, 'role', env);
   if (role) {
@@ -255,6 +290,7 @@ class DefaultSnowflakeDriverFactory implements KtxSnowflakeDriverFactory {
 
 class SnowflakeSdkDriver implements KtxSnowflakeDriver {
   private closeSdkOptions: Array<() => Promise<void>> = [];
+  private pool: ReturnType<typeof snowflake.createPool> | null = null;
 
   constructor(
     private readonly resolved: KtxSnowflakeResolvedConnectionConfig,
@@ -275,37 +311,50 @@ class SnowflakeSdkDriver implements KtxSnowflakeDriver {
   }
 
   async query(sql: string, params?: unknown): Promise<KtxQueryResult> {
-    let connection: snowflake.Connection | null = null;
+    const binds = Array.isArray(params) ? toSnowflakeBinds(params) : undefined;
     try {
-      connection = await this.createConnection();
-      const binds = Array.isArray(params) ? toSnowflakeBinds(params) : undefined;
-      const result = await this.executeSnowflakeQuery(connection, sql, binds);
+      const pool = await this.getPool();
+      const result = await pool.use(async (connection: snowflake.Connection) =>
+        this.executeSnowflakeQuery(connection, sql, binds),
+      );
       return { ...result, totalRows: result.rows.length, rowCount: result.rows.length };
-    } finally {
-      if (connection) {
-        await this.destroyConnection(connection);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (/timeout/i.test(message) && /pool|acquire/i.test(message)) {
+        throw new Error(
+          "Snowflake session pool exhausted after 60s - consider lowering maxSessions or increasing your account's concurrent-statement limit.",
+        );
       }
+      throw error;
     }
   }
 
-  async getSchemaMetadata(schemaName = this.resolved.schemas[0] ?? 'PUBLIC'): Promise<KtxSnowflakeRawTableMetadata[]> {
+  async getSchemaMetadata(
+    schemaName = this.resolved.schemas[0] ?? 'PUBLIC',
+    scopedTableNames: readonly string[] | null = null,
+  ): Promise<KtxSnowflakeRawTableMetadata[]> {
+    const scopeClause =
+      scopedTableNames && scopedTableNames.length > 0
+        ? `AND TABLE_NAME IN (${scopedTableNames.map(() => '?').join(', ')})`
+        : '';
+    const scopeParams = scopedTableNames ?? [];
     const tablesResult = await this.query(
       `
         SELECT TABLE_NAME, TABLE_TYPE, COMMENT, ROW_COUNT
         FROM INFORMATION_SCHEMA.TABLES
-        WHERE TABLE_SCHEMA = ? AND TABLE_CATALOG = ?
+        WHERE TABLE_SCHEMA = ? AND TABLE_CATALOG = ? ${scopeClause}
         ORDER BY TABLE_NAME
       `,
-      [schemaName, this.resolved.database],
+      [schemaName, this.resolved.database, ...scopeParams],
     );
     const columnsResult = await this.query(
       `
         SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE, IS_NULLABLE, COMMENT, ORDINAL_POSITION
         FROM INFORMATION_SCHEMA.COLUMNS
-        WHERE TABLE_SCHEMA = ? AND TABLE_CATALOG = ?
+        WHERE TABLE_SCHEMA = ? AND TABLE_CATALOG = ? ${scopeClause}
         ORDER BY TABLE_NAME, ORDINAL_POSITION
       `,
-      [schemaName, this.resolved.database],
+      [schemaName, this.resolved.database, ...scopeParams],
     );
     const columnsByTable = new Map<string, KtxSnowflakeRawColumnMetadata[]>();
     for (const row of columnsResult.rows) {
@@ -357,27 +406,41 @@ class SnowflakeSdkDriver implements KtxSnowflakeDriver {
   }
 
   async cleanup(): Promise<void> {
+    const pool = this.pool;
+    this.pool = null;
+    if (pool) {
+      // Drain before clear so in-flight Snowflake statements finish before idle
+      // sessions are closed.
+      await pool.drain();
+      await pool.clear();
+    }
     const closers = this.closeSdkOptions;
     this.closeSdkOptions = [];
-    await Promise.all(closers.map((close) => close()));
+    await Promise.all(closers.map((close) => Promise.resolve(close())));
   }
 
   private async runTest(): Promise<{ success: boolean; error?: string }> {
-    let connection: snowflake.Connection | null = null;
     try {
-      connection = await this.createConnection();
-      await this.executeSnowflakeQuery(connection, 'SELECT 1');
+      await this.query('SELECT 1');
       return { success: true };
     } catch (error) {
       return { success: false, error: error instanceof Error ? error.message : String(error) };
-    } finally {
-      if (connection) {
-        await this.destroyConnection(connection);
-      }
     }
   }
 
-  private async createConnection(): Promise<snowflake.Connection> {
+  private async getPool(): Promise<ReturnType<typeof snowflake.createPool>> {
+    if (!this.pool) {
+      this.pool = snowflake.createPool(await this.resolveConnectionOptions(), {
+        min: 0,
+        max: this.resolved.maxSessions,
+        evictionRunIntervalMillis: 30_000,
+        acquireTimeoutMillis: 60_000,
+      });
+    }
+    return this.pool;
+  }
+
+  private async resolveConnectionOptions(): Promise<snowflake.ConnectionOptions> {
     const patch = await this.sdkOptionsProvider?.resolve({
       account: this.resolved.account,
       connection: { ...this.resolved, driver: 'snowflake' },
@@ -385,60 +448,27 @@ class SnowflakeSdkDriver implements KtxSnowflakeDriver {
     if (patch?.close) {
       this.closeSdkOptions.push(patch.close);
     }
-    const baseConfig: snowflake.ConnectionOptions = {
+    const sessionSchema = this.resolved.schemas[0];
+    const baseConfig: ConnectionOptions = {
       account: this.resolved.account,
       username: this.resolved.username,
       warehouse: this.resolved.warehouse,
       database: this.resolved.database,
-      schema: this.resolved.schemas[0] ?? 'PUBLIC',
+      ...(sessionSchema ? { schema: sessionSchema } : {}),
       role: this.resolved.role,
+      clientSessionKeepAlive: true,
+      clientSessionKeepAliveHeartbeatFrequency: 900,
       ...patch?.sdkOptions,
     };
-    const connectionConfig: snowflake.ConnectionOptions =
-      this.resolved.authMethod === 'rsa'
-        ? { ...baseConfig, authenticator: 'SNOWFLAKE_JWT', privateKey: this.decryptPrivateKey() }
-        : { ...baseConfig, password: this.resolved.password };
-    const connection = snowflake.createConnection(connectionConfig);
-    return new Promise((resolveConnection, rejectConnection) => {
-      connection.connect((error, connected) => {
-        if (error) {
-          rejectConnection(error);
-          return;
-        }
-        const resolvedConnection = connected ?? connection;
-        this.setConnectionContext(resolvedConnection).then(
-          () => resolveConnection(resolvedConnection),
-          (contextError) => {
-            resolvedConnection.destroy(() => undefined);
-            rejectConnection(contextError);
-          },
-        );
-      });
-    });
-  }
-
-  private async setConnectionContext(connection: snowflake.Connection): Promise<void> {
-    if (this.resolved.role) {
-      await this.executeSnowflakeQuery(connection, `USE ROLE ${quoteSnowflakeIdentifier(this.resolved.role, 'role')}`);
-    }
-    await this.executeSnowflakeQuery(
-      connection,
-      `USE WAREHOUSE ${quoteSnowflakeIdentifier(this.resolved.warehouse, 'warehouse')}`,
-    );
-    await this.executeSnowflakeQuery(
-      connection,
-      `USE DATABASE ${quoteSnowflakeIdentifier(this.resolved.database, 'database')}`,
-    );
-    await this.executeSnowflakeQuery(
-      connection,
-      `USE SCHEMA ${quoteSnowflakeIdentifier(this.resolved.schemas[0] ?? 'PUBLIC', 'schema')}`,
-    );
+    return this.resolved.authMethod === 'rsa'
+      ? { ...baseConfig, authenticator: 'SNOWFLAKE_JWT', privateKey: this.decryptPrivateKey() }
+      : { ...baseConfig, password: this.resolved.password };
   }
 
   private async executeSnowflakeQuery(
-    connection: snowflake.Connection,
+    connection: Connection,
     sqlText: string,
-    binds?: snowflake.Binds,
+    binds?: Binds,
   ): Promise<{ headers: string[]; headerTypes?: string[]; rows: unknown[][] }> {
     return new Promise((resolveQuery, rejectQuery) => {
       connection.execute({
@@ -457,18 +487,6 @@ class SnowflakeSdkDriver implements KtxSnowflakeDriver {
             : [];
           resolveQuery({ headers, headerTypes, rows: normalizedRows });
         },
-      });
-    });
-  }
-
-  private destroyConnection(connection: snowflake.Connection): Promise<void> {
-    return new Promise((resolveDestroy, rejectDestroy) => {
-      connection.destroy((error) => {
-        if (error) {
-          rejectDestroy(error);
-          return;
-        }
-        resolveDestroy();
       });
     });
   }
@@ -510,6 +528,9 @@ export class KtxSnowflakeScanConnector implements KtxScanConnector {
     this.driverFactory = options.driverFactory ?? new DefaultSnowflakeDriverFactory();
     this.now = options.now ?? (() => new Date());
     this.id = `snowflake:${options.connectionId}`;
+    if (options.projectDir) {
+      configureSnowflakeSdkLogger(options.projectDir);
+    }
   }
 
   async testConnection(): Promise<{ success: boolean; error?: string }> {
@@ -520,7 +541,11 @@ export class KtxSnowflakeScanConnector implements KtxScanConnector {
     this.assertConnection(input.connectionId);
     const tables: KtxSchemaTable[] = [];
     for (const schemaName of this.resolved.schemas) {
-      const rawTables = await this.getDriver().getSchemaMetadata(schemaName);
+      const scopedNames = input.tableScope
+        ? scopedTableNames(input.tableScope, { catalog: this.resolved.database, db: schemaName })
+        : null;
+      if (scopedNames && scopedNames.length === 0) continue;
+      const rawTables = await this.getDriver().getSchemaMetadata(schemaName, scopedNames);
       const primaryKeys = await this.primaryKeys(rawTables.map((table) => table.name), schemaName);
       tables.push(...rawTables.map((table) => this.toSchemaTable(table, primaryKeys)));
     }
@@ -653,32 +678,39 @@ export class KtxSnowflakeScanConnector implements KtxScanConnector {
   }
 
   private async primaryKeys(tableNames: string[], schemaName: string): Promise<Map<string, Set<string>>> {
-    if (tableNames.length === 0) {
-      return new Map();
-    }
-    const result = await this.getDriver().query(
-      `
-        SELECT tc.TABLE_NAME, kcu.COLUMN_NAME
-        FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
-        JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu
-          ON tc.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME
-          AND tc.TABLE_SCHEMA = kcu.TABLE_SCHEMA
-          AND tc.TABLE_CATALOG = kcu.TABLE_CATALOG
-        WHERE tc.CONSTRAINT_TYPE = 'PRIMARY KEY'
-          AND tc.TABLE_SCHEMA = ?
-          AND tc.TABLE_CATALOG = ?
-        ORDER BY tc.TABLE_NAME, kcu.ORDINAL_POSITION
-      `,
-      [schemaName, this.resolved.database],
-    );
     const grouped = new Map<string, Set<string>>();
     for (const tableName of tableNames) {
       grouped.set(tableName, new Set());
     }
-    for (const row of result.rows) {
-      const tableName = String(row[0]);
-      const columnName = String(row[1]);
-      grouped.get(tableName)?.add(columnName);
+    if (tableNames.length === 0) {
+      return grouped;
+    }
+    const tableNamePlaceholders = tableNames.map(() => '?').join(', ');
+    try {
+      const result = await this.getDriver().query(
+        `
+          SELECT tc.TABLE_NAME, kcu.COLUMN_NAME
+          FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
+          JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu
+            ON tc.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME
+            AND tc.TABLE_SCHEMA = kcu.TABLE_SCHEMA
+            AND tc.TABLE_CATALOG = kcu.TABLE_CATALOG
+          WHERE tc.CONSTRAINT_TYPE = 'PRIMARY KEY'
+            AND tc.TABLE_SCHEMA = ?
+            AND tc.TABLE_CATALOG = ?
+            AND tc.TABLE_NAME IN (${tableNamePlaceholders})
+          ORDER BY tc.TABLE_NAME, kcu.ORDINAL_POSITION
+        `,
+        [schemaName, this.resolved.database, ...tableNames],
+      );
+      for (const row of result.rows) {
+        const tableName = String(row[0]);
+        const columnName = String(row[1]);
+        grouped.get(tableName)?.add(columnName);
+      }
+    } catch {
+      // INFORMATION_SCHEMA.KEY_COLUMN_USAGE often isn't granted to read-only roles;
+      // continue with empty PK map and let FK inference + profiling carry the slack.
     }
     return grouped;
   }

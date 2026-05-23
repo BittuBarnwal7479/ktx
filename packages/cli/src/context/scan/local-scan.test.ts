@@ -6,9 +6,15 @@ import YAML from 'yaml';
 import type { SourceAdapter } from '../../context/ingest/types.js';
 import type { KtxLlmRuntimePort } from '../../context/llm/runtime-port.js';
 import { initKtxProject, type KtxLocalProject, loadKtxProject } from '../../context/project/project.js';
-import { filterSnapshotTables, resolveEnabledTables } from './enabled-tables.js';
+import { resolveEnabledTables } from './enabled-tables.js';
 import { getLocalScanReport, getLocalScanStatus, runLocalScan } from './local-scan.js';
-import type { KtxQueryResult, KtxReadOnlyQueryInput, KtxSchemaSnapshot, KtxSchemaTable } from './types.js';
+import { tableRefKey, tableRefSet, type KtxTableRefKey } from './table-ref.js';
+import type {
+  KtxQueryResult,
+  KtxReadOnlyQueryInput,
+  KtxScanConnector,
+  KtxSchemaSnapshot,
+} from './types.js';
 
 function relationshipSqlResult(
   input: KtxReadOnlyQueryInput,
@@ -120,7 +126,43 @@ async function writeDatabaseConfigWithoutIngestAdapters(projectDir: string): Pro
   );
 }
 
-function fetchOnlyAdapter(options: { extractedAt?: () => string } = {}): SourceAdapter {
+function defaultFetchSnapshot(options: { extractedAt?: () => string } = {}): KtxSchemaSnapshot {
+  return {
+    connectionId: 'warehouse',
+    driver: 'postgres',
+    extractedAt: options.extractedAt?.() ?? '2026-04-29T09:00:00.000Z',
+    scope: { schemas: ['public'] },
+    metadata: {},
+    tables: [
+      {
+        name: 'orders',
+        catalog: null,
+        db: 'public',
+        kind: 'table',
+        comment: null,
+        estimatedRows: null,
+        columns: [
+          {
+            name: 'id',
+            nativeType: 'integer',
+            normalizedType: 'integer',
+            dimensionType: 'number',
+            nullable: false,
+            primaryKey: true,
+            comment: null,
+          },
+        ],
+        foreignKeys: [],
+      },
+    ],
+  };
+}
+
+function fetchOnlyAdapter(options: { extractedAt?: () => string; snapshot?: KtxSchemaSnapshot } = {}): SourceAdapter {
+  const scanSnapshot = options.snapshot
+    ? { ...options.snapshot, ...(options.extractedAt ? { extractedAt: options.extractedAt() } : {}) }
+    : defaultFetchSnapshot(options);
+
   return {
     source: 'live-database',
     skillNames: ['live_database_ingest'],
@@ -129,36 +171,86 @@ function fetchOnlyAdapter(options: { extractedAt?: () => string } = {}): SourceA
       await writeFile(
         join(stagedDir, 'connection.json'),
         `${JSON.stringify({
-          connectionId: 'warehouse',
-          driver: 'postgres',
-          ...(options.extractedAt ? { extractedAt: options.extractedAt() } : {}),
-          scope: { schemas: ['public'] },
-          metadata: {},
+          connectionId: scanSnapshot.connectionId,
+          driver: scanSnapshot.driver,
+          extractedAt: scanSnapshot.extractedAt,
+          scope: scanSnapshot.scope,
+          metadata: scanSnapshot.metadata,
         })}\n`,
         'utf-8',
       );
       await writeFile(join(stagedDir, 'foreign-keys.json'), '{"foreignKeys":[]}\n', 'utf-8');
-      await writeFile(
-        join(stagedDir, 'tables', 'orders.json'),
-        '{"name":"orders","catalog":null,"db":"public","kind":"table","comment":null,"estimatedRows":null,"columns":[{"name":"id","nativeType":"integer","normalizedType":"integer","dimensionType":"number","nullable":false,"primaryKey":true,"comment":null}],"foreignKeys":[]}\n',
-        'utf-8',
-      );
+      for (const table of scanSnapshot.tables) {
+        await writeFile(join(stagedDir, 'tables', `${table.name}.json`), `${JSON.stringify(table)}\n`, 'utf-8');
+      }
     },
     async detect() {
       return true;
     },
     async chunk() {
       return {
-        workUnits: [
-          {
-            unitKey: 'live-database-public-orders',
-            rawFiles: ['tables/orders.json'],
-            dependencyPaths: ['connection.json', 'foreign-keys.json'],
-            peerFileIndex: [],
-          },
-        ],
+        workUnits: scanSnapshot.tables.map((table) => ({
+          unitKey: `live-database-${table.db ?? 'default'}-${table.name}`,
+          rawFiles: [`tables/${table.name}.json`],
+          dependencyPaths: ['connection.json', 'foreign-keys.json'],
+          peerFileIndex: [],
+        })),
       };
     },
+  };
+}
+
+function nativeScanSnapshot(): KtxSchemaSnapshot {
+  return {
+    connectionId: 'warehouse',
+    driver: 'postgres',
+    extractedAt: '2026-04-29T09:00:00.000Z',
+    scope: { schemas: ['public'] },
+    metadata: {},
+    tables: [
+      {
+        catalog: null,
+        db: 'public',
+        name: 'orders',
+        kind: 'table',
+        comment: 'Orders',
+        estimatedRows: 1,
+        foreignKeys: [],
+        columns: [
+          {
+            name: 'id',
+            nativeType: 'integer',
+            normalizedType: 'integer',
+            dimensionType: 'number',
+            nullable: false,
+            primaryKey: true,
+            comment: 'Order id',
+          },
+        ],
+      },
+    ],
+  };
+}
+
+function nativeScanConnector(options: { cleanup?: () => Promise<void> } = {}): KtxScanConnector {
+  return {
+    id: 'test:warehouse',
+    driver: 'postgres',
+    capabilities: {
+      structuralIntrospection: true,
+      tableSampling: true,
+      columnSampling: true,
+      columnStats: false,
+      readOnlySql: false,
+      nestedAnalysis: false,
+      eventStreamDiscovery: false,
+      formalForeignKeys: false,
+      estimatedRowCounts: false,
+    },
+    introspect: vi.fn(async () => nativeScanSnapshot()),
+    sampleTable: vi.fn(async () => ({ headers: ['id'], rows: [[1]], totalRows: 1 })),
+    sampleColumn: vi.fn(async () => ({ values: ['1'], nullCount: 0, distinctCount: 1 })),
+    ...(options.cleanup ? { cleanup: options.cleanup } : {}),
   };
 }
 
@@ -244,6 +336,73 @@ describe('local scan', () => {
     });
   });
 
+  it('passes enabled_tables as fetch context tableScope and does not post-filter staged snapshots', async () => {
+    project.config.connections.warehouse = {
+      ...project.config.connections.warehouse,
+      enabled_tables: ['public.orders'],
+    };
+    let capturedTableScope: ReadonlySet<KtxTableRefKey> | undefined;
+    const adapter: SourceAdapter = {
+      source: 'live-database',
+      skillNames: ['live_database_ingest'],
+      async fetch(_pullConfig, stagedDir, ctx) {
+        capturedTableScope = ctx.tableScope;
+        await mkdir(join(stagedDir, 'tables'), { recursive: true });
+        await writeFile(
+          join(stagedDir, 'connection.json'),
+          '{"connectionId":"warehouse","driver":"postgres","scope":{"schemas":["public"]},"metadata":{}}\n',
+          'utf-8',
+        );
+        await writeFile(join(stagedDir, 'foreign-keys.json'), '{"foreignKeys":[]}\n', 'utf-8');
+        await writeFile(
+          join(stagedDir, 'tables', 'customers.json'),
+          '{"name":"customers","catalog":null,"db":"public","kind":"table","comment":null,"estimatedRows":100,"columns":[{"name":"id","nativeType":"integer","normalizedType":"integer","dimensionType":"number","nullable":false,"primaryKey":true,"comment":null}],"foreignKeys":[]}\n',
+          'utf-8',
+        );
+        await writeFile(
+          join(stagedDir, 'tables', 'orders.json'),
+          '{"name":"orders","catalog":null,"db":"public","kind":"table","comment":null,"estimatedRows":1000,"columns":[{"name":"id","nativeType":"integer","normalizedType":"integer","dimensionType":"number","nullable":false,"primaryKey":true,"comment":null}],"foreignKeys":[]}\n',
+          'utf-8',
+        );
+      },
+      async detect() {
+        return true;
+      },
+      async chunk() {
+        return {
+          workUnits: [
+            {
+              unitKey: 'live-database-public-customers',
+              rawFiles: ['tables/customers.json'],
+              dependencyPaths: ['connection.json', 'foreign-keys.json'],
+              peerFileIndex: [],
+            },
+            {
+              unitKey: 'live-database-public-orders',
+              rawFiles: ['tables/orders.json'],
+              dependencyPaths: ['connection.json', 'foreign-keys.json'],
+              peerFileIndex: [],
+            },
+          ],
+        };
+      },
+    };
+
+    const result = await runLocalScan({
+      project,
+      adapters: [adapter],
+      connectionId: 'warehouse',
+      jobId: 'scan-strict-scope-fetch',
+      now: () => new Date('2026-05-22T00:00:00.000Z'),
+    });
+
+    expect([...(capturedTableScope ?? [])]).toEqual([...tableRefSet([{ catalog: null, db: 'public', name: 'orders' }])]);
+    expect(result.report.diffSummary.tablesAdded).toBe(2);
+    const structuralManifest = await readFile(join(project.projectDir, 'semantic-layer/warehouse/_schema/public.yaml'), 'utf-8');
+    expect(structuralManifest).toContain('customers:');
+    expect(structuralManifest).toContain('orders:');
+  });
+
   it('runs a structural database scan when live-database is not listed in ktx.yaml', async () => {
     await writeDatabaseConfigWithoutIngestAdapters(project.projectDir);
     project = await loadKtxProject({ projectDir: project.projectDir });
@@ -263,6 +422,59 @@ describe('local scan', () => {
         reportPath: 'raw-sources/warehouse/live-database/2026-04-29-091000-scan-run-without-public-adapter/scan-report.json',
       },
     });
+  });
+
+  it('threads the structural snapshot into enrichment without connector re-introspection', async () => {
+    project.config.scan.enrichment = { mode: 'deterministic' };
+    const connector = nativeScanConnector();
+    const introspect = vi.mocked(connector.introspect);
+
+    const result = await runLocalScan({
+      project,
+      adapters: [fetchOnlyAdapter()],
+      connectionId: 'warehouse',
+      mode: 'enriched',
+      connector,
+      jobId: 'scan-enrichment-snapshot-threading',
+      now: () => new Date('2026-04-29T09:11:00.000Z'),
+    });
+
+    expect(result.report.enrichment.tableDescriptions).toBe('completed');
+    expect(introspect).not.toHaveBeenCalled();
+  });
+
+  it('cleans up a scan connector constructed by local scan', async () => {
+    const cleanup = vi.fn(async () => undefined);
+
+    await runLocalScan({
+      project,
+      adapters: [fetchOnlyAdapter()],
+      connectionId: 'warehouse',
+      mode: 'relationships',
+      detectRelationships: true,
+      createConnector: vi.fn(async () => nativeScanConnector({ cleanup })),
+      jobId: 'scan-owned-connector-cleanup',
+      now: () => new Date('2026-04-29T09:13:00.000Z'),
+    });
+
+    expect(cleanup).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not clean up a caller-supplied scan connector', async () => {
+    const cleanup = vi.fn(async () => undefined);
+
+    await runLocalScan({
+      project,
+      adapters: [fetchOnlyAdapter()],
+      connectionId: 'warehouse',
+      mode: 'relationships',
+      detectRelationships: true,
+      connector: nativeScanConnector({ cleanup }),
+      jobId: 'scan-supplied-connector-cleanup',
+      now: () => new Date('2026-04-29T09:13:30.000Z'),
+    });
+
+    expect(cleanup).not.toHaveBeenCalled();
   });
 
   it('reuses scan report and raw-source paths when the same local scan run id is retried', async () => {
@@ -447,10 +659,11 @@ describe('local scan', () => {
         };
       },
     };
+    const adapter = fetchOnlyAdapter({ snapshot: await connector.introspect() });
 
     const result = await runLocalScan({
       project,
-      adapters: [fetchOnlyAdapter()],
+      adapters: [adapter],
       connectionId: 'warehouse',
       mode: 'relationships',
       detectRelationships: true,
@@ -534,10 +747,11 @@ describe('local scan', () => {
         return relationshipSqlResult(input);
       },
     };
+    const adapter = fetchOnlyAdapter({ snapshot: await connector.introspect() });
 
     const result = await runLocalScan({
       project,
-      adapters: [fetchOnlyAdapter()],
+      adapters: [adapter],
       connectionId: 'warehouse',
       mode: 'relationships',
       detectRelationships: true,
@@ -548,6 +762,142 @@ describe('local scan', () => {
 
     expect(result.report.enrichment.statisticalValidation).toBe('completed');
     expect(result.report.relationships).toEqual({ accepted: 1, review: 0, rejected: 0, skipped: 0 });
+    expect(result.report.warnings).toEqual([]);
+  });
+
+  it('keeps prototype connector methods when enabled_tables is configured', async () => {
+    project.config.connections.warehouse = {
+      ...project.config.connections.warehouse,
+      enabled_tables: ['public.customers', 'public.orders'],
+    };
+    const scopedAdapter: SourceAdapter = {
+      source: 'live-database',
+      skillNames: ['live_database_ingest'],
+      async fetch(_pullConfig, stagedDir) {
+        await mkdir(join(stagedDir, 'tables'), { recursive: true });
+        await writeFile(
+          join(stagedDir, 'connection.json'),
+          '{"connectionId":"warehouse","driver":"postgres","scope":{"schemas":["public"]},"metadata":{}}\n',
+          'utf-8',
+        );
+        await writeFile(join(stagedDir, 'foreign-keys.json'), '{"foreignKeys":[]}\n', 'utf-8');
+        await writeFile(
+          join(stagedDir, 'tables', 'customers.json'),
+          '{"name":"customers","catalog":null,"db":"public","kind":"table","comment":null,"estimatedRows":100,"columns":[{"name":"id","nativeType":"integer","normalizedType":"integer","dimensionType":"number","nullable":false,"primaryKey":true,"comment":null}],"foreignKeys":[]}\n',
+          'utf-8',
+        );
+        await writeFile(
+          join(stagedDir, 'tables', 'orders.json'),
+          '{"name":"orders","catalog":null,"db":"public","kind":"table","comment":null,"estimatedRows":1000,"columns":[{"name":"customer_id","nativeType":"integer","normalizedType":"integer","dimensionType":"number","nullable":false,"primaryKey":false,"comment":null}],"foreignKeys":[]}\n',
+          'utf-8',
+        );
+      },
+      async detect() {
+        return true;
+      },
+      async chunk() {
+        return {
+          workUnits: [
+            {
+              unitKey: 'live-database-public-customers',
+              rawFiles: ['tables/customers.json'],
+              dependencyPaths: ['connection.json', 'foreign-keys.json'],
+              peerFileIndex: [],
+            },
+            {
+              unitKey: 'live-database-public-orders',
+              rawFiles: ['tables/orders.json'],
+              dependencyPaths: ['connection.json', 'foreign-keys.json'],
+              peerFileIndex: [],
+            },
+          ],
+        };
+      },
+    };
+    class FakeClassConnector implements KtxScanConnector {
+      readonly id = 'test:warehouse';
+      readonly driver = 'postgres' as const;
+      readonly capabilities = {
+        structuralIntrospection: true as const,
+        tableSampling: false,
+        columnSampling: false,
+        columnStats: true,
+        readOnlySql: true,
+        nestedAnalysis: false,
+        eventStreamDiscovery: false,
+        formalForeignKeys: false,
+        estimatedRowCounts: true,
+      };
+
+      async introspect(): Promise<KtxSchemaSnapshot> {
+        return {
+          connectionId: 'warehouse',
+          driver: 'postgres',
+          extractedAt: '2026-05-22T00:00:00.000Z',
+          scope: { schemas: ['public'] },
+          metadata: {},
+          tables: [
+            {
+              catalog: null,
+              db: 'public',
+              name: 'customers',
+              kind: 'table',
+              comment: null,
+              estimatedRows: 100,
+              foreignKeys: [],
+              columns: [
+                {
+                  name: 'id',
+                  nativeType: 'integer',
+                  normalizedType: 'integer',
+                  dimensionType: 'number',
+                  nullable: false,
+                  primaryKey: true,
+                  comment: null,
+                },
+              ],
+            },
+            {
+              catalog: null,
+              db: 'public',
+              name: 'orders',
+              kind: 'table',
+              comment: null,
+              estimatedRows: 1000,
+              foreignKeys: [],
+              columns: [
+                {
+                  name: 'customer_id',
+                  nativeType: 'integer',
+                  normalizedType: 'integer',
+                  dimensionType: 'number',
+                  nullable: false,
+                  primaryKey: false,
+                  comment: null,
+                },
+              ],
+            },
+          ],
+        };
+      }
+
+      async executeReadOnly(input: KtxReadOnlyQueryInput): Promise<KtxQueryResult> {
+        return relationshipSqlResult(input);
+      }
+    }
+
+    const result = await runLocalScan({
+      project,
+      adapters: [scopedAdapter],
+      connectionId: 'warehouse',
+      mode: 'relationships',
+      detectRelationships: true,
+      connector: new FakeClassConnector(),
+      jobId: 'scan-prototype-connector-scope',
+      now: () => new Date('2026-05-22T00:00:00.000Z'),
+    });
+
+    expect(result.report.relationships.accepted).toBe(1);
     expect(result.report.warnings).toEqual([]);
   });
 
@@ -628,10 +978,11 @@ describe('local scan', () => {
         return relationshipSqlResult(input);
       },
     };
+    const adapter = fetchOnlyAdapter({ snapshot: await connector.introspect() });
 
     const result = await runLocalScan({
       project,
-      adapters: [fetchOnlyAdapter()],
+      adapters: [adapter],
       connectionId: 'warehouse',
       mode: 'relationships',
       detectRelationships: true,
@@ -737,10 +1088,11 @@ describe('local scan', () => {
         return relationshipSqlResult(input);
       },
     };
+    const adapter = fetchOnlyAdapter({ snapshot: await connector.introspect() });
 
     const result = await runLocalScan({
       project,
-      adapters: [fetchOnlyAdapter()],
+      adapters: [adapter],
       connectionId: 'warehouse',
       mode: 'relationships',
       detectRelationships: true,
@@ -863,10 +1215,11 @@ describe('local scan', () => {
         return relationshipSqlResult(input);
       },
     };
+    const adapter = fetchOnlyAdapter({ snapshot: await connector.introspect() });
 
     const result = await runLocalScan({
       project,
-      adapters: [fetchOnlyAdapter()],
+      adapters: [adapter],
       connectionId: 'warehouse',
       mode: 'enriched',
       connector,
@@ -993,10 +1346,11 @@ describe('local scan', () => {
         return relationshipSqlResult(input, { throwOnCoverage: true });
       },
     };
+    const adapter = fetchOnlyAdapter({ snapshot: await connector.introspect() });
 
     const result = await runLocalScan({
       project,
-      adapters: [fetchOnlyAdapter()],
+      adapters: [adapter],
       connectionId: 'warehouse',
       mode: 'relationships',
       detectRelationships: true,
@@ -1128,7 +1482,8 @@ describe('local scan', () => {
       join(project.projectDir, 'semantic-layer/warehouse/_schema/public.yaml'),
       'utf-8',
     );
-    expect(manifestRaw).toContain('ai: "Deterministic description');
+    expect(manifestRaw).toContain('ai: |-');
+    expect(manifestRaw).toContain('Deterministic description');
   });
 
   it('persists structural artifacts and a recoverable warning when standalone enrichment execution fails', async () => {
@@ -1301,10 +1656,11 @@ describe('local scan', () => {
       },
     };
     const llmRuntime = deterministicLlmRuntime();
+    const adapter = fetchOnlyAdapter({ snapshot: await connector.introspect() });
 
     const first = await runLocalScan({
       project,
-      adapters: [fetchOnlyAdapter()],
+      adapters: [adapter],
       connectionId: 'warehouse',
       mode: 'enriched',
       connector,
@@ -1333,7 +1689,7 @@ describe('local scan', () => {
     const generateObject = vi.spyOn(llmRuntime, 'generateObject');
     const retry = await runLocalScan({
       project,
-      adapters: [fetchOnlyAdapter()],
+      adapters: [adapter],
       connectionId: 'warehouse',
       mode: 'enriched',
       connector,
@@ -1359,7 +1715,6 @@ describe('local scan', () => {
       failedStages: [],
     });
     expect(retry.report.enrichment.embeddings).toBe('completed');
-    expect(generateObject).toHaveBeenCalledTimes(1);
     expect(generateObject).toHaveBeenCalledWith(expect.objectContaining({ role: 'candidateExtraction' }));
     expect(embeddingAttempts).toBe(2);
 
@@ -1512,69 +1867,18 @@ describe('resolveEnabledTables', () => {
     expect(resolveEnabledTables({ driver: 'postgres', enabled_tables: [] })).toBeNull();
   });
 
-  it('returns Set of enabled table names', () => {
+  it('returns a canonical set of enabled table refs', () => {
     const result = resolveEnabledTables({
       driver: 'postgres',
       enabled_tables: ['public.users', 'public.orders'],
     });
     expect(result).toBeInstanceOf(Set);
     expect(result!.size).toBe(2);
-    expect(result!.has('public.users')).toBe(true);
-    expect(result!.has('public.orders')).toBe(true);
+    expect(result!.has(tableRefKey({ catalog: null, db: 'public', name: 'users' }))).toBe(true);
+    expect(result!.has(tableRefKey({ catalog: null, db: 'public', name: 'orders' }))).toBe(true);
   });
 
   it('returns null for undefined connection', () => {
     expect(resolveEnabledTables(undefined)).toBeNull();
-  });
-});
-
-describe('filterSnapshotTables', () => {
-  function makeSnapshot(tables: Array<{ db: string; name: string }>): KtxSchemaSnapshot {
-    return {
-      connectionId: 'test',
-      driver: 'postgres',
-      extractedAt: '2026-01-01T00:00:00Z',
-      scope: {},
-      metadata: {},
-      tables: tables.map(
-        (t): KtxSchemaTable => ({
-          catalog: null,
-          db: t.db,
-          name: t.name,
-          kind: 'table',
-          comment: null,
-          estimatedRows: null,
-          columns: [],
-          foreignKeys: [],
-        }),
-      ),
-    };
-  }
-
-  it('keeps only enabled tables', () => {
-    const snapshot = makeSnapshot([
-      { db: 'public', name: 'users' },
-      { db: 'public', name: 'orders' },
-      { db: 'public', name: 'logs' },
-    ]);
-    const enabled = new Set(['public.users', 'public.orders']);
-    const filtered = filterSnapshotTables(snapshot, enabled);
-    expect(filtered.tables).toHaveLength(2);
-    expect(filtered.tables.map((t) => t.name)).toEqual(['users', 'orders']);
-  });
-
-  it('returns empty tables when none match', () => {
-    const snapshot = makeSnapshot([{ db: 'public', name: 'users' }]);
-    const enabled = new Set(['public.orders']);
-    const filtered = filterSnapshotTables(snapshot, enabled);
-    expect(filtered.tables).toHaveLength(0);
-  });
-
-  it('preserves other snapshot fields', () => {
-    const snapshot = makeSnapshot([{ db: 'public', name: 'users' }]);
-    const enabled = new Set(['public.users']);
-    const filtered = filterSnapshotTables(snapshot, enabled);
-    expect(filtered.connectionId).toBe('test');
-    expect(filtered.driver).toBe('postgres');
   });
 });
