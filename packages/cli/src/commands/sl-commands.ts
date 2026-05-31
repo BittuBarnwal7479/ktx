@@ -94,19 +94,28 @@ export function registerSlCommands(program: Command, context: KtxCliCommandConte
       },
     );
 
-  sl.command('validate')
-    .description('Validate a semantic-layer source (set --connection-id on `ktx sl`)')
+  sl.command('read')
+    .description('Read a semantic-layer source YAML file')
     .argument('<sourceName>', 'Semantic-layer source name')
     .action(async (sourceName: string, _options, command) => {
       const parentOpts = command.parent?.opts() as { connectionId?: string } | undefined;
-      const connectionId = parentOpts?.connectionId;
-      if (connectionId === undefined) {
-        command.error("error: required option '--connection-id <id>' not specified");
-      }
+      await runSlArgs(context, {
+        command: 'read',
+        projectDir: resolveCommandProjectDir(command),
+        connectionId: parentOpts?.connectionId,
+        sourceName,
+      });
+    });
+
+  sl.command('validate')
+    .description('Validate a semantic-layer source')
+    .argument('<sourceName>', 'Semantic-layer source name')
+    .action(async (sourceName: string, _options, command) => {
+      const parentOpts = command.parent?.opts() as { connectionId?: string } | undefined;
       await runSlArgs(context, {
         command: 'validate',
         projectDir: resolveCommandProjectDir(command),
-        connectionId: connectionId as string,
+        connectionId: parentOpts?.connectionId,
         sourceName,
       });
     });
@@ -131,10 +140,14 @@ export function registerSlCommands(program: Command, context: KtxCliCommandConte
         throw new Error('sl query requires at least one --measure');
       }
       const parentOpts = command.parent?.opts() as { connectionId?: string } | undefined;
+      const connectionId = parentOpts?.connectionId;
+      if (connectionId === undefined) {
+        command.error("error: required option '--connection-id <id>' not specified");
+      }
       const args = slQueryCommandSchema.parse({
         command: 'query',
         projectDir: resolveCommandProjectDir(command),
-        connectionId: parentOpts?.connectionId,
+        connectionId,
         ...(options.queryFile
           ? { queryFile: options.queryFile }
           : {

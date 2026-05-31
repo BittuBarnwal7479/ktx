@@ -11,13 +11,16 @@ the vocabulary agents use to generate correct SQL.
 
 ```bash
 ktx sl [options] [query...]            # list (bare) or search (with query)
-ktx sl validate <sourceName> [options]
+ktx sl read <sourceName>
+ktx sl validate <sourceName>
 ktx sl query [options]
 ```
 
 - Bare `ktx sl` lists semantic sources.
-- `ktx sl <query...>` searches semantic sources (multi-word queries are
-  joined with a space).
+- `ktx sl <query...>` searches semantic sources. Multi-word queries are joined
+  with a space.
+- `ktx sl read <sourceName>` prints the YAML for one source. Add
+  `--connection-id` only when the source name exists in multiple connections.
 - `ktx sl validate` and `ktx sl query` remain as explicit subcommands.
 
 ## Subcommands
@@ -26,6 +29,7 @@ ktx sl query [options]
 |-----------|-------------|
 | (none, no query) | List semantic sources |
 | (none, with query) | Search semantic sources |
+| `read <sourceName>` | Print the YAML for one semantic source |
 | `validate <sourceName>` | Validate a semantic source against the database schema |
 | `query` | Compile or execute a semantic query |
 
@@ -40,17 +44,23 @@ ktx sl query [options]
 | `--output <mode>` | Output mode: `pretty` (default in TTY), `plain` (TSV), or `json` | `pretty` |
 | `--json` | Shortcut for `--output=json` (overrides `--output`) | `false` |
 
+### `sl read`
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--connection-id <id>` | Optional **ktx** connection id for disambiguation | - |
+
 ### `sl validate`
 
 | Flag | Description | Default |
 |------|-------------|---------|
-| `--connection-id <id>` | **ktx** connection id (required) | - |
+| `--connection-id <id>` | Optional **ktx** connection id for disambiguation | - |
 
 ### `sl query`
 
 | Flag | Description | Default |
 |------|-------------|---------|
-| `--connection-id <id>` | **ktx** connection id | - |
+| `--connection-id <id>` | Required **ktx** connection id | - |
 | `--query-file <path>` | JSON semantic query file | - |
 | `--measure <measure>` | Measure to query; repeatable (at least one required) | - |
 | `--dimension <dimension>` | Dimension to include; repeatable | - |
@@ -65,8 +75,9 @@ ktx sl query [options]
 | `--no-input` | Disable interactive managed runtime installation | - |
 | `--max-rows <n>` | Maximum rows to return when executing | - |
 
-`sl query` requires at least one `--measure` unless `--query-file` is set.
-`--query-file` should point to a JSON semantic query object.
+`sl query` requires `--connection-id` and at least one `--measure` unless
+`--query-file` is set. `--query-file` must point to a JSON semantic query
+object.
 
 ## Examples
 
@@ -83,7 +94,16 @@ ktx sl --json
 # Search sources as JSON
 ktx sl "revenue" --json
 
-# Validate a source against the live schema
+# Print the YAML for a source name that is unique across connections
+ktx sl read orders
+
+# Print the YAML for a source name that exists in multiple connections
+ktx sl --connection-id my-warehouse read orders
+
+# Validate a source name that is unique across connections
+ktx sl validate orders
+
+# Validate a source name that exists in multiple connections
 ktx sl validate orders --connection-id my-warehouse
 
 # Compile a query and view the generated SQL
@@ -144,6 +164,12 @@ shows `#1`, `#2`, and later rank badges for the displayed results. Plain and
 JSON output keep the raw `score` value, which is a ranking score rather than a
 percentage.
 
+`ktx sl read <sourceName>` prints the source YAML directly to stdout when the
+source name is unique across connections. If the name exists in multiple
+connections, rerun the command with `--connection-id <id>`. The command does
+not wrap output in pretty, plain, or JSON formatting, so it can be piped to
+other tools.
+
 ```json
 {
   "sql": "SELECT orders.status, SUM(orders.total_amount) AS total_revenue FROM public.orders GROUP BY orders.status",
@@ -160,7 +186,8 @@ percentage.
 
 | Error | Cause | Recovery |
 |-------|-------|----------|
-| Source not found | Source name or connection id is wrong | Run `ktx sl --json` and retry with an exact source name and connection id |
+| Source not found | Source name or connection id is wrong | Run `ktx sl <query>` or `ktx sl --connection-id <id>` to find the exact source name, then retry `ktx sl read <sourceName>` or `ktx sl validate <sourceName>` |
+| Source name is ambiguous | The same source name exists in multiple connections | Rerun with `--connection-id <id>` from the error message |
 | Validation fails | YAML references missing columns, invalid joins, or invalid SQL expressions | Fix the source YAML and rerun `ktx sl validate` |
 | Query compile fails | Measure, dimension, filter, or segment name is invalid | Search sources with `ktx sl <query>`, inspect the source YAML in your project files, then retry using declared fields |
 | Execution returns too many rows | `--max-rows` is missing or too high | Add `--max-rows` with a bounded value before executing |

@@ -132,9 +132,12 @@ describe('runKtxCli', () => {
     }
     expect(testIo.stdout()).not.toMatch(/^  dev\s/m);
     expect(testIo.stdout()).not.toMatch(/^  scan\s/m);
-    for (const removed of ['demo', 'init', 'connect', 'ask', 'knowledge', 'agent', 'completion', 'serve']) {
+    for (const removed of ['demo', 'init', 'connect', 'ask', 'knowledge', 'agent', 'serve']) {
       expect(testIo.stdout()).not.toMatch(new RegExp(`^\\s+${removed}(?:\\s|\\[|$)`, 'm'));
     }
+    // `completion` is a public command; the internal `__complete` helper is hidden.
+    expect(testIo.stdout()).toMatch(/^\s+completion <shell>/m);
+    expect(testIo.stdout()).not.toContain('__complete');
     expect(testIo.stdout()).toContain('--project-dir <path>');
     expect(testIo.stdout()).toContain('KTX_PROJECT_DIR');
     expect(testIo.stdout()).toContain('--debug');
@@ -414,12 +417,17 @@ describe('runKtxCli', () => {
 
     const promptIo = makeIo();
     await expect(
-      runKtxCli(['--project-dir', tempDir, 'sl', 'query', '--measure', 'orders.order_count'], promptIo.io, { sl }),
+      runKtxCli(
+        ['--project-dir', tempDir, 'sl', 'query', '--connection-id', 'warehouse', '--measure', 'orders.order_count'],
+        promptIo.io,
+        { sl },
+      ),
     ).resolves.toBe(0);
     expect(sl).toHaveBeenLastCalledWith(
       expect.objectContaining({
         command: 'query',
         projectDir: tempDir,
+        connectionId: 'warehouse',
         cliVersion,
         runtimeInstallPolicy: 'prompt',
         query: expect.objectContaining({ measures: ['orders.order_count'], dimensions: [] }),
@@ -429,9 +437,21 @@ describe('runKtxCli', () => {
 
     const autoIo = makeIo();
     await expect(
-      runKtxCli(['--project-dir', tempDir, 'sl', 'query', '--measure', 'orders.order_count', '--yes'], autoIo.io, {
-        sl,
-      }),
+      runKtxCli(
+        [
+          '--project-dir',
+          tempDir,
+          'sl',
+          'query',
+          '--connection-id',
+          'warehouse',
+          '--measure',
+          'orders.order_count',
+          '--yes',
+        ],
+        autoIo.io,
+        { sl },
+      ),
     ).resolves.toBe(0);
     expect(sl).toHaveBeenLastCalledWith(
       expect.objectContaining({
@@ -444,7 +464,17 @@ describe('runKtxCli', () => {
     const noInputIo = makeIo();
     await expect(
       runKtxCli(
-        ['--project-dir', tempDir, 'sl', 'query', '--measure', 'orders.order_count', '--no-input'],
+        [
+          '--project-dir',
+          tempDir,
+          'sl',
+          'query',
+          '--connection-id',
+          'warehouse',
+          '--measure',
+          'orders.order_count',
+          '--no-input',
+        ],
         noInputIo.io,
         { sl },
       ),
@@ -464,7 +494,18 @@ describe('runKtxCli', () => {
 
     await expect(
       runKtxCli(
-        ['--project-dir', tempDir, 'sl', 'query', '--measure', 'orders.order_count', '--yes', '--no-input'],
+        [
+          '--project-dir',
+          tempDir,
+          'sl',
+          'query',
+          '--connection-id',
+          'warehouse',
+          '--measure',
+          'orders.order_count',
+          '--yes',
+          '--no-input',
+        ],
         io.io,
         { sl },
       ),
