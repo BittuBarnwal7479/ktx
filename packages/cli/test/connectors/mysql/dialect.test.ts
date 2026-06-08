@@ -36,4 +36,26 @@ describe('KtxMysqlDialect', () => {
     expect(dialect.getLimitOffsetClause(10, 20)).toBe('LIMIT 10 OFFSET 20');
   });
 
+
+  it('generates column statistics query using INFORMATION_SCHEMA.STATISTICS', () => {
+    const sql = dialect.generateColumnStatisticsQuery('analytics', 'orders');
+    expect(sql).not.toBeNull();
+    expect(sql).toContain('INFORMATION_SCHEMA.STATISTICS');
+    expect(sql).toContain("TABLE_SCHEMA = 'analytics'");
+    expect(sql).toContain("TABLE_NAME = 'orders'");
+    expect(sql).toContain('CARDINALITY IS NOT NULL');
+    expect(sql).toContain('column_name');
+    expect(sql).toContain('estimated_cardinality');
+  });
+
+  it('filters to leading index columns only (SEQ_IN_INDEX = 1) to avoid inflated cardinality from composite indexes', () => {
+    const sql = dialect.generateColumnStatisticsQuery('analytics', 'orders');
+    expect(sql).toContain('SEQ_IN_INDEX = 1');
+  });
+
+  it('escapes single quotes in schema and table names for statistics query', () => {
+    const sql = dialect.generateColumnStatisticsQuery("andy's_db", "o'rders");
+    expect(sql).toContain("TABLE_SCHEMA = 'andy''s_db'");
+    expect(sql).toContain("TABLE_NAME = 'o''rders'");
+  });
 });
