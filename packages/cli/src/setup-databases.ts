@@ -1030,7 +1030,7 @@ async function buildConnectionConfig(input: {
       connectionId: input.connectionId,
       secretName: 'client-secret', // pragma: allowlist secret
     });
-    if (clientSecretRef === 'back') return 'back';
+    if (clientSecretRef === 'back') return 'back'; // pragma: allowlist secret
     const resolvedClientSecretRef = clientSecretRef ?? stringConfigField(input.existingConnection, 'client_secret'); // pragma: allowlist secret
     if (!serverHostname || !httpPath || !catalog || !clientId || !resolvedClientSecretRef) return null;
     return {
