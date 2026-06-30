@@ -11,7 +11,9 @@ export type KtxConnectionDriver =
   | 'clickhouse'
   | 'mongodb';
 
-export type KtxScanMode = 'structural' | 'relationships' | 'enriched';
+/** Canonical scan-mode registry. Runtime validation derives its allowlist here. */
+export const KTX_SCAN_MODES = ['structural', 'relationships', 'enriched'] as const;
+export type KtxScanMode = (typeof KTX_SCAN_MODES)[number];
 
 export type KtxScanTrigger = 'cli' | 'mcp' | 'schema_scan' | 'scheduled' | 'manual';
 
