@@ -6,6 +6,7 @@ export const connectionTypeSchema = z.enum([
   'SQLSERVER',
   'BIGQUERY',
   'SNOWFLAKE',
+  'DATABRICKS',
   'CENTRALREACH',
   'EPIC',
   'CERNER',

@@ -69,6 +69,14 @@ const connectionFixtures: Record<KtxConnectionDriver, FixtureFactory> = {
     database: 'ANALYTICS',
     schema: 'PUBLIC',
   }),
+  databricks: () => ({
+    driver: 'databricks',
+    server_hostname: 'dbc-example.cloud.databricks.com',
+    http_path: '/sql/1.0/warehouses/abc',
+    catalog: 'main',
+    schema_name: 'sales',
+    token: 'secret', // pragma: allowlist secret
+  }),
 };
 
 const allowedScopeKeys = new Set(['dataset_ids', 'databases', 'schemas', 'schema_names']);
@@ -101,6 +109,7 @@ describe('driverRegistrations', () => {
     expect(listSupportedDrivers()).toEqual([
       'bigquery',
       'clickhouse',
+      'databricks',
       'mongodb',
       'mysql',
       'postgres',

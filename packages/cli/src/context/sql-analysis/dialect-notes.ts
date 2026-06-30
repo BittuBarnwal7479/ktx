@@ -6,8 +6,7 @@ import type { SqlAnalysisDialect } from './ports.js';
 // dialect), served by the sql_dialect_notes MCP tool. They are package-internal:
 // copy-runtime-assets.mjs ships them to dist, and they are never installed onto an
 // agent target. The set covers every dialect reachable from a configured warehouse
-// driver; duckdb/databricks are intentionally absent because no connector produces
-// them.
+// driver; duckdb is intentionally absent because no connector produces it.
 
 /** @internal Dialects with an authored ./dialects/<dialect>.md file. */
 export const DIALECTS_WITH_NOTES = [
@@ -17,6 +16,7 @@ export const DIALECTS_WITH_NOTES = [
   'bigquery',
   'sqlite',
   'clickhouse',
+  'databricks',
   'tsql',
 ] as const;
 

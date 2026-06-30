@@ -33,9 +33,8 @@ describe('per-dialect SQL notes', () => {
   });
 
   it('does not author notes for unreachable dialects', () => {
-    // duckdb/databricks appear in the resolver map but no connector produces them.
+    // duckdb appears in the resolver map but no connector produces it.
     expect(DIALECTS_WITH_NOTES).not.toContain('duckdb');
-    expect(DIALECTS_WITH_NOTES).not.toContain('databricks');
   });
 
   it('answers the full rubric for every dialect', () => {

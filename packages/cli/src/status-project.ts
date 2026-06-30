@@ -553,7 +553,7 @@ async function buildQueryHistoryStatus(
 }
 
 const ADAPTER_DRIVER_REQUIREMENT: Record<string, string[]> = {
-  'live-database': ['postgres', 'mysql', 'snowflake', 'bigquery', 'clickhouse', 'sqlite', 'sqlserver'],
+  'live-database': ['postgres', 'mysql', 'snowflake', 'databricks', 'bigquery', 'clickhouse', 'sqlite', 'sqlserver'],
   dbt: ['dbt', 'dbt-core', 'dbt-cloud'],
   notion: ['notion'],
   metabase: ['metabase'],
