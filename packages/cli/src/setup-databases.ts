@@ -1031,7 +1031,7 @@ async function buildConnectionConfig(input: {
       secretName: 'client-secret', // pragma: allowlist secret
     });
     if (clientSecretRef === 'back') return 'back';
-    const resolvedClientSecretRef = clientSecretRef ?? stringConfigField(input.existingConnection, 'client_secret');
+    const resolvedClientSecretRef = clientSecretRef ?? stringConfigField(input.existingConnection, 'client_secret'); // pragma: allowlist secret
     if (!serverHostname || !httpPath || !catalog || !clientId || !resolvedClientSecretRef) return null;
     return {
       driver: 'databricks',
@@ -1040,7 +1040,7 @@ async function buildConnectionConfig(input: {
       http_path: httpPath,
       catalog,
       client_id: clientId,
-      client_secret: resolvedClientSecretRef,
+      client_secret: resolvedClientSecretRef, // pragma: allowlist secret
       ...scope,
     };
   }
