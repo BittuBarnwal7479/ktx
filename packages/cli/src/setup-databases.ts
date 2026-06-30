@@ -966,7 +966,7 @@ async function buildConnectionConfig(input: {
   }
   if (driver === 'databricks') {
     if (args.inputMode === 'disabled') return null;
-    
+
     const serverHostname = await promptText(
       prompts,
       'Databricks workspace hostname\nFor example dbc-12345678-abcd.cloud.databricks.com.',
