@@ -11,6 +11,7 @@ const warehouseDrivers = [
   'snowflake',
   'bigquery',
   'sqlite',
+  'duckdb',
   'clickhouse',
   'sqlserver',
 ] as const;
@@ -52,6 +53,7 @@ const warehouseConnectionSchemas = [
   warehouseConnectionSchema('snowflake'),
   warehouseConnectionSchema('bigquery'),
   warehouseConnectionSchema('sqlite'),
+  warehouseConnectionSchema('duckdb'),
   warehouseConnectionSchema('clickhouse'),
   warehouseConnectionSchema('sqlserver'),
 ] as const;

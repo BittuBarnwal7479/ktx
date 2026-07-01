@@ -1,5 +1,6 @@
 import { KtxBigQueryDialect } from '../../connectors/bigquery/dialect.js';
 import { KtxClickHouseDialect } from '../../connectors/clickhouse/dialect.js';
+import { KtxDuckDbDialect } from '../../connectors/duckdb/dialect.js';
 import { KtxMongoDbDialect } from '../../connectors/mongodb/dialect.js';
 import { KtxMysqlDialect } from '../../connectors/mysql/dialect.js';
 import { KtxPostgresDialect } from '../../connectors/postgres/dialect.js';
@@ -55,6 +56,7 @@ type KtxSqlDriver = Exclude<KtxConnectionDriver, 'mongodb'>;
 const sqlDialectFactories: Record<KtxSqlDriver, () => KtxSqlDialect> = {
   bigquery: () => new KtxBigQueryDialect(),
   clickhouse: () => new KtxClickHouseDialect(),
+  duckdb: () => new KtxDuckDbDialect(),
   mysql: () => new KtxMysqlDialect(),
   postgres: () => new KtxPostgresDialect(),
   sqlite: () => new KtxSqliteDialect(),

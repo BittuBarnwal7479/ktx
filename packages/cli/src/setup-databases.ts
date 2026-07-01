@@ -64,6 +64,7 @@ const execFileAsync = promisify(execFileCallback);
 
 export type KtxSetupDatabaseDriver =
   | 'sqlite'
+  | 'duckdb'
   | 'postgres'
   | 'mysql'
   | 'clickhouse'
@@ -159,6 +160,7 @@ const DRIVER_OPTIONS: Array<{ value: KtxSetupDatabaseDriver; label: string }> = 
   { value: 'sqlserver', label: 'SQL Server' },
   { value: 'mongodb', label: 'MongoDB' },
   { value: 'sqlite', label: 'SQLite' },
+  { value: 'duckdb', label: 'DuckDB' },
 ];
 
 const DRIVER_LABELS = Object.fromEntries(DRIVER_OPTIONS.map((option) => [option.value, option.label])) as Record<
@@ -174,6 +176,7 @@ const HISTORIC_SQL_DIALECT_BY_DRIVER: Partial<Record<KtxSetupDatabaseDriver, His
 
 const DEFAULT_CONNECTION_IDS: Record<KtxSetupDatabaseDriver, string> = {
   sqlite: 'sqlite-local',
+  duckdb: 'duckdb-local',
   postgres: 'postgres-warehouse',
   mysql: 'mysql-warehouse',
   clickhouse: 'clickhouse-warehouse',
@@ -813,6 +816,18 @@ async function buildConnectionConfig(input: {
     if (path === undefined) return 'back';
     return path ? { driver: 'sqlite', path } : null;
   }
+  if (driver === 'duckdb') {
+    if (args.inputMode === 'disabled' && !args.databaseUrl) return null;
+    const path =
+      args.databaseUrl ??
+      (await promptText(
+        prompts,
+        'DuckDB database file\nEnter a relative or absolute path, for example ./warehouse.duckdb.',
+        stringConfigField(input.existingConnection, 'path'),
+      ));
+    if (path === undefined) return 'back';
+    return path ? { driver: 'duckdb', path } : null;
+  }
   if (driver === 'postgres' || driver === 'mysql' || driver === 'clickhouse' || driver === 'sqlserver') {
     return await buildUrlConnectionConfig({
       driver,
@@ -1417,9 +1432,11 @@ async function maybeConfigureDatabaseScope(input: {
   const project = await loadKtxProject({ projectDir: input.projectDir });
   const connection = project.config.connections[input.connectionId];
   const driver = normalizeDriver(connection?.driver);
-  if (!driver || driver === 'sqlite') return okValidateResult();
+  const spec = driver ? SCOPE_DISCOVERY_SPECS[driver] : undefined;
+  // Drivers with no scope spec are single-namespace (sqlite, duckdb): there is no
+  // schema to choose, so skip the scope picker and ingest every table.
+  if (!driver || !spec) return okValidateResult();
 
-  const spec = SCOPE_DISCOVERY_SPECS[driver];
   const existingTables = connection?.enabled_tables;
   const hasExistingTables = Array.isArray(existingTables) && existingTables.length > 0;
   const existingScope = spec ? configuredScopeValues(connection, spec) : [];
