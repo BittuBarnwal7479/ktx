@@ -5,11 +5,16 @@ import {
   DocsTitle,
   DocsDescription,
 } from "fumadocs-ui/page";
+import { PageFooter } from "fumadocs-ui/layouts/docs/page";
 import { notFound, redirect } from "next/navigation";
 import defaultMdxComponents from "fumadocs-ui/mdx";
 import { CodeBlock } from "@/components/code-block";
 import { DocsPageActions } from "@/components/docs-page-actions";
-import { readDocsPageMarkdown } from "@/lib/docs-markdown";
+import {
+  readDocsPageMarkdown,
+  resolveDocsPageMarkdownPath,
+} from "@/lib/docs-markdown";
+import { relative } from "node:path";
 
 const docsIndexPath = "/docs/getting-started/introduction";
 const docsIndexSlug = ["getting-started", "introduction"] as const;
@@ -20,6 +25,33 @@ function isDocsIndex(slug: string[] | undefined) {
 
 function isHeroPage(slug: string[] | undefined) {
   return slug?.join("/") === "getting-started/introduction";
+}
+
+function toRepositoryPath(sourcePath: string) {
+  return `docs-site/${relative(process.cwd(), sourcePath).replaceAll("\\", "/")}`;
+}
+
+function buildSourceEditUrl(sourcePath: string) {
+  return `https://github.com/Kaelio/ktx/edit/main/${toRepositoryPath(sourcePath)}`;
+}
+
+function buildIssueUrl(pageTitle: string, sourcePath: string, pageUrl: string) {
+  const title = `[docs] ${pageTitle}`;
+  const body = [
+    `Documentation page: ${pageUrl}`,
+    `Source file: ${toRepositoryPath(sourcePath)}`,
+    "",
+    "What should change?",
+    "",
+  ].join("\n");
+
+  const params = new URLSearchParams({
+    template: "bug_report.yml",
+    title,
+    body,
+  });
+
+  return `https://github.com/Kaelio/ktx/issues/new?${params.toString()}`;
 }
 
 export default async function Page(props: {
@@ -35,6 +67,8 @@ export default async function Page(props: {
 
   const MDX = page.data.body;
   const mdxSource = await readDocsPageMarkdown(page.slugs);
+  const sourcePath = await resolveDocsPageMarkdownPath(page.slugs);
+  const pageUrl = `https://docs.kaelio.com/ktx/docs/${page.slugs.join("/")}`;
 
   const hero = isHeroPage(params.slug);
 
@@ -42,6 +76,19 @@ export default async function Page(props: {
     <DocsPage
       toc={page.data.toc}
       className="!mx-0 min-w-0 justify-self-start md:!mx-auto"
+      footer={{
+        component: (
+          <>
+            <div className="mt-10 mb-4">
+              <DocsPageActions
+                sourceEditUrl={buildSourceEditUrl(sourcePath)}
+                issueUrl={buildIssueUrl(page.data.title, sourcePath, pageUrl)}
+              />
+            </div>
+            <PageFooter />
+          </>
+        ),
+      }}
       style={{
         width: "calc(100vw - 2rem)",
         maxWidth: "900px",
