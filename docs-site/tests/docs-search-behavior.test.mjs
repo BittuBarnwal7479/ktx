@@ -34,6 +34,23 @@ test("markdown negotiation uses the Next proxy convention", async () => {
   assert.doesNotMatch(proxy, /export function middleware/);
 });
 
+test("docs pages expose a rendered-content Markdown copy action", async () => {
+  const page = await readDocsFile("app/docs/[[...slug]]/page.tsx");
+  const action = await readDocsFile("components/docs-page-actions.tsx");
+
+  assert.match(page, /const docsContentId = "ktx-docs-page-content"/);
+  assert.match(page, /<DocsPageActions/);
+  assert.match(page, /markdownHref=\{`\$\{page\.url\}\.md`\}/);
+  assert.match(page, /<DocsBody id=\{docsContentId\}/);
+  assert.match(action, /Copy page as Markdown for LLMs/);
+  assert.match(action, /View as Markdown/);
+  assert.match(action, /Open in ChatGPT/);
+  assert.match(action, /Open in Claude/);
+  assert.match(action, /document\.getElementById\(contentId\)/);
+  assert.doesNotMatch(action, /mdxSource/);
+  assert.doesNotMatch(action, /stripFrontmatter/);
+});
+
 test("site background stacking does not target every body child", async () => {
   const css = await readDocsFile("app/global.css");
 

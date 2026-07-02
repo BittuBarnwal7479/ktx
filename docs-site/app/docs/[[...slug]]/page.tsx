@@ -9,10 +9,10 @@ import { notFound, redirect } from "next/navigation";
 import defaultMdxComponents from "fumadocs-ui/mdx";
 import { CodeBlock } from "@/components/code-block";
 import { DocsPageActions } from "@/components/docs-page-actions";
-import { readDocsPageMarkdown } from "@/lib/docs-markdown";
 
 const docsIndexPath = "/docs/getting-started/introduction";
 const docsIndexSlug = ["getting-started", "introduction"] as const;
+const docsContentId = "ktx-docs-page-content";
 
 function isDocsIndex(slug: string[] | undefined) {
   return slug === undefined || slug.length === 0 || slug.join("/") === "";
@@ -34,7 +34,6 @@ export default async function Page(props: {
   if (!page) notFound();
 
   const MDX = page.data.body;
-  const mdxSource = await readDocsPageMarkdown(page.slugs);
 
   const hero = isHeroPage(params.slug);
 
@@ -51,14 +50,29 @@ export default async function Page(props: {
         <>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
             <DocsTitle>{page.data.title}</DocsTitle>
-            <DocsPageActions mdxSource={mdxSource} />
+            <DocsPageActions
+              title={page.data.title}
+              description={page.data.description}
+              contentId={docsContentId}
+              markdownHref={`${page.url}.md`}
+            />
           </div>
           <DocsDescription className="wrap-anywhere">
             {page.data.description}
           </DocsDescription>
         </>
       )}
-      <DocsBody className="min-w-0 max-w-full wrap-anywhere">
+      {hero && (
+        <div className="flex justify-end">
+          <DocsPageActions
+            title={page.data.title}
+            description={page.data.description}
+            contentId={docsContentId}
+            markdownHref={`${page.url}.md`}
+          />
+        </div>
+      )}
+      <DocsBody id={docsContentId} className="min-w-0 max-w-full wrap-anywhere">
         <MDX components={{ ...defaultMdxComponents, pre: CodeBlock }} />
       </DocsBody>
     </DocsPage>
