@@ -5,15 +5,15 @@ import {
   DocsTitle,
   DocsDescription,
 } from "fumadocs-ui/page";
-import { PageFooter } from "fumadocs-ui/layouts/docs/page";
 import { notFound, redirect } from "next/navigation";
 import defaultMdxComponents from "fumadocs-ui/mdx";
 import { CodeBlock } from "@/components/code-block";
-import { DocsPageActions } from "@/components/docs-page-actions";
 import {
-  readDocsPageMarkdown,
-  resolveDocsPageMarkdownPath,
-} from "@/lib/docs-markdown";
+  DocsPageFooter,
+  DocsPageFooterProvider,
+} from "@/components/docs-page-footer";
+import { readDocsPageMarkdownFile } from "@/lib/docs-markdown";
+import { absoluteUrl } from "@/lib/llm-docs";
 import { relative } from "node:path";
 
 const docsIndexPath = "/docs/getting-started/introduction";
@@ -37,18 +37,13 @@ function buildSourceEditUrl(sourcePath: string) {
 
 function buildIssueUrl(pageTitle: string, sourcePath: string, pageUrl: string) {
   const title = `[docs] ${pageTitle}`;
-  const body = [
-    `Documentation page: ${pageUrl}`,
-    `Source file: ${toRepositoryPath(sourcePath)}`,
-    "",
-    "What should change?",
-    "",
-  ].join("\n");
+  const repositoryPath = toRepositoryPath(sourcePath);
 
   const params = new URLSearchParams({
-    template: "bug_report.yml",
+    template: "docs_feedback.yml",
     title,
-    body,
+    page: pageUrl,
+    source: repositoryPath,
   });
 
   return `https://github.com/Kaelio/ktx/issues/new?${params.toString()}`;
@@ -66,49 +61,41 @@ export default async function Page(props: {
   if (!page) notFound();
 
   const MDX = page.data.body;
-  const mdxSource = await readDocsPageMarkdown(page.slugs);
-  const sourcePath = await resolveDocsPageMarkdownPath(page.slugs);
-  const pageUrl = `https://docs.kaelio.com/ktx/docs/${page.slugs.join("/")}`;
-
+  const { content: mdxSource, path: sourcePath } =
+    await readDocsPageMarkdownFile(page.slugs);
+  const pageUrl = absoluteUrl(page.url);
   const hero = isHeroPage(params.slug);
 
   return (
-    <DocsPage
-      toc={page.data.toc}
-      className="!mx-0 min-w-0 justify-self-start md:!mx-auto"
-      footer={{
-        component: (
-          <>
-            <div className="mt-10 mb-4">
-              <DocsPageActions
-                sourceEditUrl={buildSourceEditUrl(sourcePath)}
-                issueUrl={buildIssueUrl(page.data.title, sourcePath, pageUrl)}
-              />
-            </div>
-            <PageFooter />
-          </>
-        ),
-      }}
-      style={{
-        width: "calc(100vw - 2rem)",
-        maxWidth: "900px",
+    <DocsPageFooterProvider
+      actions={{
+        mdxSource,
+        sourceEditUrl: buildSourceEditUrl(sourcePath),
+        issueUrl: buildIssueUrl(page.data.title, sourcePath, pageUrl),
       }}
     >
-      {!hero && (
-        <>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+      <DocsPage
+        toc={page.data.toc}
+        className="!mx-0 min-w-0 justify-self-start md:!mx-auto"
+        slots={{ footer: DocsPageFooter }}
+        style={{
+          width: "calc(100vw - 2rem)",
+          maxWidth: "900px",
+        }}
+      >
+        {!hero && (
+          <>
             <DocsTitle>{page.data.title}</DocsTitle>
-            <DocsPageActions mdxSource={mdxSource} />
-          </div>
-          <DocsDescription className="wrap-anywhere">
-            {page.data.description}
-          </DocsDescription>
-        </>
-      )}
-      <DocsBody className="min-w-0 max-w-full wrap-anywhere">
-        <MDX components={{ ...defaultMdxComponents, pre: CodeBlock }} />
-      </DocsBody>
-    </DocsPage>
+            <DocsDescription className="wrap-anywhere">
+              {page.data.description}
+            </DocsDescription>
+          </>
+        )}
+        <DocsBody className="min-w-0 max-w-full wrap-anywhere">
+          <MDX components={{ ...defaultMdxComponents, pre: CodeBlock }} />
+        </DocsBody>
+      </DocsPage>
+    </DocsPageFooterProvider>
   );
 }
 

@@ -1,7 +1,7 @@
 import { source } from "@/lib/source";
 import { readDocsPageMarkdown } from "@/lib/docs-markdown";
 
-const siteOrigin = "https://docs.kaelio.com/ktx";
+export const siteOrigin = "https://docs.kaelio.com/ktx";
 
 export type LlmDocsPage = {
   title: string;
@@ -139,7 +139,7 @@ ${links}`;
     .join("\n\n");
 }
 
-function absoluteUrl(path: string) {
+export function absoluteUrl(path: string) {
   return `${siteOrigin}${path}`;
 }
 

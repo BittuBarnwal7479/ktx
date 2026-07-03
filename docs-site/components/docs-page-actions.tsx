@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { CircleAlert, PencilLine } from "lucide-react";
+import { useState, type SVGProps } from "react";
 
 type Props = {
   mdxSource?: string;
@@ -11,6 +10,56 @@ type Props = {
 
 function stripFrontmatter(source: string) {
   return source.trim().replace(/^---\n[\s\S]*?\n---\n?/, "").trim();
+}
+
+function CopyIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+      <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+    </svg>
+  );
+}
+
+function EditIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+    </svg>
+  );
+}
+
+function MessageIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z" />
+    </svg>
+  );
 }
 
 const actionClassName =
@@ -40,6 +89,7 @@ export function DocsPageActions({ mdxSource, issueUrl, sourceEditUrl }: Props) {
           className={`${actionClassName} data-[state=copied]:border-emerald-500/40 data-[state=copied]:text-emerald-600`}
           data-state={copied ? "copied" : "idle"}
         >
+          <CopyIcon className="size-3.5" aria-hidden="true" />
           {copied ? "Copied" : "Copy as Markdown"}
         </button>
       )}
@@ -50,7 +100,7 @@ export function DocsPageActions({ mdxSource, issueUrl, sourceEditUrl }: Props) {
           rel="noreferrer noopener"
           className={actionClassName}
         >
-          <PencilLine className="size-3.5" aria-hidden="true" />
+          <EditIcon className="size-3.5" aria-hidden="true" />
           Suggest edits
         </a>
       )}
@@ -61,7 +111,7 @@ export function DocsPageActions({ mdxSource, issueUrl, sourceEditUrl }: Props) {
           rel="noreferrer noopener"
           className={actionClassName}
         >
-          <CircleAlert className="size-3.5" aria-hidden="true" />
+          <MessageIcon className="size-3.5" aria-hidden="true" />
           Raise issue
         </a>
       )}

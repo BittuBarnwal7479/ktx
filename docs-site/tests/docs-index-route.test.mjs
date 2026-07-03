@@ -71,20 +71,27 @@ before(async () => {
 
   const port = await getAvailablePort();
   docsSiteUrl = `http://127.0.0.1:${port}`;
-  const command = pnpmExecPath === undefined ? "pnpm" : process.execPath;
+  const pnpmArgs = [
+    "exec",
+    "next",
+    "dev",
+    "--hostname",
+    "127.0.0.1",
+    "--port",
+    `${port}`,
+  ];
+  const command =
+    pnpmExecPath === undefined
+      ? process.platform === "win32"
+        ? (process.env.ComSpec ?? "cmd.exe")
+        : "pnpm"
+      : process.execPath;
   const args =
     pnpmExecPath === undefined
-      ? ["exec", "next", "dev", "--hostname", "127.0.0.1", "--port", `${port}`]
-      : [
-          pnpmExecPath,
-          "exec",
-          "next",
-          "dev",
-          "--hostname",
-          "127.0.0.1",
-          "--port",
-          `${port}`,
-        ];
+      ? process.platform === "win32"
+        ? ["/d", "/s", "/c", "pnpm", ...pnpmArgs]
+        : pnpmArgs
+      : [pnpmExecPath, ...pnpmArgs];
 
   docsServer = spawn(command, args, {
     cwd: docsSiteDir,
@@ -277,6 +284,7 @@ test("docs pages render source edit and issue actions", async () => {
     assert.equal(response.status, 200, page.routePath);
 
     const html = await response.text();
+    assert.match(html, />Copy as Markdown</, page.routePath);
     assert.match(html, />Suggest edits</, page.routePath);
     assert.match(html, />Raise issue</, page.routePath);
     assert.match(
@@ -288,7 +296,19 @@ test("docs pages render source edit and issue actions", async () => {
     );
     assert.match(
       html,
-      /https:\/\/github\.com\/Kaelio\/ktx\/issues\/new\?[^"]*template=bug_report\.yml/,
+      /https:\/\/github\.com\/Kaelio\/ktx\/issues\/new\?[^"]*template=docs_feedback\.yml/,
+      page.routePath,
+    );
+    assert.match(
+      html,
+      new RegExp(
+        `(?:\\?|&amp;)page=${encodeURIComponent(`https://docs.kaelio.com/ktx/docs/${page.routePath}`)}`,
+      ),
+      page.routePath,
+    );
+    assert.match(
+      html,
+      new RegExp(`(?:\\?|&amp;)source=${encodeURIComponent(page.sourcePath)}`),
       page.routePath,
     );
   }

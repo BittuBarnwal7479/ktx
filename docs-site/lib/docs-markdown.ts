@@ -2,10 +2,10 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
 export async function readDocsPageMarkdown(slugs: string[]) {
-  return readFile(await resolveDocsPageMarkdownPath(slugs), "utf8");
+  return (await readDocsPageMarkdownFile(slugs)).content;
 }
 
-export async function resolveDocsPageMarkdownPath(slugs: string[]) {
+export async function readDocsPageMarkdownFile(slugs: string[]) {
   if (
     slugs.length === 0 ||
     slugs.some((segment) => segment.includes("/") || segment.includes(".."))
@@ -17,15 +17,15 @@ export async function resolveDocsPageMarkdownPath(slugs: string[]) {
   const directPath = join(docsRoot, `${slugs.join("/")}.mdx`);
 
   try {
-    await readFile(directPath, "utf8");
-    return directPath;
+    return { path: directPath, content: await readFile(directPath, "utf8") };
   } catch (error) {
     if (!isNotFoundError(error)) {
       throw error;
     }
   }
 
-  return join(docsRoot, slugs.join("/"), "index.mdx");
+  const indexPath = join(docsRoot, slugs.join("/"), "index.mdx");
+  return { path: indexPath, content: await readFile(indexPath, "utf8") };
 }
 
 function isNotFoundError(error: unknown) {
