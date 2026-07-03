@@ -1,7 +1,7 @@
 import { source } from "@/lib/source";
 import { readDocsPageMarkdown } from "@/lib/docs-markdown";
 
-export const siteOrigin = "https://docs.kaelio.com/ktx";
+const siteOrigin = "https://docs.kaelio.com/ktx";
 
 export type LlmDocsPage = {
   title: string;
