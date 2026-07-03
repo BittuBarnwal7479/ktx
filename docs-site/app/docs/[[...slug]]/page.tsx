@@ -12,7 +12,6 @@ import { DocsPageActions } from "@/components/docs-page-actions";
 
 const docsIndexPath = "/docs/getting-started/introduction";
 const docsIndexSlug = ["getting-started", "introduction"] as const;
-const docsContentId = "ktx-docs-page-content";
 
 function isDocsIndex(slug: string[] | undefined) {
   return slug === undefined || slug.length === 0 || slug.join("/") === "";
@@ -52,8 +51,6 @@ export default async function Page(props: {
             <DocsTitle>{page.data.title}</DocsTitle>
             <DocsPageActions
               title={page.data.title}
-              description={page.data.description}
-              contentId={docsContentId}
               markdownHref={`${page.url}.md`}
             />
           </div>
@@ -66,13 +63,11 @@ export default async function Page(props: {
         <div className="flex justify-end">
           <DocsPageActions
             title={page.data.title}
-            description={page.data.description}
-            contentId={docsContentId}
             markdownHref={`${page.url}.md`}
           />
         </div>
       )}
-      <DocsBody id={docsContentId} className="min-w-0 max-w-full wrap-anywhere">
+      <DocsBody className="min-w-0 max-w-full wrap-anywhere">
         <MDX components={{ ...defaultMdxComponents, pre: CodeBlock }} />
       </DocsBody>
     </DocsPage>
