@@ -2,6 +2,7 @@ import type { KtxTableRefKey } from './table-ref.js';
 
 export type KtxConnectionDriver =
   | 'sqlite'
+  | 'duckdb'
   | 'postgres'
   | 'sqlserver'
   | 'bigquery'
@@ -9,6 +10,7 @@ export type KtxConnectionDriver =
   | 'databricks'
   | 'mysql'
   | 'clickhouse'
+  | 'athena'
   | 'mongodb';
 
 /** Canonical scan-mode registry. Runtime validation derives its allowlist here. */

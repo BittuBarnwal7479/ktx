@@ -12,8 +12,10 @@ const warehouseDrivers = [
   'databricks',
   'bigquery',
   'sqlite',
+  'duckdb',
   'clickhouse',
   'sqlserver',
+  'athena',
 ] as const;
 
 type WarehouseDriver = (typeof warehouseDrivers)[number];
@@ -41,6 +43,12 @@ function warehouseConnectionSchema<const Driver extends WarehouseDriver>(driver:
         .describe(
           'Maximum execution time for a single read-only query, in milliseconds (default 30000). Enforced as a server-side statement timeout for remote engines and by SIGKILL-ing a forked query subprocess for in-process SQLite. A query exceeding it is cancelled and returns a "query exceeded Ns" error so the agent can revise.',
         ),
+      query_policy: z
+        .enum(['read-only-sql', 'semantic-layer-only'])
+        .optional()
+        .describe(
+          'Agent-facing query authorship policy (default "read-only-sql"). "read-only-sql" allows parser-validated read-only SQL plus semantic-layer queries. "semantic-layer-only" rejects raw SQL on this connection (`ktx sql`, the sql_execution tool, and federated queries that include it) and restricts semantic-layer queries to measures predefined in the semantic-layer sources. ktx-internal scan and ingest queries are unaffected.',
+        ),
     })
     .describe(
       `${driver} warehouse connection. Additional driver-tunable fields (e.g. context.queryHistory) are accepted and passed through.`,
@@ -54,8 +62,10 @@ const warehouseConnectionSchemas = [
   warehouseConnectionSchema('databricks'),
   warehouseConnectionSchema('bigquery'),
   warehouseConnectionSchema('sqlite'),
+  warehouseConnectionSchema('duckdb'),
   warehouseConnectionSchema('clickhouse'),
   warehouseConnectionSchema('sqlserver'),
+  warehouseConnectionSchema('athena'),
 ] as const;
 
 const mongodbConnectionSchema = z
@@ -253,6 +263,47 @@ const metricflowConnectionSchema = z
   })
   .describe('MetricFlow / SL context-source connection.');
 
+const sigmaConnectionSchema = z
+  .looseObject({
+    driver: z.literal('sigma'),
+    api_url: z
+      .string()
+      .url()
+      .default('https://api.sigmacomputing.com')
+      .describe('Sigma API base URL. Defaults to the GCP US endpoint; change for other regions.'),
+    client_id: z.string().min(1).describe('Sigma API client ID.'),
+    client_secret: z.string().min(1).optional().describe('Literal Sigma client secret. Prefer client_secret_ref.'),
+    client_secret_ref: z
+      .string()
+      .min(1)
+      .optional()
+      .describe('Reference to Sigma client secret (e.g. env:SIGMA_CLIENT_SECRET).'),
+    connectionMappings: z
+      .record(z.string(), z.string())
+      .optional()
+      .describe(
+        'Maps Sigma internal connection UUIDs to ktx warehouse connection IDs. ' +
+          'When set, projected semantic-layer sources land under the mapped warehouse connection ' +
+          'instead of the Sigma connection, enabling sl_validate. ' +
+          'Find UUIDs in data model specs under source.connectionId.',
+      ),
+    workbookFilter: z
+      .object({
+        includeArchived: z.boolean().default(false),
+        includeExplorations: z.boolean().default(false),
+        updatedSince: z.string().optional().describe('ISO 8601 date string. Only workbooks updated on or after this date are ingested.'),
+      })
+      .optional()
+      .describe('Filters applied when listing workbooks during ingest. Defaults exclude archived and exploration workbooks.'),
+    dataModelFilter: z
+      .object({
+        updatedSince: z.string().optional().describe('ISO 8601 date string. Only data models updated on or after this date are fetched.'),
+      })
+      .optional()
+      .describe('Filters applied when listing data models during ingest.'),
+  })
+  .describe('Sigma Computing API connection for ingesting data models.');
+
 export const connectionConfigSchema = z.discriminatedUnion('driver', [
   ...warehouseConnectionSchemas,
   mongodbConnectionSchema,
@@ -263,4 +314,5 @@ export const connectionConfigSchema = z.discriminatedUnion('driver', [
   gdriveConnectionSchema,
   dbtConnectionSchema,
   metricflowConnectionSchema,
+  sigmaConnectionSchema,
 ]);
