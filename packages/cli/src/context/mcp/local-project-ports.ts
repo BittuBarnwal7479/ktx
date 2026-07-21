@@ -1,5 +1,5 @@
 import type { KtxSqlQueryExecutorPort } from '../../context/connections/query-executor.js';
-import { KtxExpectedError } from '../../errors.js';
+import { KtxExpectedError, KtxQueryError, isNativeProgrammingFault } from '../../errors.js';
 import { isDatabaseDriver, normalizeConnectionDriver } from '../../connection-drivers.js';
 import { sqlDialectNotes } from '../../context/sql-analysis/dialect-notes.js';
 import type { KtxProjectConnectionConfig } from '../../context/project/config.js';
@@ -11,7 +11,7 @@ import {
   localConnectionInfoFromConfig,
 } from '../../context/connections/local-warehouse-descriptor.js';
 import type { KtxEmbeddingPort } from '../../context/core/embedding.js';
-import type { KtxSemanticLayerComputePort } from '../../context/daemon/semantic-layer-compute.js';
+import { KtxDaemonComputeError, type KtxSemanticLayerComputePort } from '../../context/daemon/semantic-layer-compute.js';
 import type { KtxLocalProject } from '../../context/project/project.js';
 import { createKtxEntityDetailsService } from '../../context/scan/entity-details.js';
 import type { LocalScanMcpOptions } from '../../context/scan/local-scan.js';
@@ -32,6 +32,26 @@ interface CreateLocalProjectMcpContextPortsOptions {
   sqlAnalysis?: SqlAnalysisPort;
   localScan?: LocalScanMcpOptions;
   embeddingService: KtxEmbeddingPort | null;
+}
+
+/**
+ * Reclassify a query-path failure. Warehouse/driver rejections and daemon
+ * input-rejections are caller-driven outcomes (KtxQueryError, kept out of Error
+ * Tracking while preserving the underlying diagnostics); native JS faults, daemon
+ * crashes, and already-expected errors propagate unchanged so genuine ktx bugs
+ * still reach Error Tracking.
+ */
+function throwClassifiedQueryError(error: unknown): never {
+  if (error instanceof KtxDaemonComputeError) {
+    if (error.inputRejected) {
+      throw new KtxQueryError(error.detail, { cause: error });
+    }
+    throw error;
+  }
+  if (isNativeProgrammingFault(error) || error instanceof KtxExpectedError) {
+    throw error;
+  }
+  throw new KtxQueryError(error instanceof Error ? error.message : String(error), { cause: error });
 }
 
 async function executeValidatedReadOnlySql(
@@ -170,15 +190,19 @@ export function createLocalProjectMcpContextPorts(
         if (!options.semanticLayerCompute) {
           throw new Error('sl_query requires a semantic-layer query adapter.');
         }
-        return compileLocalSlQuery(project, {
-          connectionId: input.connectionId,
-          query: input.query,
-          compute: options.semanticLayerCompute,
-          execute: Boolean(options.queryExecutor),
-          maxRows: input.query.limit,
-          queryExecutor: options.queryExecutor,
-          onProgress: executionOptions?.onProgress,
-        });
+        try {
+          return await compileLocalSlQuery(project, {
+            connectionId: input.connectionId,
+            query: input.query,
+            compute: options.semanticLayerCompute,
+            execute: Boolean(options.queryExecutor),
+            maxRows: input.query.limit,
+            queryExecutor: options.queryExecutor,
+            onProgress: executionOptions?.onProgress,
+          });
+        } catch (error) {
+          throwClassifiedQueryError(error);
+        }
       },
     },
     entityDetails: {
